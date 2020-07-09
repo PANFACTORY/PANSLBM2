@@ -7,14 +7,20 @@
 
 
 #include <iostream>
+#include <fstream>
 #include <vector>
+#include <cmath>
+#include <chrono>
+
+
+#include <xmmintrin.h>
 
 
 int main() {
     //--------------------Parameters--------------------
     int nx = 200;
     int ny = 80;
-    int tmax = 10000;
+    int tmax = 30000;
 
     double dx = 1.0;
     double dt = 1.0;
@@ -62,6 +68,10 @@ int main() {
 
 
     //--------------------Set barrier--------------------
+    for (int j = ny/2 - 8; j <= ny/2 + 8; j++) {
+        barrier0[ny/2][j] = true;
+    }
+
     for (int i = 1; i < nx - 1; i++) {
         for (int j = 1; j < ny - 1; j++) {
             barrier1[i][j] = barrier0[i - 1][j];
@@ -69,27 +79,29 @@ int main() {
             barrier3[i][j] = barrier0[i + 1][j];
             barrier4[i][j] = barrier0[i][j + 1];
             barrier5[i][j] = barrier0[i - 1][j - 1];
-            barrier6[i][j] = barrier0[i - 1][j + 1];
+            barrier6[i][j] = barrier0[i + 1][j - 1];
             barrier7[i][j] = barrier0[i + 1][j + 1];
-            barrier8[i][j] = barrier0[i + 1][j - 1];
+            barrier8[i][j] = barrier0[i - 1][j + 1];
         }
     }
 
 
     //--------------------Loop for time step--------------------
+    std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
+
     for (int t = 0; t < tmax; t++) {
         //..........Stream..........
         for (int i = 0; i < nx; i++) {
             for (int j = 0; j < ny; j++) {
                 f0tp1[i][j] = f0t[i][j];
-                f1tp1[i][j] = (i == 0) ? f1t[i][j] : f1t[i - 1][j];
-                f2tp1[i][j] = (j == 0) ? f2t[i][j] :f2t[i][j - 1];
-                f3tp1[i][j] = (i == nx - 1) ? f3t[i][j] : f3t[i + 1][j];
-                f4tp1[i][j] = (j == ny - 1) ? f4t[i][j] : f4t[i][j + 1];
-                f5tp1[i][j] = (i == 0 || j == 0) ? f5t[i][j] : f5t[i - 1][j - 1];
-                f6tp1[i][j] = (i == 0 || j == ny - 1) ? f6t[i][j] : f6t[i - 1][j + 1];
-                f7tp1[i][j] = (i == nx - 1 || j == ny - 1) ? f7t[i][j] : f7t[i + 1][j + 1];
-                f8tp1[i][j] = (i == nx - 1 || j == 0) ? f8t[i][j] : f8t[i + 1][j - 1];
+                f1tp1[i][j] = (i == 0) ? f1t[nx - 1][j] : f1t[i - 1][j];
+                f2tp1[i][j] = (j == 0) ? f2t[i][ny - 1] :f2t[i][j - 1];
+                f3tp1[i][j] = (i == nx - 1) ? f3t[0][j] : f3t[i + 1][j];
+                f4tp1[i][j] = (j == ny - 1) ? f4t[i][0] : f4t[i][j + 1];
+                f5tp1[i][j] = (i == 0 || j == 0) ? f5t[nx - 1][ny - 1] : f5t[i - 1][j - 1];
+                f6tp1[i][j] = (i == nx - 1 || j == 0) ? f6t[0][ny - 1] : f6t[i + 1][j - 1];
+                f7tp1[i][j] = (i == nx - 1 || j == ny - 1) ? f7t[0][0] : f7t[i + 1][j + 1];
+                f8tp1[i][j] = (i == 0 || j == ny - 1) ? f8t[nx - 1][0] : f8t[i - 1][j + 1];
             }
         }
 
@@ -135,6 +147,39 @@ int main() {
         } 
 
 
+        //..........Export result..........
+        /*if (t%100 == 0) {
+            std::cout << t << std::endl;
+
+            std::ofstream fout("result/result" + std::to_string(t/100) + ".vtk");
+            fout << "# vtk DataFile Version 3.0" << std::endl;
+            fout << "2D flow" << std::endl;
+            fout << "ASCII" << std::endl;
+            fout << "DATASET\tSTRUCTURED_GRID" << std::endl;
+            fout << "DIMENSIONS\t" << nx << "\t" << ny << "\t" << 1 << std::endl;
+            
+            fout << "POINTS\t" << nx*ny << "\t" << "float" << std::endl;
+            for (int j = 0; j < ny; j++) {
+                for (int i = 0; i < nx; i++) {
+                    fout << dx*i << "\t" << dx*j << "\t" << 0.0 << std::endl;
+                }
+            }
+
+            fout << "POINT_DATA\t" << nx*ny << std::endl;
+            fout << "SCALARS\tcurl\tfloat" << std::endl;
+            fout << "LOOKUP_TABLE\tdefault" << std::endl;
+            for (int j = 0; j < ny; j++) {
+                for (int i = 0; i < nx; i++) {
+                    if (i == 0 || j == 0 || i == nx - 1 || j == ny - 1) {
+                        fout << 0.0 << std::endl;
+                    } else {
+                        fout << uy[i + 1][j] - uy[i - 1][j] - ux[i][j + 1] + ux[i][j - 1] << std::endl;
+                    }
+                }
+            }
+        }*/
+
+
         //..........Collision..........
         for (int i = 0; i < nx; i++) {
             for (int j = 0; j < ny; j++) {
@@ -167,4 +212,7 @@ int main() {
             f8t[0][j] = t2*(1.0 + 3.0*ux0 + 3.0*pow(ux0, 2.0));
         }
     }
+
+    std::chrono::system_clock::time_point end = std::chrono::system_clock::now();
+    std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count() << std::endl;
 }

@@ -62,8 +62,8 @@ int main() {
 
 
     //--------------------Set barrier--------------------
-    for (int i = 0; i < nx; i++) {
-        for (int j = 0; j < ny; j++) {
+    for (int i = 1; i < nx - 1; i++) {
+        for (int j = 1; j < ny - 1; j++) {
             barrier1[i][j] = barrier0[i - 1][j];
             barrier2[i][j] = barrier0[i][j - 1];
             barrier3[i][j] = barrier0[i + 1][j];
@@ -82,14 +82,14 @@ int main() {
         for (int i = 0; i < nx; i++) {
             for (int j = 0; j < ny; j++) {
                 f0tp1[i][j] = f0t[i][j];
-                f1tp1[i][j] = f1t[i - 1][j];
-                f2tp1[i][j] = f2t[i][j - 1];
-                f3tp1[i][j] = f3t[i + 1][j];
-                f4tp1[i][j] = f4t[i][j + 1];
-                f5tp1[i][j] = f5t[i - 1][j - 1];
-                f6tp1[i][j] = f6t[i - 1][j + 1];
-                f7tp1[i][j] = f7t[i + 1][j + 1];
-                f8tp1[i][j] = f8t[i + 1][j - 1];
+                f1tp1[i][j] = (i == 0) ? f1t[i][j] : f1t[i - 1][j];
+                f2tp1[i][j] = (j == 0) ? f2t[i][j] :f2t[i][j - 1];
+                f3tp1[i][j] = (i == nx - 1) ? f3t[i][j] : f3t[i + 1][j];
+                f4tp1[i][j] = (j == ny - 1) ? f4t[i][j] : f4t[i][j + 1];
+                f5tp1[i][j] = (i == 0 || j == 0) ? f5t[i][j] : f5t[i - 1][j - 1];
+                f6tp1[i][j] = (i == 0 || j == ny - 1) ? f6t[i][j] : f6t[i - 1][j + 1];
+                f7tp1[i][j] = (i == nx - 1 || j == ny - 1) ? f7t[i][j] : f7t[i + 1][j + 1];
+                f8tp1[i][j] = (i == nx - 1 || j == 0) ? f8t[i][j] : f8t[i + 1][j - 1];
             }
         }
 

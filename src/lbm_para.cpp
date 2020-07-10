@@ -91,6 +91,28 @@ int main() {
     std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
 
     for (int t = 0; t < tmax; t++) {
+        //..........Boundary condition (inlet)..........
+        for (int j = 0; j < ny; j++) {
+            f1t[0][j] = t1*(1.0 + 3.0*ux0 + 3.0*pow(ux0, 2.0));
+            f3t[0][j] = t1*(1.0 - 3.0*ux0 + 3.0*pow(ux0, 2.0));
+            f5t[0][j] = t2*(1.0 + 3.0*ux0 + 3.0*pow(ux0, 2.0));
+            f6t[0][j] = t2*(1.0 - 3.0*ux0 + 3.0*pow(ux0, 2.0));
+            f7t[0][j] = t2*(1.0 - 3.0*ux0 + 3.0*pow(ux0, 2.0));
+            f8t[0][j] = t2*(1.0 + 3.0*ux0 + 3.0*pow(ux0, 2.0));
+        }
+
+
+        //..........Boundary condition (outlet)..........
+        for (int j = 0; j < ny; j++) {
+            f1t[nx - 1][j] = f1t[nx - 2][j];
+            f3t[nx - 1][j] = f3t[nx - 2][j];
+            f5t[nx - 1][j] = f5t[nx - 2][j];
+            f6t[nx - 1][j] = f6t[nx - 2][j];
+            f7t[nx - 1][j] = f7t[nx - 2][j];
+            f8t[nx - 1][j] = f8t[nx - 2][j];
+        }
+
+        
         //..........Stream..........
         for (int i = 0; i < nx; i++) {
             for (int j = 0; j < ny; j++) {
@@ -186,6 +208,13 @@ int main() {
                     }
                 }
             }
+
+            fout << "VECTORS\tvelocity\tfloat" << std::endl;
+            for (int j = 0; j < ny; j++) {
+                for (int i = 0; i < nx; i++) {
+                    fout << ux[i][j] << "\t" << uy[i][j] << "\t" << 0.0 << std::endl;
+                }
+            }
         }
 
 
@@ -208,28 +237,6 @@ int main() {
                 f7t[i][j] = (1.0 - omega)*f7tp1[i][j] + omega*t2*rho[i][j]*(omu215 - 3.0*(ux[i][j] + uy[i][j]) + 4.5*(u2 + 2.0*uxuy));
                 f8t[i][j] = (1.0 - omega)*f8tp1[i][j] + omega*t2*rho[i][j]*(omu215 + 3.0*(ux[i][j] - uy[i][j]) + 4.5*(u2 - 2.0*uxuy));
             }
-        }
-
-
-        //..........Boundary condition (inlet)..........
-        for (int j = 0; j < ny; j++) {
-            f1t[0][j] = t1*(1.0 + 3.0*ux0 + 3.0*pow(ux0, 2.0));
-            f3t[0][j] = t1*(1.0 - 3.0*ux0 + 3.0*pow(ux0, 2.0));
-            f5t[0][j] = t2*(1.0 + 3.0*ux0 + 3.0*pow(ux0, 2.0));
-            f6t[0][j] = t2*(1.0 - 3.0*ux0 + 3.0*pow(ux0, 2.0));
-            f7t[0][j] = t2*(1.0 - 3.0*ux0 + 3.0*pow(ux0, 2.0));
-            f8t[0][j] = t2*(1.0 + 3.0*ux0 + 3.0*pow(ux0, 2.0));
-        }
-
-
-        //..........Boundary condition (outlet)..........
-        for (int j = 0; j < ny; j++) {
-            f1t[nx - 1][j] = f1t[nx - 2][j];
-            f3t[nx - 1][j] = f3t[nx - 2][j];
-            f5t[nx - 1][j] = f5t[nx - 2][j];
-            f6t[nx - 1][j] = f6t[nx - 2][j];
-            f7t[nx - 1][j] = f7t[nx - 2][j];
-            f8t[nx - 1][j] = f8t[nx - 2][j];
         }
     }
 

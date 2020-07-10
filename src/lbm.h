@@ -22,7 +22,6 @@ public:
         void SetBarrier(F _f);
 
         void Inlet(T _u, T _v);
-        void Outlet();
         void Stream();
         void UpdateMacro();
         void Collision();
@@ -37,7 +36,7 @@ public:
 
 
 private:
-        T dx, dt, viscosity, omega, t0, t1, t2;
+        T dx, dt, omega, t0, t1, t2;
 
         std::vector<std::vector<T> > f0t;
         std::vector<std::vector<T> > f1t;
@@ -74,8 +73,7 @@ private:
     LBM<T>::LBM(int _nx, int _ny, T _viscosity) : nx(_nx), ny(_ny) {
         this->dx = 1.0;
         this->dt = 1.0;
-        this->viscosity = _viscosity;
-        this->omega = 1.0/(3.0*this->viscosity*this->dt/pow(this->dx, 2.0) + 0.5);
+        this->omega = 1.0/(3.0*_viscosity*this->dt/pow(this->dx, 2.0) + 0.5);
         this->t0 = 4.0/9.0;
         this->t1 = 1.0/9.0;
         this->t2 = 1.0/36.0;
@@ -168,7 +166,8 @@ private:
     //要修正
     //----------------------
     template<class T>
-    void LBM<T>::Outlet() {
+    void LBM<T>::Stream() {
+        //----------Outret----------
         for (int j = 0; j < this->ny; j++) {
             this->f1t[this->nx - 1][j] = this->f1t[this->nx - 2][j];
             this->f3t[this->nx - 1][j] = this->f3t[this->nx - 2][j];
@@ -177,14 +176,7 @@ private:
             this->f7t[this->nx - 1][j] = this->f7t[this->nx - 2][j];
             this->f8t[this->nx - 1][j] = this->f8t[this->nx - 2][j];
         }
-    }
 
-
-    //----------------------
-    //要修正
-    //----------------------
-    template<class T>
-    void LBM<T>::Stream() {
         //----------Stream----------
         for (int i = 0; i < this->nx; i++) {
             for (int j = 0; j < this->ny; j++) {
@@ -200,7 +192,7 @@ private:
             }
         }
 
-        //----------Bouns-Back----------
+        //----------Bouns-Back (inner boundary)----------
         for (int i = 0; i < this->nx; i++) {
             for (int j = 0; j < this->ny; j++) {
                 if (this->barrier1[i][j]) {

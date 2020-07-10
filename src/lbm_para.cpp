@@ -34,7 +34,7 @@ int main() {
 
     for (int t = 0; t < tmax; t++) {
         solver.Stream();                //  Stream
-        solver.Inlet(0.1, 0.0);         //  Boundary condition (inlet)    
+        solver.Inlet(0.1, 0.0);         //  Boundary condition (inlet)   
         solver.UpdateMacro();           //  Update macroscopic values
 
         //..........Export result..........

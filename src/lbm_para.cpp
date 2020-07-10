@@ -33,8 +33,8 @@ int main() {
     std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
 
     for (int t = 0; t < tmax; t++) {
-        solver.Inlet(0.1, 0.0);         //  Boundary condition (inlet)     
         solver.Stream();                //  Stream
+        solver.Inlet(0.1, 0.0);         //  Boundary condition (inlet)    
         solver.UpdateMacro();           //  Update macroscopic values
 
         //..........Export result..........

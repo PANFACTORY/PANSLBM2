@@ -151,13 +151,13 @@ private:
     //----------------------
     template<class T>
     void LBM<T>::Inlet(T _u, T _v) {
-        for (int j = 1; j < this->ny - 1; j++) {
-            this->f1t[0][j] = this->t1*(1.0 + 3.0*_u + 3.0*pow(_u, 2.0));
-            this->f3t[0][j] = this->t1*(1.0 - 3.0*_u + 3.0*pow(_u, 2.0));
-            this->f5t[0][j] = this->t2*(1.0 + 3.0*_u + 3.0*pow(_u, 2.0));
-            this->f6t[0][j] = this->t2*(1.0 - 3.0*_u + 3.0*pow(_u, 2.0));
-            this->f7t[0][j] = this->t2*(1.0 - 3.0*_u + 3.0*pow(_u, 2.0));
-            this->f8t[0][j] = this->t2*(1.0 + 3.0*_u + 3.0*pow(_u, 2.0));
+        for (int j = 0; j < this->ny; j++) {
+            this->f1tp1[0][j] = this->t1*(1.0 + 3.0*_u + 3.0*pow(_u, 2.0));
+            this->f3tp1[0][j] = this->t1*(1.0 - 3.0*_u + 3.0*pow(_u, 2.0));
+            this->f5tp1[0][j] = this->t2*(1.0 + 3.0*_u + 3.0*pow(_u, 2.0));
+            this->f6tp1[0][j] = this->t2*(1.0 - 3.0*_u + 3.0*pow(_u, 2.0));
+            this->f7tp1[0][j] = this->t2*(1.0 - 3.0*_u + 3.0*pow(_u, 2.0));
+            this->f8tp1[0][j] = this->t2*(1.0 + 3.0*_u + 3.0*pow(_u, 2.0));
         }
     }
 
@@ -167,28 +167,18 @@ private:
     //----------------------
     template<class T>
     void LBM<T>::Stream() {
-        //----------Outret----------
-        for (int j = 0; j < this->ny; j++) {
-            this->f1t[this->nx - 1][j] = this->f1t[this->nx - 2][j];
-            this->f3t[this->nx - 1][j] = this->f3t[this->nx - 2][j];
-            this->f5t[this->nx - 1][j] = this->f5t[this->nx - 2][j];
-            this->f6t[this->nx - 1][j] = this->f6t[this->nx - 2][j];
-            this->f7t[this->nx - 1][j] = this->f7t[this->nx - 2][j];
-            this->f8t[this->nx - 1][j] = this->f8t[this->nx - 2][j];
-        }
-
-        //----------Stream----------
+        //----------Stream and periodic boundary----------
         for (int i = 0; i < this->nx; i++) {
             for (int j = 0; j < this->ny; j++) {
                 this->f0tp1[i][j] = this->f0t[i][j];
-                this->f1tp1[i][j] = (i == 0) ? this->f1t[i][j] : this->f1t[i - 1][j];
-                this->f2tp1[i][j] = (j == 0) ? this->f2t[i][j] : this->f2t[i][j - 1];
-                this->f3tp1[i][j] = (i == this->nx - 1) ? this->f3t[i][j] : this->f3t[i + 1][j];
-                this->f4tp1[i][j] = (j == this->ny - 1) ? this->f4t[i][j] : this->f4t[i][j + 1];
-                this->f5tp1[i][j] = (i == 0 || j == 0) ? this->f5t[i][j] : this->f5t[i - 1][j - 1];
-                this->f6tp1[i][j] = (i == this->nx - 1 || j == 0) ? this->f6t[i][j] : this->f6t[i + 1][j - 1];
-                this->f7tp1[i][j] = (i == this->nx - 1 || j == this->ny - 1) ? this->f7t[i][j] : this->f7t[i + 1][j + 1];
-                this->f8tp1[i][j] = (i == 0 || j == this->ny - 1) ? this->f8t[i][j] : this->f8t[i - 1][j + 1];
+                this->f1tp1[i][j] = (i == 0) ? this->f1t[this->nx - 1][j] : this->f1t[i - 1][j];
+                this->f2tp1[i][j] = (j == 0) ? this->f2t[i][this->ny - 1] : this->f2t[i][j - 1];
+                this->f3tp1[i][j] = (i == this->nx - 1) ? this->f3t[0][j] : this->f3t[i + 1][j];
+                this->f4tp1[i][j] = (j == this->ny - 1) ? this->f4t[i][0] : this->f4t[i][j + 1];
+                this->f5tp1[i][j] = (i == 0) ? ((j == 0) ? this->f5t[this->nx - 1][this->ny - 1] : this->f5t[this->nx - 1][j - 1]) : ((j == 0) ? this->f5t[i - 1][this->ny - 1] : this->f5t[i - 1][j - 1]);
+                this->f6tp1[i][j] = (i == this->nx - 1) ? ((j == 0) ? this->f6t[0][this->ny - 1] : this->f6t[0][j - 1]) : ((j == 0) ? this->f6t[i + 1][this->ny - 1] : this->f6t[i + 1][j - 1]);
+                this->f7tp1[i][j] = (i == this->nx - 1) ? ((j == this->ny - 1) ? this->f7t[0][0] : this->f7t[0][j + 1]) : ((j == this->ny - 1) ? this->f7t[i + 1][0] : this->f7t[i + 1][j + 1]);
+                this->f8tp1[i][j] = (i == 0) ? ((j == this->ny - 1) ? this->f8t[this->nx - 1][0] : this->f8t[this->nx - 1][j + 1]) : ((j == this->ny - 1) ? this->f8t[i - 1][0] : this->f8t[i - 1][j + 1]);
             }
         }
 
@@ -220,6 +210,16 @@ private:
                     this->f8tp1[i][j] = this->f6t[i][j];
                 }
             }
+        }
+
+        //----------Outret----------
+        for (int j = 0; j < this->ny; j++) {
+            this->f1tp1[this->nx - 1][j] = this->f1tp1[this->nx - 2][j];
+            this->f3tp1[this->nx - 1][j] = this->f3tp1[this->nx - 2][j];
+            this->f5tp1[this->nx - 1][j] = this->f5tp1[this->nx - 2][j];
+            this->f6tp1[this->nx - 1][j] = this->f6tp1[this->nx - 2][j];
+            this->f7tp1[this->nx - 1][j] = this->f7tp1[this->nx - 2][j];
+            this->f8tp1[this->nx - 1][j] = this->f8tp1[this->nx - 2][j];
         }
 
         //----------Mirror----------

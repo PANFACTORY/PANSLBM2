@@ -29,15 +29,15 @@ int main() {
 
 
     //--------------------Variables--------------------
-    std::vector<std::vector<double> > f0t = std::vector<std::vector<double> >(nx, std::vector<double>(ny, t0*(1.0 - 1.5*pow(ux0, 2.0))));
-    std::vector<std::vector<double> > f1t = std::vector<std::vector<double> >(nx, std::vector<double>(ny, t1*(1.0 + 3.0*ux0 + 3.0*pow(ux0, 2.0))));
-    std::vector<std::vector<double> > f2t = std::vector<std::vector<double> >(nx, std::vector<double>(ny, t1*(1.0 - 1.5*pow(ux0, 2.0))));
-    std::vector<std::vector<double> > f3t = std::vector<std::vector<double> >(nx, std::vector<double>(ny, t1*(1.0 - 3.0*ux0 + 3.0*pow(ux0, 2.0))));
-    std::vector<std::vector<double> > f4t = std::vector<std::vector<double> >(nx, std::vector<double>(ny, t1*(1.0 - 1.5*pow(ux0, 2.0))));
-    std::vector<std::vector<double> > f5t = std::vector<std::vector<double> >(nx, std::vector<double>(ny, t2*(1.0 + 3.0*ux0 + 3.0*pow(ux0, 2.0))));
-    std::vector<std::vector<double> > f6t = std::vector<std::vector<double> >(nx, std::vector<double>(ny, t2*(1.0 - 3.0*ux0 + 3.0*pow(ux0, 2.0))));
-    std::vector<std::vector<double> > f7t = std::vector<std::vector<double> >(nx, std::vector<double>(ny, t2*(1.0 - 3.0*ux0 + 3.0*pow(ux0, 2.0))));
-    std::vector<std::vector<double> > f8t = std::vector<std::vector<double> >(nx, std::vector<double>(ny, t2*(1.0 + 3.0*ux0 + 3.0*pow(ux0, 2.0))));
+    std::vector<std::vector<double> > f0t = std::vector<std::vector<double> >(nx, std::vector<double>(ny, t0));
+    std::vector<std::vector<double> > f1t = std::vector<std::vector<double> >(nx, std::vector<double>(ny, t1));
+    std::vector<std::vector<double> > f2t = std::vector<std::vector<double> >(nx, std::vector<double>(ny, t1));
+    std::vector<std::vector<double> > f3t = std::vector<std::vector<double> >(nx, std::vector<double>(ny, t1));
+    std::vector<std::vector<double> > f4t = std::vector<std::vector<double> >(nx, std::vector<double>(ny, t1));
+    std::vector<std::vector<double> > f5t = std::vector<std::vector<double> >(nx, std::vector<double>(ny, t2));
+    std::vector<std::vector<double> > f6t = std::vector<std::vector<double> >(nx, std::vector<double>(ny, t2));
+    std::vector<std::vector<double> > f7t = std::vector<std::vector<double> >(nx, std::vector<double>(ny, t2));
+    std::vector<std::vector<double> > f8t = std::vector<std::vector<double> >(nx, std::vector<double>(ny, t2));
 
     std::vector<std::vector<double> > f0tp1 = std::vector<std::vector<double> >(nx, std::vector<double>(ny, 0.0));
     std::vector<std::vector<double> > f1tp1 = std::vector<std::vector<double> >(nx, std::vector<double>(ny, 0.0));
@@ -112,7 +112,7 @@ int main() {
             f8t[nx - 1][j] = f8t[nx - 2][j];
         }
 
-        
+
         //..........Stream..........
         for (int i = 0; i < nx; i++) {
             for (int j = 0; j < ny; j++) {

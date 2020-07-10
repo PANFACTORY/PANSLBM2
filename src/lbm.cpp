@@ -29,15 +29,15 @@ int main() {
 
 
     //--------------------Variables--------------------
-    std::vector<std::vector<double> > f0t = std::vector<std::vector<double> >(nx, std::vector<double>(ny, t0*(1.0 - 1.5*pow(ux0, 2.0))));
-    std::vector<std::vector<double> > f1t = std::vector<std::vector<double> >(nx, std::vector<double>(ny, t1*(1.0 + 3.0*ux0 + 3.0*pow(ux0, 2.0))));
-    std::vector<std::vector<double> > f2t = std::vector<std::vector<double> >(nx, std::vector<double>(ny, t1*(1.0 - 1.5*pow(ux0, 2.0))));
-    std::vector<std::vector<double> > f3t = std::vector<std::vector<double> >(nx, std::vector<double>(ny, t1*(1.0 - 3.0*ux0 + 3.0*pow(ux0, 2.0))));
-    std::vector<std::vector<double> > f4t = std::vector<std::vector<double> >(nx, std::vector<double>(ny, t1*(1.0 - 1.5*pow(ux0, 2.0))));
-    std::vector<std::vector<double> > f5t = std::vector<std::vector<double> >(nx, std::vector<double>(ny, t2*(1.0 + 3.0*ux0 + 3.0*pow(ux0, 2.0))));
-    std::vector<std::vector<double> > f6t = std::vector<std::vector<double> >(nx, std::vector<double>(ny, t2*(1.0 - 3.0*ux0 + 3.0*pow(ux0, 2.0))));
-    std::vector<std::vector<double> > f7t = std::vector<std::vector<double> >(nx, std::vector<double>(ny, t2*(1.0 - 3.0*ux0 + 3.0*pow(ux0, 2.0))));
-    std::vector<std::vector<double> > f8t = std::vector<std::vector<double> >(nx, std::vector<double>(ny, t2*(1.0 + 3.0*ux0 + 3.0*pow(ux0, 2.0))));
+    std::vector<std::vector<double> > f0t = std::vector<std::vector<double> >(nx, std::vector<double>(ny, t0));
+    std::vector<std::vector<double> > f1t = std::vector<std::vector<double> >(nx, std::vector<double>(ny, t1));
+    std::vector<std::vector<double> > f2t = std::vector<std::vector<double> >(nx, std::vector<double>(ny, t1));
+    std::vector<std::vector<double> > f3t = std::vector<std::vector<double> >(nx, std::vector<double>(ny, t1));
+    std::vector<std::vector<double> > f4t = std::vector<std::vector<double> >(nx, std::vector<double>(ny, t1));
+    std::vector<std::vector<double> > f5t = std::vector<std::vector<double> >(nx, std::vector<double>(ny, t2));
+    std::vector<std::vector<double> > f6t = std::vector<std::vector<double> >(nx, std::vector<double>(ny, t2));
+    std::vector<std::vector<double> > f7t = std::vector<std::vector<double> >(nx, std::vector<double>(ny, t2));
+    std::vector<std::vector<double> > f8t = std::vector<std::vector<double> >(nx, std::vector<double>(ny, t2));
 
     std::vector<std::vector<double> > f0tp1 = std::vector<std::vector<double> >(nx, std::vector<double>(ny, 0.0));
     std::vector<std::vector<double> > f1tp1 = std::vector<std::vector<double> >(nx, std::vector<double>(ny, 0.0));
@@ -68,7 +68,7 @@ int main() {
     for (int j = ny/2 - 8; j <= ny/2 + 8; j++) {
         barrier0[ny/2][j] = true;
     }
-
+    
     for (int i = 1; i < nx - 1; i++) {
         for (int j = 1; j < ny - 1; j++) {
             barrier1[i][j] = barrier0[i - 1][j];
@@ -87,18 +87,40 @@ int main() {
     std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
 
     for (int t = 0; t < tmax; t++) {
+        //..........Boundary condition (inlet)..........
+        for (int j = 1; j < ny - 1; j++) {
+            f1t[0][j] = t1*(1.0 + 3.0*ux0 + 3.0*pow(ux0, 2.0));
+            f3t[0][j] = t1*(1.0 - 3.0*ux0 + 3.0*pow(ux0, 2.0));
+            f5t[0][j] = t2*(1.0 + 3.0*ux0 + 3.0*pow(ux0, 2.0));
+            f6t[0][j] = t2*(1.0 - 3.0*ux0 + 3.0*pow(ux0, 2.0));
+            f7t[0][j] = t2*(1.0 - 3.0*ux0 + 3.0*pow(ux0, 2.0));
+            f8t[0][j] = t2*(1.0 + 3.0*ux0 + 3.0*pow(ux0, 2.0));
+        }
+
+
+        //..........Boundary condition (outlet)..........
+        for (int j = 0; j < ny; j++) {
+            f1t[nx - 1][j] = f1t[nx - 2][j];
+            f3t[nx - 1][j] = f3t[nx - 2][j];
+            f5t[nx - 1][j] = f5t[nx - 2][j];
+            f6t[nx - 1][j] = f6t[nx - 2][j];
+            f7t[nx - 1][j] = f7t[nx - 2][j];
+            f8t[nx - 1][j] = f8t[nx - 2][j];
+        }
+
+
         //..........Stream..........
         for (int i = 0; i < nx; i++) {
             for (int j = 0; j < ny; j++) {
                 f0tp1[i][j] = f0t[i][j];
-                f1tp1[i][j] = (i == 0) ? f1t[nx - 1][j] : f1t[i - 1][j];
-                f2tp1[i][j] = (j == 0) ? f2t[i][ny - 1] :f2t[i][j - 1];
-                f3tp1[i][j] = (i == nx - 1) ? f3t[0][j] : f3t[i + 1][j];
-                f4tp1[i][j] = (j == ny - 1) ? f4t[i][0] : f4t[i][j + 1];
-                f5tp1[i][j] = (i == 0 || j == 0) ? f5t[nx - 1][ny - 1] : f5t[i - 1][j - 1];
-                f6tp1[i][j] = (i == nx - 1 || j == 0) ? f6t[0][ny - 1] : f6t[i + 1][j - 1];
-                f7tp1[i][j] = (i == nx - 1 || j == ny - 1) ? f7t[0][0] : f7t[i + 1][j + 1];
-                f8tp1[i][j] = (i == 0 || j == ny - 1) ? f8t[nx - 1][0] : f8t[i - 1][j + 1];
+                f1tp1[i][j] = (i == 0) ? f1t[i][j] : f1t[i - 1][j];
+                f2tp1[i][j] = (j == 0) ? f2t[i][j] :f2t[i][j - 1];
+                f3tp1[i][j] = (i == nx - 1) ? f3t[i][j] : f3t[i + 1][j];
+                f4tp1[i][j] = (j == ny - 1) ? f4t[i][j] : f4t[i][j + 1];
+                f5tp1[i][j] = (i == 0 || j == 0) ? f5t[i][j] : f5t[i - 1][j - 1];
+                f6tp1[i][j] = (i == nx - 1 || j == 0) ? f6t[i][j] : f6t[i + 1][j - 1];
+                f7tp1[i][j] = (i == nx - 1 || j == ny - 1) ? f7t[i][j] : f7t[i + 1][j + 1];
+                f8tp1[i][j] = (i == 0 || j == ny - 1) ? f8t[i][j] : f8t[i - 1][j + 1];
             }
         }
 
@@ -134,6 +156,18 @@ int main() {
         }
 
 
+        //..........Boundary condition (Mirror-wall-x)..........
+        for (int i = 0; i < nx; i++) {
+            f2tp1[i][0] = f4t[i][0];
+            f5tp1[i][0] = f8t[i][0];
+            f6tp1[i][0] = f7t[i][0];
+
+            f4tp1[i][ny - 1] = f2t[i][ny - 1];
+            f8tp1[i][ny - 1] = f5t[i][ny - 1];
+            f7tp1[i][ny - 1] = f6t[i][ny - 1];
+        }
+
+
         //..........Update macroscopic values..........
         for (int i = 0; i < nx; i++) {
             for (int j = 0; j < ny; j++) {
@@ -163,6 +197,14 @@ int main() {
             }
 
             fout << "POINT_DATA\t" << nx*ny << std::endl;
+            fout << "SCALARS\trho\tfloat" << std::endl;
+            fout << "LOOKUP_TABLE\tdefault" << std::endl;
+            for (int j = 0; j < ny; j++) {
+                for (int i = 0; i < nx; i++) {
+                    fout << rho[i][j] << std::endl;
+                }
+            }
+
             fout << "SCALARS\tcurl\tfloat" << std::endl;
             fout << "LOOKUP_TABLE\tdefault" << std::endl;
             for (int j = 0; j < ny; j++) {
@@ -172,6 +214,13 @@ int main() {
                     } else {
                         fout << uy[i + 1][j] - uy[i - 1][j] - ux[i][j + 1] + ux[i][j - 1] << std::endl;
                     }
+                }
+            }
+
+            fout << "VECTORS\tvelocity\tfloat" << std::endl;
+            for (int j = 0; j < ny; j++) {
+                for (int i = 0; i < nx; i++) {
+                    fout << ux[i][j] << "\t" << uy[i][j] << "\t" << 0.0 << std::endl;
                 }
             }
         }
@@ -196,17 +245,6 @@ int main() {
                 f7t[i][j] = (1.0 - omega)*f7tp1[i][j] + omega*t2*rho[i][j]*(omu215 - 3.0*(ux[i][j] + uy[i][j]) + 4.5*(u2 + 2.0*uxuy));
                 f8t[i][j] = (1.0 - omega)*f8tp1[i][j] + omega*t2*rho[i][j]*(omu215 + 3.0*(ux[i][j] - uy[i][j]) + 4.5*(u2 - 2.0*uxuy));
             }
-        }
-
-
-        //..........Boundary condition (inlet)..........
-        for (int j = 0; j < ny; j++) {
-            f1t[0][j] = t1*(1.0 + 3.0*ux0 + 3.0*pow(ux0, 2.0));
-            f3t[0][j] = t1*(1.0 - 3.0*ux0 + 3.0*pow(ux0, 2.0));
-            f5t[0][j] = t2*(1.0 + 3.0*ux0 + 3.0*pow(ux0, 2.0));
-            f6t[0][j] = t2*(1.0 - 3.0*ux0 + 3.0*pow(ux0, 2.0));
-            f7t[0][j] = t2*(1.0 - 3.0*ux0 + 3.0*pow(ux0, 2.0));
-            f8t[0][j] = t2*(1.0 + 3.0*ux0 + 3.0*pow(ux0, 2.0));
         }
     }
 

@@ -27,6 +27,7 @@ int main() {
     solver.SetBarrier([=](int _i, int _j) {
         return _i == solver.ny/2 && abs(_j - solver.ny/2) <= 8;
     });
+    solver.SetBoundary(1, 2, 4, 4);
 
 
     //--------------------Loop for time step--------------------

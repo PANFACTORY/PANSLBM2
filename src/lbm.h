@@ -9,6 +9,7 @@
 #pragma once
 #include <cmath>
 #include <vector>
+#include <array>
 
 
 namespace PANSLBM2 {
@@ -20,6 +21,8 @@ public:
 
         template<class F>
         void SetBarrier(F _f);
+
+        void SetBoundary(int _btxmin, int _btxmax, int _btymin, int _btymax);
 
         void Inlet(T _u, T _v);
         void Stream();
@@ -66,6 +69,11 @@ private:
         std::vector<std::vector<bool> > barrier6;
         std::vector<std::vector<bool> > barrier7;
         std::vector<std::vector<bool> > barrier8;
+
+        std::vector<int> btxmin;    //  0 : periodic, 1 : inlet, 2 : outlet, 3 : barrier, 4 : mirror
+        std::vector<int> btxmax;
+        std::vector<int> btymin;
+        std::vector<int> btymax;
     };
 
 
@@ -111,6 +119,11 @@ private:
         this->barrier6 = std::vector<std::vector<bool> >(this->nx, std::vector<bool>(this->ny, false));
         this->barrier7 = std::vector<std::vector<bool> >(this->nx, std::vector<bool>(this->ny, false));
         this->barrier8 = std::vector<std::vector<bool> >(this->nx, std::vector<bool>(this->ny, false));
+
+        this->btxmin = std::vector<int>(this->ny, 0);
+        this->btxmax = std::vector<int>(this->ny, 0);
+        this->btymin = std::vector<int>(this->nx, 0);
+        this->btymax = std::vector<int>(this->nx, 0);
     }
 
 
@@ -146,6 +159,20 @@ private:
     }
 
 
+    template<class T>
+    void LBM<T>::SetBoundary(int _btxmin, int _btxmax, int _btymin, int _btymax) {
+        for (int j = 0; j < this->ny; j++) {
+            btxmin[j] = _btxmin;
+            btxmax[j] = _btxmax;
+        }
+
+        for (int i = 0; i < this->nx; i++) {
+            btymin[i] = _btymin;
+            btymax[i] = _btymax;
+        }
+    }
+
+
     //----------------------
     //要修正
     //----------------------
@@ -162,9 +189,6 @@ private:
     }
 
 
-    //----------------------
-    //要修正
-    //----------------------
     template<class T>
     void LBM<T>::Stream() {
         //----------Stream and periodic boundary----------
@@ -212,25 +236,69 @@ private:
             }
         }
 
-        //----------Outret----------
+        //----------boundary (Bouns-Back, Outlet and Mirror)----------
         for (int j = 0; j < this->ny; j++) {
-            this->f1tp1[this->nx - 1][j] = this->f1tp1[this->nx - 2][j];
-            this->f3tp1[this->nx - 1][j] = this->f3tp1[this->nx - 2][j];
-            this->f5tp1[this->nx - 1][j] = this->f5tp1[this->nx - 2][j];
-            this->f6tp1[this->nx - 1][j] = this->f6tp1[this->nx - 2][j];
-            this->f7tp1[this->nx - 1][j] = this->f7tp1[this->nx - 2][j];
-            this->f8tp1[this->nx - 1][j] = this->f8tp1[this->nx - 2][j];
+            //.....xmin.....
+            if (this->btxmin[j] == 2) {
+                this->f1tp1[0][j] = this->f1tp1[1][j];
+                this->f5tp1[0][j] = this->f5tp1[1][j];
+                this->f8tp1[0][j] = this->f8tp1[1][j];
+            } else if (this->btxmin[j] == 3) {
+                this->f1tp1[0][j] = this->f3t[0][j];
+                this->f5tp1[0][j] = this->f7t[0][j];
+                this->f8tp1[0][j] = this->f6t[0][j];
+            } else if (this->btxmin[j] == 4) {
+                this->f1tp1[0][j] = this->f3t[0][j];
+                this->f5tp1[0][j] = this->f6t[0][j];
+                this->f8tp1[0][j] = this->f7t[0][j];
+            }
+
+            //.....xmax.....
+            if (this->btxmax[j] == 2) {
+                this->f3tp1[this->nx - 1][j] = this->f3tp1[this->nx - 2][j];
+                this->f6tp1[this->nx - 1][j] = this->f6tp1[this->nx - 2][j];
+                this->f7tp1[this->nx - 1][j] = this->f7tp1[this->nx - 2][j];
+            } else if (this->btxmax[j] == 3) {
+                this->f3tp1[this->nx - 1][j] = this->f1tp1[this->nx - 1][j];
+                this->f6tp1[this->nx - 1][j] = this->f8tp1[this->nx - 1][j];
+                this->f7tp1[this->nx - 1][j] = this->f5tp1[this->nx - 1][j];
+            } else if (this->btxmax[j] == 4) {
+                this->f3tp1[this->nx - 1][j] = this->f1tp1[this->nx - 1][j];
+                this->f6tp1[this->nx - 1][j] = this->f5tp1[this->nx - 1][j];
+                this->f7tp1[this->nx - 1][j] = this->f8tp1[this->nx - 1][j];
+            }
         }
 
-        //----------Mirror----------
         for (int i = 0; i < this->nx; i++) {
-            this->f2tp1[i][0] = this->f4t[i][0];
-            this->f5tp1[i][0] = this->f8t[i][0];
-            this->f6tp1[i][0] = this->f7t[i][0];
+            //.....ymin.....
+            if (this->btymin[i] == 2) {
+                this->f2tp1[i][0] = this->f2tp1[i][1];
+                this->f5tp1[i][0] = this->f5tp1[i][1];
+                this->f6tp1[i][0] = this->f6tp1[i][1];
+            } else if (this->btymin[i] == 3) {
+                this->f2tp1[i][0] = this->f4t[i][0];
+                this->f5tp1[i][0] = this->f7t[i][0];
+                this->f6tp1[i][0] = this->f8t[i][0];
+            } else if (this->btymin[i] == 4) {
+                this->f2tp1[i][0] = this->f4t[i][0];
+                this->f5tp1[i][0] = this->f8t[i][0];
+                this->f6tp1[i][0] = this->f7t[i][0];
+            }
 
-            this->f4tp1[i][this->ny - 1] = this->f2t[i][this->ny - 1];
-            this->f8tp1[i][this->ny - 1] = this->f5t[i][this->ny - 1];
-            this->f7tp1[i][this->ny - 1] = this->f6t[i][this->ny - 1];
+            //.....ymax.....
+            if (this->btymax[i] == 2) {
+                this->f4tp1[i][this->ny - 1] = this->f4tp1[i][this->ny - 2];
+                this->f7tp1[i][this->ny - 1] = this->f7tp1[i][this->ny - 2];
+                this->f8tp1[i][this->ny - 1] = this->f8tp1[i][this->ny - 2];
+            } else if (this->btymax[i] == 3) {
+                this->f4tp1[i][this->ny - 1] = this->f2t[i][this->ny - 1];
+                this->f7tp1[i][this->ny - 1] = this->f5t[i][this->ny - 1];
+                this->f8tp1[i][this->ny - 1] = this->f6t[i][this->ny - 1];
+            } else if (this->btymax[i] == 4) {
+                this->f4tp1[i][this->ny - 1] = this->f2t[i][this->ny - 1];
+                this->f7tp1[i][this->ny - 1] = this->f6t[i][this->ny - 1];
+                this->f8tp1[i][this->ny - 1] = this->f5t[i][this->ny - 1];
+            }
         }
     }
 

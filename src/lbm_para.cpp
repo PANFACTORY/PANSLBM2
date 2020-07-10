@@ -68,11 +68,7 @@ int main() {
     for (int j = ny/2 - 8; j <= ny/2 + 8; j++) {
         barrier0[ny/2][j] = true;
     }
-    for (int i = 0; i < nx; i++) {
-        barrier0[i][0] = true;
-        barrier0[i][ny - 1] = true;
-    }
-
+    
     for (int i = 1; i < nx - 1; i++) {
         for (int j = 1; j < ny - 1; j++) {
             barrier1[i][j] = barrier0[i - 1][j];
@@ -92,7 +88,7 @@ int main() {
 
     for (int t = 0; t < tmax; t++) {
         //..........Boundary condition (inlet)..........
-        for (int j = 0; j < ny; j++) {
+        for (int j = 1; j < ny - 1; j++) {
             f1t[0][j] = t1*(1.0 + 3.0*ux0 + 3.0*pow(ux0, 2.0));
             f3t[0][j] = t1*(1.0 - 3.0*ux0 + 3.0*pow(ux0, 2.0));
             f5t[0][j] = t2*(1.0 + 3.0*ux0 + 3.0*pow(ux0, 2.0));
@@ -157,6 +153,18 @@ int main() {
                     f8tp1[i][j] = f6t[i][j];
                 }
             }
+        }
+
+
+        //..........Boundary condition (Mirror-wall-x)..........
+        for (int i = 0; i < nx; i++) {
+            f2tp1[i][0] = f4t[i][0];
+            f5tp1[i][0] = f8t[i][0];
+            f6tp1[i][0] = f7t[i][0];
+
+            f4tp1[i][ny - 1] = f2t[i][ny - 1];
+            f8tp1[i][ny - 1] = f5t[i][ny - 1];
+            f7tp1[i][ny - 1] = f6t[i][ny - 1];
         }
 
 

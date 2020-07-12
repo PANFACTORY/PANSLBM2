@@ -37,6 +37,11 @@ public:
 
         std::vector<std::vector<bool> > barrier0;
 
+        std::vector<int> btxmin;    //  0 : periodic, 1 : inlet, 2 : outlet, 3 : barrier, 4 : mirror
+        std::vector<int> btxmax;
+        std::vector<int> btymin;
+        std::vector<int> btymax;
+
 
 private:
         T dx, dt, omega, t0, t1, t2;
@@ -69,11 +74,6 @@ private:
         std::vector<std::vector<bool> > barrier6;
         std::vector<std::vector<bool> > barrier7;
         std::vector<std::vector<bool> > barrier8;
-
-        std::vector<int> btxmin;    //  0 : periodic, 1 : inlet, 2 : outlet, 3 : barrier, 4 : mirror
-        std::vector<int> btxmax;
-        std::vector<int> btymin;
-        std::vector<int> btymax;
     };
 
 

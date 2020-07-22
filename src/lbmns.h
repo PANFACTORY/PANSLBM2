@@ -15,7 +15,7 @@ namespace PANSLBM2 {
     class LBMNS : public LBMBASE<T> {
 public:
         LBMNS(int _nx, int _ny, T _viscosity);
-        ~LBMNS();
+        ~LBMNS() {};
 
         void Inlet(T _u, T _v);
         void UpdateMacro();
@@ -38,10 +38,6 @@ private:
         this->u = std::vector<std::vector<T> >(this->nx, std::vector<T>(this->ny, T()));
         this->v = std::vector<std::vector<T> >(this->nx, std::vector<T>(this->ny, T()));
     }
-
-
-    template<class T>
-    LBMNS<T>::~LBMNS() {}
 
 
     //----------------------

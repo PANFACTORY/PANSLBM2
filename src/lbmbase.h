@@ -17,7 +17,7 @@ namespace PANSLBM2 {
     class LBMBASE {
 public:
         LBMBASE(int _nx, int _ny);
-        ~LBMBASE();
+        ~LBMBASE() {};
 
         template<class F>
         void SetBarrier(F _f);
@@ -115,10 +115,6 @@ protected:
         this->btymin = std::vector<int>(this->nx, 0);
         this->btymax = std::vector<int>(this->nx, 0);
     }
-
-
-    template<class T>
-    LBMBASE<T>::~LBMBASE() {}
 
 
     template<class T>

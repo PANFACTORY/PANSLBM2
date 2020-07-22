@@ -9,10 +9,13 @@
 #pragma once
 #include <cmath>
 #include <vector>
-#include <array>
 
 
 namespace PANSLBM2 {
+    enum BOUNDARYTYPE {
+        PERIODIC, INLET, OUTLET, BARRIER, MIRROR,
+    };
+
     template<class T>
     class LBMBASE {
 public:
@@ -31,13 +34,7 @@ public:
         const int nx, ny;
 
         std::vector<std::vector<bool> > barrier0;
-        std::vector<int> btxmin, btxmax, btymin, btymax;
-
-        static const int PERIODIC = 0;  //  0   :   periodic
-        static const int INLET = 1;     //  1   :   inlet
-        static const int OUTLET = 2;    //  2   :   outlet
-        static const int BARRIER = 3;   //  3   :   barrier
-        static const int MIRROR = 4;    //  4   :   mirror
+        std::vector<BOUNDARYTYPE> btxmin, btxmax, btymin, btymax;
 
 protected:
         T dx, dt, t0, t1, t2;
@@ -86,10 +83,10 @@ protected:
         this->barrier7 = std::vector<std::vector<bool> >(this->nx, std::vector<bool>(this->ny, false));
         this->barrier8 = std::vector<std::vector<bool> >(this->nx, std::vector<bool>(this->ny, false));
 
-        this->btxmin = std::vector<int>(this->ny, 0);
-        this->btxmax = std::vector<int>(this->ny, 0);
-        this->btymin = std::vector<int>(this->nx, 0);
-        this->btymax = std::vector<int>(this->nx, 0);
+        this->btxmin = std::vector<BOUNDARYTYPE>(this->ny, PERIODIC);
+        this->btxmax = std::vector<BOUNDARYTYPE>(this->ny, PERIODIC);
+        this->btymin = std::vector<BOUNDARYTYPE>(this->nx, PERIODIC);
+        this->btymax = std::vector<BOUNDARYTYPE>(this->nx, PERIODIC);
     }
 
 

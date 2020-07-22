@@ -24,13 +24,13 @@ int main() {
     });
     solver.SetBoundary([=](int _i, int _j) {
         if (_i == 0) {
-            return LBMNS<double>::INLET;
+            return INLET;
         } else if (_i == solver.nx - 1) {
-            return LBMNS<double>::OUTLET;
+            return OUTLET;
         } else if (_j == 0 || _j == solver.ny - 1) {
-            return LBMNS<double>::MIRROR;
+            return MIRROR;
         } else {
-            return LBMNS<double>::PERIODIC;
+            return PERIODIC;
         }
     });
 

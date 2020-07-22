@@ -23,19 +23,17 @@ int main() {
     //--------------------Parameters--------------------
     int tmax = 10000;
     double ux0 = 0.1;
-    LBMNS<double> solver = LBMNS<double>(100, 100, 0.1);
-    /*solver.SetBarrier([=](int _i, int _j) {
+    LBMNS<double> solver = LBMNS<double>(200, 80, 0.02);
+    solver.SetBarrier([=](int _i, int _j) {
         return _i == solver.ny/2 && abs(_j - solver.ny/2) <= 8;
-    });*/
-    solver.SetBoundary(1, 3, 3, 3);
+    });
+    solver.SetBoundary(1, 2, 4, 4);
 
 
     //--------------------Loop for time step--------------------
     std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
 
     for (int t = 0; t < tmax; t++) {
-        solver.Stream();                //  Stream
-        solver.Inlet(0.0, 0.1);         //  Boundary condition (inlet)   
         solver.UpdateMacro();           //  Update macroscopic values
 
         //..........Export result..........
@@ -86,6 +84,8 @@ int main() {
         }
 
         solver.Collision();             //  Collision
+        solver.Stream();                //  Stream
+        solver.Inlet(0.1, 0.0);         //  Boundary condition (inlet)   
     }
 
     std::chrono::system_clock::time_point end = std::chrono::system_clock::now();

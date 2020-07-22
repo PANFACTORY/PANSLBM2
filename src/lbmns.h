@@ -46,15 +46,10 @@ private:
     template<class T>
     void LBMNS<T>::Inlet(T _u, T _v) {
         for (int j = 0; j < this->ny; j++) {
-            this->f0tp1[0][j] = this->t0*(1.0 - 1.5*pow(_u, 2.0) - 1.5*pow(_v, 2.0));
-            this->f1tp1[0][j] = this->t1*(1.0 + 3.0*_u + 3.0*pow(_u, 2.0) - 1.5*pow(_v, 2.0));
-            this->f2tp1[0][j] = this->t1*(1.0 + 3.0*_v - 1.5*pow(_u, 2.0) + 3.0*pow(_v, 2.0));
-            this->f3tp1[0][j] = this->t1*(1.0 - 3.0*_u + 3.0*pow(_u, 2.0) - 1.5*pow(_v, 2.0));
-            this->f4tp1[0][j] = this->t1*(1.0 - 3.0*_v - 1.5*pow(_u, 2.0) + 3.0*pow(_v, 2.0));
-            this->f5tp1[0][j] = this->t2*(1.0 + 3.0*_u + 3.0*_v + 3.0*pow(_u, 2.0) + 9.0*_u*_v + 3.0*pow(_v, 2.0));
-            this->f6tp1[0][j] = this->t2*(1.0 - 3.0*_u + 3.0*_v + 3.0*pow(_u, 2.0) - 9.0*_u*_v + 3.0*pow(_v, 2.0));
-            this->f7tp1[0][j] = this->t2*(1.0 - 3.0*_u - 3.0*_v + 3.0*pow(_u, 2.0) + 9.0*_u*_v + 3.0*pow(_v, 2.0));
-            this->f8tp1[0][j] = this->t2*(1.0 + 3.0*_u - 3.0*_v + 3.0*pow(_u, 2.0) - 9.0*_u*_v + 3.0*pow(_v, 2.0));
+            T rho0 = (this->f0t[0][j] + this->f2t[0][j] + this->f4t[0][j] + 2.0*(this->f3t[0][j] + this->f6t[0][j] + this->f7t[0][j]))/(1.0 - _u);
+            this->f1t[0][j] = this->f3t[0][j] + 2.0*rho0*_u/3.0;
+            this->f5t[0][j] = this->f7t[0][j] - 0.5*(this->f2t[0][j] - this->f4t[0][j]) + rho0*_u/6.0 + rho0*_v/2.0;
+            this->f8t[0][j] = this->f6t[0][j] + 0.5*(this->f2t[0][j] - this->f4t[0][j]) + rho0*_u/6.0 - rho0*_v/2.0;
         }
     }
 
@@ -63,9 +58,9 @@ private:
     void LBMNS<T>::UpdateMacro() {
         for (int i = 0; i < this->nx; i++) {
             for (int j = 0; j < this->ny; j++) {
-                this->rho[i][j] = this->f0tp1[i][j] + this->f1tp1[i][j] + this->f2tp1[i][j] + this->f3tp1[i][j] + this->f4tp1[i][j] + this->f5tp1[i][j] + this->f6tp1[i][j] + this->f7tp1[i][j] + this->f8tp1[i][j];
-                this->u[i][j] = (this->f1tp1[i][j] - this->f3tp1[i][j] + this->f5tp1[i][j] - this->f6tp1[i][j] - this->f7tp1[i][j] + this->f8tp1[i][j])/this->rho[i][j];
-                this->v[i][j] = (this->f2tp1[i][j] - this->f4tp1[i][j] + this->f5tp1[i][j] + this->f6tp1[i][j] - this->f7tp1[i][j] - this->f8tp1[i][j])/this->rho[i][j];
+                this->rho[i][j] = this->f0t[i][j] + this->f1t[i][j] + this->f2t[i][j] + this->f3t[i][j] + this->f4t[i][j] + this->f5t[i][j] + this->f6t[i][j] + this->f7t[i][j] + this->f8t[i][j];
+                this->u[i][j] = (this->f1t[i][j] - this->f3t[i][j] + this->f5t[i][j] - this->f6t[i][j] - this->f7t[i][j] + this->f8t[i][j])/this->rho[i][j];
+                this->v[i][j] = (this->f2t[i][j] - this->f4t[i][j] + this->f5t[i][j] + this->f6t[i][j] - this->f7t[i][j] - this->f8t[i][j])/this->rho[i][j];
             }
         }
     }
@@ -81,15 +76,15 @@ private:
                 T uv = this->u[i][j]*this->v[i][j];
                 T omu215 = 1.0 - 1.5*u2v2;
 
-                this->f0t[i][j] = (1.0 - this->omega)*this->f0tp1[i][j] + this->omega*this->t0*this->rho[i][j]*omu215;
-                this->f1t[i][j] = (1.0 - this->omega)*this->f1tp1[i][j] + this->omega*this->t1*this->rho[i][j]*(omu215 + 3.0*this->u[i][j] + 4.5*u2);
-                this->f2t[i][j] = (1.0 - this->omega)*this->f2tp1[i][j] + this->omega*this->t1*this->rho[i][j]*(omu215 + 3.0*this->v[i][j] + 4.5*v2);
-                this->f3t[i][j] = (1.0 - this->omega)*this->f3tp1[i][j] + this->omega*this->t1*this->rho[i][j]*(omu215 - 3.0*this->u[i][j] + 4.5*u2);
-                this->f4t[i][j] = (1.0 - this->omega)*this->f4tp1[i][j] + this->omega*this->t1*this->rho[i][j]*(omu215 - 3.0*this->v[i][j] + 4.5*v2);
-                this->f5t[i][j] = (1.0 - this->omega)*this->f5tp1[i][j] + this->omega*this->t2*this->rho[i][j]*(omu215 + 3.0*(this->u[i][j] + this->v[i][j]) + 4.5*(u2v2 + 2.0*uv));
-                this->f6t[i][j] = (1.0 - this->omega)*this->f6tp1[i][j] + this->omega*this->t2*this->rho[i][j]*(omu215 - 3.0*(this->u[i][j] - this->v[i][j]) + 4.5*(u2v2 - 2.0*uv));
-                this->f7t[i][j] = (1.0 - this->omega)*this->f7tp1[i][j] + this->omega*this->t2*this->rho[i][j]*(omu215 - 3.0*(this->u[i][j] + this->v[i][j]) + 4.5*(u2v2 + 2.0*uv));
-                this->f8t[i][j] = (1.0 - this->omega)*this->f8tp1[i][j] + this->omega*this->t2*this->rho[i][j]*(omu215 + 3.0*(this->u[i][j] - this->v[i][j]) + 4.5*(u2v2 - 2.0*uv));
+                this->f0tp1[i][j] = (1.0 - this->omega)*this->f0t[i][j] + this->omega*this->t0*this->rho[i][j]*omu215;
+                this->f1tp1[i][j] = (1.0 - this->omega)*this->f1t[i][j] + this->omega*this->t1*this->rho[i][j]*(omu215 + 3.0*this->u[i][j] + 4.5*u2);
+                this->f2tp1[i][j] = (1.0 - this->omega)*this->f2t[i][j] + this->omega*this->t1*this->rho[i][j]*(omu215 + 3.0*this->v[i][j] + 4.5*v2);
+                this->f3tp1[i][j] = (1.0 - this->omega)*this->f3t[i][j] + this->omega*this->t1*this->rho[i][j]*(omu215 - 3.0*this->u[i][j] + 4.5*u2);
+                this->f4tp1[i][j] = (1.0 - this->omega)*this->f4t[i][j] + this->omega*this->t1*this->rho[i][j]*(omu215 - 3.0*this->v[i][j] + 4.5*v2);
+                this->f5tp1[i][j] = (1.0 - this->omega)*this->f5t[i][j] + this->omega*this->t2*this->rho[i][j]*(omu215 + 3.0*(this->u[i][j] + this->v[i][j]) + 4.5*(u2v2 + 2.0*uv));
+                this->f6tp1[i][j] = (1.0 - this->omega)*this->f6t[i][j] + this->omega*this->t2*this->rho[i][j]*(omu215 - 3.0*(this->u[i][j] - this->v[i][j]) + 4.5*(u2v2 - 2.0*uv));
+                this->f7tp1[i][j] = (1.0 - this->omega)*this->f7t[i][j] + this->omega*this->t2*this->rho[i][j]*(omu215 - 3.0*(this->u[i][j] + this->v[i][j]) + 4.5*(u2v2 + 2.0*uv));
+                this->f8tp1[i][j] = (1.0 - this->omega)*this->f8t[i][j] + this->omega*this->t2*this->rho[i][j]*(omu215 + 3.0*(this->u[i][j] - this->v[i][j]) + 4.5*(u2v2 - 2.0*uv));
             }
         }
     }

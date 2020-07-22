@@ -164,15 +164,15 @@ protected:
         //----------Stream and periodic boundary----------
         for (int i = 0; i < this->nx; i++) {
             for (int j = 0; j < this->ny; j++) {
-                this->f0tp1[i][j] = this->f0t[i][j];
-                this->f1tp1[i][j] = (i == 0) ? this->f1t[this->nx - 1][j] : this->f1t[i - 1][j];
-                this->f2tp1[i][j] = (j == 0) ? this->f2t[i][this->ny - 1] : this->f2t[i][j - 1];
-                this->f3tp1[i][j] = (i == this->nx - 1) ? this->f3t[0][j] : this->f3t[i + 1][j];
-                this->f4tp1[i][j] = (j == this->ny - 1) ? this->f4t[i][0] : this->f4t[i][j + 1];
-                this->f5tp1[i][j] = (i == 0) ? ((j == 0) ? this->f5t[this->nx - 1][this->ny - 1] : this->f5t[this->nx - 1][j - 1]) : ((j == 0) ? this->f5t[i - 1][this->ny - 1] : this->f5t[i - 1][j - 1]);
-                this->f6tp1[i][j] = (i == this->nx - 1) ? ((j == 0) ? this->f6t[0][this->ny - 1] : this->f6t[0][j - 1]) : ((j == 0) ? this->f6t[i + 1][this->ny - 1] : this->f6t[i + 1][j - 1]);
-                this->f7tp1[i][j] = (i == this->nx - 1) ? ((j == this->ny - 1) ? this->f7t[0][0] : this->f7t[0][j + 1]) : ((j == this->ny - 1) ? this->f7t[i + 1][0] : this->f7t[i + 1][j + 1]);
-                this->f8tp1[i][j] = (i == 0) ? ((j == this->ny - 1) ? this->f8t[this->nx - 1][0] : this->f8t[this->nx - 1][j + 1]) : ((j == this->ny - 1) ? this->f8t[i - 1][0] : this->f8t[i - 1][j + 1]);
+                this->f0t[i][j] = this->f0tp1[i][j];
+                this->f1t[i][j] = (i == 0) ? this->f1tp1[this->nx - 1][j] : this->f1tp1[i - 1][j];
+                this->f2t[i][j] = (j == 0) ? this->f2tp1[i][this->ny - 1] : this->f2tp1[i][j - 1];
+                this->f3t[i][j] = (i == this->nx - 1) ? this->f3tp1[0][j] : this->f3tp1[i + 1][j];
+                this->f4t[i][j] = (j == this->ny - 1) ? this->f4tp1[i][0] : this->f4tp1[i][j + 1];
+                this->f5t[i][j] = (i == 0) ? ((j == 0) ? this->f5tp1[this->nx - 1][this->ny - 1] : this->f5tp1[this->nx - 1][j - 1]) : ((j == 0) ? this->f5tp1[i - 1][this->ny - 1] : this->f5tp1[i - 1][j - 1]);
+                this->f6t[i][j] = (i == this->nx - 1) ? ((j == 0) ? this->f6tp1[0][this->ny - 1] : this->f6tp1[0][j - 1]) : ((j == 0) ? this->f6tp1[i + 1][this->ny - 1] : this->f6tp1[i + 1][j - 1]);
+                this->f7t[i][j] = (i == this->nx - 1) ? ((j == this->ny - 1) ? this->f7tp1[0][0] : this->f7tp1[0][j + 1]) : ((j == this->ny - 1) ? this->f7tp1[i + 1][0] : this->f7tp1[i + 1][j + 1]);
+                this->f8t[i][j] = (i == 0) ? ((j == this->ny - 1) ? this->f8tp1[this->nx - 1][0] : this->f8tp1[this->nx - 1][j + 1]) : ((j == this->ny - 1) ? this->f8tp1[i - 1][0] : this->f8tp1[i - 1][j + 1]);
             }
         }
 
@@ -180,28 +180,28 @@ protected:
         for (int i = 0; i < this->nx; i++) {
             for (int j = 0; j < this->ny; j++) {
                 if (this->barrier1[i][j]) {
-                    this->f1tp1[i][j] = this->f3t[i][j];
+                    this->f1t[i][j] = this->f3tp1[i][j];
                 }
                 if (this->barrier2[i][j]) {
-                    this->f2tp1[i][j] = this->f4t[i][j];
+                    this->f2t[i][j] = this->f4tp1[i][j];
                 }
                 if (this->barrier3[i][j]) {
-                    this->f3tp1[i][j] = this->f1t[i][j];
+                    this->f3t[i][j] = this->f1tp1[i][j];
                 }
                 if (this->barrier4[i][j]) {
-                    this->f4tp1[i][j] = this->f2t[i][j];
+                    this->f4t[i][j] = this->f2tp1[i][j];
                 }
                 if (this->barrier5[i][j]) {
-                    this->f5tp1[i][j] = this->f7t[i][j];
+                    this->f5t[i][j] = this->f7tp1[i][j];
                 }
                 if (this->barrier6[i][j]) {
-                    this->f6tp1[i][j] = this->f8t[i][j];
+                    this->f6t[i][j] = this->f8tp1[i][j];
                 }
                 if (this->barrier7[i][j]) {
-                    this->f7tp1[i][j] = this->f5t[i][j];
+                    this->f7t[i][j] = this->f5tp1[i][j];
                 }
                 if (this->barrier8[i][j]) {
-                    this->f8tp1[i][j] = this->f6t[i][j];
+                    this->f8t[i][j] = this->f6tp1[i][j];
                 }
             }
         }
@@ -210,64 +210,64 @@ protected:
         for (int j = 0; j < this->ny; j++) {
             //.....xmin.....
             if (this->btxmin[j] == 2) {
-                this->f1tp1[0][j] = this->f1tp1[1][j];
-                this->f5tp1[0][j] = this->f5tp1[1][j];
-                this->f8tp1[0][j] = this->f8tp1[1][j];
+                this->f1t[0][j] = this->f1t[1][j];
+                this->f5t[0][j] = this->f5t[1][j];
+                this->f8t[0][j] = this->f8t[1][j];
             } else if (this->btxmin[j] == 3) {
-                this->f1tp1[0][j] = this->f3t[0][j];
-                this->f5tp1[0][j] = this->f7t[0][j];
-                this->f8tp1[0][j] = this->f6t[0][j];
+                this->f1t[0][j] = this->f3tp1[0][j];
+                this->f5t[0][j] = this->f7tp1[0][j];
+                this->f8t[0][j] = this->f6tp1[0][j];
             } else if (this->btxmin[j] == 4) {
-                this->f1tp1[0][j] = this->f3t[0][j];
-                this->f5tp1[0][j] = this->f6t[0][j];
-                this->f8tp1[0][j] = this->f7t[0][j];
+                this->f1t[0][j] = this->f3tp1[0][j];
+                this->f5t[0][j] = this->f6tp1[0][j];
+                this->f8t[0][j] = this->f7tp1[0][j];
             }
 
             //.....xmax.....
             if (this->btxmax[j] == 2) {
-                this->f3tp1[this->nx - 1][j] = this->f3tp1[this->nx - 2][j];
-                this->f6tp1[this->nx - 1][j] = this->f6tp1[this->nx - 2][j];
-                this->f7tp1[this->nx - 1][j] = this->f7tp1[this->nx - 2][j];
+                this->f3t[this->nx - 1][j] = this->f3t[this->nx - 2][j];
+                this->f6t[this->nx - 1][j] = this->f6t[this->nx - 2][j];
+                this->f7t[this->nx - 1][j] = this->f7t[this->nx - 2][j];
             } else if (this->btxmax[j] == 3) {
-                this->f3tp1[this->nx - 1][j] = this->f1tp1[this->nx - 1][j];
-                this->f6tp1[this->nx - 1][j] = this->f8tp1[this->nx - 1][j];
-                this->f7tp1[this->nx - 1][j] = this->f5tp1[this->nx - 1][j];
+                this->f3t[this->nx - 1][j] = this->f1tp1[this->nx - 1][j];
+                this->f6t[this->nx - 1][j] = this->f8tp1[this->nx - 1][j];
+                this->f7t[this->nx - 1][j] = this->f5tp1[this->nx - 1][j];
             } else if (this->btxmax[j] == 4) {
-                this->f3tp1[this->nx - 1][j] = this->f1tp1[this->nx - 1][j];
-                this->f6tp1[this->nx - 1][j] = this->f5tp1[this->nx - 1][j];
-                this->f7tp1[this->nx - 1][j] = this->f8tp1[this->nx - 1][j];
+                this->f3t[this->nx - 1][j] = this->f1tp1[this->nx - 1][j];
+                this->f6t[this->nx - 1][j] = this->f5tp1[this->nx - 1][j];
+                this->f7t[this->nx - 1][j] = this->f8tp1[this->nx - 1][j];
             }
         }
 
         for (int i = 0; i < this->nx; i++) {
             //.....ymin.....
             if (this->btymin[i] == 2) {
-                this->f2tp1[i][0] = this->f2tp1[i][1];
-                this->f5tp1[i][0] = this->f5tp1[i][1];
-                this->f6tp1[i][0] = this->f6tp1[i][1];
+                this->f2t[i][0] = this->f2t[i][1];
+                this->f5t[i][0] = this->f5t[i][1];
+                this->f6t[i][0] = this->f6t[i][1];
             } else if (this->btymin[i] == 3) {
-                this->f2tp1[i][0] = this->f4t[i][0];
-                this->f5tp1[i][0] = this->f7t[i][0];
-                this->f6tp1[i][0] = this->f8t[i][0];
+                this->f2t[i][0] = this->f4tp1[i][0];
+                this->f5t[i][0] = this->f7tp1[i][0];
+                this->f6t[i][0] = this->f8tp1[i][0];
             } else if (this->btymin[i] == 4) {
-                this->f2tp1[i][0] = this->f4t[i][0];
-                this->f5tp1[i][0] = this->f8t[i][0];
-                this->f6tp1[i][0] = this->f7t[i][0];
+                this->f2t[i][0] = this->f4tp1[i][0];
+                this->f5t[i][0] = this->f8tp1[i][0];
+                this->f6t[i][0] = this->f7tp1[i][0];
             }
 
             //.....ymax.....
             if (this->btymax[i] == 2) {
-                this->f4tp1[i][this->ny - 1] = this->f4tp1[i][this->ny - 2];
-                this->f7tp1[i][this->ny - 1] = this->f7tp1[i][this->ny - 2];
-                this->f8tp1[i][this->ny - 1] = this->f8tp1[i][this->ny - 2];
+                this->f4t[i][this->ny - 1] = this->f4t[i][this->ny - 2];
+                this->f7t[i][this->ny - 1] = this->f7t[i][this->ny - 2];
+                this->f8t[i][this->ny - 1] = this->f8t[i][this->ny - 2];
             } else if (this->btymax[i] == 3) {
-                this->f4tp1[i][this->ny - 1] = this->f2t[i][this->ny - 1];
-                this->f7tp1[i][this->ny - 1] = this->f5t[i][this->ny - 1];
-                this->f8tp1[i][this->ny - 1] = this->f6t[i][this->ny - 1];
+                this->f4t[i][this->ny - 1] = this->f2tp1[i][this->ny - 1];
+                this->f7t[i][this->ny - 1] = this->f5tp1[i][this->ny - 1];
+                this->f8t[i][this->ny - 1] = this->f6tp1[i][this->ny - 1];
             } else if (this->btymax[i] == 4) {
-                this->f4tp1[i][this->ny - 1] = this->f2t[i][this->ny - 1];
-                this->f7tp1[i][this->ny - 1] = this->f6t[i][this->ny - 1];
-                this->f8tp1[i][this->ny - 1] = this->f5t[i][this->ny - 1];
+                this->f4t[i][this->ny - 1] = this->f2tp1[i][this->ny - 1];
+                this->f7t[i][this->ny - 1] = this->f6tp1[i][this->ny - 1];
+                this->f8t[i][this->ny - 1] = this->f5tp1[i][this->ny - 1];
             }
         }
     }

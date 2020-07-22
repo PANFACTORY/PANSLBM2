@@ -21,9 +21,7 @@ public:
         void UpdateMacro();
         void Collision();
 
-        std::vector<std::vector<T> > rho;
-        std::vector<std::vector<T> > u;
-        std::vector<std::vector<T> > v;
+        std::vector<std::vector<T> > rho, u, v;
 
 private:
         T omega;

@@ -21,8 +21,8 @@ public:
 
         template<class F>
         void SetBarrier(F _f);
-
-        void SetBoundary(int _btxmin, int _btxmax, int _btymin, int _btymax);
+        template<class F>
+        void SetBoundary(F _f);
 
         void Stream();
         virtual void UpdateMacro() = 0;
@@ -31,44 +31,20 @@ public:
         const int nx, ny;
 
         std::vector<std::vector<bool> > barrier0;
+        std::vector<int> btxmin, btxmax, btymin, btymax;
 
-        std::vector<int> btxmin;    //  0 : periodic, 1 : inlet, 2 : outlet, 3 : barrier, 4 : mirror
-        std::vector<int> btxmax;
-        std::vector<int> btymin;
-        std::vector<int> btymax;
-
+        static const int PERIODIC = 0;  //  0   :   periodic
+        static const int INLET = 1;     //  1   :   inlet
+        static const int OUTLET = 2;    //  2   :   outlet
+        static const int BARRIER = 3;   //  3   :   barrier
+        static const int MIRROR = 4;    //  4   :   mirror
 
 protected:
         T dx, dt, t0, t1, t2;
 
-        std::vector<std::vector<T> > f0t;
-        std::vector<std::vector<T> > f1t;
-        std::vector<std::vector<T> > f2t;
-        std::vector<std::vector<T> > f3t;
-        std::vector<std::vector<T> > f4t;
-        std::vector<std::vector<T> > f5t;
-        std::vector<std::vector<T> > f6t;
-        std::vector<std::vector<T> > f7t;
-        std::vector<std::vector<T> > f8t;
-
-        std::vector<std::vector<T> > f0tp1;
-        std::vector<std::vector<T> > f1tp1;
-        std::vector<std::vector<T> > f2tp1;
-        std::vector<std::vector<T> > f3tp1;
-        std::vector<std::vector<T> > f4tp1;
-        std::vector<std::vector<T> > f5tp1;
-        std::vector<std::vector<T> > f6tp1;
-        std::vector<std::vector<T> > f7tp1;
-        std::vector<std::vector<T> > f8tp1;
-
-        std::vector<std::vector<bool> > barrier1;
-        std::vector<std::vector<bool> > barrier2;
-        std::vector<std::vector<bool> > barrier3;
-        std::vector<std::vector<bool> > barrier4;
-        std::vector<std::vector<bool> > barrier5;
-        std::vector<std::vector<bool> > barrier6;
-        std::vector<std::vector<bool> > barrier7;
-        std::vector<std::vector<bool> > barrier8;
+        std::vector<std::vector<T> > f0t, f1t, f2t, f3t, f4t, f5t, f6t, f7t, f8t;
+        std::vector<std::vector<T> > f0tp1, f1tp1, f2tp1, f3tp1, f4tp1, f5tp1, f6tp1, f7tp1, f8tp1;
+        std::vector<std::vector<bool> > barrier1, barrier2, barrier3, barrier4, barrier5, barrier6, barrier7, barrier8;
     };
 
 
@@ -146,15 +122,18 @@ protected:
 
 
     template<class T>
-    void LBMBASE<T>::SetBoundary(int _btxmin, int _btxmax, int _btymin, int _btymax) {
+    template<class F>
+    void LBMBASE<T>::SetBoundary(F _f) {
+        //----------Set x boundary----------
         for (int j = 0; j < this->ny; j++) {
-            btxmin[j] = _btxmin;
-            btxmax[j] = _btxmax;
+            btxmin[j] = _f(0, j);
+            btxmax[j] = _f(this->nx - 1, j);
         }
 
+        //----------Set y boundary----------
         for (int i = 0; i < this->nx; i++) {
-            btymin[i] = _btymin;
-            btymax[i] = _btymax;
+            btymin[i] = _f(i, 0);
+            btymax[i] = _f(i, this->ny - 1);
         }
     }
 
@@ -209,30 +188,30 @@ protected:
         //----------boundary (Bouns-Back, Outlet and Mirror)----------
         for (int j = 0; j < this->ny; j++) {
             //.....xmin.....
-            if (this->btxmin[j] == 2) {
+            if (this->btxmin[j] == OUTLET) {
                 this->f1t[0][j] = this->f1t[1][j];
                 this->f5t[0][j] = this->f5t[1][j];
                 this->f8t[0][j] = this->f8t[1][j];
-            } else if (this->btxmin[j] == 3) {
+            } else if (this->btxmin[j] == BARRIER) {
                 this->f1t[0][j] = this->f3tp1[0][j];
                 this->f5t[0][j] = this->f7tp1[0][j];
                 this->f8t[0][j] = this->f6tp1[0][j];
-            } else if (this->btxmin[j] == 4) {
+            } else if (this->btxmin[j] == MIRROR) {
                 this->f1t[0][j] = this->f3tp1[0][j];
                 this->f5t[0][j] = this->f6tp1[0][j];
                 this->f8t[0][j] = this->f7tp1[0][j];
             }
 
             //.....xmax.....
-            if (this->btxmax[j] == 2) {
+            if (this->btxmax[j] == OUTLET) {
                 this->f3t[this->nx - 1][j] = this->f3t[this->nx - 2][j];
                 this->f6t[this->nx - 1][j] = this->f6t[this->nx - 2][j];
                 this->f7t[this->nx - 1][j] = this->f7t[this->nx - 2][j];
-            } else if (this->btxmax[j] == 3) {
+            } else if (this->btxmax[j] == BARRIER) {
                 this->f3t[this->nx - 1][j] = this->f1tp1[this->nx - 1][j];
                 this->f6t[this->nx - 1][j] = this->f8tp1[this->nx - 1][j];
                 this->f7t[this->nx - 1][j] = this->f5tp1[this->nx - 1][j];
-            } else if (this->btxmax[j] == 4) {
+            } else if (this->btxmax[j] == MIRROR) {
                 this->f3t[this->nx - 1][j] = this->f1tp1[this->nx - 1][j];
                 this->f6t[this->nx - 1][j] = this->f5tp1[this->nx - 1][j];
                 this->f7t[this->nx - 1][j] = this->f8tp1[this->nx - 1][j];
@@ -241,30 +220,30 @@ protected:
 
         for (int i = 0; i < this->nx; i++) {
             //.....ymin.....
-            if (this->btymin[i] == 2) {
+            if (this->btymin[i] == OUTLET) {
                 this->f2t[i][0] = this->f2t[i][1];
                 this->f5t[i][0] = this->f5t[i][1];
                 this->f6t[i][0] = this->f6t[i][1];
-            } else if (this->btymin[i] == 3) {
+            } else if (this->btymin[i] == BARRIER) {
                 this->f2t[i][0] = this->f4tp1[i][0];
                 this->f5t[i][0] = this->f7tp1[i][0];
                 this->f6t[i][0] = this->f8tp1[i][0];
-            } else if (this->btymin[i] == 4) {
+            } else if (this->btymin[i] == MIRROR) {
                 this->f2t[i][0] = this->f4tp1[i][0];
                 this->f5t[i][0] = this->f8tp1[i][0];
                 this->f6t[i][0] = this->f7tp1[i][0];
             }
 
             //.....ymax.....
-            if (this->btymax[i] == 2) {
+            if (this->btymax[i] == OUTLET) {
                 this->f4t[i][this->ny - 1] = this->f4t[i][this->ny - 2];
                 this->f7t[i][this->ny - 1] = this->f7t[i][this->ny - 2];
                 this->f8t[i][this->ny - 1] = this->f8t[i][this->ny - 2];
-            } else if (this->btymax[i] == 3) {
+            } else if (this->btymax[i] == BARRIER) {
                 this->f4t[i][this->ny - 1] = this->f2tp1[i][this->ny - 1];
                 this->f7t[i][this->ny - 1] = this->f5tp1[i][this->ny - 1];
                 this->f8t[i][this->ny - 1] = this->f6tp1[i][this->ny - 1];
-            } else if (this->btymax[i] == 4) {
+            } else if (this->btymax[i] == MIRROR) {
                 this->f4t[i][this->ny - 1] = this->f2tp1[i][this->ny - 1];
                 this->f7t[i][this->ny - 1] = this->f6tp1[i][this->ny - 1];
                 this->f8t[i][this->ny - 1] = this->f5tp1[i][this->ny - 1];

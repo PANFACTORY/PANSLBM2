@@ -23,7 +23,7 @@ public:
 
         std::vector<std::vector<T> > rho, u, v;
 
-private:
+protected:
         T omega;
     };
 

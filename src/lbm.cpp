@@ -11,16 +11,20 @@
 #include <cmath>
 #include <chrono>
 
-#include "lbmns.h"
+#include "lbmnsbrinkman.h"
 
 using namespace PANSLBM2;
 
 int main() {
     //--------------------Parameters--------------------
     int tmax = 10000;
-    LBMNS<double> solver = LBMNS<double>(200, 80, 0.02);
-    solver.SetBarrier([=](int _i, int _j) {
-        return _i == solver.ny/2 && abs(_j - solver.ny/2) <= 8;
+    LBMNSBRINKMAN<double> solver = LBMNSBRINKMAN<double>(200, 80, 0.02);
+    solver.SetPermeation([=](int _i, int _j) {
+        double ganma = 1.0;
+        if (_i == solver.ny/2 && abs(_j - solver.ny/2) <= 8) {
+            ganma = 0.0;
+        }
+        return 0.1*(1.0 - ganma)/(ganma + 0.1);
     });
     solver.SetBoundary([=](int _i, int _j) {
         if (_i == 0) {
@@ -79,6 +83,14 @@ int main() {
                 }
             }
 
+            fout << "SCALARS\ts\tfloat" << std::endl;
+            fout << "LOOKUP_TABLE\tdefault" << std::endl;
+            for (int j = 0; j < solver.ny; j++) {
+                for (int i = 0; i < solver.nx; i++) {
+                    fout << solver.permeation[i][j] << std::endl;
+                }
+            }
+
             fout << "VECTORS\tvelocity\tfloat" << std::endl;
             for (int j = 0; j < solver.ny; j++) {
                 for (int i = 0; i < solver.nx; i++) {
@@ -89,7 +101,8 @@ int main() {
 
         solver.Collision();             //  Collision
         solver.Stream();                //  Stream
-        solver.Inlet(0.1, 0.0);         //  Boundary condition (inlet)   
+        solver.Inlet(0.1, 0.0);         //  Boundary condition (inlet)
+        solver.ExternalForce();         //  External force by Brinkman model   
     }
 
     std::chrono::system_clock::time_point end = std::chrono::system_clock::now();

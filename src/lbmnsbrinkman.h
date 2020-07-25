@@ -57,11 +57,11 @@ public:
 
                 this->f1t[i][j] += dxt1alpha*tmpu;
                 this->f2t[i][j] += dxt1alpha*tmpv;
-                this->f3t[i][j] -= dxt1alpha*tmpu;
-                this->f4t[i][j] -= dxt1alpha*tmpv;
+                this->f3t[i][j] += dxt1alpha*(-tmpu);
+                this->f4t[i][j] += dxt1alpha*(-tmpv);
                 this->f5t[i][j] += dxt2alpha*(tmpu + tmpv);
-                this->f6t[i][j] -= dxt2alpha*(tmpu - tmpv);
-                this->f7t[i][j] -= dxt2alpha*(tmpu + tmpv);
+                this->f6t[i][j] += dxt2alpha*(-tmpu + tmpv);
+                this->f7t[i][j] += dxt2alpha*(-tmpu - tmpv);
                 this->f8t[i][j] += dxt2alpha*(tmpu - tmpv);
             }
         }

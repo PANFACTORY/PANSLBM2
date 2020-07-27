@@ -18,13 +18,16 @@ using namespace PANSLBM2;
 int main() {
     //--------------------Parameters--------------------
     int tmax = 10000;
-    LBMNSBRINKMAN<double> solver = LBMNSBRINKMAN<double>(200, 80, 0.02);
+    LBMNSBRINKMAN<double> solver = LBMNSBRINKMAN<double>(200, 80, 0.002);
+    /*solver.SetBarrier([=](int _i, int _j) {
+        return _i == solver.ny/2 && abs(_j - solver.ny/2) <= 8;
+    });*/
     solver.SetPermeation([=](int _i, int _j) {
         double ganma = 1.0;
         if (_i == solver.ny/2 && abs(_j - solver.ny/2) <= 8) {
             ganma = 0.0;
         }
-        return 0.1*(1.0 - ganma)/(ganma + 0.1);
+        return 1.0*(1.0 - ganma)/(ganma + 0.1);
     });
     solver.SetBoundary([=](int _i, int _j) {
         if (_i == 0) {
@@ -101,7 +104,7 @@ int main() {
 
         solver.Collision();             //  Collision
         solver.Stream();                //  Stream
-        solver.Inlet(0.1, 0.0);         //  Boundary condition (inlet)
+        solver.Inlet(0.01, 0.0);         //  Boundary condition (inlet)
         solver.ExternalForce();         //  External force by Brinkman model   
     }
 

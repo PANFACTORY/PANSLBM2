@@ -25,11 +25,14 @@ public:
         void SetBarrier(F _f);
         template<class F>
         void SetBoundary(F _f);
+        template<class F>
+        void SetPermeation(F _f);
 
         void Inlet(T _u, T _v);
         void Stream();
         void UpdateMacro();
         void Collision();
+        void ExternalForce();
 
         const int nx, ny;
 
@@ -39,7 +42,7 @@ public:
 
 protected:
         T dx, dt, omega, t0, t1, t2;
-        T* f0t, f1t, f2t, f3t, f4t, f5t, f6t, f7t, f8t, f0tp1, f1tp1, f2tp1, f3tp1, f4tp1, f5tp1, f6tp1, f7tp1, f8tp1;
+        T* f0t, f1t, f2t, f3t, f4t, f5t, f6t, f7t, f8t, f0tp1, f1tp1, f2tp1, f3tp1, f4tp1, f5tp1, f6tp1, f7tp1, f8tp1, permeation;
         bool* barrier1, barrier2, barrier3, barrier4, barrier5, barrier6, barrier7, barrier8;
     };
 
@@ -60,6 +63,8 @@ protected:
         this->f8t = new T[this->nx*this->ny];   this->f8tp1 = new T[this->nx*this->ny];     this->barrier8 = new bool[this->nx*this->ny];
 
         this->rho = new T[this->nx*this->ny];   this->u = new T[this->nx*this->ny];         this->v = new T[this->nx*this->ny];
+
+        this->permeation = new T[this->nx*this->ny];
 
         for (int i = 0; i < this->nx*this->ny; i++) {
             this->f0t[i] = t0;  this->f0tp1[i] = T();   this->barrier0[i] = false;
@@ -148,6 +153,17 @@ protected:
         for (int i = 0; i < this->nx; i++) {
             btymin[i] = _f(i, 0);
             btymax[i] = _f(i, this->ny - 1);
+        }
+    }
+
+
+    template<class T>
+    template<class F>
+    void LBM<T>::SetPermeation(F _f) {
+        for (int i = 0; i < this->nx; i++) {
+            for (int j = 0; j < this->ny; j++) {
+                this->permeation[i][j] = _f(i, j);
+            }
         }
     }
 
@@ -287,6 +303,28 @@ protected:
             this->f6tp1[i] = (1.0 - this->omega)*this->f6t[i] + this->omega*this->t2*this->rho[i]*(omu215 - 3.0*(this->u[i] - this->v[i]) + 4.5*(u2v2 - 2.0*uv));
             this->f7tp1[i] = (1.0 - this->omega)*this->f7t[i] + this->omega*this->t2*this->rho[i]*(omu215 - 3.0*(this->u[i] + this->v[i]) + 4.5*(u2v2 + 2.0*uv));
             this->f8tp1[i] = (1.0 - this->omega)*this->f8t[i] + this->omega*this->t2*this->rho[i]*(omu215 + 3.0*(this->u[i] - this->v[i]) + 4.5*(u2v2 - 2.0*uv));
+        }
+    }
+
+
+    template<class T>
+    void LBM<T>::ExternalForce() {
+        for (int i = 0; i < this->nx*this->ny; i++) {
+            T tmprho = this->f0t[i] + this->f1t[i] + this->f2t[i] + this->f3t[i] + this->f4t[i] + this->f5t[i] + this->f6t[i] + this->f7t[i] + this->f8t[i];
+            T tmpu = (this->f1t[i] - this->f3t[i] + this->f5t[i] - this->f6t[i] - this->f7t[i] + this->f8t[i])/tmprho;
+            T tmpv = (this->f2t[i] - this->f4t[i] + this->f5t[i] + this->f6t[i] - this->f7t[i] - this->f8t[i])/tmprho;
+
+            T dxt1alpha = -3.0*this->dx*this->t1*this->permeation[i];
+            T dxt2alpha = -3.0*this->dx*this->t2*this->permeation[i];
+
+            this->f1t[i] += dxt1alpha*tmpu;
+            this->f2t[i] += dxt1alpha*tmpv;
+            this->f3t[i] += dxt1alpha*(-tmpu);
+            this->f4t[i] += dxt1alpha*(-tmpv);
+            this->f5t[i] += dxt2alpha*(tmpu + tmpv);
+            this->f6t[i] += dxt2alpha*(-tmpu + tmpv);
+            this->f7t[i] += dxt2alpha*(-tmpu - tmpv);
+            this->f8t[i] += dxt2alpha*(tmpu - tmpv);
         }
     }
 }

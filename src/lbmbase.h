@@ -1,5 +1,5 @@
 //*****************************************************************************
-//  Title       :   src/lbmbase.h
+//  Title       :   src/lbm.h
 //  Author      :   Tanabe Yuta
 //  Date        :   2020/07/12
 //  Copyright   :   (C)2020 TanabeYuta
@@ -16,35 +16,37 @@ namespace PANSLBM2 {
     };
 
     template<class T>
-    class LBMBASE {
+    class LBM {
 public:
-        LBMBASE(int _nx, int _ny);
-        ~LBMBASE();
+        LBM(int _nx, int _ny, T _viscosity);
+        ~LBM();
 
         template<class F>
         void SetBarrier(F _f);
         template<class F>
         void SetBoundary(F _f);
 
+        void Inlet(T _u, T _v);
         void Stream();
-        virtual void UpdateMacro() = 0;
-        virtual void Collision() = 0;
+        void UpdateMacro();
+        void Collision();
 
         const int nx, ny;
 
+        T* rho, u, v;
         bool* barrier0;
         BOUNDARYTYPE* btxmin, btxmax, btymin, btymax;
 
 protected:
-        T dx, dt, t0, t1, t2;
+        T dx, dt, omega, t0, t1, t2;
         T* f0t, f1t, f2t, f3t, f4t, f5t, f6t, f7t, f8t, f0tp1, f1tp1, f2tp1, f3tp1, f4tp1, f5tp1, f6tp1, f7tp1, f8tp1;
         bool* barrier1, barrier2, barrier3, barrier4, barrier5, barrier6, barrier7, barrier8;
     };
 
 
     template<class T>
-    LBMBASE<T>::LBMBASE(int _nx, int _ny) : nx(_nx), ny(_ny) {
-        this->dx = 1.0;     this->dt = 1.0;
+    LBM<T>::LBM(int _nx, int _ny, T _viscosity) : nx(_nx), ny(_ny) {
+        this->dx = 1.0;     this->dt = 1.0;     this->omega = 1.0/(3.0*_viscosity*this->dt/pow(this->dx, 2.0) + 0.5);
         this->t0 = 4.0/9.0; this->t1 = 1.0/9.0; this->t2 = 1.0/36.0;
 
         this->f0t = new T[this->nx*this->ny];   this->f0tp1 = new T[this->nx*this->ny];     this->barrier0 = new bool[this->nx*this->ny]; 
@@ -57,6 +59,8 @@ protected:
         this->f7t = new T[this->nx*this->ny];   this->f7tp1 = new T[this->nx*this->ny];     this->barrier7 = new bool[this->nx*this->ny];
         this->f8t = new T[this->nx*this->ny];   this->f8tp1 = new T[this->nx*this->ny];     this->barrier8 = new bool[this->nx*this->ny];
 
+        this->rho = new T[this->nx*this->ny];   this->u = new T[this->nx*this->ny];         this->v = new T[this->nx*this->ny];
+
         for (int i = 0; i < this->nx*this->ny; i++) {
             this->f0t[i] = t0;  this->f0tp1[i] = T();   this->barrier0[i] = false;
             this->f1t[i] = t1;  this->f1tp1[i] = T();   this->barrier1[i] = false;
@@ -67,6 +71,8 @@ protected:
             this->f6t[i] = t2;  this->f6tp1[i] = T();   this->barrier6[i] = false;
             this->f7t[i] = t2;  this->f7tp1[i] = T();   this->barrier7[i] = false;
             this->f8t[i] = t2;  this->f8tp1[i] = T();   this->barrier8[i] = false;
+
+            this->rho[i] = T(); this->u[i] = T();       this->v[i] = T();
         }
 
         this->btxmin = new BOUNDARYTYPE[this->ny];  this->btxmax = new BOUNDARYTYPE[this->ny];
@@ -83,7 +89,7 @@ protected:
 
 
     template<class T>
-    LBMBASE<T>::~LBMBASE() {
+    LBM<T>::~LBM() {
         delete[] this->f0t;     delete[] this->f0tp1;   delete[] this->barrier0;
         delete[] this->f1t;     delete[] this->f1tp1;   delete[] this->barrier1;
         delete[] this->f2t;     delete[] this->f2tp1;   delete[] this->barrier2;
@@ -94,6 +100,8 @@ protected:
         delete[] this->f7t;     delete[] this->f7tp1;   delete[] this->barrier7;
         delete[] this->f8t;     delete[] this->f8tp1;   delete[] this->barrier8;
 
+        delete[] this->rho;     delete[] this->u;       delete[] this->v;
+
         delete[] this->btxmin;  delete[] this->btxmax;
         delete[] this->btymin;  delete[] this->btymax;
     }
@@ -101,7 +109,7 @@ protected:
 
     template<class T>
     template<class F>
-    void LBMBASE<T>::SetBarrier(F _f) {
+    void LBM<T>::SetBarrier(F _f) {
         //----------Set barrier0----------
         for (int i = 0; i < this->nx; i++) {
             for (int j = 0; j < this->ny; j++) {
@@ -129,7 +137,7 @@ protected:
 
     template<class T>
     template<class F>
-    void LBMBASE<T>::SetBoundary(F _f) {
+    void LBM<T>::SetBoundary(F _f) {
         //----------Set x boundary----------
         for (int j = 0; j < this->ny; j++) {
             btxmin[j] = _f(0, j);
@@ -145,7 +153,18 @@ protected:
 
 
     template<class T>
-    void LBMBASE<T>::Stream() {
+    void LBM<T>::Inlet(T _u, T _v) {
+        for (int j = 0; j < this->ny; j++) {
+            T rho0 = (this->f0t[0][j] + this->f2t[0][j] + this->f4t[0][j] + 2.0*(this->f3t[0][j] + this->f6t[0][j] + this->f7t[0][j]))/(1.0 - _u);
+            this->f1t[0][j] = this->f3t[0][j] + 2.0*rho0*_u/3.0;
+            this->f5t[0][j] = this->f7t[0][j] - 0.5*(this->f2t[0][j] - this->f4t[0][j]) + rho0*_u/6.0 + rho0*_v/2.0;
+            this->f8t[0][j] = this->f6t[0][j] + 0.5*(this->f2t[0][j] - this->f4t[0][j]) + rho0*_u/6.0 - rho0*_v/2.0;
+        }
+    }
+
+
+    template<class T>
+    void LBM<T>::Stream() {
         //----------Stream and periodic boundary----------
         for (int i = 0; i < this->nx; i++) {
             for (int j = 0; j < this->ny; j++) {
@@ -236,6 +255,38 @@ protected:
                 this->f7t[i][this->ny - 1] = this->f6tp1[i][this->ny - 1];
                 this->f8t[i][this->ny - 1] = this->f5tp1[i][this->ny - 1];
             }
+        }
+    }
+
+
+    template<class T>
+    void LBM<T>::UpdateMacro() {
+        for (int i = 0; i < this->nx*this->ny; i++) {
+            this->rho[i] = this->f0t[i] + this->f1t[i] + this->f2t[i] + this->f3t[i] + this->f4t[i] + this->f5t[i] + this->f6t[i] + this->f7t[i] + this->f8t[i];
+            this->u[i] = (this->f1t[i] - this->f3t[i] + this->f5t[i] - this->f6t[i] - this->f7t[i] + this->f8t[i])/this->rho[i];
+            this->v[i] = (this->f2t[i] - this->f4t[i] + this->f5t[i] + this->f6t[i] - this->f7t[i] - this->f8t[i])/this->rho[i];
+        }
+    }
+
+
+    template<class T>
+    void LBM<T>::Collision() {
+        for (int i = 0; i < this->nx*this->ny; i++) {
+            T u2 = pow(this->u[i], 2.0);
+            T v2 = pow(this->v[i], 2.0);
+            T u2v2 = u2 + v2;
+            T uv = this->u[i]*this->v[i];
+            T omu215 = 1.0 - 1.5*u2v2;
+
+            this->f0tp1[i] = (1.0 - this->omega)*this->f0t[i] + this->omega*this->t0*this->rho[i]*omu215;
+            this->f1tp1[i] = (1.0 - this->omega)*this->f1t[i] + this->omega*this->t1*this->rho[i]*(omu215 + 3.0*this->u[i] + 4.5*u2);
+            this->f2tp1[i] = (1.0 - this->omega)*this->f2t[i] + this->omega*this->t1*this->rho[i]*(omu215 + 3.0*this->v[i] + 4.5*v2);
+            this->f3tp1[i] = (1.0 - this->omega)*this->f3t[i] + this->omega*this->t1*this->rho[i]*(omu215 - 3.0*this->u[i] + 4.5*u2);
+            this->f4tp1[i] = (1.0 - this->omega)*this->f4t[i] + this->omega*this->t1*this->rho[i]*(omu215 - 3.0*this->v[i] + 4.5*v2);
+            this->f5tp1[i] = (1.0 - this->omega)*this->f5t[i] + this->omega*this->t2*this->rho[i]*(omu215 + 3.0*(this->u[i] + this->v[i]) + 4.5*(u2v2 + 2.0*uv));
+            this->f6tp1[i] = (1.0 - this->omega)*this->f6t[i] + this->omega*this->t2*this->rho[i]*(omu215 - 3.0*(this->u[i] - this->v[i]) + 4.5*(u2v2 - 2.0*uv));
+            this->f7tp1[i] = (1.0 - this->omega)*this->f7t[i] + this->omega*this->t2*this->rho[i]*(omu215 - 3.0*(this->u[i] + this->v[i]) + 4.5*(u2v2 + 2.0*uv));
+            this->f8tp1[i] = (1.0 - this->omega)*this->f8t[i] + this->omega*this->t2*this->rho[i]*(omu215 + 3.0*(this->u[i] - this->v[i]) + 4.5*(u2v2 - 2.0*uv));
         }
     }
 }

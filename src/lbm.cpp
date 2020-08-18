@@ -17,30 +17,30 @@ using namespace PANSLBM2;
 
 int main() {
     //--------------------Parameters--------------------
-    int tmax = 10000;
-    LBM<double> solver = LBM<double>(200, 80, 0.02);
+    int tmax = 10000, nx = 200, ny = 80;
+    LBM<double> solver = LBM<double>(nx, ny, 0.02);
 
-    /*solver.SetBarrier([=](int _i, int _j) {
-        return _i == solver.ny/2 && abs(_j - solver.ny/2) <= 8;
-    });*/
-    solver.SetPermeation([=](int _i, int _j) {
+    solver.SetBarrier([=](int _i, int _j) {
+        return _i == ny/2 && abs(_j - ny/2) <= 8;
+    });
+    /*solver.SetPermeation([=](int _i, int _j) {
         double ganma = 1.0;
         if (abs(_i - solver.ny/2) <= 0 && abs(_j - solver.ny/2) <= 8) {
             ganma = 0.0;
         }
         return 0.1*(1.0 - ganma)/(ganma + 0.1);
-    });
-    /*solver.SetBoundary([=](int _i, int _j) {
+    });*/
+    solver.SetBoundary([=](int _i, int _j) {
         if (_i == 0) {
             return INLET;
-        } else if (_i == solver.nx - 1) {
+        } else if (_i == nx - 1) {
             return OUTLET;
-        } else if (_j == 0 || _j == solver.ny - 1) {
+        } else if (_j == 0 || _j == ny - 1) {
             return MIRROR;
         } else {
             return PERIODIC;
         }
-    });*/
+    });
 
     //--------------------Loop for time step--------------------
     std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
@@ -48,7 +48,7 @@ int main() {
         solver.UpdateMacro();           //  Update macroscopic values
 
         //..........Export result..........
-        if (t%100 == 0) {
+        /*if (t%100 == 0) {
             std::cout << t << std::endl;
 
             std::ofstream fout("result/result" + std::to_string(t/100) + ".vtk");
@@ -100,7 +100,7 @@ int main() {
                     fout << solver.GetU(i, j) << "\t" << solver.GetV(i, j) << "\t" << 0.0 << std::endl;
                 }
             }
-        }
+        }*/
 
         solver.Collision();             //  Collision
         solver.Stream();                //  Stream

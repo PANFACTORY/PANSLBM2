@@ -70,7 +70,7 @@ protected:
 
         this->rho = new T[this->nx*this->ny];   this->u = new T[this->nx*this->ny];         this->v = new T[this->nx*this->ny];
 
-        this->permeation = new T[this->nx*this->ny]();
+        this->permeation = new T[this->nx*this->ny];
 
         for (int i = 0; i < this->nx*this->ny; i++) {
             this->f0t[i] = t0;  this->f0tp1[i] = T();   this->barrier0[i] = false;

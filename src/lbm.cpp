@@ -19,6 +19,7 @@ int main() {
     //--------------------Parameters--------------------
     int tmax = 10000;
     LBM<double> solver = LBM<double>(200, 80, 0.02);
+
     /*solver.SetBarrier([=](int _i, int _j) {
         return _i == solver.ny/2 && abs(_j - solver.ny/2) <= 8;
     });*/
@@ -29,7 +30,7 @@ int main() {
         }
         return 0.1*(1.0 - ganma)/(ganma + 0.1);
     });
-    solver.SetBoundary([=](int _i, int _j) {
+    /*solver.SetBoundary([=](int _i, int _j) {
         if (_i == 0) {
             return INLET;
         } else if (_i == solver.nx - 1) {
@@ -39,11 +40,10 @@ int main() {
         } else {
             return PERIODIC;
         }
-    });
+    });*/
 
     //--------------------Loop for time step--------------------
     std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
-
     for (int t = 0; t < tmax; t++) {
         solver.UpdateMacro();           //  Update macroscopic values
 
@@ -70,7 +70,7 @@ int main() {
             fout << "LOOKUP_TABLE\tdefault" << std::endl;
             for (int j = 0; j < solver.ny; j++) {
                 for (int i = 0; i < solver.nx; i++) {
-                    fout << solver.rho[i][j] << std::endl;
+                    fout << solver.GetRho(i, j) << std::endl;
                 }
             }
 
@@ -81,7 +81,7 @@ int main() {
                     if (i == 0 || j == 0 || i == solver.nx - 1 || j == solver.ny - 1) {
                         fout << 0.0 << std::endl;
                     } else {
-                        fout << solver.v[i + 1][j] - solver.v[i - 1][j] - solver.u[i][j + 1] + solver.u[i][j - 1] << std::endl;
+                        fout << solver.GetV(i + 1, j) - solver.GetV(i - 1, j) - solver.GetU(i, j + 1) + solver.GetU(i, j - 1) << std::endl;
                     }
                 }
             }
@@ -90,14 +90,14 @@ int main() {
             fout << "LOOKUP_TABLE\tdefault" << std::endl;
             for (int j = 0; j < solver.ny; j++) {
                 for (int i = 0; i < solver.nx; i++) {
-                    fout << solver.permeation[i][j] << std::endl;
+                    fout << solver.GetPermeation(i, j) << std::endl;
                 }
             }
 
             fout << "VECTORS\tvelocity\tfloat" << std::endl;
             for (int j = 0; j < solver.ny; j++) {
                 for (int i = 0; i < solver.nx; i++) {
-                    fout << solver.u[i][j] << "\t" << solver.v[i][j] << "\t" << 0.0 << std::endl;
+                    fout << solver.GetU(i, j) << "\t" << solver.GetV(i, j) << "\t" << 0.0 << std::endl;
                 }
             }
         }

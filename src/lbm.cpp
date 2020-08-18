@@ -11,14 +11,14 @@
 #include <cmath>
 #include <chrono>
 
-#include "lbmnsbrinkman.h"
+#include "lbm.h"
 
 using namespace PANSLBM2;
 
 int main() {
     //--------------------Parameters--------------------
     int tmax = 10000;
-    LBMNSBRINKMAN<double> solver = LBMNSBRINKMAN<double>(200, 80, 0.02);
+    LBM<double> solver = LBM<double>(200, 80, 0.02);
     /*solver.SetBarrier([=](int _i, int _j) {
         return _i == solver.ny/2 && abs(_j - solver.ny/2) <= 8;
     });*/

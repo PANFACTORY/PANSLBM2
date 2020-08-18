@@ -8,6 +8,7 @@
 
 #pragma once
 #include <cmath>
+#include <cassert>
 
 
 namespace PANSLBM2 {
@@ -18,6 +19,7 @@ namespace PANSLBM2 {
     template<class T>
     class LBM {
 public:
+        LBM() = delete;
         LBM(int _nx, int _ny, T _viscosity);
         ~LBM();
 
@@ -34,21 +36,25 @@ public:
         void Collision();
         void ExternalForce();
 
-        const int nx, ny;
+        bool GetBarrier(int _i, int _j);
+        T GetRho(int _i, int _j);
+        T GetU(int _i, int _j);
+        T GetV(int _i, int _j);
+        T GetPermeation(int _i, int _j);
 
-        T* rho, u, v;
-        bool* barrier0;
-        BOUNDARYTYPE* btxmin, btxmax, btymin, btymax;
+        const int nx, ny;
 
 protected:
         T dx, dt, omega, t0, t1, t2;
-        T* f0t, f1t, f2t, f3t, f4t, f5t, f6t, f7t, f8t, f0tp1, f1tp1, f2tp1, f3tp1, f4tp1, f5tp1, f6tp1, f7tp1, f8tp1, permeation;
-        bool* barrier1, barrier2, barrier3, barrier4, barrier5, barrier6, barrier7, barrier8;
+        T* f0t, f1t, f2t, f3t, f4t, f5t, f6t, f7t, f8t, f0tp1, f1tp1, f2tp1, f3tp1, f4tp1, f5tp1, f6tp1, f7tp1, f8tp1, rho, u, v, permeation;
+        bool* barrier0, barrier1, barrier2, barrier3, barrier4, barrier5, barrier6, barrier7, barrier8;
+        BOUNDARYTYPE* btxmin, btxmax, btymin, btymax;
     };
 
 
     template<class T>
     LBM<T>::LBM(int _nx, int _ny, T _viscosity) : nx(_nx), ny(_ny) {
+        assert(0 < _nx && 0 < _ny);
         this->dx = 1.0;     this->dt = 1.0;     this->omega = 1.0/(3.0*_viscosity*this->dt/pow(this->dx, 2.0) + 0.5);
         this->t0 = 4.0/9.0; this->t1 = 1.0/9.0; this->t2 = 1.0/36.0;
 
@@ -326,5 +332,40 @@ protected:
             this->f7t[i] += dxt2alpha*(-tmpu - tmpv);
             this->f8t[i] += dxt2alpha*(tmpu - tmpv);
         }
+    }
+
+
+    template<class T>
+    bool LBM<T>::GetBarrier(int _i, int _j) {
+        assert(0 <= _i && _i < this->nx && 0 <= _j && < this->ny);
+        return this->barrier0[this->ny*i + j];
+    }
+
+
+    template<class T>
+    T LBM<T>::GetRho(int _i, int _j) {
+        assert(0 <= _i && _i < this->nx && 0 <= _j && < this->ny);
+        return this->rho[this->ny*i + j];
+    }
+
+
+    template<class T>
+    T LBM<T>::GetU(int _i, int _j) {
+        assert(0 <= _i && _i < this->nx && 0 <= _j && < this->ny);
+        return this->u[this->ny*i + j];
+    }
+
+
+    template<class T>
+    T LBM<T>::GetV(int _i, int _j) {
+        assert(0 <= _i && _i < this->nx && 0 <= _j && < this->ny);
+        return this->v[this->ny*i + j];
+    }
+
+
+    template<class T>
+    T LBM<T>::GetPermeation(int _i, int _j) {
+        assert(0 <= _i && _i < this->nx && 0 <= _j && < this->ny);
+        return this->permeation[this->ny*i + j];
     }
 }

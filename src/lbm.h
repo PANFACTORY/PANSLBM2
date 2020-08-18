@@ -31,10 +31,10 @@ public:
         void SetPermeation(F _f);
 
         void Inlet(T _u, T _v);
-        void Stream();
+        virtual void Stream();
         void UpdateMacro();
-        void Collision();
-        void ExternalForce();
+        virtual void Collision();
+        virtual void ExternalForce();
 
         bool GetBarrier(int _i, int _j);
         T GetRho(int _i, int _j);

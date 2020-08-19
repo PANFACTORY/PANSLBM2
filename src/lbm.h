@@ -31,11 +31,11 @@ public:
         template<class F>
         void SetPermeation(F _f);
 
-        void Inlet(T _u, T _v);
-        void Stream();
-        void UpdateMacro();
-        void Collision();
-        void ExternalForce();
+        virtual void Inlet(T _u, T _v);
+        virtual void Stream();
+        virtual void UpdateMacro();
+        virtual void Collision();
+        virtual void ExternalForce();
 
         bool GetBarrier(int _i, int _j);
         T GetRho(int _i, int _j);
@@ -103,7 +103,7 @@ protected:
 
 
     template<class T>
-    LBM<T>::LBM(const LBM<T>& _lbm) {
+    LBM<T>::LBM(const LBM<T>& _lbm) : nx(_lbm.nx), ny(_lbm.ny) {
         this->dx = _lbm.dx; this->dt = _lbm.dt; this->omega = _lbm.omega;
         this->t0 = _lbm.t0; this->t1 = _lbm.t1; this->t2 = _lbm.t2;;
 

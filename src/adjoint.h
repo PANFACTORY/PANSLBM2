@@ -7,10 +7,6 @@
 
 
 #pragma once
-#include <cmath>
-#include <cassert>
-
-
 #include "lbm.h"
 
 
@@ -19,19 +15,32 @@ namespace PANSLBM2 {
     class AdjointLBM : public LBM<T> {
 public:
         AdjointLBM() = delete;
-        AdjointLBM(const LBM<T>& _lbm);
+        AdjointLBM(const LBM<T>& _lbm, int _nt);
         ~AdjointLBM() {};
 
         void Inlet(T _u, T _v);
         void Stream();
-        void UpdateMacro();
         void Collision();
         void ExternalForce();
+
+        void CaptureMacro(const LBM<T>& _lbm);
+
+        T GetRho(int _i, int _j) const;
+        T GetU(int _i, int _j) const;
+        T GetV(int _i, int _j) const;
+        T GetSensitivity(int _i, int _j) const;
+
+        const int nt;
+
+        int t;
+
+private:
+        T *sensitivity;
     };
 
 
     template<class T>
-    AdjointLBM<T>::AdjointLBM(const LBM<T>& _lbm) : LBM<T>::LBM(_lbm) {
+    AdjointLBM<T>::AdjointLBM(const LBM<T>& _lbm, int _nt) : nt(_nt), LBM<T>::LBM(_lbm) {
         for (int i = 0; i < this->nx*this->ny; i++) {
             this->f0t[i] = T(); this->f0tp1[i] = T();
             this->f1t[i] = T(); this->f1tp1[i] = T();
@@ -42,6 +51,20 @@ public:
             this->f6t[i] = T(); this->f6tp1[i] = T();
             this->f7t[i] = T(); this->f7tp1[i] = T();
             this->f8t[i] = T(); this->f8tp1[i] = T();
+        }
+
+        delete[] this->rho;     delete[] this->u;       delete[] this->v;
+
+        this->rho = new T[this->nx*this->ny*this->nt];  this->u = new T[this->nx*this->ny*this->nt];    this->v = new T[this->nx*this->ny*this->nt];
+
+        for (int i = 0; i < this->nx*this->ny*this->nt; i++) {
+            this->rho[i] = T(); this->u[i] = T();   this->v[i] = T();
+        }
+
+        this->sensitivity = new T[this->nx*this->ny];
+
+        for (int i = 0; i < this->nx*this->ny; i++) {
+            this->sensitivity[i] = T();
         }
     }
 
@@ -154,43 +177,39 @@ public:
 
 
     template<class T>
-    void AdjointLBM<T>::UpdateMacro() {
-
-    }
-
-
-    template<class T>
     void AdjointLBM<T>::Collision() {
         for (int i = 0; i < this->nx*this->ny; i++) {
-            T u2 = pow(_u[i], 2.0);
-            T v2 = pow(_v[i], 2.0);
+            int ii = this->nx*this->ny*this->t + i;
+
+            T u2 = pow(this->u[ii], 2.0);
+            T v2 = pow(this->v[ii], 2.0);
             T u2v2 = u2 + v2;
-            T uv = _u[i]*_v[i];
+            T uv = this->u[ii]*this->v[ii];
             T omu215 = 1.0 - 1.5*u2v2;
 
-            T f0eq = this->t0*_rho[i]*omu215;
-            T f1eq = this->t1*_rho[i]*(omu215 + 3.0*_u[i] + 4.5*u2);
-            T f2eq = this->t1*_rho[i]*(omu215 + 3.0*_v[i] + 4.5*v2);
-            T f3eq = this->t1*_rho[i]*(omu215 - 3.0*_u[i] + 4.5*u2);
-            T f4eq = this->t1*_rho[i]*(omu215 - 3.0*_v[i] + 4.5*v2);
-            T f5eq = this->t2*_rho[i]*(omu215 + 3.0*(_u[i] + _v[i]) + 4.5*(u2v2 + 2.0*uv));
-            T f6eq = this->t2*_rho[i]*(omu215 - 3.0*(_u[i] - _v[i]) + 4.5*(u2v2 - 2.0*uv));
-            T f7eq = this->t2*_rho[i]*(omu215 - 3.0*(_u[i] + _v[i]) + 4.5*(u2v2 + 2.0*uv));
-            T f8eq = this->t2*_rho[i]*(omu215 + 3.0*(_u[i] - _v[i]) + 4.5*(u2v2 - 2.0*uv));
+            T f0eq = this->t0*this->rho[ii]*omu215;
+            T f1eq = this->t1*this->rho[ii]*(omu215 + 3.0*this->u[ii] + 4.5*u2);
+            T f2eq = this->t1*this->rho[ii]*(omu215 + 3.0*this->v[ii] + 4.5*v2);
+            T f3eq = this->t1*this->rho[ii]*(omu215 - 3.0*this->u[ii] + 4.5*u2);
+            T f4eq = this->t1*this->rho[ii]*(omu215 - 3.0*this->v[ii] + 4.5*v2);
+            T f5eq = this->t2*this->rho[ii]*(omu215 + 3.0*(this->u[ii] + this->v[ii]) + 4.5*(u2v2 + 2.0*uv));
+            T f6eq = this->t2*this->rho[ii]*(omu215 - 3.0*(this->u[ii] - this->v[ii]) + 4.5*(u2v2 - 2.0*uv));
+            T f7eq = this->t2*this->rho[ii]*(omu215 - 3.0*(this->u[ii] + this->v[ii]) + 4.5*(u2v2 + 2.0*uv));
+            T f8eq = this->t2*this->rho[ii]*(omu215 + 3.0*(this->u[ii] - this->v[ii]) + 4.5*(u2v2 - 2.0*uv));
 
-            T faseq1 = (f0eq*this->f0t[i] + f1eq*this->f1t[i] + f2eq*this->f2t[i] + f3eq*this->f3t[i] + f4eq*this->f4t[i] + f5eq*this->f5t[i] + f6eq*this->f6t[i] + f7eq*this->f7t[i] + f8eq*this->f8t[i])/_rho[i];
-            T faseq2x = 3.0*(-this->t0 + 2.0*this->t1 + 8.0*this->t2)*_u[i];
-            T faseq2y = 3.0*(-this->t0 + 2.0*this->t1 + 8.0*this->t2)*_v[i];
+            T faseq1 = (f0eq*this->f0t[i] + f1eq*this->f1t[i] + f2eq*this->f2t[i] + f3eq*this->f3t[i] + f4eq*this->f4t[i] + f5eq*this->f5t[i] + f6eq*this->f6t[i] + f7eq*this->f7t[i] + f8eq*this->f8t[i])/this->rho[ii];
+            T faseq2x = 3.0*(-this->t0 + 2.0*this->t1 + 8.0*this->t2)*this->u[ii];
+            T faseq2y = 3.0*(-this->t0 + 2.0*this->t1 + 8.0*this->t2)*this->v[ii];
 
-            this->f0tp1[i] = (1.0 + this->omega)*this->f0t - this->omega*(faseq1 + faseq2x*(-_u[i]) + faseq2y*(-_v[i]));
-            this->f1tp1[i] = (1.0 + this->omega)*this->f1t - this->omega*(faseq1 + faseq2x*(1.0 - _u[i]) + faseq2y*(-_v[i]));
-            this->f2tp1[i] = (1.0 + this->omega)*this->f2t - this->omega*(faseq1 + faseq2x*(-_u[i]) + faseq2y*(1.0 - _v[i]));
-            this->f3tp1[i] = (1.0 + this->omega)*this->f3t - this->omega*(faseq1 + faseq2x*(-1.0 - _u[i]) + faseq2y*(-_v[i]));
-            this->f4tp1[i] = (1.0 + this->omega)*this->f4t - this->omega*(faseq1 + faseq2x*(-_u[i]) + faseq2y*(-1.0 - _v[i]));
-            this->f5tp1[i] = (1.0 + this->omega)*this->f5t - this->omega*(faseq1 + faseq2x*(1.0 - _u[i]) + faseq2y*(1.0 - _v[i]));
-            this->f6tp1[i] = (1.0 + this->omega)*this->f6t - this->omega*(faseq1 + faseq2x*(-1.0 - _u[i]) + faseq2y*(1.0 - _v[i]));
-            this->f7tp1[i] = (1.0 + this->omega)*this->f7t - this->omega*(faseq1 + faseq2x*(-1.0 - _u[i]) + faseq2y*(-1.0 - _v[i]));
-            this->f8tp1[i] = (1.0 + this->omega)*this->f8t - this->omega*(faseq1 + faseq2x*(1.0 - _u[i]) + faseq2y*(-1.0 - _v[i]));
+            this->f0tp1[i] = (1.0 + this->omega)*this->f0t[i] - this->omega*(faseq1 + faseq2x*(-this->u[ii]) + faseq2y*(-this->v[ii]));
+            this->f1tp1[i] = (1.0 + this->omega)*this->f1t[i] - this->omega*(faseq1 + faseq2x*(1.0 - this->u[ii]) + faseq2y*(-this->v[ii]));
+            this->f2tp1[i] = (1.0 + this->omega)*this->f2t[i] - this->omega*(faseq1 + faseq2x*(-this->u[ii]) + faseq2y*(1.0 - this->v[ii]));
+            this->f3tp1[i] = (1.0 + this->omega)*this->f3t[i] - this->omega*(faseq1 + faseq2x*(-1.0 - this->u[ii]) + faseq2y*(-this->v[ii]));
+            this->f4tp1[i] = (1.0 + this->omega)*this->f4t[i] - this->omega*(faseq1 + faseq2x*(-this->u[ii]) + faseq2y*(-1.0 - this->v[ii]));
+            this->f5tp1[i] = (1.0 + this->omega)*this->f5t[i] - this->omega*(faseq1 + faseq2x*(1.0 - this->u[ii]) + faseq2y*(1.0 - this->v[ii]));
+            this->f6tp1[i] = (1.0 + this->omega)*this->f6t[i] - this->omega*(faseq1 + faseq2x*(-1.0 - this->u[ii]) + faseq2y*(1.0 - this->v[ii]));
+            this->f7tp1[i] = (1.0 + this->omega)*this->f7t[i] - this->omega*(faseq1 + faseq2x*(-1.0 - this->u[ii]) + faseq2y*(-1.0 - this->v[ii]));
+            this->f8tp1[i] = (1.0 + this->omega)*this->f8t[i] - this->omega*(faseq1 + faseq2x*(1.0 - this->u[ii]) + faseq2y*(-1.0 - this->v[ii]));
         }
     }
 
@@ -198,12 +217,14 @@ public:
     template<class T>
     void AdjointLBM<T>::ExternalForce() {
         for (int i = 0; i < this->nx*this->ny; i++) {
-            T ef1x = 3.0*this->dx*this->permeation[i]*(this->t1*(this->f1t[i] - this->f3t[i]) + this->t2*(this->f5t[i] - this->f6t[i] - this->f7t[i] + this->f8t[i]))/_rho[i];
-            T ef1y = 3.0*this->dx*this->permeation[i]*(this->t1*(this->f2t[i] - this->f4t[i]) + this->t2*(this->f5t[i] + this->f6t[i] - this->f7t[i] - this->f8t[i]))/_rho[i];
+            int ii = this->nx*this->ny*this->t + i;
+
+            T ef1x = 3.0*this->dx*this->permeation[i]*(this->t1*(this->f1t[i] - this->f3t[i]) + this->t2*(this->f5t[i] - this->f6t[i] - this->f7t[i] + this->f8t[i]))/this->rho[ii];
+            T ef1y = 3.0*this->dx*this->permeation[i]*(this->t1*(this->f2t[i] - this->f4t[i]) + this->t2*(this->f5t[i] + this->f6t[i] - this->f7t[i] - this->f8t[i]))/this->rho[ii];
         
-            T ubyrho = _u[i]/_rho[i];
-            T vbyrho = _v[i]/_rho[i];
-            T onebyrho = 1.0/_rho[i]; 
+            T ubyrho = this->u[ii]/this->rho[ii];
+            T vbyrho = this->v[ii]/this->rho[ii];
+            T onebyrho = 1.0/this->rho[ii]; 
 
             this->f0t[i] += ef1x*(-ubyrho) + ef1y*(-vbyrho) + this->permeation[i]*(-ubyrho);
             this->f1t[i] += ef1x*(onebyrho - vbyrho) + ef1y*(-vbyrho) + this->permeation[i]*(onebyrho - ubyrho);
@@ -215,5 +236,44 @@ public:
             this->f7t[i] += ef1x*(onebyrho - ubyrho) + ef1y*(-onebyrho - vbyrho) + this->permeation[i]*(onebyrho - ubyrho);
             this->f8t[i] += ef1x*(-onebyrho - ubyrho) + ef1y*(-onebyrho - vbyrho) + this->permeation[i]*(-onebyrho - ubyrho);
         }
+    }
+
+
+    template<class T>
+    void AdjointLBM<T>::CaptureMacro(const LBM<T>& _lbm) {
+        for (int i = 0; i < this->nx; i++) {
+            for (int j = 0; j < this->ny; j++) {
+                int ii = this->nx*this->ny*this->t + this->ny*i + j;
+                this->rho[ii] = _lbm.GetRho(i, j);  this->u[ii] = _lbm.GetU(i, j);  this->v[ii] = _lbm.GetV(i, j);
+            }
+        }
+    }
+
+
+    template<class T>
+    T AdjointLBM<T>::GetRho(int _i, int _j) const {
+        assert(0 <= _i && _i < this->nx && 0 <= _j && _j < this->ny);
+        return this->rho[this->nx*this->ny*this->t + this->ny*_i + _j];
+    }
+
+
+    template<class T>
+    T AdjointLBM<T>::GetU(int _i, int _j) const {
+        assert(0 <= _i && _i < this->nx && 0 <= _j && _j < this->ny);
+        return this->u[this->nx*this->ny*this->t + this->ny*_i + _j];
+    }
+
+
+    template<class T>
+    T AdjointLBM<T>::GetV(int _i, int _j) const {
+        assert(0 <= _i && _i < this->nx && 0 <= _j && _j < this->ny);
+        return this->v[this->nx*this->ny*this->t + this->ny*_i + _j];
+    }
+
+
+    template<class T>
+    T AdjointLBM<T>::GetSensitivity(int _i, int _j) const {
+        assert(0 <= _i && _i < this->nx && 0 <= _j && _j < this->ny);
+        return this->f0t[this->ny*_i + _j];
     }
 }

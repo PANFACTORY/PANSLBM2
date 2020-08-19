@@ -17,20 +17,17 @@
 using namespace PANSLBM2;
 
 int main() {
-    //--------------------Parameters--------------------
-    int tmax = 1, nx = 200, ny = 80;
-    LBM<double> solver = LBM<double>(nx, ny, 0.02);
-    solver.SetBarrier([=](int _i, int _j) {
-        return _i == ny/2 && abs(_j - ny/2) <= 8;
-    });
-    /*solver.SetPermeation([=](int _i, int _j) {
+    //--------------------Set parameters--------------------
+    int tmax = 1000, nx = 200, ny = 80;
+    LBM<double> dsolver = LBM<double>(nx, ny, 0.02);
+    dsolver.SetPermeation([=](int _i, int _j) {
         double ganma = 1.0;
-        if (abs(_i - solver.ny/2) <= 0 && abs(_j - solver.ny/2) <= 8) {
+        if (abs(_i - ny/2) <= 0 && abs(_j - ny/2) <= 8) {
             ganma = 0.0;
         }
         return 0.1*(1.0 - ganma)/(ganma + 0.1);
-    });*/
-    solver.SetBoundary([=](int _i, int _j) {
+    });
+    dsolver.SetBoundary([=](int _i, int _j) {
         if (_i == 0) {
             return INLET;
         } else if (_i == nx - 1) {
@@ -41,73 +38,52 @@ int main() {
             return PERIODIC;
         }
     });
+    AdjointLBM<double> isolver = AdjointLBM<double>(dsolver, tmax);
 
-    AdjointLBM<double> adjoint = AdjointLBM<double>(solver);
-
-    //--------------------Loop for time step--------------------
     std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
-    for (int t = 0; t < tmax; t++) {
-        solver.UpdateMacro();           //  Update macroscopic values
 
-        //..........Export result..........
-        /*if (t%100 == 0) {
-            std::cout << t << std::endl;
+    //--------------------Direct analyze--------------------
+    for (isolver.t = 0; isolver.t < tmax; isolver.t++) {
+        std::cout << isolver.t << std::endl;
+        dsolver.UpdateMacro();          //  Update macroscopic values
+        isolver.CaptureMacro(dsolver);  //  Capture macroscopic values
+        dsolver.Collision();            //  Collision
+        dsolver.Stream();               //  Stream
+        dsolver.Inlet(0.1, 0.0);        //  Boundary condition (inlet)
+        dsolver.ExternalForce();        //  External force by Brinkman model   
+    }
 
-            std::ofstream fout("result/result" + std::to_string(t/100) + ".vtk");
-            fout << "# vtk DataFile Version 3.0" << std::endl;
-            fout << "2D flow" << std::endl;
-            fout << "ASCII" << std::endl;
-            fout << "DATASET\tSTRUCTURED_GRID" << std::endl;
-            fout << "DIMENSIONS\t" << solver.nx << "\t" << solver.ny << "\t" << 1 << std::endl;
-            
-            fout << "POINTS\t" << solver.nx*solver.ny << "\t" << "float" << std::endl;
-            for (int j = 0; j < solver.ny; j++) {
-                for (int i = 0; i < solver.nx; i++) {
-                    fout << i << "\t" << j << "\t" << 0.0 << std::endl;
-                }
-            }
+    //--------------------Invert analyze--------------------
+    for (isolver.t = tmax - 1; isolver.t >= tmax - 900; isolver.t--) {
+        std::cout << isolver.t << std::endl;
+        isolver.Collision();            //  Collision
+        isolver.Stream();               //  Stream
+        isolver.Inlet(0.1, 0.0);        //  Boundary condition (inlet)
+        isolver.ExternalForce();        //  External force by Brinkman model   
+    }
 
-            fout << "POINT_DATA\t" << solver.nx*solver.ny << std::endl;
-            fout << "SCALARS\trho\tfloat" << std::endl;
-            fout << "LOOKUP_TABLE\tdefault" << std::endl;
-            for (int j = 0; j < solver.ny; j++) {
-                for (int i = 0; i < solver.nx; i++) {
-                    fout << solver.GetRho(i, j) << std::endl;
-                }
-            }
+    //--------------------Export result--------------------
+    std::ofstream fout("result/result.vtk");
+    fout << "# vtk DataFile Version 3.0" << std::endl;
+    fout << "2D flow" << std::endl;
+    fout << "ASCII" << std::endl;
+    fout << "DATASET\tSTRUCTURED_GRID" << std::endl;
+    fout << "DIMENSIONS\t" << nx << "\t" << ny << "\t" << 1 << std::endl;
+    
+    fout << "POINTS\t" << nx*ny << "\t" << "float" << std::endl;
+    for (int j = 0; j < ny; j++) {
+        for (int i = 0; i < nx; i++) {
+            fout << i << "\t" << j << "\t" << 0.0 << std::endl;
+        }
+    }
 
-            fout << "SCALARS\tcurl\tfloat" << std::endl;
-            fout << "LOOKUP_TABLE\tdefault" << std::endl;
-            for (int j = 0; j < solver.ny; j++) {
-                for (int i = 0; i < solver.nx; i++) {
-                    if (i == 0 || j == 0 || i == solver.nx - 1 || j == solver.ny - 1) {
-                        fout << 0.0 << std::endl;
-                    } else {
-                        fout << solver.GetV(i + 1, j) - solver.GetV(i - 1, j) - solver.GetU(i, j + 1) + solver.GetU(i, j - 1) << std::endl;
-                    }
-                }
-            }
-
-            fout << "SCALARS\ts\tfloat" << std::endl;
-            fout << "LOOKUP_TABLE\tdefault" << std::endl;
-            for (int j = 0; j < solver.ny; j++) {
-                for (int i = 0; i < solver.nx; i++) {
-                    fout << solver.GetPermeation(i, j) << std::endl;
-                }
-            }
-
-            fout << "VECTORS\tvelocity\tfloat" << std::endl;
-            for (int j = 0; j < solver.ny; j++) {
-                for (int i = 0; i < solver.nx; i++) {
-                    fout << solver.GetU(i, j) << "\t" << solver.GetV(i, j) << "\t" << 0.0 << std::endl;
-                }
-            }
-        }*/
-
-        solver.Collision();             //  Collision
-        solver.Stream();                //  Stream
-        solver.Inlet(0.1, 0.0);         //  Boundary condition (inlet)
-        solver.ExternalForce();         //  External force by Brinkman model   
+    fout << "POINT_DATA\t" << nx*ny << std::endl;
+    fout << "SCALARS\tsensitivity\tfloat" << std::endl;
+    fout << "LOOKUP_TABLE\tdefault" << std::endl;
+    for (int j = 0; j < ny; j++) {
+        for (int i = 0; i < nx; i++) {
+            fout << isolver.GetSensitivity(i, j) << std::endl;
+        }
     }
 
     std::chrono::system_clock::time_point end = std::chrono::system_clock::now();

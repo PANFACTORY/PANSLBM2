@@ -37,11 +37,11 @@ public:
         virtual void Collision();
         virtual void ExternalForce();
 
-        bool GetBarrier(int _i, int _j);
-        T GetRho(int _i, int _j);
-        T GetU(int _i, int _j);
-        T GetV(int _i, int _j);
-        T GetPermeation(int _i, int _j);
+        bool GetBarrier(int _i, int _j) const;
+        virtual T GetRho(int _i, int _j) const;
+        virtual T GetU(int _i, int _j) const;
+        virtual T GetV(int _i, int _j) const;
+        T GetPermeation(int _i, int _j) const;
 
         const int nx, ny;
 
@@ -387,35 +387,35 @@ protected:
 
 
     template<class T>
-    bool LBM<T>::GetBarrier(int _i, int _j) {
+    bool LBM<T>::GetBarrier(int _i, int _j) const {
         assert(0 <= _i && _i < this->nx && 0 <= _j && _j < this->ny);
         return this->barrier0[this->ny*_i + _j];
     }
 
 
     template<class T>
-    T LBM<T>::GetRho(int _i, int _j) {
+    T LBM<T>::GetRho(int _i, int _j) const {
         assert(0 <= _i && _i < this->nx && 0 <= _j && _j < this->ny);
         return this->rho[this->ny*_i + _j];
     }
 
 
     template<class T>
-    T LBM<T>::GetU(int _i, int _j) {
+    T LBM<T>::GetU(int _i, int _j) const {
         assert(0 <= _i && _i < this->nx && 0 <= _j && _j < this->ny);
         return this->u[this->ny*_i + _j];
     }
 
 
     template<class T>
-    T LBM<T>::GetV(int _i, int _j) {
+    T LBM<T>::GetV(int _i, int _j) const {
         assert(0 <= _i && _i < this->nx && 0 <= _j && _j < this->ny);
         return this->v[this->ny*_i + _j];
     }
 
 
     template<class T>
-    T LBM<T>::GetPermeation(int _i, int _j) {
+    T LBM<T>::GetPermeation(int _i, int _j) const {
         assert(0 <= _i && _i < this->nx && 0 <= _j && _j < this->ny);
         return this->permeation[this->ny*_i + _j];
     }

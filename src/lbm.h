@@ -21,6 +21,7 @@ namespace PANSLBM2 {
 public:
         LBM() = delete;
         LBM(int _nx, int _ny, T _viscosity);
+        LBM(const LBM<T>& _lbm);
         ~LBM();
 
         template<class F>
@@ -31,10 +32,10 @@ public:
         void SetPermeation(F _f);
 
         void Inlet(T _u, T _v);
-        virtual void Stream();
+        void Stream();
         void UpdateMacro();
-        virtual void Collision();
-        virtual void ExternalForce();
+        void Collision();
+        void ExternalForce();
 
         bool GetBarrier(int _i, int _j);
         T GetRho(int _i, int _j);
@@ -97,6 +98,54 @@ protected:
 
         for (int i = 0; i < this->nx; i++) {
             this->btymin[i] = PERIODIC; this->btymax[i] = PERIODIC;
+        }
+    }
+
+
+    template<class T>
+    LBM<T>::LBM(const LBM<T>& _lbm) {
+        this->dx = _lbm.dx; this->dt = _lbm.dt; this->omega = _lbm.omega;
+        this->t0 = _lbm.t0; this->t1 = _lbm.t1; this->t2 = _lbm.t2;;
+
+        this->f0t = new T[this->nx*this->ny];   this->f0tp1 = new T[this->nx*this->ny];     this->barrier0 = new bool[this->nx*this->ny];
+        this->f1t = new T[this->nx*this->ny];   this->f1tp1 = new T[this->nx*this->ny];     this->barrier1 = new bool[this->nx*this->ny];        
+        this->f2t = new T[this->nx*this->ny];   this->f2tp1 = new T[this->nx*this->ny];     this->barrier2 = new bool[this->nx*this->ny];     
+        this->f3t = new T[this->nx*this->ny];   this->f3tp1 = new T[this->nx*this->ny];     this->barrier3 = new bool[this->nx*this->ny];    
+        this->f4t = new T[this->nx*this->ny];   this->f4tp1 = new T[this->nx*this->ny];     this->barrier4 = new bool[this->nx*this->ny];
+        this->f5t = new T[this->nx*this->ny];   this->f5tp1 = new T[this->nx*this->ny];     this->barrier5 = new bool[this->nx*this->ny]; 
+        this->f6t = new T[this->nx*this->ny];   this->f6tp1 = new T[this->nx*this->ny];     this->barrier6 = new bool[this->nx*this->ny];
+        this->f7t = new T[this->nx*this->ny];   this->f7tp1 = new T[this->nx*this->ny];     this->barrier7 = new bool[this->nx*this->ny];
+        this->f8t = new T[this->nx*this->ny];   this->f8tp1 = new T[this->nx*this->ny];     this->barrier8 = new bool[this->nx*this->ny];
+
+        this->rho = new T[this->nx*this->ny];   this->u = new T[this->nx*this->ny];         this->v = new T[this->nx*this->ny];
+
+        this->permeation = new T[this->nx*this->ny];
+
+        for (int i = 0; i < this->nx*this->ny; i++) {
+            this->f0t[i] = _lbm.f0t[i]; this->f0tp1[i] = _lbm.f0tp1[i]; this->barrier0[i] = _lbm.barrier0[i];
+            this->f1t[i] = _lbm.f1t[i]; this->f1tp1[i] = _lbm.f1tp1[i]; this->barrier1[i] = _lbm.barrier1[i];
+            this->f2t[i] = _lbm.f2t[i]; this->f2tp1[i] = _lbm.f2tp1[i]; this->barrier2[i] = _lbm.barrier2[i];
+            this->f3t[i] = _lbm.f3t[i]; this->f3tp1[i] = _lbm.f3tp1[i]; this->barrier3[i] = _lbm.barrier3[i];
+            this->f4t[i] = _lbm.f4t[i]; this->f4tp1[i] = _lbm.f4tp1[i]; this->barrier4[i] = _lbm.barrier4[i];
+            this->f5t[i] = _lbm.f5t[i]; this->f5tp1[i] = _lbm.f5tp1[i]; this->barrier5[i] = _lbm.barrier5[i];
+            this->f6t[i] = _lbm.f6t[i]; this->f6tp1[i] = _lbm.f6tp1[i]; this->barrier6[i] = _lbm.barrier6[i];
+            this->f7t[i] = _lbm.f7t[i]; this->f7tp1[i] = _lbm.f7tp1[i]; this->barrier7[i] = _lbm.barrier7[i];
+            this->f8t[i] = _lbm.f8t[i]; this->f8tp1[i] = _lbm.f8tp1[i]; this->barrier8[i] = _lbm.barrier8[i];
+
+            this->rho[i] = _lbm.rho[i]; this->u[i] = _lbm.u[i];         this->v[i] = _lbm.v[i];
+
+            this->permeation[i] = _lbm.permeation[i];
+        }
+
+        this->btxmin = new BOUNDARYTYPE[this->ny];  this->btxmax = new BOUNDARYTYPE[this->ny];
+        this->btymin = new BOUNDARYTYPE[this->nx];  this->btymax = new BOUNDARYTYPE[this->nx];
+
+        for (int i = 0; i < this->ny; i++) {
+            this->btxmin[i] = _lbm.btxmin[i];       this->btxmax[i] = _lbm.btxmax[i];
+        }
+
+        for (int i = 0; i < this->nx; i++) {
+            this->btymin[i] = _lbm.btymin[i];       this->btymax[i] = _lbm.btymax[i];
         }
     }
 

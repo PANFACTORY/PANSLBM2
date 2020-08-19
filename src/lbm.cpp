@@ -12,14 +12,14 @@
 #include <chrono>
 
 #include "lbm.h"
+#include "adjoint.h"
 
 using namespace PANSLBM2;
 
 int main() {
     //--------------------Parameters--------------------
-    int tmax = 10000, nx = 200, ny = 80;
+    int tmax = 1, nx = 200, ny = 80;
     LBM<double> solver = LBM<double>(nx, ny, 0.02);
-
     solver.SetBarrier([=](int _i, int _j) {
         return _i == ny/2 && abs(_j - ny/2) <= 8;
     });
@@ -41,6 +41,8 @@ int main() {
             return PERIODIC;
         }
     });
+
+    AdjointLBM<double> adjoint = AdjointLBM<double>(solver);
 
     //--------------------Loop for time step--------------------
     std::chrono::system_clock::time_point start = std::chrono::system_clock::now();

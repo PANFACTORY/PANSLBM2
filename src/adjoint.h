@@ -186,26 +186,38 @@ private:
     void AdjointLBM<T>::Collision() {
         for (int i = 0; i < this->nx*this->ny; i++) {
             int ii = this->nx*this->ny*this->t + i;
+            T rhoii = this->rho[ii];
+            T uii = this->u[ii];
+            T vii = this->v[ii];
 
-            T u2 = pow(this->u[ii], 2.0);
-            T v2 = pow(this->v[ii], 2.0);
+            T u2 = pow(uii, 2.0);
+            T v2 = pow(vii, 2.0);
             T u2v2 = u2 + v2;
-            T uv = this->u[ii]*this->v[ii];
+            T uv = uii*vii;
             T omu215 = 1.0 - 1.5*u2v2;
 
-            T f0eq = this->t0*this->rho[ii]*omu215;
-            T f1eq = this->t1*this->rho[ii]*(omu215 + 3.0*this->u[ii] + 4.5*u2);
-            T f2eq = this->t1*this->rho[ii]*(omu215 + 3.0*this->v[ii] + 4.5*v2);
-            T f3eq = this->t1*this->rho[ii]*(omu215 - 3.0*this->u[ii] + 4.5*u2);
-            T f4eq = this->t1*this->rho[ii]*(omu215 - 3.0*this->v[ii] + 4.5*v2);
-            T f5eq = this->t2*this->rho[ii]*(omu215 + 3.0*(this->u[ii] + this->v[ii]) + 4.5*(u2v2 + 2.0*uv));
-            T f6eq = this->t2*this->rho[ii]*(omu215 - 3.0*(this->u[ii] - this->v[ii]) + 4.5*(u2v2 - 2.0*uv));
-            T f7eq = this->t2*this->rho[ii]*(omu215 - 3.0*(this->u[ii] + this->v[ii]) + 4.5*(u2v2 + 2.0*uv));
-            T f8eq = this->t2*this->rho[ii]*(omu215 + 3.0*(this->u[ii] - this->v[ii]) + 4.5*(u2v2 - 2.0*uv));
+            T f0eq = this->t0*rhoii*omu215;
+            T f1eq = this->t1*rhoii*(omu215 + 3.0*uii + 4.5*u2);
+            T f2eq = this->t1*rhoii*(omu215 + 3.0*vii + 4.5*v2);
+            T f3eq = this->t1*rhoii*(omu215 - 3.0*uii + 4.5*u2);
+            T f4eq = this->t1*rhoii*(omu215 - 3.0*vii + 4.5*v2);
+            T f5eq = this->t2*rhoii*(omu215 + 3.0*(uii + vii) + 4.5*(u2v2 + 2.0*uv));
+            T f6eq = this->t2*rhoii*(omu215 - 3.0*(uii - vii) + 4.5*(u2v2 - 2.0*uv));
+            T f7eq = this->t2*rhoii*(omu215 - 3.0*(uii + vii) + 4.5*(u2v2 + 2.0*uv));
+            T f8eq = this->t2*rhoii*(omu215 + 3.0*(uii - vii) + 4.5*(u2v2 - 2.0*uv));
 
             T faseq1 = (f0eq*this->f0t[i] + f1eq*this->f1t[i] + f2eq*this->f2t[i] + f3eq*this->f3t[i] + f4eq*this->f4t[i] + f5eq*this->f5t[i] + f6eq*this->f6t[i] + f7eq*this->f7t[i] + f8eq*this->f8t[i])/this->rho[ii];
-            T faseq2x = 3.0*(-this->t0 + 2.0*this->t1 + 8.0*this->t2)*this->u[ii];
-            T faseq2y = 3.0*(-this->t0 + 2.0*this->t1 + 8.0*this->t2)*this->v[ii];
+            T w0fas0 = this->t0*this->f0t[i];
+            T w1fas1 = this->t1*this->f1t[i];
+            T w1fas2 = this->t1*this->f2t[i];
+            T w1fas3 = this->t1*this->f3t[i];
+            T w1fas4 = this->t1*this->f4t[i];
+            T w2fas5 = this->t2*this->f5t[i];
+            T w2fas6 = this->t2*this->f6t[i];
+            T w2fas7 = this->t2*this->f7t[i];
+            T w2fas8 = this->t2*this->f8t[i];
+            T faseq2x = 3.0*(-w0fas0*uii + w1fas1*(1.0 + 2.0*uii) - w1fas2*uii + w1fas3*(-1.0 + 2.0*uii) - w1fas4*uii + w2fas5*(1.0 + 2.0*uii + 3.0*vii) + w2fas6*(-1.0 + 2.0*uii - 3.0*vii) + w2fas7*(-1.0 + 2.0*uii + 3.0*vii) + w2fas8*(1.0 + 2.0*uii - 3.0*vii));
+            T faseq2y = 3.0*(-w0fas0*vii - w1fas1*vii + w1fas2*(1.0 + 2.0*vii) - w1fas3*vii + w1fas4*(-1.0 + 2.0*vii) + w2fas5*(1.0 + 3.0*uii + 2.0*vii) + w2fas6*(1.0 - 3.0*uii + 2.0*vii) + w2fas7*(-1.0 + 3.0*uii + 2.0*vii) + w2fas8*(-1.0 - 3.0*uii + 2.0*vii));
 
             this->f0tp1[i] = (1.0 + this->omega)*this->f0t[i] - this->omega*(faseq1 + faseq2x*(-this->u[ii]) + faseq2y*(-this->v[ii]));
             this->f1tp1[i] = (1.0 + this->omega)*this->f1t[i] - this->omega*(faseq1 + faseq2x*(1.0 - this->u[ii]) + faseq2y*(-this->v[ii]));

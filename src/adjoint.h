@@ -16,7 +16,7 @@ namespace PANSLBM2 {
 public:
         AdjointLBM() = delete;
         AdjointLBM(const LBM<T>& _lbm, int _nt);
-        ~AdjointLBM() {};
+        ~AdjointLBM();
 
         void Inlet(T _u, T _v);
         void Stream();
@@ -66,6 +66,12 @@ private:
         for (int i = 0; i < this->nx*this->ny; i++) {
             this->sensitivity[i] = T();
         }
+    }
+
+
+    template<class T>
+    AdjointLBM<T>::~AdjointLBM() {
+        delete[] this->sensitivity;
     }
 
 
@@ -274,6 +280,6 @@ private:
     template<class T>
     T AdjointLBM<T>::GetSensitivity(int _i, int _j) const {
         assert(0 <= _i && _i < this->nx && 0 <= _j && _j < this->ny);
-        return this->f0t[this->ny*_i + _j];
+        return this->f0tp1[this->ny*_i + _j];
     }
 }

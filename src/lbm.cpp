@@ -18,7 +18,7 @@ using namespace PANSLBM2;
 
 int main() {
     //--------------------Set parameters--------------------
-    int tmax = 1000, nx = 200, ny = 80;
+    int tmax = 100, nx = 200, ny = 80;
     LBM<double> dsolver = LBM<double>(nx, ny, 0.02);
     dsolver.SetPermeation([=](int _i, int _j) {
         double ganma = 1.0;
@@ -54,7 +54,7 @@ int main() {
     }
 
     //--------------------Invert analyze--------------------
-    for (isolver.t = tmax - 1; isolver.t >= tmax - 900; isolver.t--) {
+    for (isolver.t = tmax - 1; isolver.t >= tmax - 50; isolver.t--) {
         std::cout << isolver.t << std::endl;
         isolver.Collision();            //  Collision
         isolver.Stream();               //  Stream

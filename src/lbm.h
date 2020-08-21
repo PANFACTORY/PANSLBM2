@@ -22,7 +22,7 @@ public:
         LBM() = delete;
         LBM(int _nx, int _ny, T _viscosity);
         LBM(const LBM<T>& _lbm);
-        ~LBM();
+        virtual ~LBM();
 
         template<class F>
         void SetBarrier(F _f);

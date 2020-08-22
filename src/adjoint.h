@@ -219,15 +219,15 @@ private:
             T faseq2x = 3.0*(-w0fas0*uii + w1fas1*(1.0 + 2.0*uii) - w1fas2*uii + w1fas3*(-1.0 + 2.0*uii) - w1fas4*uii + w2fas5*(1.0 + 2.0*uii + 3.0*vii) + w2fas6*(-1.0 + 2.0*uii - 3.0*vii) + w2fas7*(-1.0 + 2.0*uii + 3.0*vii) + w2fas8*(1.0 + 2.0*uii - 3.0*vii));
             T faseq2y = 3.0*(-w0fas0*vii - w1fas1*vii + w1fas2*(1.0 + 2.0*vii) - w1fas3*vii + w1fas4*(-1.0 + 2.0*vii) + w2fas5*(1.0 + 3.0*uii + 2.0*vii) + w2fas6*(1.0 - 3.0*uii + 2.0*vii) + w2fas7*(-1.0 + 3.0*uii + 2.0*vii) + w2fas8*(-1.0 - 3.0*uii + 2.0*vii));
 
-            this->f0tp1[i] = (1.0 + this->omega)*this->f0t[i] - this->omega*(faseq1 + faseq2x*(-this->u[ii]) + faseq2y*(-this->v[ii]));
-            this->f1tp1[i] = (1.0 + this->omega)*this->f1t[i] - this->omega*(faseq1 + faseq2x*(1.0 - this->u[ii]) + faseq2y*(-this->v[ii]));
-            this->f2tp1[i] = (1.0 + this->omega)*this->f2t[i] - this->omega*(faseq1 + faseq2x*(-this->u[ii]) + faseq2y*(1.0 - this->v[ii]));
-            this->f3tp1[i] = (1.0 + this->omega)*this->f3t[i] - this->omega*(faseq1 + faseq2x*(-1.0 - this->u[ii]) + faseq2y*(-this->v[ii]));
-            this->f4tp1[i] = (1.0 + this->omega)*this->f4t[i] - this->omega*(faseq1 + faseq2x*(-this->u[ii]) + faseq2y*(-1.0 - this->v[ii]));
-            this->f5tp1[i] = (1.0 + this->omega)*this->f5t[i] - this->omega*(faseq1 + faseq2x*(1.0 - this->u[ii]) + faseq2y*(1.0 - this->v[ii]));
-            this->f6tp1[i] = (1.0 + this->omega)*this->f6t[i] - this->omega*(faseq1 + faseq2x*(-1.0 - this->u[ii]) + faseq2y*(1.0 - this->v[ii]));
-            this->f7tp1[i] = (1.0 + this->omega)*this->f7t[i] - this->omega*(faseq1 + faseq2x*(-1.0 - this->u[ii]) + faseq2y*(-1.0 - this->v[ii]));
-            this->f8tp1[i] = (1.0 + this->omega)*this->f8t[i] - this->omega*(faseq1 + faseq2x*(1.0 - this->u[ii]) + faseq2y*(-1.0 - this->v[ii]));
+            this->f0tp1[i] = (1.0 - this->omega)*this->f0t[i] + this->omega*(faseq1 + faseq2x*(-this->u[ii]) + faseq2y*(-this->v[ii]));
+            this->f1tp1[i] = (1.0 - this->omega)*this->f1t[i] + this->omega*(faseq1 + faseq2x*(1.0 - this->u[ii]) + faseq2y*(-this->v[ii]));
+            this->f2tp1[i] = (1.0 - this->omega)*this->f2t[i] + this->omega*(faseq1 + faseq2x*(-this->u[ii]) + faseq2y*(1.0 - this->v[ii]));
+            this->f3tp1[i] = (1.0 - this->omega)*this->f3t[i] + this->omega*(faseq1 + faseq2x*(-1.0 - this->u[ii]) + faseq2y*(-this->v[ii]));
+            this->f4tp1[i] = (1.0 - this->omega)*this->f4t[i] + this->omega*(faseq1 + faseq2x*(-this->u[ii]) + faseq2y*(-1.0 - this->v[ii]));
+            this->f5tp1[i] = (1.0 - this->omega)*this->f5t[i] + this->omega*(faseq1 + faseq2x*(1.0 - this->u[ii]) + faseq2y*(1.0 - this->v[ii]));
+            this->f6tp1[i] = (1.0 - this->omega)*this->f6t[i] + this->omega*(faseq1 + faseq2x*(-1.0 - this->u[ii]) + faseq2y*(1.0 - this->v[ii]));
+            this->f7tp1[i] = (1.0 - this->omega)*this->f7t[i] + this->omega*(faseq1 + faseq2x*(-1.0 - this->u[ii]) + faseq2y*(-1.0 - this->v[ii]));
+            this->f8tp1[i] = (1.0 - this->omega)*this->f8t[i] + this->omega*(faseq1 + faseq2x*(1.0 - this->u[ii]) + faseq2y*(-1.0 - this->v[ii]));
         }
     }
 
@@ -237,22 +237,22 @@ private:
         for (int i = 0; i < this->nx*this->ny; i++) {
             int ii = this->nx*this->ny*this->t + i;
 
-            T ef1x = 3.0*this->dx*this->permeation[i]*(this->t1*(this->f1t[i] - this->f3t[i]) + this->t2*(this->f5t[i] - this->f6t[i] - this->f7t[i] + this->f8t[i]));
-            T ef1y = 3.0*this->dx*this->permeation[i]*(this->t1*(this->f2t[i] - this->f4t[i]) + this->t2*(this->f5t[i] + this->f6t[i] - this->f7t[i] - this->f8t[i]));
+            T ef1x = -3.0*this->dx*this->permeation[i]*(this->t1*(this->f1t[i] - this->f3t[i]) + this->t2*(this->f5t[i] - this->f6t[i] - this->f7t[i] + this->f8t[i]));
+            T ef1y = -3.0*this->dx*this->permeation[i]*(this->t1*(this->f2t[i] - this->f4t[i]) + this->t2*(this->f5t[i] + this->f6t[i] - this->f7t[i] - this->f8t[i]));
         
             T ubyrho = this->u[ii]/this->rho[ii];
             T vbyrho = this->v[ii]/this->rho[ii];
-            T onebyrho = 1.0/this->rho[ii]; 
+            T onebyrho = 1.0/this->rho[ii];
 
-            this->f0t[i] -= ef1x*(-ubyrho) + ef1y*(-vbyrho) - this->permeation[i]*(-ubyrho);
-            this->f1t[i] -= ef1x*(onebyrho - ubyrho) + ef1y*(-vbyrho) - this->permeation[i]*(onebyrho - ubyrho);
-            this->f2t[i] -= ef1x*(-ubyrho) + ef1y*(onebyrho - vbyrho) - this->permeation[i]*(-ubyrho);
-            this->f3t[i] -= ef1x*(-onebyrho - ubyrho) + ef1y*(-vbyrho) - this->permeation[i]*(-onebyrho - ubyrho);
-            this->f4t[i] -= ef1x*(-ubyrho) + ef1y*(-onebyrho - vbyrho) - this->permeation[i]*(-ubyrho);
-            this->f5t[i] -= ef1x*(onebyrho - ubyrho) + ef1y*(onebyrho - vbyrho) - this->permeation[i]*(onebyrho - ubyrho);
-            this->f6t[i] -= ef1x*(-onebyrho - ubyrho) + ef1y*(onebyrho - vbyrho) - this->permeation[i]*(-onebyrho - ubyrho);
-            this->f7t[i] -= ef1x*(-onebyrho - ubyrho) + ef1y*(-onebyrho - vbyrho) - this->permeation[i]*(-onebyrho - ubyrho);
-            this->f8t[i] -= ef1x*(onebyrho - ubyrho) + ef1y*(-onebyrho - vbyrho) - this->permeation[i]*(onebyrho - ubyrho);
+            this->f0t[i] += ef1x*(-ubyrho) + ef1y*(-vbyrho) - this->permeation[i]*(-ubyrho);
+            this->f1t[i] += ef1x*(onebyrho - ubyrho) + ef1y*(-vbyrho) - this->permeation[i]*(onebyrho - ubyrho);
+            this->f2t[i] += ef1x*(-ubyrho) + ef1y*(onebyrho - vbyrho) - this->permeation[i]*(-ubyrho);
+            this->f3t[i] += ef1x*(-onebyrho - ubyrho) + ef1y*(-vbyrho) - this->permeation[i]*(-onebyrho - ubyrho);
+            this->f4t[i] += ef1x*(-ubyrho) + ef1y*(-onebyrho - vbyrho) - this->permeation[i]*(-ubyrho);
+            this->f5t[i] += ef1x*(onebyrho - ubyrho) + ef1y*(onebyrho - vbyrho) - this->permeation[i]*(onebyrho - ubyrho);
+            this->f6t[i] += ef1x*(-onebyrho - ubyrho) + ef1y*(onebyrho - vbyrho) - this->permeation[i]*(-onebyrho - ubyrho);
+            this->f7t[i] += ef1x*(-onebyrho - ubyrho) + ef1y*(-onebyrho - vbyrho) - this->permeation[i]*(-onebyrho - ubyrho);
+            this->f8t[i] += ef1x*(onebyrho - ubyrho) + ef1y*(-onebyrho - vbyrho) - this->permeation[i]*(onebyrho - ubyrho);
         }
     }
 

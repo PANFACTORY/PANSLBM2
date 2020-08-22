@@ -237,22 +237,22 @@ private:
         for (int i = 0; i < this->nx*this->ny; i++) {
             int ii = this->nx*this->ny*this->t + i;
 
-            T ef1x = 3.0*this->dx*this->permeation[i]*(this->t1*(this->f1t[i] - this->f3t[i]) + this->t2*(this->f5t[i] - this->f6t[i] - this->f7t[i] + this->f8t[i]))/this->rho[ii];
-            T ef1y = 3.0*this->dx*this->permeation[i]*(this->t1*(this->f2t[i] - this->f4t[i]) + this->t2*(this->f5t[i] + this->f6t[i] - this->f7t[i] - this->f8t[i]))/this->rho[ii];
+            T ef1x = 3.0*this->dx*this->permeation[i]*(this->t1*(this->f1t[i] - this->f3t[i]) + this->t2*(this->f5t[i] - this->f6t[i] - this->f7t[i] + this->f8t[i]));
+            T ef1y = 3.0*this->dx*this->permeation[i]*(this->t1*(this->f2t[i] - this->f4t[i]) + this->t2*(this->f5t[i] + this->f6t[i] - this->f7t[i] - this->f8t[i]));
         
             T ubyrho = this->u[ii]/this->rho[ii];
             T vbyrho = this->v[ii]/this->rho[ii];
             T onebyrho = 1.0/this->rho[ii]; 
 
             this->f0t[i] += ef1x*(-ubyrho) + ef1y*(-vbyrho) + this->permeation[i]*(-ubyrho);
-            this->f1t[i] += ef1x*(onebyrho - vbyrho) + ef1y*(-vbyrho) + this->permeation[i]*(onebyrho - ubyrho);
+            this->f1t[i] += ef1x*(onebyrho - ubyrho) + ef1y*(-vbyrho) + this->permeation[i]*(onebyrho - ubyrho);
             this->f2t[i] += ef1x*(-ubyrho) + ef1y*(onebyrho - vbyrho) + this->permeation[i]*(-ubyrho);
             this->f3t[i] += ef1x*(-onebyrho - ubyrho) + ef1y*(-vbyrho) + this->permeation[i]*(-onebyrho - ubyrho);
             this->f4t[i] += ef1x*(-ubyrho) + ef1y*(-onebyrho - vbyrho) + this->permeation[i]*(-ubyrho);
             this->f5t[i] += ef1x*(onebyrho - ubyrho) + ef1y*(onebyrho - vbyrho) + this->permeation[i]*(onebyrho - ubyrho);
             this->f6t[i] += ef1x*(-onebyrho - ubyrho) + ef1y*(onebyrho - vbyrho) + this->permeation[i]*(-onebyrho - ubyrho);
-            this->f7t[i] += ef1x*(onebyrho - ubyrho) + ef1y*(-onebyrho - vbyrho) + this->permeation[i]*(onebyrho - ubyrho);
-            this->f8t[i] += ef1x*(-onebyrho - ubyrho) + ef1y*(-onebyrho - vbyrho) + this->permeation[i]*(-onebyrho - ubyrho);
+            this->f7t[i] += ef1x*(-onebyrho - ubyrho) + ef1y*(-onebyrho - vbyrho) + this->permeation[i]*(-onebyrho - ubyrho);
+            this->f8t[i] += ef1x*(onebyrho - ubyrho) + ef1y*(-onebyrho - vbyrho) + this->permeation[i]*(onebyrho - ubyrho);
         }
     }
 
@@ -292,6 +292,6 @@ private:
     template<class T>
     T AdjointLBM<T>::GetSensitivity(int _i, int _j) const {
         assert(0 <= _i && _i < this->nx && 0 <= _j && _j < this->ny);
-        return this->f0tp1[this->ny*_i + _j];
+        return this->f3t[this->ny*_i + _j];
     }
 }

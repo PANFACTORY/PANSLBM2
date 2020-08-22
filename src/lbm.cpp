@@ -18,7 +18,7 @@ using namespace PANSLBM2;
 
 int main() {
     //--------------------Set parameters--------------------
-    int tmax = 100, nx = 200, ny = 80;
+    int tmax = 1000, nx = 200, ny = 80;
     LBM<double> dsolver = LBM<double>(nx, ny, 0.02);
     dsolver.SetPermeation([=](int _i, int _j) {
         double ganma = 1.0;
@@ -54,7 +54,7 @@ int main() {
     }
 
     //--------------------Invert analyze--------------------
-    for (isolver.t = tmax - 1; isolver.t >= tmax - 50; isolver.t--) {
+    for (isolver.t = tmax - 1; isolver.t >= 0; isolver.t--) {
         std::cout << isolver.t << std::endl;
         isolver.Collision();            //  Collision
         isolver.Stream();               //  Stream
@@ -78,6 +78,13 @@ int main() {
     }
 
     fout << "POINT_DATA\t" << nx*ny << std::endl;
+    fout << "VECTORS\tu\tfloat" << std::endl;
+    for (int j = 0; j < ny; j++) {
+        for (int i = 0; i < nx; i++) {
+            fout << dsolver.GetU(i, j) << "\t" << dsolver.GetV(i, j) << "\t" << 0.0 << std::endl;
+        }
+    }
+
     fout << "SCALARS\tsensitivity\tfloat" << std::endl;
     fout << "LOOKUP_TABLE\tdefault" << std::endl;
     for (int j = 0; j < ny; j++) {

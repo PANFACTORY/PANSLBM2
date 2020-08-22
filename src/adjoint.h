@@ -244,15 +244,15 @@ private:
             T vbyrho = this->v[ii]/this->rho[ii];
             T onebyrho = 1.0/this->rho[ii];
 
-            this->f0t[i] += ef1x*(-ubyrho) + ef1y*(-vbyrho) - this->permeation[i]*(-ubyrho);
-            this->f1t[i] += ef1x*(onebyrho - ubyrho) + ef1y*(-vbyrho) - this->permeation[i]*(onebyrho - ubyrho);
-            this->f2t[i] += ef1x*(-ubyrho) + ef1y*(onebyrho - vbyrho) - this->permeation[i]*(-ubyrho);
-            this->f3t[i] += ef1x*(-onebyrho - ubyrho) + ef1y*(-vbyrho) - this->permeation[i]*(-onebyrho - ubyrho);
-            this->f4t[i] += ef1x*(-ubyrho) + ef1y*(-onebyrho - vbyrho) - this->permeation[i]*(-ubyrho);
-            this->f5t[i] += ef1x*(onebyrho - ubyrho) + ef1y*(onebyrho - vbyrho) - this->permeation[i]*(onebyrho - ubyrho);
-            this->f6t[i] += ef1x*(-onebyrho - ubyrho) + ef1y*(onebyrho - vbyrho) - this->permeation[i]*(-onebyrho - ubyrho);
-            this->f7t[i] += ef1x*(-onebyrho - ubyrho) + ef1y*(-onebyrho - vbyrho) - this->permeation[i]*(-onebyrho - ubyrho);
-            this->f8t[i] += ef1x*(onebyrho - ubyrho) + ef1y*(-onebyrho - vbyrho) - this->permeation[i]*(onebyrho - ubyrho);
+            this->f0t[i] += ef1x*(-ubyrho) + ef1y*(-vbyrho) + this->permeation[i]*(-ubyrho);
+            this->f1t[i] += ef1x*(onebyrho - ubyrho) + ef1y*(-vbyrho) + this->permeation[i]*(onebyrho - ubyrho);
+            this->f2t[i] += ef1x*(-ubyrho) + ef1y*(onebyrho - vbyrho) + this->permeation[i]*(-ubyrho);
+            this->f3t[i] += ef1x*(-onebyrho - ubyrho) + ef1y*(-vbyrho) + this->permeation[i]*(-onebyrho - ubyrho);
+            this->f4t[i] += ef1x*(-ubyrho) + ef1y*(-onebyrho - vbyrho) + this->permeation[i]*(-ubyrho);
+            this->f5t[i] += ef1x*(onebyrho - ubyrho) + ef1y*(onebyrho - vbyrho) + this->permeation[i]*(onebyrho - ubyrho);
+            this->f6t[i] += ef1x*(-onebyrho - ubyrho) + ef1y*(onebyrho - vbyrho) + this->permeation[i]*(-onebyrho - ubyrho);
+            this->f7t[i] += ef1x*(-onebyrho - ubyrho) + ef1y*(-onebyrho - vbyrho) + this->permeation[i]*(-onebyrho - ubyrho);
+            this->f8t[i] += ef1x*(onebyrho - ubyrho) + ef1y*(-onebyrho - vbyrho) + this->permeation[i]*(onebyrho - ubyrho);
         }
     }
 

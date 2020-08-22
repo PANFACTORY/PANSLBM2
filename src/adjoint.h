@@ -20,6 +20,7 @@ public:
 
         void Inlet(T _u, T _v);
         void Stream();
+        void UpdateMacro();
         void Collision();
         void ExternalForce();
 
@@ -183,6 +184,19 @@ private:
 
 
     template<class T>
+    void AdjointLBM<T>::UpdateMacro() {
+        for (int i = 0; i < this->nx*this->ny; i++) {
+            int ii = this->nx*this->ny*this->t + i;
+
+            T sensx = this->t1*(this->f1t[i] - this->f3t[i]) + this->t2*(this->f5t[i] - this->f6t[i] - this->f7t[i] + this->f8t[i]);
+            T sensy = this->t1*(this->f2t[i] - this->f4t[i]) + this->t2*(this->f5t[i] + this->f6t[i] - this->f7t[i] - this->f8t[i]);
+
+            this->sensitivity[i] += -3.0*this->dx*(sensx*this->u[ii] + sensy*this->v[ii]) + this->u[ii];
+        }
+    }
+
+
+    template<class T>
     void AdjointLBM<T>::Collision() {
         for (int i = 0; i < this->nx*this->ny; i++) {
             int ii = this->nx*this->ny*this->t + i;
@@ -292,6 +306,6 @@ private:
     template<class T>
     T AdjointLBM<T>::GetSensitivity(int _i, int _j) const {
         assert(0 <= _i && _i < this->nx && 0 <= _j && _j < this->ny);
-        return this->f3t[this->ny*_i + _j];
+        return this->sensitivity[this->ny*_i + _j];
     }
 }

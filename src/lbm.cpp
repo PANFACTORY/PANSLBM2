@@ -19,13 +19,14 @@ using namespace PANSLBM2;
 int main() {
     //--------------------Set parameters--------------------
     int tmax = 1000, nx = 200, ny = 80;
+    double q = 0.1, alpha0 = 1.0;
     LBM<double> dsolver = LBM<double>(nx, ny, 0.02);
     dsolver.SetPermeation([=](int _i, int _j) {
         double ganma = 1.0;
         if (abs(_i - ny/2) <= 0 && abs(_j - ny/2) <= 8) {
             ganma = 0.0;
         }
-        return 0.1*(1.0 - ganma)/(ganma + 0.1);
+        return alpha0*q*(1.0 - ganma)/(ganma + q);
     });
     dsolver.SetBoundary([=](int _i, int _j) {
         if (_i == 0) {
@@ -56,6 +57,7 @@ int main() {
     //--------------------Invert analyze--------------------
     for (isolver.t = tmax - 1; isolver.t >= 0; isolver.t--) {
         std::cout << isolver.t << std::endl;
+        isolver.UpdateMacro();          //  Update macroscopic values
         isolver.Collision();            //  Collision
         isolver.Stream();               //  Stream
         isolver.Inlet(0.1, 0.0);        //  Boundary condition (inlet)
@@ -89,7 +91,11 @@ int main() {
     fout << "LOOKUP_TABLE\tdefault" << std::endl;
     for (int j = 0; j < ny; j++) {
         for (int i = 0; i < nx; i++) {
-            fout << isolver.GetSensitivity(i, j) << std::endl;
+            double ganma = 1.0;
+            if (abs(i - ny/2) <= 0 && abs(j - ny/2) <= 8) {
+                ganma = 0.0;
+            }
+            fout << isolver.GetSensitivity(i, j)*(-alpha0*q*(q + 1.0)/pow(q + ganma, 2.0)) << std::endl;
         }
     }
 

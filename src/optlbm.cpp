@@ -16,17 +16,17 @@ int main() {
     int tmax = 1000;
     int nx = 200;
     int ny = 80;
-    double nu = 0.2;
+    double nu = 0.02;
     double r = 10.0;
     double q = 0.1;
     double alpha0 = 1.0;
-    double weightlimit = 0.9;
+    double weightlimit = 0.95;
 
-    std::vector<double> s = std::vector<double>(nx*ny, 0.0);
+    std::vector<double> s = std::vector<double>(nx*ny, 1.0);
     for (int i = 0; i < nx; i++) {
         for (int j = 0; j < ny; j++) {
             if (pow(i - nx/2, 2.0) + pow(j - ny/2, 2.0) < pow(r, 2.0)) {
-                s[ny*i + j] = 1.0;
+                s[ny*i + j] = 0.0;
             }
         }
     }

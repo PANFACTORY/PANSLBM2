@@ -15,17 +15,18 @@ int main() {
     //********************Setting parameters********************
     int tmax = 1000;
     int nx = 200;
-    int ny = 80;
-    double nu = 0.02;
+    int ny = 100;
+    double nu = 0.01;
     double r = 10.0;
     double q = 0.1;
+    double u0 = 0.1;
     double alpha0 = 1.0;
     double weightlimit = 0.95;
 
     std::vector<double> s = std::vector<double>(nx*ny, 1.0);
     for (int i = 0; i < nx; i++) {
         for (int j = 0; j < ny; j++) {
-            if (pow(i - nx/2, 2.0) + pow(j - ny/2, 2.0) < pow(r, 2.0)) {
+            if (pow(i - nx/3, 2.0) + pow(j - ny/2, 2.0) < pow(r, 2.0)) {
                 s[ny*i + j] = 0.0;
             }
         }
@@ -72,7 +73,7 @@ int main() {
             isolver.CaptureMacro(dsolver);  //  Capture macroscopic values
             dsolver.Collision();            //  Collision
             dsolver.Stream();               //  Stream
-            dsolver.Inlet(0.1, 0.0);        //  Boundary condition (inlet)
+            dsolver.Inlet(u0, 0.0);         //  Boundary condition (inlet)
             dsolver.ExternalForce();        //  External force by Brinkman model   
         }
 
@@ -81,7 +82,7 @@ int main() {
             isolver.UpdateMacro();          //  Update macroscopic values
             isolver.Collision();            //  Collision
             isolver.Stream();               //  Stream
-            isolver.Inlet(0.1, 0.0);        //  Boundary condition (inlet)
+            isolver.Inlet(u0, 0.0);         //  Boundary condition (inlet)
             isolver.ExternalForce();        //  External force by Brinkman model   
         }
 

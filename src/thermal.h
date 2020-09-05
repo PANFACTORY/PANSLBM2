@@ -70,16 +70,6 @@ private:
     template<class T>
     void ThermalLBM<T>::Collision() {
         for (int i = 0; i < this->nx*this->ny; i++) {
-            T g0eq = this->t0*this->temperature[i];
-            T g1eq = this->t1*this->temperature[i]*(1.0 + 3.0*this->u[i]);
-            T g2eq = this->t1*this->temperature[i]*(1.0 + 3.0*this->v[i]);
-            T g3eq = this->t1*this->temperature[i]*(1.0 - 3.0*this->u[i]);
-            T g4eq = this->t1*this->temperature[i]*(1.0 - 3.0*this->v[i]);
-            T g5eq = this->t2*this->temperature[i]*(1.0 + 3.0*this->u[i] + 3.0*this->v[i]);
-            T g6eq = this->t2*this->temperature[i]*(1.0 - 3.0*this->u[i] + 3.0*this->v[i]);
-            T g7eq = this->t2*this->temperature[i]*(1.0 - 3.0*this->u[i] - 3.0*this->v[i]);
-            T g8eq = this->t2*this->temperature[i]*(1.0 + 3.0*this->u[i] - 3.0*this->v[i]);
-
             this->f0tp1[i] = (1.0 - this->omega)*this->f0t[i] + this->omega*this->t0*this->temperature[i];
             this->f1tp1[i] = (1.0 - this->omega)*this->f1t[i] + this->omega*this->t1*this->temperature[i]*(1.0 + 3.0*this->u[i]);
             this->f2tp1[i] = (1.0 - this->omega)*this->f2t[i] + this->omega*this->t1*this->temperature[i]*(1.0 + 3.0*this->v[i]);

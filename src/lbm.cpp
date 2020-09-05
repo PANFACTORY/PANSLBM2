@@ -11,8 +11,7 @@
 #include <cmath>
 #include <chrono>
 
-#include "lbm.h"
-#include "thermal.h"
+#include "NSd2q9.h"
 
 using namespace PANSLBM2;
 
@@ -20,33 +19,13 @@ int main() {
     //--------------------Set parameters--------------------
     int tmax = 10000, nx = 200, ny = 80;
     
-    LBM<double> dsolver = LBM<double>(nx, ny, 0.02);
+    NSd2q9<double> dsolver = NSd2q9<double>(nx, ny, 0.02);
     dsolver.SetBarrier([=](int _i, int _j) {
         return _i == ny/2 && abs(_j - ny/2) <= 8;
     });
     dsolver.SetBoundary([=](int _i, int _j) {
-        if (_i == 0) {
-            return INLET;
-        } else if (_i == nx - 1) {
-            return OUTLET;
-        } else if (_j == 0 || _j == ny - 1) {
+        if (_j == 0 || _j == ny - 1) {
             return MIRROR;
-        } else {
-            return PERIODIC;
-        }
-    });
-
-    ThermalLBM<double> tsolver = ThermalLBM<double>(nx, ny, 0.02);
-    tsolver.SetBarrier([=](int _i, int _j) {
-        return _i == ny/2 && abs(_j - ny/2) <= 8;
-    });
-    tsolver.SetBoundary([=](int _i, int _j) {
-        if (_j == 0) {
-            return INLET;
-        } else if (_j == ny - 1) {
-            return OUTLET;
-        } else if (_i == 0 || _i == nx - 1) {
-            return OUTLET;
         } else {
             return PERIODIC;
         }
@@ -58,17 +37,10 @@ int main() {
     for (int t = 0; t < tmax; t++) {
         std::cout << t << std::endl;
         dsolver.UpdateMacro();          //  Update macroscopic values
-        tsolver.CaptureMacro(dsolver);  //  Capture macroscopic values
-        tsolver.UpdateMacro();          //  Update macroscopic values
-
         dsolver.Collision();            //  Collision
-        tsolver.Collision();            //  Collision
-        
         dsolver.Stream();               //  Stream
-        tsolver.Stream();               //  Stream
-        
-        dsolver.Inlet(0.1, 0.0);        //  Boundary condition (inlet)
-        tsolver.Inlet(100.0);           //  Boundary condition (inlet)
+        dsolver.Inlet(0.1, 0.0, 100);   //  Boundary condition (inlet)
+        dsolver.ExternalForce();        //  External force by thermal
         
         if (t%100 == 0) {
             std::ofstream fout("result/result" + std::to_string(t) + ".vtk");
@@ -97,14 +69,11 @@ int main() {
             fout << "LOOKUP_TABLE\tdefault" << std::endl;
             for (int j = 0; j < ny; j++) {
                 for (int i = 0; i < nx; i++) {
-                    fout << tsolver.GetTemperature(i, j) << std::endl;
+                    fout << dsolver.GetTemperature(i, j) << std::endl;
                 }
             }
         } 
     }
-
-    //--------------------Export result--------------------
-    
 
     std::chrono::system_clock::time_point end = std::chrono::system_clock::now();
     std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count() << std::endl;

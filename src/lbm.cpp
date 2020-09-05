@@ -20,7 +20,7 @@ int main() {
     //--------------------Set parameters--------------------
     int tmax = 10000, nx = 200, ny = 80;
     
-    LBM<double> dsolver = LBM<double>(nx, ny, 0.2);
+    LBM<double> dsolver = LBM<double>(nx, ny, 0.02);
     dsolver.SetBarrier([=](int _i, int _j) {
         return _i == ny/2 && abs(_j - ny/2) <= 8;
     });
@@ -36,17 +36,17 @@ int main() {
         }
     });
 
-    ThermalLBM<double> tsolver = ThermalLBM<double>(nx, ny, 0.2);
+    ThermalLBM<double> tsolver = ThermalLBM<double>(nx, ny, 0.02);
     tsolver.SetBarrier([=](int _i, int _j) {
         return _i == ny/2 && abs(_j - ny/2) <= 8;
     });
     tsolver.SetBoundary([=](int _i, int _j) {
-        if (_i == 0) {
+        if (_j == 0) {
             return INLET;
-        } else if (_i == nx - 1) {
+        } else if (_j == ny - 1) {
             return OUTLET;
-        } else if (_j == 0 || _j == ny - 1) {
-            return MIRROR;
+        } else if (_i == 0 || _i == nx - 1) {
+            return OUTLET;
         } else {
             return PERIODIC;
         }

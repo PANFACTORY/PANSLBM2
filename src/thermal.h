@@ -50,11 +50,11 @@ private:
 
     template<class T>
     void ThermalLBM<T>::Inlet(T _temperature) {
-        for (int j = 0; j < this->ny; j++) {
-            T temperature0 = 6.0*(_temperature - this->f0t[j] - this->f2t[j] - this->f3t[j] - this->f4t[j] - this->f6t[j] - this->f7t[j]);
-            this->f1t[j] = temperature0/9.0;
-            this->f5t[j] = temperature0/36.0;
-            this->f8t[j] = temperature0/36.0;
+        for (int i = 0; i < this->nx; i++) {
+            T temperature0 = 6.0*(_temperature - this->f0t[this->ny*i] - this->f1t[this->ny*i] - this->f3t[this->ny*i] - this->f4t[this->ny*i] - this->f7t[this->ny*i] - this->f8t[this->ny*i]);
+            this->f2t[this->ny*i] = temperature0/9.0;
+            this->f5t[this->ny*i] = temperature0/36.0;
+            this->f6t[this->ny*i] = temperature0/36.0;
         }
     }
 

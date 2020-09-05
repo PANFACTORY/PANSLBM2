@@ -20,9 +20,6 @@ int main() {
     int tmax = 10000, nx = 200, ny = 80;
     
     NSd2q9<double> dsolver = NSd2q9<double>(nx, ny, 0.02);
-    dsolver.SetBarrier([=](int _i, int _j) {
-        return _i == ny/2 && abs(_j - ny/2) <= 8;
-    });
     dsolver.SetBoundary([=](int _i, int _j) {
         if (_j == 0 || _j == ny - 1) {
             return MIRROR;

@@ -11,7 +11,7 @@
 #include <cmath>
 #include <chrono>
 
-#include "NSd2q9.h"
+#include "nsadd2q9.h"
 
 using namespace PANSLBM2;
 
@@ -20,7 +20,7 @@ int main() {
     int tmax = 100000, nx = 100, ny = 50;
     double nu = 0.02;
     
-    NSd2q9<double> dsolver = NSd2q9<double>(nx, ny, nu);
+    NSADd2q9<double> dsolver = NSADd2q9<double>(nx, ny, nu);
     dsolver.SetBoundary([=](int _i, int _j) {
         if (_j == 0 || _j == ny - 1) {
             return MIRROR;

@@ -1,5 +1,5 @@
 //*****************************************************************************
-//  Title       :   src/NSd2q9.h
+//  Title       :   src/nsadd2q9.h
 //  Author      :   Tanabe Yuta
 //  Date        :   2020/09/05
 //  Copyright   :   (C)2020 TanabeYuta
@@ -12,12 +12,12 @@
 
 namespace PANSLBM2 {
     template<class T>
-    class NSd2q9 {
+    class NSADd2q9 {
 public:
-        NSd2q9() = delete;
-        NSd2q9(int _nx, int _ny, T _viscosity);
-        NSd2q9(const NSd2q9<T>& _p);
-        virtual ~NSd2q9();
+        NSADd2q9() = delete;
+        NSADd2q9(int _nx, int _ny, T _viscosity);
+        NSADd2q9(const NSADd2q9<T>& _p);
+        virtual ~NSADd2q9();
 
         template<class F, class G>
         void SetBarrier(F _f, G _g);
@@ -45,7 +45,7 @@ protected:
 
 
     template<class T>
-    NSd2q9<T>::NSd2q9(int _nx, int _ny, T _viscosity) : nx(_nx), ny(_ny), f(_nx, _ny), g(_nx, _ny) {
+    NSADd2q9<T>::NSADd2q9(int _nx, int _ny, T _viscosity) : nx(_nx), ny(_ny), f(_nx, _ny), g(_nx, _ny) {
         assert(0 < _nx && 0 < _ny);
         this->dx = 1.0;     this->dt = 1.0;
         this->t0 = 4.0/9.0; this->t1 = 1.0/9.0; this->t2 = 1.0/36.0;
@@ -66,7 +66,7 @@ protected:
 
 
     template<class T>
-    NSd2q9<T>::NSd2q9(const NSd2q9<T>& _p) : nx(_p.nx), ny(_p.ny), f(_p.f), g(_p.g) {
+    NSADd2q9<T>::NSADd2q9(const NSADd2q9<T>& _p) : nx(_p.nx), ny(_p.ny), f(_p.f), g(_p.g) {
         this->dx = 1.0;     this->dt = 1.0;
         this->t0 = 4.0/9.0; this->t1 = 1.0/9.0; this->t2 = 1.0/36.0;
         this->omega = _p.omega;
@@ -86,7 +86,7 @@ protected:
 
 
     template<class T>
-    NSd2q9<T>::~NSd2q9() {
+    NSADd2q9<T>::~NSADd2q9() {
         delete[] this->rho;
         delete[] this->u;
         delete[] this->v;
@@ -96,7 +96,7 @@ protected:
 
     template<class T>
     template<class F, class G>
-    void NSd2q9<T>::SetBarrier(F _f, G _g) {
+    void NSADd2q9<T>::SetBarrier(F _f, G _g) {
         this->f.SetBarrier(_f);
         this->g.SetBarrier(_g);
     }
@@ -104,14 +104,14 @@ protected:
 
     template<class T>
     template<class F, class G>
-    void NSd2q9<T>::SetBoundary(F _f, G _g) {
+    void NSADd2q9<T>::SetBoundary(F _f, G _g) {
         this->f.SetBoundary(_f);
         this->g.SetBoundary(_g);
     }
 
 
     template<class T>
-    void NSd2q9<T>::Inlet(T _temperature0, T _temperature1) {
+    void NSADd2q9<T>::Inlet(T _temperature0, T _temperature1) {
         for (int i = 0; i < this->nx; i++) {
             T temperature0 = 6.0*(_temperature0 - this->g.f0t[this->ny*i] - this->g.f1t[this->ny*i] - this->g.f3t[this->ny*i] - this->g.f4t[this->ny*i] - this->g.f7t[this->ny*i] - this->g.f8t[this->ny*i]);
             this->g.f2t[this->ny*i] = temperature0/9.0;
@@ -127,14 +127,14 @@ protected:
 
 
     template<class T>
-    void NSd2q9<T>::Stream() {
+    void NSADd2q9<T>::Stream() {
         this->f.Stream();
         this->g.Stream();
     }
 
 
     template<class T>
-    void NSd2q9<T>::UpdateMacro() {
+    void NSADd2q9<T>::UpdateMacro() {
         for (int i = 0; i < this->nx*this->ny; i++) {
             this->rho[i] = this->f.f0t[i] + this->f.f1t[i] + this->f.f2t[i] + this->f.f3t[i] + this->f.f4t[i] + this->f.f5t[i] + this->f.f6t[i] + this->f.f7t[i] + this->f.f8t[i];
             this->u[i] = (this->f.f1t[i] - this->f.f3t[i] + this->f.f5t[i] - this->f.f6t[i] - this->f.f7t[i] + this->f.f8t[i])/this->rho[i];
@@ -145,7 +145,7 @@ protected:
 
 
     template<class T>
-    void NSd2q9<T>::Collision() {
+    void NSADd2q9<T>::Collision() {
         for (int i = 0; i < this->nx*this->ny; i++) {
             T u2 = pow(this->u[i], 2.0);
             T v2 = pow(this->v[i], 2.0);
@@ -177,7 +177,7 @@ protected:
 
 
     template<class T>
-    void NSd2q9<T>::ExternalForce() {
+    void NSADd2q9<T>::ExternalForce() {
         for (int i = 0; i < this->nx*this->ny; i++) {
             T temperature0 = this->g.f0t[i] + this->g.f1t[i] + this->g.f2t[i] + this->g.f3t[i] + this->g.f4t[i] + this->g.f5t[i] + this->g.f6t[i] + this->g.f7t[i] + this->g.f8t[i];
             
@@ -198,28 +198,28 @@ protected:
 
 
     template<class T>
-    T NSd2q9<T>::GetRho(int _i, int _j) const {
+    T NSADd2q9<T>::GetRho(int _i, int _j) const {
         assert(0 <= _i && _i < this->nx && 0 <= _j && _j < this->ny);
         return this->rho[this->ny*_i + _j];
     }
 
 
     template<class T>
-    T NSd2q9<T>::GetU(int _i, int _j) const {
+    T NSADd2q9<T>::GetU(int _i, int _j) const {
         assert(0 <= _i && _i < this->nx && 0 <= _j && _j < this->ny);
         return this->u[this->ny*_i + _j];
     }
 
 
     template<class T>
-    T NSd2q9<T>::GetV(int _i, int _j) const {
+    T NSADd2q9<T>::GetV(int _i, int _j) const {
         assert(0 <= _i && _i < this->nx && 0 <= _j && _j < this->ny);
         return this->v[this->ny*_i + _j];
     }
 
 
     template<class T>
-    T NSd2q9<T>::GetTemperature(int _i, int _j) const {
+    T NSADd2q9<T>::GetTemperature(int _i, int _j) const {
         assert(0 <= _i && _i < this->nx && 0 <= _j && _j < this->ny);
         return this->temperature[this->ny*_i + _j];
     }

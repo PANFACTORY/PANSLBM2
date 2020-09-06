@@ -181,7 +181,7 @@ protected:
         for (int i = 0; i < this->nx*this->ny; i++) {
             T temperature0 = this->g.f0t[i] + this->g.f1t[i] + this->g.f2t[i] + this->g.f3t[i] + this->g.f4t[i] + this->g.f5t[i] + this->g.f6t[i] + this->g.f7t[i] + this->g.f8t[i];
             
-            T rhog = -1.0e-3*(temperature0 - 1.5);
+            T rhog = -1.0e-4*(temperature0 - 1.5);
 
             T dxt0alpha = 3.0*this->dx*this->t0;
             T dxt1alpha = 3.0*this->dx*this->t1;

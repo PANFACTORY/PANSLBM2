@@ -19,11 +19,11 @@ public:
         NSd2q9(const NSd2q9<T>& _p);
         virtual ~NSd2q9();
 
-        template<class F>
-        void SetBarrier(F _f);
-        template<class F>
-        void SetBoundary(F _f);
-        virtual void Inlet(T _u, T _v, T _temperature);
+        template<class F, class G>
+        void SetBarrier(F _f, G _g);
+        template<class F, class G>
+        void SetBoundary(F _f, G _g);
+        virtual void Inlet(T _temperature0, T _temperature1);
         virtual void Stream();
         virtual void UpdateMacro();
         virtual void Collision();
@@ -95,35 +95,33 @@ protected:
 
 
     template<class T>
-    template<class F>
-    void NSd2q9<T>::SetBarrier(F _f) {
+    template<class F, class G>
+    void NSd2q9<T>::SetBarrier(F _f, G _g) {
         this->f.SetBarrier(_f);
-        this->g.SetBarrier(_f);
+        this->g.SetBarrier(_g);
     }
 
 
     template<class T>
-    template<class F>
-    void NSd2q9<T>::SetBoundary(F _f) {
+    template<class F, class G>
+    void NSd2q9<T>::SetBoundary(F _f, G _g) {
         this->f.SetBoundary(_f);
-        this->g.SetBoundary(_f);
+        this->g.SetBoundary(_g);
     }
 
 
     template<class T>
-    void NSd2q9<T>::Inlet(T _u, T _v, T _temperature) {
-        /*for (int j = 0; j < this->ny; j++) {
-            T rho0 = (this->f.f0t[j] + this->f.f2t[j] + this->f.f4t[j] + 2.0*(this->f.f3t[j] + this->f.f6t[j] + this->f.f7t[j]))/(1.0 - _u);
-            this->f.f1t[j] = this->f.f3t[j] + 2.0*rho0*_u/3.0;
-            this->f.f5t[j] = this->f.f7t[j] - 0.5*(this->f.f2t[j] - this->f.f4t[j]) + rho0*_u/6.0 + rho0*_v/2.0;
-            this->f.f8t[j] = this->f.f6t[j] + 0.5*(this->f.f2t[j] - this->f.f4t[j]) + rho0*_u/6.0 - rho0*_v/2.0;
-        }*/
-
+    void NSd2q9<T>::Inlet(T _temperature0, T _temperature1) {
         for (int i = 0; i < this->nx; i++) {
-            T temperature0 = 6.0*(_temperature - this->g.f0t[this->ny*i] - this->g.f1t[this->ny*i] - this->g.f3t[this->ny*i] - this->g.f4t[this->ny*i] - this->g.f7t[this->ny*i] - this->g.f8t[this->ny*i]);
+            T temperature0 = 6.0*(_temperature0 - this->g.f0t[this->ny*i] - this->g.f1t[this->ny*i] - this->g.f3t[this->ny*i] - this->g.f4t[this->ny*i] - this->g.f7t[this->ny*i] - this->g.f8t[this->ny*i]);
             this->g.f2t[this->ny*i] = temperature0/9.0;
             this->g.f5t[this->ny*i] = temperature0/36.0;
             this->g.f6t[this->ny*i] = temperature0/36.0;
+
+            T temperature1 = 6.0*(_temperature1 - this->g.f0t[this->ny*(i + 1) - 1] - this->g.f1t[this->ny*(i + 1) - 1] - this->g.f2t[this->ny*(i + 1) - 1] - this->g.f3t[this->ny*(i + 1) - 1] - this->g.f5t[this->ny*(i + 1) - 1] - this->g.f6t[this->ny*(i + 1) - 1]);
+            this->g.f4t[this->ny*(i + 1) - 1] = temperature1/9.0;
+            this->g.f7t[this->ny*(i + 1) - 1] = temperature1/36.0;
+            this->g.f8t[this->ny*(i + 1) - 1] = temperature1/36.0;
         }
     }
 
@@ -183,15 +181,13 @@ protected:
         for (int i = 0; i < this->nx*this->ny; i++) {
             T temperature0 = this->g.f0t[i] + this->g.f1t[i] + this->g.f2t[i] + this->g.f3t[i] + this->g.f4t[i] + this->g.f5t[i] + this->g.f6t[i] + this->g.f7t[i] + this->g.f8t[i];
             
-            T rhog = 9.8*(temperature0 - 0.0)/2730000.0;
+            T rhog = -1.0e-3*(temperature0 - 1.5);
 
             T dxt0alpha = 3.0*this->dx*this->t0;
             T dxt1alpha = 3.0*this->dx*this->t1;
             T dxt2alpha = 3.0*this->dx*this->t2;
     
-            //this->f1t[i] += dxt1alpha*rhog;
             this->f.f2t[i] += dxt1alpha*rhog;
-            //this->f3t[i] += dxt1alpha*rhog;
             this->f.f4t[i] += dxt1alpha*-rhog;
             this->f.f5t[i] += dxt2alpha*rhog;
             this->f.f6t[i] += dxt2alpha*rhog;

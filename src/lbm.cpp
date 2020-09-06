@@ -17,12 +17,19 @@ using namespace PANSLBM2;
 
 int main() {
     //--------------------Set parameters--------------------
-    int tmax = 10000, nx = 200, ny = 80;
+    int tmax = 100000, nx = 100, ny = 50;
+    double nu = 0.02;
     
-    NSd2q9<double> dsolver = NSd2q9<double>(nx, ny, 0.02);
+    NSd2q9<double> dsolver = NSd2q9<double>(nx, ny, nu);
     dsolver.SetBoundary([=](int _i, int _j) {
         if (_j == 0 || _j == ny - 1) {
             return MIRROR;
+        } else {
+            return PERIODIC;
+        }
+    }, [=](int _i, int _j) {
+        if (_j == 0 || _j == ny - 1) {
+            return INLET;
         } else {
             return PERIODIC;
         }
@@ -33,14 +40,14 @@ int main() {
     //--------------------Direct analyze--------------------
     for (int t = 0; t < tmax; t++) {
         std::cout << t << std::endl;
-        dsolver.UpdateMacro();          //  Update macroscopic values
-        dsolver.Collision();            //  Collision
-        dsolver.Stream();               //  Stream
-        dsolver.Inlet(0.1, 0.0, 100);   //  Boundary condition (inlet)
-        dsolver.ExternalForce();        //  External force by thermal
+        dsolver.UpdateMacro();      //  Update macroscopic values
+        dsolver.Collision();        //  Collision
+        dsolver.Stream();           //  Stream
+        dsolver.Inlet(1.0, 2.0);    //  Boundary condition (inlet)
+        dsolver.ExternalForce();    //  External force by thermal
         
-        if (t%100 == 0) {
-            std::ofstream fout("result/result" + std::to_string(t) + ".vtk");
+        if (t%1000 == 0) {
+            std::ofstream fout("result/result" + std::to_string(t/1000) + ".vtk");
             fout << "# vtk DataFile Version 3.0" << std::endl;
             fout << "2D flow" << std::endl;
             fout << "ASCII" << std::endl;

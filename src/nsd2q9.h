@@ -160,6 +160,13 @@ protected:
 
 
     template<class T>
+    bool NSd2q9<T>::GetBarrier(int _i, int _j) const {
+        assert(0 <= _i && _i < this->nx && 0 <= _j && _j < this->ny);
+        return this->f.GetBarrier(_i, _j);
+    }
+
+
+    template<class T>
     T NSd2q9<T>::GetRho(int _i, int _j) const {
         assert(0 <= _i && _i < this->nx && 0 <= _j && _j < this->ny);
         return this->rho[this->ny*_i + _j];

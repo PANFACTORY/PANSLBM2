@@ -4,8 +4,7 @@
 #include <cmath>
 #include <chrono>
 
-#include "lbm.h"
-#include "adjoint.h"
+#include "nsadjointd2q9.h"
 #include "src/Optimize/Solver/MMA.h"
 
 using namespace PANSLBM2;
@@ -13,7 +12,7 @@ using namespace PANSFEM2;
 
 int main() {
     //********************Setting parameters********************
-    int tmax = 1000;
+    int nt = 1000;
     int nx = 200;
     int ny = 100;
     double nu = 0.01;
@@ -50,8 +49,8 @@ int main() {
         }
 
         //********************Get Drag********************
-        LBM<double> dsolver = LBM<double>(nx, ny, nu);
-        dsolver.SetPermeation([=](int _i, int _j) {
+        NSAdjointd2q9<double> dsolver = NSAdjointd2q9<double>(nx, ny, nt, nu);
+        dsolver.SetAlpha([=](int _i, int _j) {
             return alpha0*q*(1.0 - s[ny*_i + _j])/(s[ny*_i + _j] + q);
         });
         dsolver.SetBoundary([=](int _i, int _j) {
@@ -65,12 +64,10 @@ int main() {
                 return PERIODIC;
             }
         });
-        AdjointLBM<double> isolver = AdjointLBM<double>(dsolver, tmax);
 
         //--------------------Direct analyze--------------------
-        for (isolver.t = 0; isolver.t < tmax; isolver.t++) {
+        for (dsolver.t = 0; dsolver.t < nt; dsolver.t++) {
             dsolver.UpdateMacro();          //  Update macroscopic values
-            isolver.CaptureMacro(dsolver);  //  Capture macroscopic values
             dsolver.Collision();            //  Collision
             dsolver.Stream();               //  Stream
             dsolver.Inlet(u0, 0.0);         //  Boundary condition (inlet)
@@ -78,12 +75,13 @@ int main() {
         }
 
         //--------------------Invert analyze--------------------
-        for (isolver.t = tmax - 1; isolver.t >= 0; isolver.t--) {
-            isolver.UpdateMacro();          //  Update macroscopic values
-            isolver.Collision();            //  Collision
-            isolver.Stream();               //  Stream
-            isolver.Inlet(u0, 0.0);         //  Boundary condition (inlet)
-            isolver.ExternalForce();        //  External force by Brinkman model   
+        dsolver.SwitchDirection();
+        for (dsolver.t = nt - 1; dsolver.t >= 0; dsolver.t--) {
+            dsolver.UpdateMacro();          //  Update macroscopic values
+            dsolver.Collision();            //  Collision
+            dsolver.Stream();               //  Stream
+            dsolver.Inlet(u0, 0.0);         //  Boundary condition (inlet)
+            dsolver.ExternalForce();        //  External force by Brinkman model   
         }
 
         //--------------------Get sensitivity--------------------
@@ -92,7 +90,7 @@ int main() {
         for (int i = 0; i < nx; i++) {
             for (int j = 0; j < ny; j++) {
                 f += dsolver.GetU(i, j)*alpha0*q*(1.0 - s[ny*i + j])/(s[ny*i + j] + q);
-                dfds[ny*i + j] = isolver.GetSensitivity(i, j)*(-alpha0*q*(q + 1.0)/pow(q + s[ny*i + j], 2.0));
+                dfds[ny*i + j] = dsolver.GetSensitivity(i, j)*(-alpha0*q*(q + 1.0)/pow(q + s[ny*i + j], 2.0));
             }
         }
 

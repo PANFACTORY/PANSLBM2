@@ -47,7 +47,7 @@ int main() {
         dsolver.ExternalForce();    //  External force by thermal
         
         if (t%1000 == 0) {
-            std::ofstream fout("result/result" + std::to_string(t/1000) + ".vtk");
+            std::ofstream fout("result/thermal" + std::to_string(t/1000) + ".vtk");
             fout << "# vtk DataFile Version 3.0" << std::endl;
             fout << "2D flow" << std::endl;
             fout << "ASCII" << std::endl;

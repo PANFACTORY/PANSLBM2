@@ -37,7 +37,7 @@ int main() {
 		std::vector<double>(s.size(), 0.01), std::vector<double>(s.size(), 1.0));
 	optimizer.SetParameters(1.0e-5, 0.1, 0.2, 0.5, 0.7, 1.2, 1.0e-6);
 
-    for (int k = 0; k < 50; k++) {
+    for (int k = 0; k < 100; k++) {
         std::cout << "k = " << k << "\t";
 
         //********************Get weight********************
@@ -95,7 +95,7 @@ int main() {
         }
 
         //--------------------Export result--------------------
-        std::ofstream fout("result/result" + std::to_string(k) + ".vtk");
+        std::ofstream fout("result/optimize" + std::to_string(k) + ".vtk");
         fout << "# vtk DataFile Version 3.0" << std::endl;
         fout << "2D flow" << std::endl;
         fout << "ASCII" << std::endl;

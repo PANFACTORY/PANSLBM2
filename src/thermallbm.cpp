@@ -43,7 +43,7 @@ int main() {
         dsolver.UpdateMacro();      //  Update macroscopic values
         dsolver.Collision();        //  Collision
         dsolver.Stream();           //  Stream
-        dsolver.Inlet(1.0, 2.0);    //  Boundary condition (inlet)
+        dsolver.Inlet(2.0, 1.0);    //  Boundary condition (inlet)
         dsolver.ExternalForce();    //  External force by thermal
         
         if (t%1000 == 0) {

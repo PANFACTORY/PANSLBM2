@@ -29,7 +29,7 @@ public:
         template<class F>
         void SetBoundary(F _f);
 
-        virtual void Stream();
+        void Stream();
         
         bool GetBarrier(int _i, int _j) const;
         

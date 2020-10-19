@@ -43,11 +43,12 @@ int main() {
         }
 
         //********************Get PressureDrop********************
-        NSAdjointd2q9<double> dsolver = NSAdjointd2q9<double>(nx, ny, nt, nu);
+        D2Q9<double> partial = D2Q9<double>(nx, ny);
+        NSAdjointd2q9<double> dsolver = NSAdjointd2q9<double>(&partial, nt, nu);
         dsolver.SetAlpha([=](int _i, int _j) {
             return alpha0*q*(1.0 - s[ny*_i + _j])/(s[ny*_i + _j] + q);
         });
-        dsolver.SetBoundary([=](int _i, int _j) {
+        partial.SetBoundary([=](int _i, int _j) {
             if ((_i == 0 && ((int)(0.7*ny) < _j && _j < (int)(0.9*ny))) || (((int)(0.7*nx) < _i && _i < (int)(0.9*nx)) && _j == 0)) {
                 return INLET;
             } else {
@@ -59,7 +60,7 @@ int main() {
         for (dsolver.t = 0; dsolver.t < nt; dsolver.t++) {
             dsolver.UpdateMacro();          //  Update macroscopic values
             dsolver.Collision();            //  Collision
-            dsolver.Stream();               //  Stream
+            partial.Stream();               //  Stream
             dsolver.Inlet(u0, 0.0, rho0);   //  Boundary condition (inlet)
             dsolver.ExternalForce();        //  External force by Brinkman model
 
@@ -74,7 +75,7 @@ int main() {
         for (dsolver.t = dsolver.t >= nt ? nt - 1 : dsolver.t; dsolver.t >= 0; dsolver.t--) {
             dsolver.UpdateMacro();          //  Update macroscopic values
             dsolver.Collision();            //  Collision
-            dsolver.Stream();               //  Stream
+            partial.Stream();               //  Stream
             dsolver.Inlet(u0, 0.0, rho0);   //  Boundary condition (inlet)
             dsolver.ExternalForce();        //  External force by Brinkman model   
         }

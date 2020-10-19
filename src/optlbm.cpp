@@ -17,10 +17,10 @@ int main() {
     int ny = 100;
     double nu = 0.1;
     double q = 0.1;
-    double u0 = 0.25;
+    double u0 = 0.025;
     double rho0 = 1.0;
     double alpha0 = 1.0;
-    double scale0 = 1.0e-130;
+    double scale0 = 1.0e0;
     double weightlimit = 0.25;
 
     std::vector<double> s = std::vector<double>(nx*ny, 1.0);
@@ -84,7 +84,7 @@ int main() {
         std::vector<double> dfds = std::vector<double>(s.size(), 0.0);
         for (int i = 0; i < nx; i++) {
             for (int j = 0; j < ny; j++) {
-                f += scale0*dsolver.GetU(i, j)*alpha0*q*(1.0 - s[ny*i + j])/(s[ny*i + j] + q);
+                f += scale0*dsolver.GetUx(i, j)*alpha0*q*(1.0 - s[ny*i + j])/(s[ny*i + j] + q);
                 dfds[ny*i + j] = scale0*dsolver.GetSensitivity(i, j)*(-alpha0*q*(q + 1.0)/pow(q + s[ny*i + j], 2.0));
             }
         }
@@ -122,25 +122,33 @@ int main() {
             }
         }
 
+        fout << "SCALARS\trho\tfloat" << std::endl;
+        fout << "LOOKUP_TABLE\tdefault" << std::endl;
+        for (int j = 0; j < ny; j++) {
+            for (int i = 0; i < nx; i++) {
+                fout << dsolver.GetRho(i, j) << std::endl;
+            }
+        }
+
         fout << "VECTORS\tu\tfloat" << std::endl;
         for (int j = 0; j < ny; j++) {
             for (int i = 0; i < nx; i++) {
-                fout << dsolver.GetU(i, j) << "\t" << dsolver.GetV(i, j) << "\t" << 0.0 << std::endl;
+                fout << dsolver.GetUx(i, j) << "\t" << dsolver.GetUy(i, j) << "\t" << 0.0 << std::endl;
+            }
+        }
+
+        fout << "SCALARS\tq\tfloat" << std::endl;
+        fout << "LOOKUP_TABLE\tdefault" << std::endl;
+        for (int j = 0; j < ny; j++) {
+            for (int i = 0; i < nx; i++) {
+                fout << dsolver.GetQ(i, j) << std::endl;
             }
         }
 
         fout << "VECTORS\tv\tfloat" << std::endl;
         for (int j = 0; j < ny; j++) {
             for (int i = 0; i < nx; i++) {
-                fout << dsolver.GetQ(i, j) << "\t" << dsolver.GetR(i, j) << "\t" << 0.0 << std::endl;
-            }
-        }
-
-        fout << "SCALARS\tp\tfloat" << std::endl;
-        fout << "LOOKUP_TABLE\tdefault" << std::endl;
-        for (int j = 0; j < ny; j++) {
-            for (int i = 0; i < nx; i++) {
-                fout << dsolver.GetP(i, j) << std::endl;
+                fout << dsolver.GetVx(i, j) << "\t" << dsolver.GetVy(i, j) << "\t" << 0.0 << std::endl;
             }
         }
 

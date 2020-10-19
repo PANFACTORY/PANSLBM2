@@ -16,7 +16,7 @@ namespace PANSLBM2 {
 public:
         NSAdjointd2q9() = delete;
         NSAdjointd2q9(int _nx, int _ny, int _nt, T _viscosity);
-        NSAdjointd2q9(const NSAdjointd2q9<T>& _p);
+        NSAdjointd2q9(const NSAdjointd2q9<T>& _e);
         virtual ~NSAdjointd2q9();
 
         template<class F>
@@ -37,11 +37,11 @@ public:
 
         bool GetBarrier(int _i, int _j) const;
         virtual T GetRho(int _i, int _j) const;
-        virtual T GetU(int _i, int _j) const;
-        virtual T GetV(int _i, int _j) const;
-        virtual T GetP(int _i, int _j) const;
+        virtual T GetUx(int _i, int _j) const;
+        virtual T GetUy(int _i, int _j) const;
         virtual T GetQ(int _i, int _j) const;
-        virtual T GetR(int _i, int _j) const;
+        virtual T GetVx(int _i, int _j) const;
+        virtual T GetVy(int _i, int _j) const;
         virtual T GetSensitivity(int _i, int _j) const;
         
         const int nx, ny, nt;
@@ -53,7 +53,7 @@ protected:
         T dx, dt, t0, t1, t2, omega;
         bool direction;                         //  true : direct analyze, false : inverse analyze
         D2Q9<T> f;
-        T *rho, *u, *v, *p, *q, *r, *alpha, *sensitivity;
+        T *rho, *ux, *uy, *q, *vx, *vy, *alpha, *sensitivity;
     };
 
 
@@ -68,25 +68,25 @@ protected:
         this->direction = true;
 
         this->rho = new T[this->nx*this->ny*this->nt];
-        this->u = new T[this->nx*this->ny*this->nt];
-        this->v = new T[this->nx*this->ny*this->nt];
+        this->ux = new T[this->nx*this->ny*this->nt];
+        this->uy = new T[this->nx*this->ny*this->nt];
         
         for (int i = 0; i < this->nx*this->ny*this->nt; i++) {
             this->rho[i] = T();
-            this->u[i] = T();
-            this->v[i] = T();
+            this->ux[i] = T();
+            this->uy[i] = T();
         }
 
-        this->p = new T[this->nx*this->ny];
         this->q = new T[this->nx*this->ny];
-        this->r = new T[this->nx*this->ny];
+        this->vx = new T[this->nx*this->ny];
+        this->vy = new T[this->nx*this->ny];
         this->alpha = new T[this->nx*this->ny];
         this->sensitivity = new T[this->nx*this->ny];
 
         for (int i = 0; i < this->nx*this->ny; i++) {
-            this->p[i] = T();
             this->q[i] = T();
-            this->r[i] = T();
+            this->vx[i] = T();
+            this->vy[i] = T();
             this->alpha[i] = T();
             this->sensitivity[i] = T();
         }
@@ -94,36 +94,36 @@ protected:
 
 
     template<class T>
-    NSAdjointd2q9<T>::NSAdjointd2q9(const NSAdjointd2q9<T>& _p) : nx(_p.nx), ny(_p.ny), nt(_p.nt), f(_p.f) {
-        this->t = _p.t;
-        this->tmax = _p.tmax;
-        this->dx = _p.dx;   this->dt = _p.dt;
-        this->t0 = _p.t0;   this->t1 = _p.t1;   this->t2 = _p.t2;
-        this->omega = _p.omega;
-        this->direction = true;
+    NSAdjointd2q9<T>::NSAdjointd2q9(const NSAdjointd2q9<T>& _e) : nx(_e.nx), ny(_e.ny), nt(_e.nt), f(_e.f) {
+        this->t = _e.t;
+        this->tmax = _e.tmax;
+        this->dx = _e.dx;   this->dt = _e.dt;
+        this->t0 = _e.t0;   this->t1 = _e.t1;   this->t2 = _e.t2;
+        this->omega = _e.omega;
+        this->direction = _e.direction;
 
         this->rho = new T[this->nx*this->ny];
-        this->u = new T[this->nx*this->ny];
-        this->v = new T[this->nx*this->ny];
+        this->ux = new T[this->nx*this->ny];
+        this->uy = new T[this->nx*this->ny];
 
         for (int i = 0; i < this->nx*this->ny*this->nt; i++) {
-            this->rho[i] = _p.rho[i];
-            this->u[i] = _p.u[i];
-            this->v[i] = _p.v[i];
+            this->rho[i] = _e.rho[i];
+            this->ux[i] = _e.ux[i];
+            this->uy[i] = _e.uy[i];
         }
 
-        this->p = new T[this->nx*this->ny];
         this->q = new T[this->nx*this->ny];
-        this->r = new T[this->nx*this->ny];
+        this->vx = new T[this->nx*this->ny];
+        this->vy = new T[this->nx*this->ny];
         this->alpha = new T[this->nx*this->ny];
         this->sensitivity = new T[this->nx*this->ny];
 
         for (int i = 0; i < this->nx*this->ny; i++) {
-            this->p[i] = _p.p[i];
-            this->q[i] = _p.q[i];
-            this->r[i] = _p.r[i];
-            this->alpha[i] = _p.alpha[i];
-            this->sensitivity[i] = _p.sensitivity[i];
+            this->q[i] = _e.q[i];
+            this->vx[i] = _e.vx[i];
+            this->vy[i] = _e.vy[i];
+            this->alpha[i] = _e.alpha[i];
+            this->sensitivity[i] = _e.sensitivity[i];
         }
     }
 
@@ -131,11 +131,11 @@ protected:
     template<class T>
     NSAdjointd2q9<T>::~NSAdjointd2q9() {
         delete[] this->rho;
-        delete[] this->u;
-        delete[] this->v;
-        delete[] this->p;
+        delete[] this->ux;
+        delete[] this->uy;
         delete[] this->q;
-        delete[] this->r;
+        delete[] this->vx;
+        delete[] this->vy;
         delete[] this->alpha;
         delete[] this->sensitivity;
     }
@@ -167,28 +167,28 @@ protected:
 
 
     template<class T>
-    void NSAdjointd2q9<T>::Inlet(T _u, T _v, T _rho) {
+    void NSAdjointd2q9<T>::Inlet(T _ux, T _uy, T _rho) {
         if (this->direction) {
             //  Boundary condition for velocity
             for (int j = (int)(0.7*this->ny); j < (int)(0.9*this->ny); j++) {
-                T ui = -_u*(j - 0.7*this->ny)*(j - 0.9*this->ny)/pow(0.1*this->ny, 2.0);
+                T ui = -_ux*(j - 0.7*this->ny)*(j - 0.9*this->ny)/pow(0.1*this->ny, 2.0);
                 T rho0 = (this->f.f0t[j] + this->f.f2t[j] + this->f.f4t[j] + 2.0*(this->f.f3t[j] + this->f.f6t[j] + this->f.f7t[j]))/(1.0 - ui);
                 this->f.f1t[j] = this->f.f3t[j] + 2.0*rho0*ui/3.0;
-                this->f.f5t[j] = this->f.f7t[j] - 0.5*(this->f.f2t[j] - this->f.f4t[j]) + rho0*ui/6.0 + rho0*_v/2.0;
-                this->f.f8t[j] = this->f.f6t[j] + 0.5*(this->f.f2t[j] - this->f.f4t[j]) + rho0*ui/6.0 - rho0*_v/2.0;
+                this->f.f5t[j] = this->f.f7t[j] - 0.5*(this->f.f2t[j] - this->f.f4t[j]) + rho0*ui/6.0 + rho0*_uy/2.0;
+                this->f.f8t[j] = this->f.f6t[j] + 0.5*(this->f.f2t[j] - this->f.f4t[j]) + rho0*ui/6.0 - rho0*_uy/2.0;
             }
             //  Boundary condition for pressure
             for (int i = (int)(0.7*this->nx); i < (int)(0.9*this->nx); i++) {
-                T v0 = 1.0 - (this->f.f0t[this->ny*i] + this->f.f1t[this->ny*i] + this->f.f3t[this->ny*i] + 2.0*(this->f.f4t[this->ny*i] + this->f.f7t[this->ny*i] + this->f.f8t[this->ny*i]))/_rho;
-                this->f.f2t[this->ny*i] = this->f.f4t[this->ny*i] + 2.0*_rho*v0/3.0;
-                this->f.f5t[this->ny*i] = this->f.f7t[this->ny*i] - 0.5*(this->f.f1t[this->ny*i] - this->f.f3t[this->ny*i]) + _rho*v0/6.0;
-                this->f.f6t[this->ny*i] = this->f.f8t[this->ny*i] + 0.5*(this->f.f1t[this->ny*i] - this->f.f3t[this->ny*i]) + _rho*v0/6.0;
+                T uy0 = 1.0 - (this->f.f0t[this->ny*i] + this->f.f1t[this->ny*i] + this->f.f3t[this->ny*i] + 2.0*(this->f.f4t[this->ny*i] + this->f.f7t[this->ny*i] + this->f.f8t[this->ny*i]))/_rho;
+                this->f.f2t[this->ny*i] = this->f.f4t[this->ny*i] + 2.0*_rho*uy0/3.0;
+                this->f.f5t[this->ny*i] = this->f.f7t[this->ny*i] - 0.5*(this->f.f1t[this->ny*i] - this->f.f3t[this->ny*i]) + _rho*uy0/6.0;
+                this->f.f6t[this->ny*i] = this->f.f8t[this->ny*i] + 0.5*(this->f.f1t[this->ny*i] - this->f.f3t[this->ny*i]) + _rho*uy0/6.0;
             }
         } else {
             //  Boundary condition for velocity
             for (int j = (int)(0.7*this->ny); j < (int)(0.9*this->ny); j++) {
-                T ui = -_u*(j - 0.7*this->ny)*(j - 0.9*this->ny)/pow(0.1*this->ny, 2.0);
-                T term2 = (-2.0 + 4.0*ui*this->f.f3t[j] + (ui + 3.0*_v)*this->f.f7t[j] + (ui - 3.0*_v)*this->f.f6t[j])/(3.0*(1.0 - ui));
+                T ui = -_ux*(j - 0.7*this->ny)*(j - 0.9*this->ny)/pow(0.1*this->ny, 2.0);
+                T term2 = (-2.0 + 4.0*ui*this->f.f3t[j] + (ui + 3.0*_uy)*this->f.f7t[j] + (ui - 3.0*_uy)*this->f.f6t[j])/(3.0*(1.0 - ui));
                 this->f.f1t[j] = this->f.f3t[j] + term2;
                 this->f.f8t[j] = this->f.f6t[j] + term2;
                 this->f.f5t[j] = this->f.f7t[j] + term2;
@@ -217,15 +217,15 @@ protected:
                 int ii = this->nx*this->ny*this->t + i;
 
                 this->rho[ii] = this->f.f0t[i] + this->f.f1t[i] + this->f.f2t[i] + this->f.f3t[i] + this->f.f4t[i] + this->f.f5t[i] + this->f.f6t[i] + this->f.f7t[i] + this->f.f8t[i];
-                this->u[ii] = (this->f.f1t[i] - this->f.f3t[i] + this->f.f5t[i] - this->f.f6t[i] - this->f.f7t[i] + this->f.f8t[i])/this->rho[ii];
-                this->v[ii] = (this->f.f2t[i] - this->f.f4t[i] + this->f.f5t[i] + this->f.f6t[i] - this->f.f7t[i] - this->f.f8t[i])/this->rho[ii];
+                this->ux[ii] = (this->f.f1t[i] - this->f.f3t[i] + this->f.f5t[i] - this->f.f6t[i] - this->f.f7t[i] + this->f.f8t[i])/this->rho[ii];
+                this->uy[ii] = (this->f.f2t[i] - this->f.f4t[i] + this->f.f5t[i] + this->f.f6t[i] - this->f.f7t[i] - this->f.f8t[i])/this->rho[ii];
             }
         } else {
             for (int i = 0; i < this->nx*this->ny; i++) {
                 int ii = this->nx*this->ny*this->t + i;
                 T rhoii = this->rho[ii];
-                T uii = this->u[ii];
-                T vii = this->v[ii];
+                T uii = this->ux[ii];
+                T vii = this->uy[ii];
 
                 T u2 = pow(uii, 2.0);
                 T v2 = pow(vii, 2.0);
@@ -242,7 +242,7 @@ protected:
                 T f6eq = this->t2*(omu215 + 3.0*(uii - vii) + 4.5*(u2v2 - 2.0*uv));
                 T f7eq = this->t2*(omu215 + 3.0*(uii + vii) + 4.5*(u2v2 + 2.0*uv));
                 T f8eq = this->t2*(omu215 - 3.0*(uii - vii) + 4.5*(u2v2 - 2.0*uv));
-                this->p[i] = f0eq*this->f.f0t[i] + f1eq*this->f.f1t[i] + f2eq*this->f.f2t[i] + f3eq*this->f.f3t[i] + f4eq*this->f.f4t[i] + f5eq*this->f.f5t[i] + f6eq*this->f.f6t[i] + f7eq*this->f.f7t[i] + f8eq*this->f.f8t[i];
+                this->q[i] = f0eq*this->f.f0t[i] + f1eq*this->f.f1t[i] + f2eq*this->f.f2t[i] + f3eq*this->f.f3t[i] + f4eq*this->f.f4t[i] + f5eq*this->f.f5t[i] + f6eq*this->f.f6t[i] + f7eq*this->f.f7t[i] + f8eq*this->f.f8t[i];
                 
                 T fas0 = this->t0*this->f.f0t[i];
                 T fas1 = this->t1*this->f.f1t[i];
@@ -253,12 +253,12 @@ protected:
                 T fas6 = this->t2*this->f.f6t[i];
                 T fas7 = this->t2*this->f.f7t[i];
                 T fas8 = this->t2*this->f.f8t[i];
-                this->q[i] = -fas0*uii + fas1*(-1.0 + 2.0*uii) - fas2*uii + fas3*(1.0 + 2.0*uii) - fas4*uii + fas5*(-1.0 + 2.0*uii + 3.0*vii) + fas6*(1.0 + 2.0*uii - 3.0*vii) + fas7*(1.0 + 2.0*uii + 3.0*vii) + fas8*(-1.0 + 2.0*uii - 3.0*vii);
-                this->r[i] = -fas0*vii - fas1*vii + fas2*(-1.0 + 2.0*vii) - fas3*vii + fas4*(1.0 + 2.0*vii) + fas5*(-1.0 + 3.0*uii + 2.0*vii) + fas6*(-1.0 - 3.0*uii + 2.0*vii) + fas7*(1.0 + 3.0*uii + 2.0*vii) + fas8*(1.0 - 3.0*uii + 2.0*vii);
+                this->vx[i] = -fas0*uii + fas1*(-1.0 + 2.0*uii) - fas2*uii + fas3*(1.0 + 2.0*uii) - fas4*uii + fas5*(-1.0 + 2.0*uii + 3.0*vii) + fas6*(1.0 + 2.0*uii - 3.0*vii) + fas7*(1.0 + 2.0*uii + 3.0*vii) + fas8*(-1.0 + 2.0*uii - 3.0*vii);
+                this->vy[i] = -fas0*vii - fas1*vii + fas2*(-1.0 + 2.0*vii) - fas3*vii + fas4*(1.0 + 2.0*vii) + fas5*(-1.0 + 3.0*uii + 2.0*vii) + fas6*(-1.0 - 3.0*uii + 2.0*vii) + fas7*(1.0 + 3.0*uii + 2.0*vii) + fas8*(1.0 - 3.0*uii + 2.0*vii);
 
                 T sensx = this->t1*(-this->f.f1t[i] + this->f.f3t[i]) + this->t2*(-this->f.f5t[i] + this->f.f6t[i] + this->f.f7t[i] - this->f.f8t[i]);
                 T sensy = this->t1*(-this->f.f2t[i] + this->f.f4t[i]) + this->t2*(-this->f.f5t[i] - this->f.f6t[i] + this->f.f7t[i] + this->f.f8t[i]);
-                this->sensitivity[i] += 3.0*this->dx*(sensx*this->u[ii] + sensy*this->v[ii]);
+                this->sensitivity[i] += 3.0*this->dx*(sensx*this->ux[ii] + sensy*this->uy[ii]);
             }
         }
     }
@@ -270,35 +270,35 @@ protected:
             for (int i = 0; i < this->nx*this->ny; i++) {
                 int ii = this->nx*this->ny*this->t + i;
 
-                T u2 = pow(this->u[ii], 2.0);
-                T v2 = pow(this->v[ii], 2.0);
+                T u2 = pow(this->ux[ii], 2.0);
+                T v2 = pow(this->uy[ii], 2.0);
                 T u2v2 = u2 + v2;
-                T uv = this->u[ii]*this->v[ii];
+                T uv = this->ux[ii]*this->uy[ii];
                 T omu215 = 1.0 - 1.5*u2v2;
 
                 this->f.f0tp1[i] = (1.0 - this->omega)*this->f.f0t[i] + this->omega*this->t0*this->rho[ii]*omu215;
-                this->f.f1tp1[i] = (1.0 - this->omega)*this->f.f1t[i] + this->omega*this->t1*this->rho[ii]*(omu215 + 3.0*this->u[ii] + 4.5*u2);
-                this->f.f2tp1[i] = (1.0 - this->omega)*this->f.f2t[i] + this->omega*this->t1*this->rho[ii]*(omu215 + 3.0*this->v[ii] + 4.5*v2);
-                this->f.f3tp1[i] = (1.0 - this->omega)*this->f.f3t[i] + this->omega*this->t1*this->rho[ii]*(omu215 - 3.0*this->u[ii] + 4.5*u2);
-                this->f.f4tp1[i] = (1.0 - this->omega)*this->f.f4t[i] + this->omega*this->t1*this->rho[ii]*(omu215 - 3.0*this->v[ii] + 4.5*v2);
-                this->f.f5tp1[i] = (1.0 - this->omega)*this->f.f5t[i] + this->omega*this->t2*this->rho[ii]*(omu215 + 3.0*(this->u[ii] + this->v[ii]) + 4.5*(u2v2 + 2.0*uv));
-                this->f.f6tp1[i] = (1.0 - this->omega)*this->f.f6t[i] + this->omega*this->t2*this->rho[ii]*(omu215 - 3.0*(this->u[ii] - this->v[ii]) + 4.5*(u2v2 - 2.0*uv));
-                this->f.f7tp1[i] = (1.0 - this->omega)*this->f.f7t[i] + this->omega*this->t2*this->rho[ii]*(omu215 - 3.0*(this->u[ii] + this->v[ii]) + 4.5*(u2v2 + 2.0*uv));
-                this->f.f8tp1[i] = (1.0 - this->omega)*this->f.f8t[i] + this->omega*this->t2*this->rho[ii]*(omu215 + 3.0*(this->u[ii] - this->v[ii]) + 4.5*(u2v2 - 2.0*uv));
+                this->f.f1tp1[i] = (1.0 - this->omega)*this->f.f1t[i] + this->omega*this->t1*this->rho[ii]*(omu215 + 3.0*this->ux[ii] + 4.5*u2);
+                this->f.f2tp1[i] = (1.0 - this->omega)*this->f.f2t[i] + this->omega*this->t1*this->rho[ii]*(omu215 + 3.0*this->uy[ii] + 4.5*v2);
+                this->f.f3tp1[i] = (1.0 - this->omega)*this->f.f3t[i] + this->omega*this->t1*this->rho[ii]*(omu215 - 3.0*this->ux[ii] + 4.5*u2);
+                this->f.f4tp1[i] = (1.0 - this->omega)*this->f.f4t[i] + this->omega*this->t1*this->rho[ii]*(omu215 - 3.0*this->uy[ii] + 4.5*v2);
+                this->f.f5tp1[i] = (1.0 - this->omega)*this->f.f5t[i] + this->omega*this->t2*this->rho[ii]*(omu215 + 3.0*(this->ux[ii] + this->uy[ii]) + 4.5*(u2v2 + 2.0*uv));
+                this->f.f6tp1[i] = (1.0 - this->omega)*this->f.f6t[i] + this->omega*this->t2*this->rho[ii]*(omu215 - 3.0*(this->ux[ii] - this->uy[ii]) + 4.5*(u2v2 - 2.0*uv));
+                this->f.f7tp1[i] = (1.0 - this->omega)*this->f.f7t[i] + this->omega*this->t2*this->rho[ii]*(omu215 - 3.0*(this->ux[ii] + this->uy[ii]) + 4.5*(u2v2 + 2.0*uv));
+                this->f.f8tp1[i] = (1.0 - this->omega)*this->f.f8t[i] + this->omega*this->t2*this->rho[ii]*(omu215 + 3.0*(this->ux[ii] - this->uy[ii]) + 4.5*(u2v2 - 2.0*uv));
             }
         } else {
             for (int i = 0; i < this->nx*this->ny; i++) {
                 int ii = this->nx*this->ny*this->t + i;
                 
-                this->f.f0tp1[i] = (1.0 - this->omega)*this->f.f0t[i] + this->omega*(this->p[i] + 3.0*(this->q[i]*(-this->u[ii]) + this->r[i]*(-this->v[ii])));
-                this->f.f1tp1[i] = (1.0 - this->omega)*this->f.f1t[i] + this->omega*(this->p[i] + 3.0*(this->q[i]*(-1.0 - this->u[ii]) + this->r[i]*(-this->v[ii])));
-                this->f.f2tp1[i] = (1.0 - this->omega)*this->f.f2t[i] + this->omega*(this->p[i] + 3.0*(this->q[i]*(-this->u[ii]) + this->r[i]*(-1.0 - this->v[ii])));
-                this->f.f3tp1[i] = (1.0 - this->omega)*this->f.f3t[i] + this->omega*(this->p[i] + 3.0*(this->q[i]*(1.0 - this->u[ii]) + this->r[i]*(-this->v[ii])));
-                this->f.f4tp1[i] = (1.0 - this->omega)*this->f.f4t[i] + this->omega*(this->p[i] + 3.0*(this->q[i]*(-this->u[ii]) + this->r[i]*(1.0 - this->v[ii])));
-                this->f.f5tp1[i] = (1.0 - this->omega)*this->f.f5t[i] + this->omega*(this->p[i] + 3.0*(this->q[i]*(-1.0 - this->u[ii]) + this->r[i]*(-1.0 - this->v[ii])));
-                this->f.f6tp1[i] = (1.0 - this->omega)*this->f.f6t[i] + this->omega*(this->p[i] + 3.0*(this->q[i]*(1.0 - this->u[ii]) + this->r[i]*(-1.0 - this->v[ii])));
-                this->f.f7tp1[i] = (1.0 - this->omega)*this->f.f7t[i] + this->omega*(this->p[i] + 3.0*(this->q[i]*(1.0 - this->u[ii]) + this->r[i]*(1.0 - this->v[ii])));
-                this->f.f8tp1[i] = (1.0 - this->omega)*this->f.f8t[i] + this->omega*(this->p[i] + 3.0*(this->q[i]*(-1.0 - this->u[ii]) + this->r[i]*(1.0 - this->v[ii])));
+                this->f.f0tp1[i] = (1.0 - this->omega)*this->f.f0t[i] + this->omega*(this->q[i] + 3.0*(this->vx[i]*(-this->ux[ii]) + this->vy[i]*(-this->uy[ii])));
+                this->f.f1tp1[i] = (1.0 - this->omega)*this->f.f1t[i] + this->omega*(this->q[i] + 3.0*(this->vx[i]*(-1.0 - this->ux[ii]) + this->vy[i]*(-this->uy[ii])));
+                this->f.f2tp1[i] = (1.0 - this->omega)*this->f.f2t[i] + this->omega*(this->q[i] + 3.0*(this->vx[i]*(-this->ux[ii]) + this->vy[i]*(-1.0 - this->uy[ii])));
+                this->f.f3tp1[i] = (1.0 - this->omega)*this->f.f3t[i] + this->omega*(this->q[i] + 3.0*(this->vx[i]*(1.0 - this->ux[ii]) + this->vy[i]*(-this->uy[ii])));
+                this->f.f4tp1[i] = (1.0 - this->omega)*this->f.f4t[i] + this->omega*(this->q[i] + 3.0*(this->vx[i]*(-this->ux[ii]) + this->vy[i]*(1.0 - this->uy[ii])));
+                this->f.f5tp1[i] = (1.0 - this->omega)*this->f.f5t[i] + this->omega*(this->q[i] + 3.0*(this->vx[i]*(-1.0 - this->ux[ii]) + this->vy[i]*(-1.0 - this->uy[ii])));
+                this->f.f6tp1[i] = (1.0 - this->omega)*this->f.f6t[i] + this->omega*(this->q[i] + 3.0*(this->vx[i]*(1.0 - this->ux[ii]) + this->vy[i]*(-1.0 - this->uy[ii])));
+                this->f.f7tp1[i] = (1.0 - this->omega)*this->f.f7t[i] + this->omega*(this->q[i] + 3.0*(this->vx[i]*(1.0 - this->ux[ii]) + this->vy[i]*(1.0 - this->uy[ii])));
+                this->f.f8tp1[i] = (1.0 - this->omega)*this->f.f8t[i] + this->omega*(this->q[i] + 3.0*(this->vx[i]*(-1.0 - this->ux[ii]) + this->vy[i]*(1.0 - this->uy[ii])));
             }
         }
     }
@@ -309,20 +309,20 @@ protected:
         if (this->direction) {
             for (int i = 0; i < this->nx*this->ny; i++) {
                 T tmprho = this->f.f0t[i] + this->f.f1t[i] + this->f.f2t[i] + this->f.f3t[i] + this->f.f4t[i] + this->f.f5t[i] + this->f.f6t[i] + this->f.f7t[i] + this->f.f8t[i];
-                T tmpu = (this->f.f1t[i] - this->f.f3t[i] + this->f.f5t[i] - this->f.f6t[i] - this->f.f7t[i] + this->f.f8t[i])/tmprho;
-                T tmpv = (this->f.f2t[i] - this->f.f4t[i] + this->f.f5t[i] + this->f.f6t[i] - this->f.f7t[i] - this->f.f8t[i])/tmprho;
+                T tmpux = (this->f.f1t[i] - this->f.f3t[i] + this->f.f5t[i] - this->f.f6t[i] - this->f.f7t[i] + this->f.f8t[i])/tmprho;
+                T tmpuy = (this->f.f2t[i] - this->f.f4t[i] + this->f.f5t[i] + this->f.f6t[i] - this->f.f7t[i] - this->f.f8t[i])/tmprho;
 
                 T dxt1alpha = -3.0*this->dx*this->t1*this->alpha[i];
                 T dxt2alpha = -3.0*this->dx*this->t2*this->alpha[i];
 
-                this->f.f1t[i] += dxt1alpha*tmpu;
-                this->f.f2t[i] += dxt1alpha*tmpv;
-                this->f.f3t[i] += dxt1alpha*(-tmpu);
-                this->f.f4t[i] += dxt1alpha*(-tmpv);
-                this->f.f5t[i] += dxt2alpha*(tmpu + tmpv);
-                this->f.f6t[i] += dxt2alpha*(-tmpu + tmpv);
-                this->f.f7t[i] += dxt2alpha*(-tmpu - tmpv);
-                this->f.f8t[i] += dxt2alpha*(tmpu - tmpv);
+                this->f.f1t[i] += dxt1alpha*tmpux;
+                this->f.f2t[i] += dxt1alpha*tmpuy;
+                this->f.f3t[i] += dxt1alpha*(-tmpux);
+                this->f.f4t[i] += dxt1alpha*(-tmpuy);
+                this->f.f5t[i] += dxt2alpha*(tmpux + tmpuy);
+                this->f.f6t[i] += dxt2alpha*(-tmpux + tmpuy);
+                this->f.f7t[i] += dxt2alpha*(-tmpux - tmpuy);
+                this->f.f8t[i] += dxt2alpha*(tmpux - tmpuy);
             }
         } else {
             for (int i = 0; i < this->nx*this->ny; i++) {
@@ -330,19 +330,16 @@ protected:
                 T ef1y = -3.0*this->dx*this->alpha[i]*(this->t1*(this->f.f2t[i] - this->f.f4t[i]) + this->t2*(this->f.f5t[i] + this->f.f6t[i] - this->f.f7t[i] - this->f.f8t[i]));
             
                 int ii = this->nx*this->ny*this->t + i;
-                T ubyrho = this->u[ii]/this->rho[ii];
-                T vbyrho = this->v[ii]/this->rho[ii];
-                T onebyrho = 1.0/this->rho[ii];
 
-                this->f.f0t[i] -= ef1x*(-ubyrho) + ef1y*(-vbyrho);
-                this->f.f1t[i] -= ef1x*(-onebyrho - ubyrho) + ef1y*(-vbyrho);
-                this->f.f2t[i] -= ef1x*(-ubyrho) + ef1y*(-onebyrho - vbyrho);
-                this->f.f3t[i] -= ef1x*(onebyrho - ubyrho) + ef1y*(-vbyrho);
-                this->f.f4t[i] -= ef1x*(-ubyrho) + ef1y*(onebyrho - vbyrho);
-                this->f.f5t[i] -= ef1x*(-onebyrho - ubyrho) + ef1y*(-onebyrho - vbyrho);
-                this->f.f6t[i] -= ef1x*(onebyrho - ubyrho) + ef1y*(-onebyrho - vbyrho);
-                this->f.f7t[i] -= ef1x*(onebyrho - ubyrho) + ef1y*(onebyrho - vbyrho);
-                this->f.f8t[i] -= ef1x*(-onebyrho - ubyrho) + ef1y*(onebyrho - vbyrho);
+                this->f.f0t[i] -= (ef1x*(-this->ux[ii]) + ef1y*(-this->uy[ii]))/this->rho[ii];
+                this->f.f1t[i] -= (ef1x*(-1.0 - this->ux[ii]) + ef1y*(-this->uy[ii]))/this->rho[ii];
+                this->f.f2t[i] -= (ef1x*(-this->ux[ii]) + ef1y*(-1.0 - this->uy[ii]))/this->rho[ii];
+                this->f.f3t[i] -= (ef1x*(1.0 - this->ux[ii]) + ef1y*(-this->uy[ii]))/this->rho[ii];
+                this->f.f4t[i] -= (ef1x*(-this->ux[ii]) + ef1y*(1.0 - this->uy[ii]))/this->rho[ii];
+                this->f.f5t[i] -= (ef1x*(-1.0 - this->ux[ii]) + ef1y*(-1.0 - this->uy[ii]))/this->rho[ii];
+                this->f.f6t[i] -= (ef1x*(1.0 - this->ux[ii]) + ef1y*(-1.0 - this->uy[ii]))/this->rho[ii];
+                this->f.f7t[i] -= (ef1x*(1.0 - this->ux[ii]) + ef1y*(1.0 - this->uy[ii]))/this->rho[ii];
+                this->f.f8t[i] -= (ef1x*(-1.0 - this->ux[ii]) + ef1y*(1.0 - this->uy[ii]))/this->rho[ii];
             }
         }
     }
@@ -354,9 +351,9 @@ protected:
         T dunorm = T();
         for (int i = 0; i < this->nx*this->ny; i++) {
             int ii = this->nx*this->ny*this->t + i;
-            unorm += pow(this->u[ii], 2.0) + pow(this->v[ii], 2.0);
+            unorm += pow(this->ux[ii], 2.0) + pow(this->uy[ii], 2.0);
             int jj = this->nx*this->ny*(this->t - 1) + i;
-            dunorm += pow(this->u[ii] - this->u[jj], 2.0) + pow(this->v[ii] - this->v[jj], 2.0);
+            dunorm += pow(this->ux[ii] - this->ux[jj], 2.0) + pow(this->uy[ii] - this->uy[jj], 2.0);
         }
         this->tmax = this->t;
         return sqrt(dunorm/unorm) < _eps ? true : false;
@@ -397,23 +394,16 @@ protected:
 
 
     template<class T>
-    T NSAdjointd2q9<T>::GetU(int _i, int _j) const {
+    T NSAdjointd2q9<T>::GetUx(int _i, int _j) const {
         assert(0 <= _i && _i < this->nx && 0 <= _j && _j < this->ny);
-        return this->u[this->nx*this->ny*(this->tmax - 1) + this->ny*_i + _j];
+        return this->ux[this->nx*this->ny*(this->tmax - 1) + this->ny*_i + _j];
     }
 
 
     template<class T>
-    T NSAdjointd2q9<T>::GetV(int _i, int _j) const {
+    T NSAdjointd2q9<T>::GetUy(int _i, int _j) const {
         assert(0 <= _i && _i < this->nx && 0 <= _j && _j < this->ny);
-        return this->v[this->nx*this->ny*(this->tmax - 1) + this->ny*_i + _j];
-    }
-
-
-    template<class T>
-    T NSAdjointd2q9<T>::GetP(int _i, int _j) const {
-        assert(0 <= _i && _i < this->nx && 0 <= _j && _j < this->ny);
-        return this->p[this->ny*_i + _j];
+        return this->uy[this->nx*this->ny*(this->tmax - 1) + this->ny*_i + _j];
     }
 
 
@@ -425,9 +415,16 @@ protected:
 
 
     template<class T>
-    T NSAdjointd2q9<T>::GetR(int _i, int _j) const {
+    T NSAdjointd2q9<T>::GetVx(int _i, int _j) const {
         assert(0 <= _i && _i < this->nx && 0 <= _j && _j < this->ny);
-        return this->r[this->ny*_i + _j];
+        return this->vx[this->ny*_i + _j];
+    }
+
+
+    template<class T>
+    T NSAdjointd2q9<T>::GetVy(int _i, int _j) const {
+        assert(0 <= _i && _i < this->nx && 0 <= _j && _j < this->ny);
+        return this->vy[this->ny*_i + _j];
     }
 
 

@@ -22,7 +22,7 @@ public:
         virtual void UpdateMacro();
         virtual void Collision();
         virtual void SetRho(int _i, int _j, T _ux, T _uy);
-        virtual void SetUxUy(int _i, int _j, T _ux, T _uy);
+        virtual void SetU(int _i, int _j, T _ux, T _uy);
         virtual void ExternalForce();
 
         virtual T GetRho(int _i, int _j) const;
@@ -58,7 +58,7 @@ protected:
 
 
     template<class T, template<class>class P>
-    NS<T, P>::NS(const P<T>& _e) : nx(_e.nx), ny(_e.ny), f(_e.f) {
+    NS<T, P>::NS(const P<T>& _e) : nx(_e.nx), ny(_e.ny) {
         this->f = _e.f;
         this->omega = _e.omega;
 
@@ -156,7 +156,7 @@ protected:
 
 
     template<class T, template<class>class P>
-    void NS<T, P>::SetUxUy(int _i, int _j, T _ux, T _uy) {
+    void NS<T, P>::SetU(int _i, int _j, T _ux, T _uy) {
         int ij = this->ny*_i + _j;
         if (_i == 0) {
             T rho0 = (this->f->ft[0][ij] + this->f->ft[2][ij] + this->f->ft[4][ij] + 2.0*(this->f->ft[3][ij] + this->f->ft[6][ij] + this->f->ft[7][ij]))/(1.0 - _ux);

@@ -1,7 +1,5 @@
 #include <iostream>
 #include <fstream>
-#include <vector>
-#include <cmath>
 #include <chrono>
 
 #include "../src/particle.h"
@@ -66,7 +64,7 @@ int main() {
             fout << "VECTORS\tu\tfloat" << std::endl;
             for (int j = 0; j < ny; j++) {
                 for (int i = 0; i < nx; i++) {
-                    fout << dsolver.GetUx(i, j) << "\t" << dsolver.GetUy(i, j) << "\t" << 0.0 << std::endl;
+                    fout << dsolver.GetU(0, i, j) << "\t" << dsolver.GetU(1, i, j) << "\t" << 0.0 << std::endl;
                 }
             }
         } 

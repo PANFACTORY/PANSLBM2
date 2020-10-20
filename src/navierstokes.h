@@ -26,15 +26,14 @@ public:
         virtual void ExternalForce();
 
         virtual T GetRho(int _i, int _j) const;
-        virtual T GetUx(int _i, int _j) const;
-        virtual T GetUy(int _i, int _j) const;
+        virtual T GetU(int _d, int _i, int _j) const;
         
         const int nx, ny;
 
 protected:
         T omega;
         P<T>* f;
-        T *rho, *ux, *uy;
+        T *rho, *u[P<T>::nd];
     };
 
 
@@ -45,13 +44,15 @@ protected:
         this->omega = 1.0/(3.0*_viscosity*this->f->dt/this->f->dx*this->f->dx + 0.5);
 
         this->rho = new T[this->nx*this->ny];
-        this->ux = new T[this->nx*this->ny];
-        this->uy = new T[this->nx*this->ny];
+        for (int i = 0; i < P<T>::nd; i++) {
+            this->u[i] = new T[this->nx*this->ny];
+        }
 
         for (int i = 0; i < this->nx*this->ny; i++) {
             this->rho[i] = T();
-            this->ux[i] = T();
-            this->uy[i] = T();
+            for (int j = 0; j < P<T>::nd; j++) {
+                this->u[j][i] = T();
+            }
         }
     }
 
@@ -62,13 +63,15 @@ protected:
         this->omega = _e.omega;
 
         this->rho = new T[this->nx*this->ny];
-        this->ux = new T[this->nx*this->ny];
-        this->uy = new T[this->nx*this->ny];
+        for (int i = 0; i < P<T>::nd; i++) {
+            this->u[i] = new T[this->nx*this->ny];
+        }
 
         for (int i = 0; i < this->nx*this->ny; i++) {
             this->rho[i] = _e.rho[i];
-            this->ux[i] = _e.ux[i];
-            this->uy[i] = _e.uy[i];
+            for (int j = 0; j < P<T>::nd; j++) {
+                this->u[j][i] = _e.u[j][i];
+            }
         }
     }
 
@@ -76,8 +79,9 @@ protected:
     template<class T, template<class>class P>
     NS<T, P>::~NS() {
         delete[] this->rho;
-        delete[] this->ux;
-        delete[] this->uy;
+        for (int i = 0; i < P<T>::nd; i++) {
+            delete[] this->u[i];
+        }
     }
 
 
@@ -85,17 +89,20 @@ protected:
     void NS<T, P>::UpdateMacro() {
         for (int i = 0; i < this->nx*this->ny; i++) {
             this->rho[i] = T();
-            this->ux[i] = T();
-            this->uy[i] = T();
+            for (int j = 0; j < P<T>::nd; j++) {
+                this->u[j][i] = T();
+            }
 
             for (int j = 0; j < P<T>::nc; j++) {
                 this->rho[i] += this->f->ft[j][i];
-                this->ux[i] += P<T>::ci[j][0]*this->f->ft[j][i];
-                this->uy[i] += P<T>::ci[j][1]*this->f->ft[j][i];
+                for (int k = 0; k < P<T>::nd; k++) {
+                    this->u[k][i] += P<T>::ci[j][k]*this->f->ft[j][i];
+                }
             }
 
-            this->ux[i] /= this->rho[i];
-            this->uy[i] /= this->rho[i];
+            for (int k = 0; k < P<T>::nd; k++) {
+                this->u[k][i] /= this->rho[i];
+            }
         }
     }
 
@@ -104,8 +111,15 @@ protected:
     void NS<T, P>::Collision() {
         for (int i = 0; i < this->nx*this->ny; i++) {
             for (int j = 0; j < P<T>::nc; j++) {
-                T ciu = P<T>::ci[j][0]*this->ux[i] + P<T>::ci[j][1]*this->uy[i];
-                T fieq = P<T>::ei[j]*this->rho[i]*(1.0 + 3.0*ciu + 4.5*ciu*ciu - 1.5*(this->ux[i]*this->ux[i] + this->uy[i]*this->uy[i]));
+                T ciu = T();
+                T uu = T();
+
+                for (int k = 0; k < P<T>::nd; k++) {
+                    ciu += P<T>::ci[j][k]*this->u[k][i];
+                    uu += this->u[k][i]*this->u[k][i];
+                }
+
+                T fieq = P<T>::ei[j]*this->rho[i]*(1.0 + 3.0*ciu + 4.5*ciu*ciu - 1.5*uu);
                 this->f->ftp1[j][i] = (1.0 - this->omega)*this->f->ft[j][i] + this->omega*fieq;
             }
         }
@@ -186,15 +200,8 @@ protected:
 
 
     template<class T, template<class>class P>
-    T NS<T, P>::GetUx(int _i, int _j) const {
-        assert(0 <= _i && _i < this->nx && 0 <= _j && _j < this->ny);
-        return this->ux[this->ny*_i + _j];
-    }
-
-
-    template<class T, template<class>class P>
-    T NS<T, P>::GetUy(int _i, int _j) const {
-        assert(0 <= _i && _i < this->nx && 0 <= _j && _j < this->ny);
-        return this->uy[this->ny*_i + _j];
+    T NS<T, P>::GetU(int _d, int _i, int _j) const {
+        assert(0 < _d < P<T>::nd && 0 <= _i && _i < this->nx && 0 <= _j && _j < this->ny);
+        return this->u[_d][this->ny*_i + _j];
     }
 }

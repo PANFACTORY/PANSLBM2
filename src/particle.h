@@ -67,7 +67,7 @@ public:
             this->barrier[i] = new bool[this->nx*this->ny];
 
             for (int j = 0; j < this->nx*this->ny; j++) {
-                this->ft[i][j] = D2Q9<T>::ei[j];
+                this->ft[i][j] = D2Q9<T>::ei[i];
                 this->ftp1[i][j] = T();
                 this->barrier[i][j] = false;
             }    

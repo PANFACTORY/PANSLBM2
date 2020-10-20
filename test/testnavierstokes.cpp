@@ -4,7 +4,8 @@
 #include <cmath>
 #include <chrono>
 
-#include "ns.h"
+#include "../src/particle.h"
+#include "../src/navierstokes.h"
 
 using namespace PANSLBM2;
 
@@ -23,7 +24,7 @@ int main() {
         partial.SetBoundary(i, ny - 1, OTHER);
     }
 
-    NSd2q9<double> dsolver = NSd2q9<double>(&partial, nu);
+    NS<double, D2Q9> dsolver = NS<double, D2Q9>(&partial, nu);
 
     std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
 

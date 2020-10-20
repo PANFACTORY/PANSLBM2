@@ -31,13 +31,27 @@ public:
         bool GetBarrier(int _i, int _j) const;
         
         const int nx, ny;
-        static const int nc = 9;
+        static const int nc = 9, nd = 2, ci[nc][nd];
         static const T ei[nc];
 
         T dx, dt;
         T *ft[nc], *ftp1[nc];
         bool *barrier[nc];
         BOUNDARYTYPE *btxmin, *btxmax, *btymin, *btymax;
+    };
+
+
+    template<class T>
+    const int D2Q9<T>::ci[D2Q9<T>::nc][nd] = {
+        { 0, 0 },
+        { 1, 0 },
+        { 0, 1 },
+        { -1, 0 },
+        { 0, -1 },
+        { 1, 1 },
+        { -1, 1 },
+        { -1, -1 },
+        { 1, -1 }
     };
 
 
@@ -141,15 +155,9 @@ public:
 
     template<class T>
     void D2Q9<T>::SetBarrier(int _i, int _j, bool _isbarrier) {
-        this->barrier[0][this->ny*_i + _j] = _isbarrier;
-        this->barrier[1][this->ny*(_i + 1) + _j] = _isbarrier;
-        this->barrier[2][this->ny*_i + (_j + 1)] = _isbarrier;
-        this->barrier[3][this->ny*(_i - 1) + _j] = _isbarrier;
-        this->barrier[4][this->ny*_i + (_j - 1)] = _isbarrier;
-        this->barrier[5][this->ny*(_i + 1) + (_j + 1)] = _isbarrier;
-        this->barrier[6][this->ny*(_i - 1) + (_j + 1)] = _isbarrier;
-        this->barrier[7][this->ny*(_i - 1) + (_j - 1)] = _isbarrier;
-        this->barrier[8][this->ny*(_i + 1) + (_j - 1)] = _isbarrier;
+        for (int i = 0; i < D2Q9<T>::nc; i++) {
+            this->barrier[i][this->ny*(_i + D2Q9<T>::ci[i][0]) + (_j + D2Q9<T>::ci[i][1])] = _isbarrier;
+        }
     }
 
 

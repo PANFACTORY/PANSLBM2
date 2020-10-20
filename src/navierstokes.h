@@ -84,9 +84,18 @@ protected:
     template<class T, template<class>class P>
     void NS<T, P>::UpdateMacro() {
         for (int i = 0; i < this->nx*this->ny; i++) {
-            this->rho[i] = this->f->ft[0][i] + this->f->ft[1][i] + this->f->ft[2][i] + this->f->ft[3][i] + this->f->ft[4][i] + this->f->ft[5][i] + this->f->ft[6][i] + this->f->ft[7][i] + this->f->ft[8][i];
-            this->ux[i] = (this->f->ft[1][i] - this->f->ft[3][i] + this->f->ft[5][i] - this->f->ft[6][i] - this->f->ft[7][i] + this->f->ft[8][i])/this->rho[i];
-            this->uy[i] = (this->f->ft[2][i] - this->f->ft[4][i] + this->f->ft[5][i] + this->f->ft[6][i] - this->f->ft[7][i] - this->f->ft[8][i])/this->rho[i];
+            this->rho[i] = T();
+            this->ux[i] = T();
+            this->uy[i] = T();
+
+            for (int j = 0; j < P<T>::nc; j++) {
+                this->rho[i] += this->f->ft[j][i];
+                this->ux[i] += P<T>::ci[j][0]*this->f->ft[j][i];
+                this->uy[i] += P<T>::ci[j][1]*this->f->ft[j][i];
+            }
+
+            this->ux[i] /= this->rho[i];
+            this->uy[i] /= this->rho[i];
         }
     }
 
@@ -94,21 +103,11 @@ protected:
     template<class T, template<class>class P>
     void NS<T, P>::Collision() {
         for (int i = 0; i < this->nx*this->ny; i++) {
-            T u2 = this->ux[i]*this->ux[i];
-            T v2 = this->uy[i]*this->uy[i];
-            T u2v2 = u2 + v2;
-            T uv = this->ux[i]*this->uy[i];
-            T omu215 = 1.0 - 1.5*u2v2;
-
-            this->f->ftp1[0][i] = (1.0 - this->omega)*this->f->ft[0][i] + this->omega*P<T>::ei[0]*this->rho[i]*omu215;
-            this->f->ftp1[1][i] = (1.0 - this->omega)*this->f->ft[1][i] + this->omega*P<T>::ei[1]*this->rho[i]*(omu215 + 3.0*this->ux[i] + 4.5*u2);
-            this->f->ftp1[2][i] = (1.0 - this->omega)*this->f->ft[2][i] + this->omega*P<T>::ei[2]*this->rho[i]*(omu215 + 3.0*this->uy[i] + 4.5*v2);
-            this->f->ftp1[3][i] = (1.0 - this->omega)*this->f->ft[3][i] + this->omega*P<T>::ei[3]*this->rho[i]*(omu215 - 3.0*this->ux[i] + 4.5*u2);
-            this->f->ftp1[4][i] = (1.0 - this->omega)*this->f->ft[4][i] + this->omega*P<T>::ei[4]*this->rho[i]*(omu215 - 3.0*this->uy[i] + 4.5*v2);
-            this->f->ftp1[5][i] = (1.0 - this->omega)*this->f->ft[5][i] + this->omega*P<T>::ei[5]*this->rho[i]*(omu215 + 3.0*(this->ux[i] + this->uy[i]) + 4.5*(u2v2 + 2.0*uv));
-            this->f->ftp1[6][i] = (1.0 - this->omega)*this->f->ft[6][i] + this->omega*P<T>::ei[6]*this->rho[i]*(omu215 - 3.0*(this->ux[i] - this->uy[i]) + 4.5*(u2v2 - 2.0*uv));
-            this->f->ftp1[7][i] = (1.0 - this->omega)*this->f->ft[7][i] + this->omega*P<T>::ei[7]*this->rho[i]*(omu215 - 3.0*(this->ux[i] + this->uy[i]) + 4.5*(u2v2 + 2.0*uv));
-            this->f->ftp1[8][i] = (1.0 - this->omega)*this->f->ft[8][i] + this->omega*P<T>::ei[8]*this->rho[i]*(omu215 + 3.0*(this->ux[i] - this->uy[i]) + 4.5*(u2v2 - 2.0*uv));
+            for (int j = 0; j < P<T>::nc; j++) {
+                T ciu = P<T>::ci[j][0]*this->ux[i] + P<T>::ci[j][1]*this->uy[i];
+                T fieq = P<T>::ei[j]*this->rho[i]*(1.0 + 3.0*ciu + 4.5*ciu*ciu - 1.5*(this->ux[i]*this->ux[i] + this->uy[i]*this->uy[i]));
+                this->f->ftp1[j][i] = (1.0 - this->omega)*this->f->ft[j][i] + this->omega*fieq;
+            }
         }
     }
 

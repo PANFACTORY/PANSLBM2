@@ -11,17 +11,19 @@ using namespace PANSLBM2;
 int main() {
     //--------------------Set parameters--------------------
     int tmax = 100000, nx = 100, ny = 100;
-    double nu = 0.05, u0 = 0.01;
+    double nu = 0.05, u0 = 0.1;
     
     D2Q9<double> partial = D2Q9<double>(nx, ny);
+    for (int j = 0; j < ny - 1; j++) {
+        partial.SetBoundary(0, j, BARRIER);
+        partial.SetBoundary(nx - 1, j, BARRIER);
+    }
+    for (int i = 0; i < nx - 1; i++) {
+        partial.SetBoundary(i, 0, BARRIER);
+        partial.SetBoundary(i, ny - 1, OTHER);
+    }
+
     NSd2q9<double> dsolver = NSd2q9<double>(&partial, nu);
-    partial.SetBoundary([=](int _i, int _j) {
-        if (_i == 0) {
-            return INLET;
-        } else {
-            return BARRIER;
-        }
-    });
 
     std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
 
@@ -31,7 +33,7 @@ int main() {
         dsolver.Collision();        //  Collision
         partial.Stream();           //  Stream
         for (int i = 0; i < nx - 1; i++) {
-            dsolver.FixUxUy(i, ny - 1, u0, 0.0);
+            dsolver.SetUxUy(i, ny - 1, u0, 0.0);
         }                           //  Boundary condition (inlet)
         dsolver.ExternalForce();    //  External force by thermal
         

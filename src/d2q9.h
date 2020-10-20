@@ -13,7 +13,7 @@
 
 namespace PANSLBM2 {
     enum BOUNDARYTYPE {
-        PERIODIC, INLET, OUTLET, BARRIER, MIRROR,
+        PERIODIC, OUTLET, BARRIER, MIRROR, OTHER,
     };
 
     template<class T>
@@ -24,10 +24,8 @@ public:
         D2Q9(const D2Q9<T>& _p);
         virtual ~D2Q9();
 
-        template<class F>
-        void SetBarrier(F _f);
-        template<class F>
-        void SetBoundary(F _f);
+        void SetBarrier(int _i, int _j, bool _isbarrier);
+        void SetBoundary(int _i, int _j, BOUNDARYTYPE _boundarytype);
 
         void Stream();
         
@@ -140,46 +138,35 @@ public:
 
 
     template<class T>
-    template<class F>
-    void D2Q9<T>::SetBarrier(F _f) {
-        //----------Set barrier0----------
-        for (int i = 0; i < this->nx; i++) {
-            for (int j = 0; j < this->ny; j++) {
-                if (_f(i, j)) {
-                    this->barrier0[this->ny*i + j] = true;
-                }
-            }
-        }
-
-        //----------Set barrier1~8----------
-        for (int i = 1; i < this->nx - 1; i++) {
-            for (int j = 1; j < this->ny - 1; j++) {
-                this->barrier1[this->ny*i + j] = this->barrier0[this->ny*(i - 1) + j];
-                this->barrier2[this->ny*i + j] = this->barrier0[this->ny*i + (j - 1)];
-                this->barrier3[this->ny*i + j] = this->barrier0[this->ny*(i + 1) + j];
-                this->barrier4[this->ny*i + j] = this->barrier0[this->ny*i + (j + 1)];
-                this->barrier5[this->ny*i + j] = this->barrier0[this->ny*(i - 1) + (j - 1)];
-                this->barrier6[this->ny*i + j] = this->barrier0[this->ny*(i + 1) + (j - 1)];
-                this->barrier7[this->ny*i + j] = this->barrier0[this->ny*(i + 1) + (j + 1)];
-                this->barrier8[this->ny*i + j] = this->barrier0[this->ny*(i - 1) + (j + 1)];
-            }
-        }
+    void D2Q9<T>::SetBarrier(int _i, int _j, bool _isbarrier) {
+        this->barrier0[this->ny*_i + _j] = _isbarrier;
+        this->barrier1[this->ny*(_i + 1) + _j] = _isbarrier;
+        this->barrier2[this->ny*_i + (_j + 1)] = _isbarrier;
+        this->barrier3[this->ny*(_i - 1) + _j] = _isbarrier;
+        this->barrier4[this->ny*_i + (_j - 1)] = _isbarrier;
+        this->barrier5[this->ny*(_i + 1) + (_j + 1)] = _isbarrier;
+        this->barrier6[this->ny*(_i - 1) + (_j + 1)] = _isbarrier;
+        this->barrier7[this->ny*(_i - 1) + (_j - 1)] = _isbarrier;
+        this->barrier8[this->ny*(_i + 1) + (_j - 1)] = _isbarrier;
     }
 
 
     template<class T>
-    template<class F>
-    void D2Q9<T>::SetBoundary(F _f) {
-        //----------Set x boundary----------
-        for (int j = 0; j < this->ny; j++) {
-            this->btxmin[j] = _f(0, j);
-            this->btxmax[j] = _f(this->nx - 1, j);
-        }
-
-        //----------Set y boundary----------
-        for (int i = 0; i < this->nx; i++) {
-            this->btymin[i] = _f(i, 0);
-            this->btymax[i] = _f(i, this->ny - 1);
+    void D2Q9<T>::SetBoundary(int _i, int _j, BOUNDARYTYPE _boundarytype) {
+        if (_i == 0) {
+            this->btxmin[_j] = _boundarytype;
+        } 
+        if (_i == this->nx - 1) {
+            this->btxmax[_j] = _boundarytype;
+        } 
+        if (_j == 0) {
+            this->btymin[_i] = _boundarytype;
+        } 
+        if (_j == this->ny - 1) {
+            this->btymax[_i] = _boundarytype;
+        } 
+        if (_i != 0 && _i != this->nx - 1 && _j != 0 && _j != this->ny - 1) {
+            //  境界に沿っていないことを警告する
         }
     }
 

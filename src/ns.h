@@ -21,8 +21,8 @@ public:
 
         virtual void UpdateMacro();
         virtual void Collision();
-        virtual void FixRho(int _i, int _j, T _ux, T _uy);
-        virtual void FixUxUy(int _i, int _j, T _ux, T _uy);
+        virtual void SetRho(int _i, int _j, T _ux, T _uy);
+        virtual void SetUxUy(int _i, int _j, T _ux, T _uy);
         virtual void ExternalForce();
 
         virtual T GetRho(int _i, int _j) const;
@@ -114,7 +114,7 @@ protected:
 
 
     template<class T>
-    void NSd2q9<T>::FixRho(int _i, int _j, T _rho, T _u) {
+    void NSd2q9<T>::SetRho(int _i, int _j, T _rho, T _u) {
         int ij = this->ny*_i + _j;
         if (_i == 0) {
             T ux0 = 1.0 - (this->f->f0t[ij] + this->f->f2t[ij] + this->f->f4t[ij] + 2.0*(this->f->f3t[ij] + this->f->f6t[ij] + this->f->f7t[ij]))/_rho;
@@ -143,7 +143,7 @@ protected:
 
 
     template<class T>
-    void NSd2q9<T>::FixUxUy(int _i, int _j, T _ux, T _uy) {
+    void NSd2q9<T>::SetUxUy(int _i, int _j, T _ux, T _uy) {
         int ij = this->ny*_i + _j;
         if (_i == 0) {
             T rho0 = (this->f->f0t[ij] + this->f->f2t[ij] + this->f->f4t[ij] + 2.0*(this->f->f3t[ij] + this->f->f6t[ij] + this->f->f7t[ij]))/(1.0 - _ux);

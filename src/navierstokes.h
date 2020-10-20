@@ -16,7 +16,7 @@ namespace PANSLBM2 {
 public:
         NS() = delete;
         NS(P<T>* _f, T _viscosity);
-        NS(const P<T>& _e);
+        NS(const NS<T>& _e);
         virtual ~NS();
 
         virtual void UpdateMacro();
@@ -58,7 +58,7 @@ protected:
 
 
     template<class T, template<class>class P>
-    NS<T, P>::NS(const P<T>& _e) : nx(_e.nx), ny(_e.ny) {
+    NS<T, P>::NS(const NS<T>& _e) : nx(_e.nx), ny(_e.ny) {
         this->f = _e.f;
         this->omega = _e.omega;
 

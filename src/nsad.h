@@ -1,7 +1,7 @@
 //*****************************************************************************
-//  Title       :   src/nsadd2q9.h
+//  Title       :   src/nsad.h
 //  Author      :   Tanabe Yuta
-//  Date        :   2020/09/05
+//  Date        :   2020/10/20
 //  Copyright   :   (C)2020 TanabeYuta
 //*****************************************************************************
 
@@ -15,16 +15,12 @@ namespace PANSLBM2 {
     class NSADd2q9 {
 public:
         NSADd2q9() = delete;
-        NSADd2q9(int _nx, int _ny, T _viscosity);
-        NSADd2q9(const NSADd2q9<T>& _p);
+        NSADd2q9(D2Q9<T>* _f, D2Q9<T>* _g, T _viscosity);
+        NSADd2q9(const NSADd2q9<T>& _e);
         virtual ~NSADd2q9();
 
-        template<class F, class G>
-        void SetBarrier(F _f, G _g);
-        template<class F, class G>
-        void SetBoundary(F _f, G _g);
+        
         virtual void Inlet(T _temperature0, T _temperature1);
-        virtual void Stream();
         virtual void UpdateMacro();
         virtual void Collision();
         virtual void ExternalForce();
@@ -95,22 +91,6 @@ protected:
 
 
     template<class T>
-    template<class F, class G>
-    void NSADd2q9<T>::SetBarrier(F _f, G _g) {
-        this->f.SetBarrier(_f);
-        this->g.SetBarrier(_g);
-    }
-
-
-    template<class T>
-    template<class F, class G>
-    void NSADd2q9<T>::SetBoundary(F _f, G _g) {
-        this->f.SetBoundary(_f);
-        this->g.SetBoundary(_g);
-    }
-
-
-    template<class T>
     void NSADd2q9<T>::Inlet(T _temperature0, T _temperature1) {
         for (int i = 0; i < this->nx; i++) {
             T temperature0 = 6.0*(_temperature0 - this->g.f0t[this->ny*i] - this->g.f1t[this->ny*i] - this->g.f3t[this->ny*i] - this->g.f4t[this->ny*i] - this->g.f7t[this->ny*i] - this->g.f8t[this->ny*i]);
@@ -123,13 +103,6 @@ protected:
             this->g.f7t[this->ny*(i + 1) - 1] = temperature1/36.0;
             this->g.f8t[this->ny*(i + 1) - 1] = temperature1/36.0;
         }
-    }
-
-
-    template<class T>
-    void NSADd2q9<T>::Stream() {
-        this->f.Stream();
-        this->g.Stream();
     }
 
 

@@ -1,10 +1,3 @@
-//*****************************************************************************
-//  Title       :   src/lbm.cpp
-//  Author      :   Tanabe Yuta
-//  Date        :   2020/10/19
-//  Copyright   :   (C)2020 TanabeYuta
-//*****************************************************************************
-
 #include <iostream>
 #include <fstream>
 #include <vector>
@@ -18,7 +11,7 @@ using namespace PANSLBM2;
 int main() {
     //--------------------Set parameters--------------------
     int tmax = 100000, nx = 100, ny = 100;
-    double nu = 0.05, v0 = 0.1;
+    double nu = 0.05, u0 = 0.01;
     
     D2Q9<double> partial = D2Q9<double>(nx, ny);
     NSd2q9<double> dsolver = NSd2q9<double>(&partial, nu);
@@ -34,14 +27,16 @@ int main() {
 
     //--------------------Direct analyze--------------------
     for (int t = 0; t < tmax; t++) {
-        std::cout << t << std::endl;
         dsolver.UpdateMacro();      //  Update macroscopic values
         dsolver.Collision();        //  Collision
         partial.Stream();           //  Stream
-        dsolver.Inlet(0.0, v0);     //  Boundary condition (inlet)
+        for (int i = 0; i < nx - 1; i++) {
+            dsolver.FixUxUy(i, ny - 1, u0, 0.0);
+        }                           //  Boundary condition (inlet)
         dsolver.ExternalForce();    //  External force by thermal
         
         if (t%1000 == 0) {
+            std::cout << t/1000 << std::endl;
             std::ofstream fout("result/ns" + std::to_string(t/1000) + ".vtk");
             fout << "# vtk DataFile Version 3.0" << std::endl;
             fout << "2D flow" << std::endl;

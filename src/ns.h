@@ -19,9 +19,10 @@ public:
         NSd2q9(const NSd2q9<T>& _e);
         virtual ~NSd2q9();
 
-        virtual void Inlet(T _u, T _v);
         virtual void UpdateMacro();
         virtual void Collision();
+        virtual void FixRho(int _i, int _j, T _ux, T _uy);
+        virtual void FixUxUy(int _i, int _j, T _ux, T _uy);
         virtual void ExternalForce();
 
         virtual T GetRho(int _i, int _j) const;
@@ -81,17 +82,6 @@ protected:
 
 
     template<class T>
-    void NSd2q9<T>::Inlet(T _ux, T _uy) {
-        for (int j = 0; j < this->ny; j++) {
-            T rho0 = (this->f->f0t[j] + this->f->f2t[j] + this->f->f4t[j] + 2.0*(this->f->f3t[j] + this->f->f6t[j] + this->f->f7t[j]))/(1.0 - _ux);
-            this->f->f1t[j] = this->f->f3t[j] + 2.0*rho0*_ux/3.0;
-            this->f->f5t[j] = this->f->f7t[j] - 0.5*(this->f->f2t[j] - this->f->f4t[j]) + rho0*_ux/6.0 + rho0*_uy/2.0;
-            this->f->f8t[j] = this->f->f6t[j] + 0.5*(this->f->f2t[j] - this->f->f4t[j]) + rho0*_ux/6.0 - rho0*_uy/2.0;
-        }
-    }
-
-
-    template<class T>
     void NSd2q9<T>::UpdateMacro() {
         for (int i = 0; i < this->nx*this->ny; i++) {
             this->rho[i] = this->f->f0t[i] + this->f->f1t[i] + this->f->f2t[i] + this->f->f3t[i] + this->f->f4t[i] + this->f->f5t[i] + this->f->f6t[i] + this->f->f7t[i] + this->f->f8t[i];
@@ -119,6 +109,64 @@ protected:
             this->f->f6tp1[i] = (1.0 - this->omega)*this->f->f6t[i] + this->omega*this->f->t2*this->rho[i]*(omu215 - 3.0*(this->ux[i] - this->uy[i]) + 4.5*(u2v2 - 2.0*uv));
             this->f->f7tp1[i] = (1.0 - this->omega)*this->f->f7t[i] + this->omega*this->f->t2*this->rho[i]*(omu215 - 3.0*(this->ux[i] + this->uy[i]) + 4.5*(u2v2 + 2.0*uv));
             this->f->f8tp1[i] = (1.0 - this->omega)*this->f->f8t[i] + this->omega*this->f->t2*this->rho[i]*(omu215 + 3.0*(this->ux[i] - this->uy[i]) + 4.5*(u2v2 - 2.0*uv));
+        }
+    }
+
+
+    template<class T>
+    void NSd2q9<T>::FixRho(int _i, int _j, T _rho, T _u) {
+        int ij = this->ny*_i + _j;
+        if (_i == 0) {
+            T ux0 = 1.0 - (this->f->f0t[ij] + this->f->f2t[ij] + this->f->f4t[ij] + 2.0*(this->f->f3t[ij] + this->f->f6t[ij] + this->f->f7t[ij]))/_rho;
+            this->f->f1t[ij] = this->f->f3t[ij] + 2.0*_rho*ux0/3.0;
+            this->f->f5t[ij] = this->f->f7t[ij] - 0.5*(this->f->f2t[ij] - this->f->f4t[ij]) + _rho*ux0/6.0 + _rho*_u/2.0;
+            this->f->f8t[ij] = this->f->f6t[ij] + 0.5*(this->f->f2t[ij] - this->f->f4t[ij]) + _rho*ux0/6.0 - _rho*_u/2.0;
+        } else if (_i == this->nx - 1) {
+            T ux0 = -1.0 + (this->f->f0t[ij] + this->f->f2t[ij] + this->f->f4t[ij] + 2.0*(this->f->f1t[ij] + this->f->f5t[ij] + this->f->f8t[ij]))/_rho;
+            this->f->f3t[ij] = this->f->f1t[ij] - 2.0*_rho*ux0/3.0;
+            this->f->f6t[ij] = this->f->f8t[ij] - 0.5*(this->f->f2t[ij] - this->f->f4t[ij]) - _rho*ux0/6.0 + _rho*_u/2.0;
+            this->f->f7t[ij] = this->f->f6t[ij] + 0.5*(this->f->f2t[ij] - this->f->f4t[ij]) - _rho*ux0/6.0 - _rho*_u/2.0;
+        } else if (_j == 0) {
+            T uy0 = 1.0 - (this->f->f0t[ij] + this->f->f1t[ij] + this->f->f3t[ij] + 2.0*(this->f->f4t[ij] + this->f->f7t[ij] + this->f->f8t[ij]))/_rho;
+            this->f->f2t[ij] = this->f->f4t[ij] + 2.0*_rho*uy0/3.0;
+            this->f->f5t[ij] = this->f->f7t[ij] - 0.5*(this->f->f1t[ij] - this->f->f3t[ij]) + _rho*_u/2.0 + _rho*uy0/6.0;
+            this->f->f6t[ij] = this->f->f8t[ij] + 0.5*(this->f->f1t[ij] - this->f->f3t[ij]) - _rho*_u/2.0 + _rho*uy0/6.0;
+        } else if (_j == this->ny - 1) {
+            T uy0 = -1.0 - (this->f->f0t[ij] + this->f->f1t[ij] + this->f->f3t[ij] + 2.0*(this->f->f2t[ij] + this->f->f5t[ij] + this->f->f6t[ij]))/_rho;
+            this->f->f4t[ij] = this->f->f2t[ij] - 2.0*_rho*uy0/3.0;
+            this->f->f7t[ij] = this->f->f5t[ij] + 0.5*(this->f->f1t[ij] - this->f->f3t[ij]) - _rho*_u/2.0 - _rho*uy0/6.0;
+            this->f->f8t[ij] = this->f->f6t[ij] - 0.5*(this->f->f1t[ij] - this->f->f3t[ij]) + _rho*_u/2.0 - _rho*uy0/6.0;
+        } else {
+            //  境界に沿っていないことを警告する
+        }
+    }
+
+
+    template<class T>
+    void NSd2q9<T>::FixUxUy(int _i, int _j, T _ux, T _uy) {
+        int ij = this->ny*_i + _j;
+        if (_i == 0) {
+            T rho0 = (this->f->f0t[ij] + this->f->f2t[ij] + this->f->f4t[ij] + 2.0*(this->f->f3t[ij] + this->f->f6t[ij] + this->f->f7t[ij]))/(1.0 - _ux);
+            this->f->f1t[ij] = this->f->f3t[ij] + 2.0*rho0*_ux/3.0;
+            this->f->f5t[ij] = this->f->f7t[ij] - 0.5*(this->f->f2t[ij] - this->f->f4t[ij]) + rho0*_ux/6.0 + rho0*_uy/2.0;
+            this->f->f8t[ij] = this->f->f6t[ij] + 0.5*(this->f->f2t[ij] - this->f->f4t[ij]) + rho0*_ux/6.0 - rho0*_uy/2.0;
+        } else if (_i == this->nx - 1) {          
+            T rho0 = (this->f->f0t[ij] + this->f->f2t[ij] + this->f->f4t[ij] + 2.0*(this->f->f1t[ij] + this->f->f5t[ij] + this->f->f8t[ij]))/(1.0 + _ux);
+            this->f->f3t[ij] = this->f->f1t[ij] - 2.0*rho0*_ux/3.0;
+            this->f->f7t[ij] = this->f->f5t[ij] + 0.5*(this->f->f2t[ij] - this->f->f4t[ij]) - rho0*_ux/6.0 - rho0*_uy/2.0;
+            this->f->f6t[ij] = this->f->f8t[ij] - 0.5*(this->f->f2t[ij] - this->f->f4t[ij]) - rho0*_ux/6.0 + rho0*_uy/2.0;
+        } else if (_j == 0) {
+            T rho0 = (this->f->f0t[ij] + this->f->f1t[ij] + this->f->f3t[ij] + 2.0*(this->f->f4t[ij] + this->f->f7t[ij] + this->f->f8t[ij]))/(1.0 - _uy);
+            this->f->f2t[ij] = this->f->f4t[ij] + 2.0*rho0*_uy/3.0;
+            this->f->f5t[ij] = this->f->f7t[ij] - 0.5*(this->f->f1t[ij] - this->f->f3t[ij]) + rho0*_ux/2.0 + rho0*_uy/6.0;
+            this->f->f6t[ij] = this->f->f8t[ij] + 0.5*(this->f->f1t[ij] - this->f->f3t[ij]) - rho0*_ux/2.0 + rho0*_uy/6.0;
+        } else if (_j == this->ny - 1) {
+            T rho0 = (this->f->f0t[ij] + this->f->f1t[ij] + this->f->f3t[ij] + 2.0*(this->f->f2t[ij] + this->f->f5t[ij] + this->f->f6t[ij]))/(1.0 + _uy);
+            this->f->f4t[ij] = this->f->f2t[ij] - 2.0*rho0*_uy/3.0;
+            this->f->f7t[ij] = this->f->f5t[ij] + 0.5*(this->f->f1t[ij] - this->f->f3t[ij]) - rho0*_ux/2.0 - rho0*_uy/6.0;
+            this->f->f8t[ij] = this->f->f6t[ij] - 0.5*(this->f->f1t[ij] - this->f->f3t[ij]) + rho0*_ux/2.0 - rho0*_uy/6.0;
+        } else {
+            //  境界に沿っていないことを警告する
         }
     }
 

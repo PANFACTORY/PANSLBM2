@@ -2,9 +2,8 @@
 #include <fstream>
 #include <chrono>
 
-#include "../src/particle.h"
-#include "../src/navierstokes.h"
-#include "../src/advection.h"
+#include "../src/particle/d2q9.h"
+#include "../src/equation/advection.h"
 
 using namespace PANSLBM2;
 
@@ -16,39 +15,36 @@ int main() {
     D2Q9<double> particlef = D2Q9<double>(nx, ny);
     D2Q9<double> particleg = D2Q9<double>(nx, ny);
     for (int j = 0; j < ny - 1; j++) {
-        partialf.SetBoundary(0, j, PERIODIC);
-        partialf.SetBoundary(nx - 1, j, PERIODIC);
-        partialg.SetBoundary(0, j, PERIODIC);
-        partialg.SetBoundary(nx - 1, j, PERIODIC);
+        particlef.SetBoundary(0, j, PERIODIC);
+        particlef.SetBoundary(nx - 1, j, PERIODIC);
+        particleg.SetBoundary(0, j, PERIODIC);
+        particleg.SetBoundary(nx - 1, j, PERIODIC);
     }
     for (int i = 0; i < nx - 1; i++) {
-        partialf.SetBoundary(i, 0, MIRROR);
-        partialf.SetBoundary(i, ny - 1, MIRROR);
-        partialg.SetBoundary(i, 0, OTHER);
-        partialg.SetBoundary(i, ny - 1, OTHER);
+        particlef.SetBoundary(i, 0, MIRROR);
+        particlef.SetBoundary(i, ny - 1, MIRROR);
+        particleg.SetBoundary(i, 0, OTHER);
+        particleg.SetBoundary(i, ny - 1, OTHER);
     }
 
-    NS<double> solverf = NS<double>(&particlef, nu);
-    AD<double> solverg = AD<double>(&particleg, alpha);
+    AD<double, D2Q9, D2Q9> dsolver = AD<double, D2Q9, D2Q9>(&particlef, &particleg, nu, alpha);
 
     std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
 
     //--------------------Direct analyze--------------------
     for (int t = 0; t < tmax; t++) {
-        std::cout << t << std::endl;
-        solverf.UpdateMacro();      //  Update macroscopic values
-        solverg.UpdateMacro();
-        solverf.Collision();        //  Collision
-        solverg.Collision();
-        solverf.Stream();           //  Stream
-        solverg.Stream();
+        dsolver.UpdateMacro();      //  Update macroscopic values
+        dsolver.Collision();        //  Collision
+        particlef.Stream();         //  Stream
+        particleg.Stream();
         for (int i = 0; i < nx - 1; i++) {
-            solverg.SetTemperature(i, 0, Tl);
-            solverg.SetTemperature(i, ny - 1, Th);
+            particleg.SetTemperature(i, 0, Th);
+            particleg.SetTemperature(i, ny - 1, Tl);
         }                           //  Boundary condition (Fix temperature)
-        solverf.ExternalForce();    //  External force by thermal
+        dsolver.ExternalForce();    //  External force by thermal
         
         if (t%1000 == 0) {
+            std::cout << t/1000 << std::endl;
             std::ofstream fout("result/thermal" + std::to_string(t/1000) + ".vtk");
             fout << "# vtk DataFile Version 3.0" << std::endl;
             fout << "2D flow" << std::endl;
@@ -68,14 +64,14 @@ int main() {
             fout << "LOOKUP_TABLE\tdefault" << std::endl;
             for (int j = 0; j < ny; j++) {
                 for (int i = 0; i < nx; i++) {
-                    fout << solverf.GetRho(i, j) << std::endl;
+                    fout << dsolver.GetRho(i, j) << std::endl;
                 }
             }
 
             fout << "VECTORS\tu\tfloat" << std::endl;
             for (int j = 0; j < ny; j++) {
                 for (int i = 0; i < nx; i++) {
-                    fout << solverf.GetU(0, i, j) << "\t" << solverf.GetU(1, i, j) << "\t" << 0.0 << std::endl;
+                    fout << dsolver.GetU(0, i, j) << "\t" << dsolver.GetU(1, i, j) << "\t" << 0.0 << std::endl;
                 }
             }
 
@@ -83,7 +79,7 @@ int main() {
             fout << "LOOKUP_TABLE\tdefault" << std::endl;
             for (int j = 0; j < ny; j++) {
                 for (int i = 0; i < nx; i++) {
-                    fout << solverg.GetTemperature(i, j) << std::endl;
+                    fout << dsolver.GetTemperature(i, j) << std::endl;
                 }
             }
         } 

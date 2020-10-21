@@ -2,8 +2,8 @@
 #include <fstream>
 #include <chrono>
 
-#include "../src/particle.h"
-#include "../src/navierstokes.h"
+#include "../src/particle/d2q9.h"
+#include "../src/equation/navierstokes.h"
 
 using namespace PANSLBM2;
 
@@ -12,17 +12,17 @@ int main() {
     int tmax = 100000, nx = 100, ny = 100;
     double nu = 0.05, u0 = 0.1;
     
-    D2Q9<double> partial = D2Q9<double>(nx, ny);
+    D2Q9<double> particle = D2Q9<double>(nx, ny);
     for (int j = 0; j < ny - 1; j++) {
-        partial.SetBoundary(0, j, BARRIER);
-        partial.SetBoundary(nx - 1, j, BARRIER);
+        particle.SetBoundary(0, j, BARRIER);
+        particle.SetBoundary(nx - 1, j, BARRIER);
     }
     for (int i = 0; i < nx - 1; i++) {
-        partial.SetBoundary(i, 0, BARRIER);
-        partial.SetBoundary(i, ny - 1, OTHER);
+        particle.SetBoundary(i, 0, BARRIER);
+        particle.SetBoundary(i, ny - 1, OTHER);
     }
 
-    NS<double, D2Q9> dsolver = NS<double, D2Q9>(&partial, nu);
+    NS<double, D2Q9> dsolver = NS<double, D2Q9>(&particle, nu);
 
     std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
 
@@ -30,9 +30,9 @@ int main() {
     for (int t = 0; t < tmax; t++) {
         dsolver.UpdateMacro();      //  Update macroscopic values
         dsolver.Collision();        //  Collision
-        partial.Stream();           //  Stream
+        particle.Stream();          //  Stream
         for (int i = 0; i < nx - 1; i++) {
-            dsolver.SetU(i, ny - 1, u0, 0.0);
+            particle.SetU(i, ny - 1, u0, 0.0);
         }                           //  Boundary condition (inlet)
         dsolver.ExternalForce();    //  External force by thermal
         

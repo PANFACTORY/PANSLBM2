@@ -28,6 +28,7 @@ public:
         virtual T GetTemperature(int _i, int _j) const;
 
 protected:
+        const int np;           //  np : number of particle
         T omegaf, omegag;
         P<T> *f;
         Q<T> *g;
@@ -36,20 +37,20 @@ protected:
 
 
     template<class T, template<class>class P, template<class>class Q>
-    AD<T, P, Q>::AD(P<T>* _f, Q<T>* _g, T _viscosity, T _diffusivity) {
+    AD<T, P, Q>::AD(P<T>* _f, Q<T>* _g, T _viscosity, T _diffusivity) : np(_f->np) {
         // ここでfとgの整合性を確認すること
         this->f = _f;
         this->omegaf = 1.0/(3.0*_viscosity*this->f->dt/(this->f->dx*this->f->dx) + 0.5);
         this->g = _g;
         this->omegag = 1.0/(3.0*_diffusivity*this->g->dt/(this->g->dx*this->g->dx) + 0.5);
         
-        this->rho = new T[this->f->np];
+        this->rho = new T[this->np];
         for (int i = 0; i < P<T>::nd; i++) {
-            this->u[i] = new T[this->f->np];
+            this->u[i] = new T[this->np];
         }
-        this->temperature = new T[this->f->np];
+        this->temperature = new T[this->np];
 
-        for (int i = 0; i < this->f->np; i++) {
+        for (int i = 0; i < this->np; i++) {
             this->rho[i] = T();
             for (int j = 0; j < P<T>::nd; j++) {
                 this->u[j][i] = T();
@@ -60,19 +61,19 @@ protected:
 
 
     template<class T, template<class>class P, template<class>class Q>
-    AD<T, P, Q>::AD(const AD<T, P, Q>& _e) {
+    AD<T, P, Q>::AD(const AD<T, P, Q>& _e) : np(_e.np) {
         this->f = _e.f;
         this->omegaf = _e.omegaf;
         this->g = _e.g;
         this->omegag = _e.omegag;
 
-        this->rho = new T[this->f->np];
+        this->rho = new T[this->np];
         for (int i = 0; i < P<T>::nd; i++) {
-            this->u[i] = new T[this->f->np];
+            this->u[i] = new T[this->np];
         }
-        this->temperature = new T[this->f->np];
+        this->temperature = new T[this->np];
 
-        for (int i = 0; i < this->f->np; i++) {
+        for (int i = 0; i < this->np; i++) {
             this->rho[i] = _e.rho[i];
             for (int j = 0; j < P<T>::nd; j++) {
                 this->u[j][i] = _e.u[j][i];
@@ -94,7 +95,7 @@ protected:
 
     template<class T, template<class>class P, template<class>class Q>
     void AD<T, P, Q>::UpdateMacro() {
-        for (int i = 0; i < this->f->np; i++) {
+        for (int i = 0; i < this->np; i++) {
             this->rho[i] = T();
             for (int j = 0; j < P<T>::nd; j++) {
                 this->u[j][i] = T();
@@ -118,7 +119,7 @@ protected:
 
     template<class T, template<class>class P, template<class>class Q>
     void AD<T, P, Q>::Collision() {
-        for (int i = 0; i < this->f->np; i++) {
+        for (int i = 0; i < this->np; i++) {
             for (int j = 0; j < P<T>::nc; j++) {
                 T ciu = T();
                 T uu = T();
@@ -143,12 +144,12 @@ protected:
 
     template<class T, template<class>class P, template<class>class Q>
     void AD<T, P, Q>::ExternalForce() {
-        for (int i = 0; i < this->f->np; i++) {
+        for (int i = 0; i < this->np; i++) {
             T temperature0 = T();
             for (int j = 0; j < Q<T>::nc; j++) {
                 temperature0 += this->g->ft[j][i];
             }            
-            T rhog = 1.6e-6*(temperature0 - 1.5);
+            T rhog = 1.6e-5*(temperature0 - 1.5);
             for (int j = 0; j < P<T>::nc; j++) {
                 this->f->ft[j][i] += 3.0*this->f->dx*P<T>::ei[j]*Q<T>::ci[j][1]*rhog;
             }

@@ -27,6 +27,7 @@ public:
         virtual T GetU(int _d, int _i, int _j) const;
         
 protected:
+        const int np;           //  np : number of particle
         T omega;
         P<T>* f;
         T *rho, *u[P<T>::nd];
@@ -34,17 +35,17 @@ protected:
 
 
     template<class T, template<class>class P>
-    NS<T, P>::NS(P<T>* _f, T _viscosity) {
-        assert(0 < _f->nx && 0 < _f->ny);
+    NS<T, P>::NS(P<T>* _f, T _viscosity) : np(_f->np) {
+        assert(0 < _f->np);
         this->f = _f;
         this->omega = 1.0/(3.0*_viscosity*this->f->dt/(this->f->dx*this->f->dx) + 0.5);
 
-        this->rho = new T[this->f->np];
+        this->rho = new T[this->np];
         for (int i = 0; i < P<T>::nd; i++) {
-            this->u[i] = new T[this->f->np];
+            this->u[i] = new T[this->np];
         }
 
-        for (int i = 0; i < this->f->np; i++) {
+        for (int i = 0; i < this->np; i++) {
             this->rho[i] = T();
             for (int j = 0; j < P<T>::nd; j++) {
                 this->u[j][i] = T();
@@ -54,16 +55,16 @@ protected:
 
 
     template<class T, template<class>class P>
-    NS<T, P>::NS(const NS<T, P>& _e) {
+    NS<T, P>::NS(const NS<T, P>& _e) : np(_e.np) {
         this->f = _e.f;
         this->omega = _e.omega;
 
-        this->rho = new T[this->f->np];
+        this->rho = new T[this->np];
         for (int i = 0; i < P<T>::nd; i++) {
-            this->u[i] = new T[this->f->np];
+            this->u[i] = new T[this->np];
         }
 
-        for (int i = 0; i < this->f->np; i++) {
+        for (int i = 0; i < this->np; i++) {
             this->rho[i] = _e.rho[i];
             for (int j = 0; j < P<T>::nd; j++) {
                 this->u[j][i] = _e.u[j][i];
@@ -83,7 +84,7 @@ protected:
 
     template<class T, template<class>class P>
     void NS<T, P>::UpdateMacro() {
-        for (int i = 0; i < this->f->np; i++) {
+        for (int i = 0; i < this->np; i++) {
             this->rho[i] = T();
             for (int j = 0; j < P<T>::nd; j++) {
                 this->u[j][i] = T();
@@ -103,7 +104,7 @@ protected:
 
     template<class T, template<class>class P>
     void NS<T, P>::Collision() {
-        for (int i = 0; i < this->f->np; i++) {
+        for (int i = 0; i < this->np; i++) {
             for (int j = 0; j < P<T>::nc; j++) {
                 T ciu = T();
                 T uu = T();
@@ -120,7 +121,7 @@ protected:
 
     template<class T, template<class>class P>
     void NS<T, P>::ExternalForce() {
-        for (int i = 0; i < this->f->np; i++) {
+        for (int i = 0; i < this->np; i++) {
             
         }
     }

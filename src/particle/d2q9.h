@@ -362,15 +362,11 @@ public:
         //----------Stream and periodic boundary----------
         for (int i = 0; i < this->nx; i++) {
             for (int j = 0; j < this->ny; j++) {
-                this->ft[0][this->ny*i + j] = this->ftp1[0][this->ny*i + j];
-                this->ft[1][this->ny*i + j] = (i == 0) ? this->ftp1[1][this->ny*(this->nx - 1) + j] : this->ftp1[1][this->ny*(i - 1) + j];
-                this->ft[2][this->ny*i + j] = (j == 0) ? this->ftp1[2][this->ny*(i + 1) - 1] : this->ftp1[2][this->ny*i + (j - 1)];
-                this->ft[3][this->ny*i + j] = (i == this->nx - 1) ? this->ftp1[3][j] : this->ftp1[3][this->ny*(i + 1) + j];
-                this->ft[4][this->ny*i + j] = (j == this->ny - 1) ? this->ftp1[4][this->ny*i] : this->ftp1[4][this->ny*i + (j + 1)];
-                this->ft[5][this->ny*i + j] = (i == 0) ? ((j == 0) ? this->ftp1[5][this->ny*this->nx - 1] : this->ftp1[5][this->ny*(this->nx - 1) + (j - 1)]) : ((j == 0) ? this->ftp1[5][this->ny*i - 1] : this->ftp1[5][this->ny*(i - 1) + (j - 1)]);
-                this->ft[6][this->ny*i + j] = (i == this->nx - 1) ? ((j == 0) ? this->ftp1[6][this->ny - 1] : this->ftp1[6][j - 1]) : ((j == 0) ? this->ftp1[6][this->ny*(i + 2) - 1] : this->ftp1[6][this->ny*(i + 1) + (j - 1)]);
-                this->ft[7][this->ny*i + j] = (i == this->nx - 1) ? ((j == this->ny - 1) ? this->ftp1[7][0] : this->ftp1[7][j + 1]) : ((j == this->ny - 1) ? this->ftp1[7][this->ny*(i + 1)] : this->ftp1[7][this->ny*(i + 1) + (j + 1)]);
-                this->ft[8][this->ny*i + j] = (i == 0) ? ((j == this->ny - 1) ? this->ftp1[8][this->ny*(this->nx - 1)] : this->ftp1[8][this->ny*(this->nx - 1) + (j + 1)]) : ((j == this->ny - 1) ? this->ftp1[8][this->ny*(i - 1)] : this->ftp1[8][this->ny*(i - 1) + (j + 1)]);
+                for (int k = 0; k < D2Q9<T>::nc; k++) {
+                    int ip1 = i - D2Q9<T>::ci[k][0] == -1 ? this->nx - 1 : (i - D2Q9<T>::ci[k][0] == this->nx ? 0 : i - D2Q9<T>::ci[k][0]);
+                    int jp1 = j - D2Q9<T>::ci[k][1] == -1 ? this->ny - 1 : (j - D2Q9<T>::ci[k][1] == this->ny ? 0 : j - D2Q9<T>::ci[k][1]);
+                    this->ft[k][this->ny*i + j] = this->ftp1[k][this->ny*ip1 + jp1];
+                }
             }
         }
         

@@ -4,7 +4,8 @@
 #include <cmath>
 #include <chrono>
 
-#include "nsadjointd2q9_2.h"
+#include "../src/particle/d2q9.h"
+#include "../src/equation/nsadjoint.h"
 #include "src/Optimize/Solver/MMA.h"
 
 using namespace PANSLBM2;
@@ -12,16 +13,9 @@ using namespace PANSFEM2;
 
 int main() {
     //********************Setting parameters********************
-    int nt = 20000;
-    int nx = 100;
-    int ny = 100;
-    double nu = 0.1;
-    double q = 0.1;
-    double u0 = 0.025;
-    double rho0 = 1.0;
-    double alpha0 = 1.0;
-    double scale0 = 1.0e0;
-    double weightlimit = 0.25;
+    int nt = 30000, nx = 100, ny = 100;
+    double nu = 0.1, u0 = 0.25, rho0 = 1.0;
+    double q = 0.1, alpha0 = 1.0, scale0 = 1.0e-204, weightlimit = 0.25;
 
     std::vector<double> s = std::vector<double>(nx*ny, 1.0);
     MMA<double> optimizer = MMA<double>(s.size(), 1, 1.0,
@@ -43,25 +37,38 @@ int main() {
         }
 
         //********************Get PressureDrop********************
-        D2Q9<double> partial = D2Q9<double>(nx, ny);
-        NSAdjointd2q9<double> dsolver = NSAdjointd2q9<double>(&partial, nt, nu);
+        D2Q9<double> particle = D2Q9<double>(nx, ny);
+        for (int j = 0; j < ny - 1; j++) {
+            if (0.7*ny < j && j < 0.9*ny) {
+                particle.SetBoundary(0, j, OTHER);
+            } else {
+                particle.SetBoundary(0, j, BARRIER);
+            }
+            particle.SetBoundary(nx - 1, j, BARRIER);
+        }
+        for (int i = 0; i < nx - 1; i++) {
+            if (0.7*nx < i && i < 0.9*nx) {
+                particle.SetBoundary(i, 0, OTHER);
+            } else {
+                particle.SetBoundary(i, 0, BARRIER);
+            }
+            particle.SetBoundary(i, ny - 1, BARRIER);
+        }
+
+        NSAdjoint<double, D2Q9> dsolver = NSAdjoint<double, D2Q9>(&particle, nu, nt);
         dsolver.SetAlpha([=](int _i, int _j) {
             return alpha0*q*(1.0 - s[ny*_i + _j])/(s[ny*_i + _j] + q);
-        });
-        partial.SetBoundary([=](int _i, int _j) {
-            if ((_i == 0 && ((int)(0.7*ny) < _j && _j < (int)(0.9*ny))) || (((int)(0.7*nx) < _i && _i < (int)(0.9*nx)) && _j == 0)) {
-                return INLET;
-            } else {
-                return BARRIER;
-            }
         });
 
         //--------------------Direct analyze--------------------
         for (dsolver.t = 0; dsolver.t < nt; dsolver.t++) {
             dsolver.UpdateMacro();          //  Update macroscopic values
             dsolver.Collision();            //  Collision
-            partial.Stream();               //  Stream
-            dsolver.Inlet(u0, 0.0, rho0);   //  Boundary condition (inlet)
+            particle.Stream();              //  Stream
+            for (int i = (int)(0.7*nx); i < (int)(0.9*nx); i++) {
+                particle.SetRho(i, 0, rho0, 0.0);
+                particle.SetU(0, i, u0, 0.0);
+            }                               //  Boundary condition (inlet)
             dsolver.ExternalForce();        //  External force by Brinkman model
 
             if (dsolver.t > 0 && dsolver.CheckConvergence(1.0e-4)) {
@@ -73,11 +80,14 @@ int main() {
         //--------------------Invert analyze--------------------
         dsolver.SwitchDirection();
         for (dsolver.t = dsolver.t >= nt ? nt - 1 : dsolver.t; dsolver.t >= 0; dsolver.t--) {
-            dsolver.UpdateMacro();          //  Update macroscopic values
-            dsolver.Collision();            //  Collision
-            partial.Stream();               //  Stream
-            dsolver.Inlet(u0, 0.0, rho0);   //  Boundary condition (inlet)
-            dsolver.ExternalForce();        //  External force by Brinkman model   
+            dsolver.iUpdateMacro();         //  Update macroscopic values
+            dsolver.iCollision();           //  Collision
+            particle.Stream();              //  Stream
+            for (int i = (int)(0.7*nx); i < (int)(0.9*nx); i++) {
+                particle.SetiRho(i, 0);
+                particle.SetiU(0, i, u0, 0.0);
+            }                               //  Boundary condition (inlet)
+            dsolver.iExternalForce();       //  External force by Brinkman model   
         }
 
         //--------------------Get sensitivity--------------------
@@ -85,7 +95,7 @@ int main() {
         std::vector<double> dfds = std::vector<double>(s.size(), 0.0);
         for (int i = 0; i < nx; i++) {
             for (int j = 0; j < ny; j++) {
-                f += scale0*dsolver.GetUx(i, j)*alpha0*q*(1.0 - s[ny*i + j])/(s[ny*i + j] + q);
+                //f += scale0*dsolver.GetU(0, i, j)*alpha0*q*(1.0 - s[ny*i + j])/(s[ny*i + j] + q);
                 dfds[ny*i + j] = scale0*dsolver.GetSensitivity(i, j)*(-alpha0*q*(q + 1.0)/pow(q + s[ny*i + j], 2.0));
             }
         }
@@ -123,7 +133,7 @@ int main() {
             }
         }
 
-        fout << "SCALARS\trho\tfloat" << std::endl;
+        /*fout << "SCALARS\trho\tfloat" << std::endl;
         fout << "LOOKUP_TABLE\tdefault" << std::endl;
         for (int j = 0; j < ny; j++) {
             for (int i = 0; i < nx; i++) {
@@ -134,9 +144,9 @@ int main() {
         fout << "VECTORS\tu\tfloat" << std::endl;
         for (int j = 0; j < ny; j++) {
             for (int i = 0; i < nx; i++) {
-                fout << dsolver.GetUx(i, j) << "\t" << dsolver.GetUy(i, j) << "\t" << 0.0 << std::endl;
+                fout << dsolver.GetU(0, i, j) << "\t" << dsolver.GetU(1, i, j) << "\t" << 0.0 << std::endl;
             }
-        }
+        }*/
 
         fout << "SCALARS\tq\tfloat" << std::endl;
         fout << "LOOKUP_TABLE\tdefault" << std::endl;
@@ -149,7 +159,7 @@ int main() {
         fout << "VECTORS\tv\tfloat" << std::endl;
         for (int j = 0; j < ny; j++) {
             for (int i = 0; i < nx; i++) {
-                fout << dsolver.GetVx(i, j) << "\t" << dsolver.GetVy(i, j) << "\t" << 0.0 << std::endl;
+                fout << dsolver.GetV(0, i, j) << "\t" << dsolver.GetV(1, i, j) << "\t" << 0.0 << std::endl;
             }
         }
 

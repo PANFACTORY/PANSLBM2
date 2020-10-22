@@ -18,8 +18,8 @@ int main() {
         particle.SetBoundary(nx - 1, j, BARRIER);
     }
     for (int i = 0; i < nx - 1; i++) {
-        particle.SetBoundary(i, 0, BARRIER);
-        particle.SetBoundary(i, ny - 1, OTHER);
+        particle.SetBoundary(i, ny - 1, BARRIER);
+        particle.SetBoundary(i, 0, OTHER);
     }
 
     NS<double, D2Q9> dsolver = NS<double, D2Q9>(&particle, nu);
@@ -32,7 +32,7 @@ int main() {
         dsolver.Collision();        //  Collision
         particle.Stream();          //  Stream
         for (int i = 0; i < nx - 1; i++) {
-            particle.SetU(i, ny - 1, u0, 0.0);
+            particle.SetU(i, 0, u0, 0.0);
         }                           //  Boundary condition (inlet)
         dsolver.ExternalForce();    //  External force by thermal
         

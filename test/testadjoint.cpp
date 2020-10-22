@@ -17,31 +17,27 @@ int main() {
 
     D2Q9<double> particle = D2Q9<double>(nx, ny);
     for (int j = 0; j < ny - 1; j++) {
-        if (0.7*ny < j && j < 0.9*ny) {
+        if (0.3*ny < j && j < 0.7*ny) {
             particle.SetBoundary(0, j, OTHER);
+            particle.SetBoundary(nx - 1, j, OTHER);
         } else {
             particle.SetBoundary(0, j, BARRIER);
+            particle.SetBoundary(nx - 1, j, BARRIER);
         }
-        particle.SetBoundary(nx - 1, j, BARRIER);
     }
     for (int i = 0; i < nx - 1; i++) {
-        if (0.7*nx < i && i < 0.9*nx) {
-            particle.SetBoundary(i, 0, OTHER);
-        } else {
-            particle.SetBoundary(i, 0, BARRIER);
-        }
+        particle.SetBoundary(i, 0, BARRIER);
         particle.SetBoundary(i, ny - 1, BARRIER);
     }
 
     NSAdjoint<double, D2Q9> dsolver = NSAdjoint<double, D2Q9>(&particle, nu, nt);
 
     dsolver.SetAlpha([=](int _i, int _j) {
-        /*if (pow(_i - 50, 2.0) + pow(_j - 50, 2.0) < pow(10.0, 2.0)) {
-            return alpha0;
-        } else {
-            return 0.0;
-        }*/
-        return 0.0;
+        double gamma = 0.9;
+        if (pow(_i - 50, 2.0) + pow(_j - 50, 2.0) < pow(15.0, 2.0)) {
+            gamma = 0.1;
+        }
+        return alpha0*q*(1.0 - gamma)/(gamma + q);
     });
 
     //--------------------Direct analyze--------------------
@@ -49,9 +45,11 @@ int main() {
         dsolver.UpdateMacro();          //  Update macroscopic values
         dsolver.Collision();            //  Collision
         particle.Stream();              //  Stream
-        for (int i = (int)(0.7*nx); i < (int)(0.9*nx); i++) {
-            particle.SetRho(i, 0, rho0, 0.0);
-            particle.SetU(0, i, u0, 0.0);
+        for (int j = 0; j < ny - 1; j++) {
+            if (0.3*ny < j && j < 0.7*ny) {
+                particle.SetU(0, j, u0, 0.0);
+                particle.SetRho(nx - 1, j, rho0, 0.0);
+            }
         }                               //  Boundary condition (inlet)
         dsolver.ExternalForce();        //  External force by Brinkman model
 
@@ -67,9 +65,11 @@ int main() {
         dsolver.iUpdateMacro();         //  Update macroscopic values
         dsolver.iCollision();           //  Collision
         particle.Stream();              //  Stream
-        for (int i = (int)(0.7*nx); i < (int)(0.9*nx); i++) {
-            particle.SetiRho(i, 0);
-            particle.SetiU(0, i, u0, 0.0);
+        for (int j = 0; j < ny - 1; j++) {
+            if (0.3*ny < j && j < 0.7*ny) {
+                particle.SetiU(0, j, u0, 0.0);
+                particle.SetiRho(nx - 1, j);
+            }
         }                               //  Boundary condition (inlet)
         dsolver.iExternalForce();       //  External force by Brinkman model
 

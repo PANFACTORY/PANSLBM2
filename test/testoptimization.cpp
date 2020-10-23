@@ -14,8 +14,8 @@ using namespace PANSFEM2;
 int main() {
     //********************Setting parameters********************
     int nt = 30000, nx = 100, ny = 100;
-    double nu = 0.1, u0 = 0.25, rho0 = 1.0;
-    double q = 0.1, alpha0 = 1.0, scale0 = 1.0e-204, weightlimit = 0.25;
+    double nu = 0.1, u0 = 0.025, rho0 = 1.0;
+    double q = 0.1, alpha0 = 1.0, scale0 = 1.0e0, weightlimit = 0.25;
 
     std::vector<double> s = std::vector<double>(nx*ny, 1.0);
     MMA<double> optimizer = MMA<double>(s.size(), 1, 1.0,
@@ -38,7 +38,7 @@ int main() {
 
         //********************Get PressureDrop********************
         D2Q9<double> particle = D2Q9<double>(nx, ny);
-        for (int j = 0; j < ny - 1; j++) {
+        for (int j = 0; j < ny; j++) {
             if (0.7*ny < j && j < 0.9*ny) {
                 particle.SetBoundary(0, j, OTHER);
             } else {
@@ -46,7 +46,7 @@ int main() {
             }
             particle.SetBoundary(nx - 1, j, BARRIER);
         }
-        for (int i = 0; i < nx - 1; i++) {
+        for (int i = 0; i < nx; i++) {
             if (0.7*nx < i && i < 0.9*nx) {
                 particle.SetBoundary(i, 0, OTHER);
             } else {
@@ -56,18 +56,21 @@ int main() {
         }
 
         NSAdjoint<double, D2Q9> dsolver = NSAdjoint<double, D2Q9>(&particle, nu, nt);
-        dsolver.SetAlpha([=](int _i, int _j) {
-            return alpha0*q*(1.0 - s[ny*_i + _j])/(s[ny*_i + _j] + q);
-        });
+        
+        for (int i = 0; i < s.size(); i++) {            
+            dsolver.SetAlpha(i, alpha0*q*(1.0 - s[i])/(s[i] + q));
+        }
 
         //--------------------Direct analyze--------------------
         for (dsolver.t = 0; dsolver.t < nt; dsolver.t++) {
             dsolver.UpdateMacro();          //  Update macroscopic values
             dsolver.Collision();            //  Collision
             particle.Stream();              //  Stream
-            for (int i = (int)(0.7*nx); i < (int)(0.9*nx); i++) {
-                particle.SetRho(i, 0, rho0, 0.0);
-                particle.SetU(0, i, u0, 0.0);
+            for (int i = 0; i < nx; i++) {
+                if (0.7*nx < i && i < 0.9*nx) {
+                    particle.SetRho(i, 0, rho0, 0.0);
+                    particle.SetU(0, i, u0, 0.0);
+                }
             }                               //  Boundary condition (inlet)
             dsolver.ExternalForce();        //  External force by Brinkman model
 
@@ -83,9 +86,11 @@ int main() {
             dsolver.iUpdateMacro();         //  Update macroscopic values
             dsolver.iCollision();           //  Collision
             particle.Stream();              //  Stream
-            for (int i = (int)(0.7*nx); i < (int)(0.9*nx); i++) {
-                particle.SetiRho(i, 0);
-                particle.SetiU(0, i, u0, 0.0);
+            for (int i = 0; i < nx; i++) {
+                if (0.7*nx < i && i < 0.9*nx) {
+                    particle.SetiRho(i, 0);
+                    particle.SetiU(0, i, u0, 0.0);
+                }
             }                               //  Boundary condition (inlet)
             dsolver.iExternalForce();       //  External force by Brinkman model   
         }
@@ -93,11 +98,9 @@ int main() {
         //--------------------Get sensitivity--------------------
         double f = 0.0;
         std::vector<double> dfds = std::vector<double>(s.size(), 0.0);
-        for (int i = 0; i < nx; i++) {
-            for (int j = 0; j < ny; j++) {
-                //f += scale0*dsolver.GetU(0, i, j)*alpha0*q*(1.0 - s[ny*i + j])/(s[ny*i + j] + q);
-                dfds[ny*i + j] = scale0*dsolver.GetSensitivity(i, j)*(-alpha0*q*(q + 1.0)/pow(q + s[ny*i + j], 2.0));
-            }
+        for (int i = 0; i < s.size(); i++) {  
+            //f += scale0*dsolver.GetU(0, i, j)*alpha0*q*(1.0 - s[ny*i + j])/(s[ny*i + j] + q);
+            dfds[i] = scale0*dsolver.GetSensitivity(i)*(-alpha0*q*(q + 1.0)/pow(q + s[i], 2.0));
         }
 
         //--------------------Export result--------------------
@@ -121,7 +124,7 @@ int main() {
         fout << "LOOKUP_TABLE\tdefault" << std::endl;
         for (int j = 0; j < ny; j++) {
             for (int i = 0; i < nx; i++) {
-                fout << s[ny*i + j] << std::endl;
+                fout << s[particle.GetIndex(i, j)] << std::endl;
             }
         }
 
@@ -129,7 +132,7 @@ int main() {
         fout << "LOOKUP_TABLE\tdefault" << std::endl;
         for (int j = 0; j < ny; j++) {
             for (int i = 0; i < nx; i++) {
-                fout << dfds[ny*i + j] << std::endl;
+                fout << dfds[particle.GetIndex(i, j)] << std::endl;
             }
         }
 
@@ -152,14 +155,14 @@ int main() {
         fout << "LOOKUP_TABLE\tdefault" << std::endl;
         for (int j = 0; j < ny; j++) {
             for (int i = 0; i < nx; i++) {
-                fout << dsolver.GetQ(i, j) << std::endl;
+                fout << dsolver.GetQ(particle.GetIndex(i, j)) << std::endl;
             }
         }
 
         fout << "VECTORS\tv\tfloat" << std::endl;
         for (int j = 0; j < ny; j++) {
             for (int i = 0; i < nx; i++) {
-                fout << dsolver.GetV(0, i, j) << "\t" << dsolver.GetV(1, i, j) << "\t" << 0.0 << std::endl;
+                fout << dsolver.GetV(0, particle.GetIndex(i, j)) << "\t" << dsolver.GetV(1, particle.GetIndex(i, j)) << "\t" << 0.0 << std::endl;
             }
         }
 

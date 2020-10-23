@@ -20,8 +20,7 @@ public:
         NSAdjoint(const NSAdjoint<T, P>& _e);
         virtual ~NSAdjoint();
 
-        template<class F>
-        void SetAlpha(F _f);
+        void SetAlpha(int _i, T _alpha);
 
         virtual void UpdateMacro();
         virtual void Collision();
@@ -34,11 +33,11 @@ public:
         bool CheckConvergence(T _eps);
         void SwitchDirection();
 
-        virtual T GetRho(int _i, int _j, int _t) const;
-        virtual T GetU(int _d, int _i, int _j, int _t) const;
-        virtual T GetQ(int _i, int _j) const;
-        virtual T GetV(int _d, int _i, int _j) const;
-        virtual T GetSensitivity(int _i, int _j) const;
+        virtual T GetRho(int _i, int _t) const;
+        virtual T GetU(int _d, int _i, int _t) const;
+        virtual T GetQ(int _i) const;
+        virtual T GetV(int _d, int _i) const;
+        virtual T GetSensitivity(int _i) const;
         
         const int nt;
         int t = 0;
@@ -131,12 +130,12 @@ protected:
     template<class T, template<class>class P>
     NSAdjoint<T, P>::~NSAdjoint() {
         delete[] this->rho;
-        for (int i = 0; i < P<T>::nd; i++) {
-            delete[] this->u[i];
+        for (int k = 0; k < P<T>::nd; k++) {
+            delete[] this->u[k];
         }
         delete[] this->q;
-        for (int i = 0; i < P<T>::nd; i++) {
-            delete[] this->v[i];
+        for (int k = 0; k < P<T>::nd; k++) {
+            delete[] this->v[k];
         }
         delete[] this->alpha;
         delete[] this->sensitivity;
@@ -144,13 +143,8 @@ protected:
 
 
     template<class T, template<class>class P>
-    template<class F>
-    void NSAdjoint<T, P>::SetAlpha(F _f) {
-        for (int i = 0; i < this->f->nx; i++) {
-            for (int j = 0; j < this->f->ny; j++) {
-                this->alpha[this->f->ny*i + j] = _f(i, j);
-            }
-        }
+    void NSAdjoint<T, P>::SetAlpha(int _i, T _alpha) {
+        this->alpha[_i] = _alpha;
     }
 
 
@@ -159,8 +153,8 @@ protected:
         for (int i = 0; i < this->np; i++) {
             int ii = this->np*this->t + i;
             this->rho[ii] = T();
-            for (int j = 0; j < P<T>::nd; j++) {
-                this->u[j][ii] = T();
+            for (int k = 0; k < P<T>::nd; k++) {
+                this->u[k][ii] = T();
             }
             for (int j = 0; j < P<T>::nc; j++) {
                 this->rho[ii] += this->f->ft[j][i];
@@ -312,36 +306,36 @@ protected:
 
 
     template<class T, template<class>class P>
-    T NSAdjoint<T, P>::GetRho(int _i, int _j, int _t) const {
-        assert(0 <= _i && _i < this->f->nx && 0 <= _j && _j < this->f->ny);
-        return this->rho[this->np*_t + this->f->ny*_i + _j];
+    T NSAdjoint<T, P>::GetRho(int _i, int _t) const {
+        assert(0 <= _i && _i < this->np && 0 <= _t && _t < this->nt);
+        return this->rho[this->np*_t + _i];
     }
 
 
     template<class T, template<class>class P>
-    T NSAdjoint<T, P>::GetU(int _d, int _i, int _j, int _t) const {
-        assert(0 <= _i && _i < this->f->nx && 0 <= _j && _j < this->f->ny);
-        return this->u[_d][this->np*_t + this->f->ny*_i + _j];
+    T NSAdjoint<T, P>::GetU(int _d, int _i, int _t) const {
+        assert(0 <= _i && _i < this->np && 0 <= _t && _t < this->nt);
+        return this->u[_d][this->np*_t + _i];
     }
 
 
     template<class T, template<class>class P>
-    T NSAdjoint<T, P>::GetQ(int _i, int _j) const {
-        assert(0 <= _i && _i < this->f->nx && 0 <= _j && _j < this->f->ny);
-        return this->q[this->f->ny*_i + _j];
+    T NSAdjoint<T, P>::GetQ(int _i) const {
+        assert(0 <= _i && _i < this->np);
+        return this->q[_i];
     }
 
 
     template<class T, template<class>class P>
-    T NSAdjoint<T, P>::GetV(int _d, int _i, int _j) const {
-        assert(0 <= _i && _i < this->f->nx && 0 <= _j && _j < this->f->ny);
-        return this->v[_d][this->f->ny*_i + _j];
+    T NSAdjoint<T, P>::GetV(int _d, int _i) const {
+        assert(0 <= _i && _i < this->np);
+        return this->v[_d][_i];
     }
 
 
     template<class T, template<class>class P>
-    T NSAdjoint<T, P>::GetSensitivity(int _i, int _j) const {
-        assert(0 <= _i && _i < this->f->nx && 0 <= _j && _j < this->f->ny);
-        return this->sensitivity[this->f->ny*_i + _j];
+    T NSAdjoint<T, P>::GetSensitivity(int _i) const {
+        assert(0 <= _i && _i < this->np);
+        return this->sensitivity[_i];
     }
 }

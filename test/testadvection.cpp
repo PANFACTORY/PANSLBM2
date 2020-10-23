@@ -14,19 +14,19 @@ int main() {
     
     D2Q9<double> particlef = D2Q9<double>(nx, ny);
     D2Q9<double> particleg = D2Q9<double>(nx, ny);
-    for (int j = 0; j < ny - 1; j++) {
+    for (int j = 0; j < ny; j++) {
         particlef.SetBoundary(0, j, PERIODIC);
         particlef.SetBoundary(nx - 1, j, PERIODIC);
         particleg.SetBoundary(0, j, PERIODIC);
         particleg.SetBoundary(nx - 1, j, PERIODIC);
     }
-    for (int i = 0; i < nx - 1; i++) {
+    for (int i = 0; i < nx; i++) {
         particlef.SetBoundary(i, 0, MIRROR);
         particlef.SetBoundary(i, ny - 1, MIRROR);
         particleg.SetBoundary(i, 0, OTHER);
         particleg.SetBoundary(i, ny - 1, OTHER);
     }
-
+        
     AD<double, D2Q9, D2Q9> dsolver = AD<double, D2Q9, D2Q9>(&particlef, &particleg, nu, alpha);
 
     std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
@@ -37,7 +37,7 @@ int main() {
         dsolver.Collision();        //  Collision
         particlef.Stream();         //  Stream
         particleg.Stream();
-        for (int i = 0; i < nx - 1; i++) {
+        for (int i = 0; i < nx; i++) {
             particleg.SetTemperature(i, 0, Th);
             particleg.SetTemperature(i, ny - 1, Tl);
         }                           //  Boundary condition (Fix temperature)
@@ -64,14 +64,14 @@ int main() {
             fout << "LOOKUP_TABLE\tdefault" << std::endl;
             for (int j = 0; j < ny; j++) {
                 for (int i = 0; i < nx; i++) {
-                    fout << dsolver.GetRho(i, j) << std::endl;
+                    fout << dsolver.GetRho(particlef.GetIndex(i, j)) << std::endl;
                 }
             }
 
             fout << "VECTORS\tu\tfloat" << std::endl;
             for (int j = 0; j < ny; j++) {
                 for (int i = 0; i < nx; i++) {
-                    fout << dsolver.GetU(0, i, j) << "\t" << dsolver.GetU(1, i, j) << "\t" << 0.0 << std::endl;
+                    fout << dsolver.GetU(0, particlef.GetIndex(i, j)) << "\t" << dsolver.GetU(1, particlef.GetIndex(i, j)) << "\t" << 0.0 << std::endl;
                 }
             }
 
@@ -79,7 +79,23 @@ int main() {
             fout << "LOOKUP_TABLE\tdefault" << std::endl;
             for (int j = 0; j < ny; j++) {
                 for (int i = 0; i < nx; i++) {
-                    fout << dsolver.GetTemperature(i, j) << std::endl;
+                    fout << dsolver.GetTemperature(particleg.GetIndex(i, j)) << std::endl;
+                }
+            }
+
+            fout << "SCALARS\tboundaryf\tint" << std::endl;
+            fout << "LOOKUP_TABLE\tdefault" << std::endl;
+            for (int j = 0; j < ny; j++) {
+                for (int i = 0; i < nx; i++) {
+                    fout << particlef.GetBoundary(i, j) << std::endl;
+                }
+            }
+
+            fout << "SCALARS\tboundaryg\tint" << std::endl;
+            fout << "LOOKUP_TABLE\tdefault" << std::endl;
+            for (int j = 0; j < ny; j++) {
+                for (int i = 0; i < nx; i++) {
+                    fout << particleg.GetBoundary(i, j) << std::endl;
                 }
             }
         } 

@@ -23,9 +23,9 @@ public:
         virtual void Collision();
         virtual void ExternalForce();
 
-        virtual T GetRho(int _i, int _j) const;
-        virtual T GetU(int _d, int _i, int _j) const;
-        virtual T GetTemperature(int _i, int _j) const;
+        virtual T GetRho(int _i) const;
+        virtual T GetU(int _d, int _i) const;
+        virtual T GetTemperature(int _i) const;
 
 protected:
         const int np;           //  np : number of particle
@@ -45,15 +45,15 @@ protected:
         this->omegag = 1.0/(3.0*_diffusivity*this->g->dt/(this->g->dx*this->g->dx) + 0.5);
         
         this->rho = new T[this->np];
-        for (int i = 0; i < P<T>::nd; i++) {
-            this->u[i] = new T[this->np];
+        for (int k = 0; k < P<T>::nd; k++) {
+            this->u[k] = new T[this->np];
         }
         this->temperature = new T[this->np];
 
         for (int i = 0; i < this->np; i++) {
             this->rho[i] = T();
-            for (int j = 0; j < P<T>::nd; j++) {
-                this->u[j][i] = T();
+            for (int k = 0; k < P<T>::nd; k++) {
+                this->u[k][i] = T();
             }
             this->temperature[i] = T();
         }
@@ -68,15 +68,15 @@ protected:
         this->omegag = _e.omegag;
 
         this->rho = new T[this->np];
-        for (int i = 0; i < P<T>::nd; i++) {
-            this->u[i] = new T[this->np];
+        for (int k = 0; k < P<T>::nd; k++) {
+            this->u[k] = new T[this->np];
         }
         this->temperature = new T[this->np];
 
         for (int i = 0; i < this->np; i++) {
             this->rho[i] = _e.rho[i];
-            for (int j = 0; j < P<T>::nd; j++) {
-                this->u[j][i] = _e.u[j][i];
+            for (int k = 0; k < P<T>::nd; k++) {
+                this->u[k][i] = _e.u[k][i];
             }
             this->temperature[i] = _e.temperature[i];
         }
@@ -86,8 +86,8 @@ protected:
     template<class T, template<class>class P, template<class>class Q>
     AD<T, P, Q>::~AD() {
         delete[] this->rho;
-        for (int i = 0; i < P<T>::nd; i++) {
-            delete[] this->u[i];
+        for (int k = 0; k < P<T>::nd; k++) {
+            delete[] this->u[k];
         }
         delete[] this->temperature;
     }
@@ -97,8 +97,8 @@ protected:
     void AD<T, P, Q>::UpdateMacro() {
         for (int i = 0; i < this->np; i++) {
             this->rho[i] = T();
-            for (int j = 0; j < P<T>::nd; j++) {
-                this->u[j][i] = T();
+            for (int k = 0; k < P<T>::nd; k++) {
+                this->u[k][i] = T();
             }
             for (int j = 0; j < P<T>::nc; j++) {
                 this->rho[i] += this->f->ft[j][i];
@@ -158,22 +158,22 @@ protected:
 
 
     template<class T, template<class>class P, template<class>class Q>
-    T AD<T, P, Q>::GetRho(int _i, int _j) const {
-        assert(0 <= _i && _i < this->f->nx && 0 <= _j && _j < this->f->ny);
-        return this->rho[this->f->ny*_i + _j];
+    T AD<T, P, Q>::GetRho(int _i) const {
+        assert(0 <= _i && _i < this->np);
+        return this->rho[_i];
     }
 
 
     template<class T, template<class>class P, template<class>class Q>
-    T AD<T, P, Q>::GetU(int _d, int _i, int _j) const {
-        assert(0 < _d < P<T>::nd && 0 <= _i && _i < this->f->nx && 0 <= _j && _j < this->f->ny);
-        return this->u[_d][this->f->ny*_i + _j];
+    T AD<T, P, Q>::GetU(int _d, int _i) const {
+        assert(0 < _d < P<T>::nd && 0 <= _i && _i < this->np);
+        return this->u[_d][_i];
     }
 
 
     template<class T, template<class>class P, template<class>class Q>
-    T AD<T, P, Q>::GetTemperature(int _i, int _j) const {
-        assert(0 <= _i && _i < this->g->nx && 0 <= _j && _j < this->g->ny);
-        return this->temperature[this->g->ny*_i + _j];
+    T AD<T, P, Q>::GetTemperature(int _i) const {
+        assert(0 <= _i && _i < this->np);
+        return this->temperature[_i];
     }
 }

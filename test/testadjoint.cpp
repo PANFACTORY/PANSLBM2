@@ -16,7 +16,7 @@ int main() {
     double q = 0.1, alpha0 = 1.0;
 
     D2Q9<double> particle = D2Q9<double>(nx, ny);
-    for (int j = 0; j < ny - 1; j++) {
+    for (int j = 0; j < ny; j++) {
         if (0.3*ny < j && j < 0.7*ny) {
             particle.SetBoundary(0, j, OTHER);
             particle.SetBoundary(nx - 1, j, OTHER);
@@ -25,27 +25,26 @@ int main() {
             particle.SetBoundary(nx - 1, j, BARRIER);
         }
     }
-    for (int i = 0; i < nx - 1; i++) {
+    for (int i = 0; i < nx; i++) {
         particle.SetBoundary(i, 0, BARRIER);
         particle.SetBoundary(i, ny - 1, BARRIER);
     }
 
     NSAdjoint<double, D2Q9> dsolver = NSAdjoint<double, D2Q9>(&particle, nu, nt);
 
-    dsolver.SetAlpha([=](int _i, int _j) {
-        double gamma = 0.9;
-        if (pow(_i - 50, 2.0) + pow(_j - 50, 2.0) < pow(15.0, 2.0)) {
-            gamma = 0.1;
+    for (int i = 0; i < nx; i++) {
+        for (int j = 0; j < ny; j++) {
+            double gamma = pow(i - 50, 2.0) + pow(j - 50, 2.0) < pow(15.0, 2.0) ? 0.1 : 0.9;
+            dsolver.SetAlpha(particle.GetIndex(i, j), alpha0*q*(1.0 - gamma)/(gamma + q));
         }
-        return alpha0*q*(1.0 - gamma)/(gamma + q);
-    });
+    }
 
     //--------------------Direct analyze--------------------
     for (dsolver.t = 0; dsolver.t < nt; dsolver.t++) {
         dsolver.UpdateMacro();          //  Update macroscopic values
         dsolver.Collision();            //  Collision
         particle.Stream();              //  Stream
-        for (int j = 0; j < ny - 1; j++) {
+        for (int j = 0; j < ny; j++) {
             if (0.3*ny < j && j < 0.7*ny) {
                 particle.SetU(0, j, u0, 0.0);
                 particle.SetRho(nx - 1, j, rho0, 0.0);
@@ -65,7 +64,7 @@ int main() {
         dsolver.iUpdateMacro();         //  Update macroscopic values
         dsolver.iCollision();           //  Collision
         particle.Stream();              //  Stream
-        for (int j = 0; j < ny - 1; j++) {
+        for (int j = 0; j < ny; j++) {
             if (0.3*ny < j && j < 0.7*ny) {
                 particle.SetiU(0, j, u0, 0.0);
                 particle.SetiRho(nx - 1, j);
@@ -95,14 +94,14 @@ int main() {
             fout << "LOOKUP_TABLE\tdefault" << std::endl;
             for (int j = 0; j < ny; j++) {
                 for (int i = 0; i < nx; i++) {
-                    fout << dsolver.GetRho(i, j, dsolver.t) << std::endl;
+                    fout << dsolver.GetRho(particle.GetIndex(i, j), dsolver.t) << std::endl;
                 }
             }
 
             fout << "VECTORS\tu\tfloat" << std::endl;
             for (int j = 0; j < ny; j++) {
                 for (int i = 0; i < nx; i++) {
-                    fout << dsolver.GetU(0, i, j, dsolver.t) << "\t" << dsolver.GetU(1, i, j, dsolver.t) << "\t" << 0.0 << std::endl;
+                    fout << dsolver.GetU(0, particle.GetIndex(i, j), dsolver.t) << "\t" << dsolver.GetU(1, particle.GetIndex(i, j), dsolver.t) << "\t" << 0.0 << std::endl;
                 }
             }
 
@@ -110,14 +109,14 @@ int main() {
             fout << "LOOKUP_TABLE\tdefault" << std::endl;
             for (int j = 0; j < ny; j++) {
                 for (int i = 0; i < nx; i++) {
-                    fout << dsolver.GetQ(i, j) << std::endl;
+                    fout << dsolver.GetQ(particle.GetIndex(i, j)) << std::endl;
                 }
             }
 
             fout << "VECTORS\tv\tfloat" << std::endl;
             for (int j = 0; j < ny; j++) {
                 for (int i = 0; i < nx; i++) {
-                    fout << dsolver.GetV(0, i, j) << "\t" << dsolver.GetV(1, i, j) << "\t" << 0.0 << std::endl;
+                    fout << dsolver.GetV(0, particle.GetIndex(i, j)) << "\t" << dsolver.GetV(1, particle.GetIndex(i, j)) << "\t" << 0.0 << std::endl;
                 }
             }
 
@@ -125,7 +124,7 @@ int main() {
             fout << "LOOKUP_TABLE\tdefault" << std::endl;
             for (int j = 0; j < ny; j++) {
                 for (int i = 0; i < nx; i++) {
-                    fout << dsolver.GetSensitivity(i, j) << std::endl;
+                    fout << dsolver.GetSensitivity(particle.GetIndex(i, j)) << std::endl;
                 }
             }
         }

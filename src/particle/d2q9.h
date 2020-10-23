@@ -33,6 +33,7 @@ public:
         void SetiU(int _i, int _j, T _ux, T _uy);
 
         void Stream();
+        void iStream();
         
         bool GetBarrier(int _i, int _j) const;
         BOUNDARYTYPE GetBoundary(int _i, int _j) const;
@@ -309,21 +310,21 @@ public:
     void D2Q9<T>::SetiRho(int _i, int _j) {
         int ij = this->ny*_i + _j;
         if (_i == 0) {
-            this->ft[1][ij] = this->ft[3][ij] - (4.0*this->ft[3][ij] + this->ft[6][ij] + this->ft[7][ij])/3.0;
-            this->ft[5][ij] = this->ft[7][ij] - (4.0*this->ft[3][ij] + this->ft[6][ij] + this->ft[7][ij])/3.0;
-            this->ft[8][ij] = this->ft[6][ij] - (4.0*this->ft[3][ij] + this->ft[6][ij] + this->ft[7][ij])/3.0;
-        } else if (_i == this->nx - 1) {
             this->ft[3][ij] = this->ft[1][ij] - (4.0*this->ft[1][ij] + this->ft[5][ij] + this->ft[8][ij])/3.0;
             this->ft[6][ij] = this->ft[8][ij] - (4.0*this->ft[1][ij] + this->ft[5][ij] + this->ft[8][ij])/3.0;
             this->ft[7][ij] = this->ft[5][ij] - (4.0*this->ft[1][ij] + this->ft[5][ij] + this->ft[8][ij])/3.0;
+        } else if (_i == this->nx - 1) {
+            this->ft[1][ij] = this->ft[3][ij] - (4.0*this->ft[3][ij] + this->ft[6][ij] + this->ft[7][ij])/3.0;
+            this->ft[5][ij] = this->ft[7][ij] - (4.0*this->ft[3][ij] + this->ft[6][ij] + this->ft[7][ij])/3.0;
+            this->ft[8][ij] = this->ft[6][ij] - (4.0*this->ft[3][ij] + this->ft[6][ij] + this->ft[7][ij])/3.0;
         } else if (_j == 0) {
-            this->ft[2][ij] = this->ft[4][ij] - (4.0*this->ft[4][ij] + this->ft[7][ij] + this->ft[8][ij])/3.0;
-            this->ft[5][ij] = this->ft[7][ij] - (4.0*this->ft[4][ij] + this->ft[7][ij] + this->ft[8][ij])/3.0;
-            this->ft[6][ij] = this->ft[8][ij] - (4.0*this->ft[4][ij] + this->ft[7][ij] + this->ft[8][ij])/3.0;
-        } else if (_j == this->ny - 1) {
             this->ft[4][ij] = this->ft[2][ij] - (4.0*this->ft[2][ij] + this->ft[5][ij] + this->ft[6][ij])/3.0;
             this->ft[7][ij] = this->ft[5][ij] - (4.0*this->ft[2][ij] + this->ft[5][ij] + this->ft[6][ij])/3.0;
             this->ft[8][ij] = this->ft[6][ij] - (4.0*this->ft[2][ij] + this->ft[5][ij] + this->ft[6][ij])/3.0;
+        } else if (_j == this->ny - 1) {
+            this->ft[2][ij] = this->ft[4][ij] - (4.0*this->ft[4][ij] + this->ft[7][ij] + this->ft[8][ij])/3.0;
+            this->ft[5][ij] = this->ft[7][ij] - (4.0*this->ft[4][ij] + this->ft[7][ij] + this->ft[8][ij])/3.0;
+            this->ft[6][ij] = this->ft[8][ij] - (4.0*this->ft[4][ij] + this->ft[7][ij] + this->ft[8][ij])/3.0;
         } else {
             //  境界に沿っていないことを警告する
         }
@@ -334,25 +335,25 @@ public:
     void D2Q9<T>::SetiU(int _i, int _j, T _ux, T _uy) {
         int ij = this->ny*_i + _j;
         if (_i == 0) {
-            T rho0 = (-2.0 + _ux*(4.0*this->ft[3][ij] + this->ft[7][ij] + this->ft[6][ij]) + 3.0*_uy*(this->ft[7][ij] - this->ft[6][ij]))/(3.0*(1.0 - _ux));
-            this->ft[1][ij] = this->ft[3][ij] + rho0;
-            this->ft[8][ij] = this->ft[6][ij] + rho0;
-            this->ft[5][ij] = this->ft[7][ij] + rho0;
-        } else if (_i == this->nx - 1) {          
-            T rho0 = (-2.0 - _ux*(4.0*this->ft[1][ij] + this->ft[8][ij] + this->ft[5][ij]) + 3.0*_uy*(this->ft[8][ij] - this->ft[5][ij]))/(3.0*(1.0 + _ux));
+            T rho0 = (-2.0 + _ux*(4.0*this->ft[1][ij] + this->ft[5][ij] + this->ft[8][ij]) + 3.0*_uy*(this->ft[5][ij] - this->ft[8][ij]))/(3.0*(1.0 - _ux));
             this->ft[3][ij] = this->ft[1][ij] + rho0;
+            this->ft[6][ij] = this->ft[8][ij] + rho0;
             this->ft[7][ij] = this->ft[5][ij] + rho0;
-            this->ft[6][ij] = this->ft[8][ij] + rho0;
-        } else if (_j == 0) {
-            T rho0 = (-2.0 + _uy*(4.0*this->ft[4][ij] + this->ft[7][ij] + this->ft[8][ij]) + 3.0*_ux*(this->ft[7][ij] - this->ft[8][ij]))/(3.0*(1.0 - _uy));
-            this->ft[2][ij] = this->ft[4][ij] + rho0;
+        } else if (_i == this->nx - 1) {          
+            T rho0 = (-2.0 - _ux*(4.0*this->ft[3][ij] + this->ft[6][ij] + this->ft[7][ij]) + 3.0*_uy*(this->ft[6][ij] - this->ft[7][ij]))/(3.0*(1.0 + _ux));
+            this->ft[1][ij] = this->ft[3][ij] + rho0;
             this->ft[5][ij] = this->ft[7][ij] + rho0;
-            this->ft[6][ij] = this->ft[8][ij] + rho0;
-        } else if (_j == this->ny - 1) {
-            T rho0 = (-2.0 - _uy*(4.0*this->ft[2][ij] + this->ft[5][ij] + this->ft[6][ij]) + 3.0*_ux*(this->ft[6][ij] - this->ft[5][ij]))/(3.0*(1.0 + _uy));
+            this->ft[8][ij] = this->ft[6][ij] + rho0;
+        } else if (_j == 0) {
+            T rho0 = (-2.0 + _uy*(4.0*this->ft[2][ij] + this->ft[5][ij] + this->ft[6][ij]) + 3.0*_ux*(this->ft[5][ij] - this->ft[6][ij]))/(3.0*(1.0 - _uy));
             this->ft[4][ij] = this->ft[2][ij] + rho0;
             this->ft[7][ij] = this->ft[5][ij] + rho0;
             this->ft[8][ij] = this->ft[6][ij] + rho0;
+        } else if (_j == this->ny - 1) {
+            T rho0 = (-2.0 - _uy*(4.0*this->ft[4][ij] + this->ft[7][ij] + this->ft[8][ij]) + 3.0*_ux*(this->ft[8][ij] - this->ft[7][ij]))/(3.0*(1.0 + _uy));
+            this->ft[2][ij] = this->ft[4][ij] + rho0;
+            this->ft[5][ij] = this->ft[7][ij] + rho0;
+            this->ft[6][ij] = this->ft[8][ij] + rho0;
         } else {
             //  境界に沿っていないことを警告する
         }
@@ -462,6 +463,118 @@ public:
                 this->ft[4][this->ny*(i + 1) - 1] = this->ftp1[2][this->ny*(i + 1) - 1];
                 this->ft[7][this->ny*(i + 1) - 1] = this->ftp1[6][this->ny*(i + 1) - 1];
                 this->ft[8][this->ny*(i + 1) - 1] = this->ftp1[5][this->ny*(i + 1) - 1];
+            }
+        }
+    }
+
+
+    template<class T>
+    void D2Q9<T>::iStream() {
+        //----------Stream and periodic boundary----------
+        for (int i = 0; i < this->nx; i++) {
+            for (int j = 0; j < this->ny; j++) {
+                for (int k = 0; k < D2Q9<T>::nc; k++) {
+                    int ip1 = i + D2Q9<T>::ci[k][0] == -1 ? this->nx - 1 : (i + D2Q9<T>::ci[k][0] == this->nx ? 0 : i + D2Q9<T>::ci[k][0]);
+                    int jp1 = j + D2Q9<T>::ci[k][1] == -1 ? this->ny - 1 : (j + D2Q9<T>::ci[k][1] == this->ny ? 0 : j + D2Q9<T>::ci[k][1]);
+                    this->ft[k][this->ny*i + j] = this->ftp1[k][this->ny*ip1 + jp1];
+                }
+            }
+        }
+        
+        //----------Bouns-Back (inner boundary)----------
+        for (int i = 0; i < this->np; i++) {
+            if (this->barrier[1][i]) {    
+                this->ft[3][i] = this->ftp1[1][i];  
+            }
+            if (this->barrier[2][i]) {    
+                this->ft[4][i] = this->ftp1[2][i];  
+            }
+            if (this->barrier[3][i]) {    
+                this->ft[1][i] = this->ftp1[3][i];  
+            }
+            if (this->barrier[4][i]) {    
+                this->ft[2][i] = this->ftp1[4][i];  
+            }
+            if (this->barrier[5][i]) {    
+                this->ft[7][i] = this->ftp1[5][i];  
+            }
+            if (this->barrier[6][i]) {    
+                this->ft[8][i] = this->ftp1[6][i];  
+            }
+            if (this->barrier[7][i]) {    
+                this->ft[5][i] = this->ftp1[7][i];  
+            }
+            if (this->barrier[8][i]) {    
+                this->ft[6][i] = this->ftp1[8][i];  
+            }
+        }
+
+        //----------boundary (Bouns-Back, Outlet and Mirror)----------
+        for (int j = 0; j < this->ny; j++) {
+            //.....xmin.....
+//  要修正
+            if (this->btxmin[j] == OUTLET) {
+                this->ft[3][j] = this->ft[3][this->ny + j];
+                this->ft[6][j] = this->ft[6][this->ny + j];
+                this->ft[7][j] = this->ft[7][this->ny + j];
+            } else if (this->btxmin[j] == BARRIER) {
+                this->ft[3][j] = this->ftp1[1][j];
+                this->ft[6][j] = this->ftp1[8][j];
+                this->ft[7][j] = this->ftp1[5][j];
+            } else if (this->btxmin[j] == MIRROR) {
+                this->ft[3][j] = this->ftp1[1][j];
+                this->ft[6][j] = this->ftp1[5][j];
+                this->ft[7][j] = this->ftp1[8][j];
+            }
+
+            //.....xmax.....
+//  要修正
+            if (this->btxmax[j] == OUTLET) {
+                this->ft[1][this->ny*(this->nx - 1) + j] = this->ft[1][this->ny*(this->nx - 2) + j];
+                this->ft[5][this->ny*(this->nx - 1) + j] = this->ft[5][this->ny*(this->nx - 2) + j];
+                this->ft[8][this->ny*(this->nx - 1) + j] = this->ft[8][this->ny*(this->nx - 2) + j];
+            } else if (this->btxmax[j] == BARRIER) {
+                this->ft[1][this->ny*(this->nx - 1) + j] = this->ftp1[3][this->ny*(this->nx - 1) + j];
+                this->ft[5][this->ny*(this->nx - 1) + j] = this->ftp1[7][this->ny*(this->nx - 1) + j];
+                this->ft[8][this->ny*(this->nx - 1) + j] = this->ftp1[6][this->ny*(this->nx - 1) + j];
+            } else if (this->btxmax[j] == MIRROR) {
+                this->ft[1][this->ny*(this->nx - 1) + j] = this->ftp1[3][this->ny*(this->nx - 1) + j];
+                this->ft[5][this->ny*(this->nx - 1) + j] = this->ftp1[6][this->ny*(this->nx - 1) + j];
+                this->ft[8][this->ny*(this->nx - 1) + j] = this->ftp1[7][this->ny*(this->nx - 1) + j];
+            }
+        }
+
+        for (int i = 0; i < this->nx; i++) {
+            //.....ymin.....
+//  要修正
+            if (this->btymin[i] == OUTLET) {
+                this->ft[4][this->ny*i] = this->ft[4][this->ny*i + 1];
+                this->ft[7][this->ny*i] = this->ft[7][this->ny*i + 1];
+                this->ft[8][this->ny*i] = this->ft[8][this->ny*i + 1];
+            } else if (this->btymin[i] == BARRIER) {
+                this->ft[4][this->ny*i] = this->ftp1[2][this->ny*i];
+                this->ft[7][this->ny*i] = this->ftp1[5][this->ny*i];
+                this->ft[8][this->ny*i] = this->ftp1[6][this->ny*i];
+            } else if (this->btymin[i] == MIRROR) {
+                this->ft[4][this->ny*i] = this->ftp1[2][this->ny*i];
+                this->ft[7][this->ny*i] = this->ftp1[6][this->ny*i];
+                this->ft[8][this->ny*i] = this->ftp1[5][this->ny*i];
+            }
+
+            //.....ymax.....
+//  要修正
+            if (this->btymax[i] == OUTLET) {
+                this->ft[2][this->ny*(i + 1) - 1] = this->ft[2][this->ny*(i + 1) - 2];
+                this->ft[5][this->ny*(i + 1) - 1] = this->ft[5][this->ny*(i + 1) - 2];
+                this->ft[6][this->ny*(i + 1) - 1] = this->ft[6][this->ny*(i + 1) - 2];
+            } else if (this->btymax[i] == BARRIER) {
+                this->ft[2][this->ny*(i + 1) - 1] = this->ftp1[4][this->ny*(i + 1) - 1];
+                this->ft[5][this->ny*(i + 1) - 1] = this->ftp1[7][this->ny*(i + 1) - 1];
+                this->ft[6][this->ny*(i + 1) - 1] = this->ftp1[8][this->ny*(i + 1) - 1];
+            } else if (this->btymax[i] == MIRROR) {
+                this->ft[2][this->ny*(i + 1) - 1] = this->ftp1[4][this->ny*(i + 1) - 1];
+                this->ft[5][this->ny*(i + 1) - 1] = this->ftp1[8][this->ny*(i + 1) - 1];
+                this->ft[6][this->ny*(i + 1) - 1] = this->ftp1[7][this->ny*(i + 1) - 1];
             }
         }
     }

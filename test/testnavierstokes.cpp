@@ -10,18 +10,18 @@ using namespace PANSLBM2;
 int main() {
     //--------------------Set parameters--------------------
     int tmax = 100000, nx = 100, ny = 100;
-    double nu = 0.1, u0 = -0.1;
+    double nu = 0.1, u0 = 0.1;
     
     D2Q9<double> particle = D2Q9<double>(nx, ny);
     for (int j = 0; j < ny; j++) {
-        particle.SetBoundary(0, j, OTHER);
+        particle.SetBoundary(0, j, BARRIER);
         particle.SetBoundary(nx - 1, j, BARRIER);
     }
     for (int i = 0; i < nx; i++) {
         particle.SetBoundary(i, 0, BARRIER);
-        particle.SetBoundary(i, ny - 1, BARRIER);
+        particle.SetBoundary(i, ny - 1, OTHER);
     }
-
+    
     NS<double, D2Q9> dsolver = NS<double, D2Q9>(&particle, nu);
 
     std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
@@ -31,8 +31,8 @@ int main() {
         dsolver.UpdateMacro();      //  Update macroscopic values
         dsolver.Collision();        //  Collision
         particle.Stream();          //  Stream
-        for (int i = 0; i < nx - 1; i++) {
-            particle.SetU(0, i, 0.0, u0);
+        for (int i = 0; i < nx; i++) {
+            particle.SetU(i, ny - 1, u0, 0.0);
         }                           //  Boundary condition (inlet)
         dsolver.ExternalForce();    //  External force by thermal
         
@@ -57,14 +57,14 @@ int main() {
             fout << "LOOKUP_TABLE\tdefault" << std::endl;
             for (int j = 0; j < ny; j++) {
                 for (int i = 0; i < nx; i++) {
-                    fout << dsolver.GetRho(i, j) << std::endl;
+                    fout << dsolver.GetRho(particle.GetIndex(i, j)) << std::endl;
                 }
             }
 
             fout << "VECTORS\tu\tfloat" << std::endl;
             for (int j = 0; j < ny; j++) {
                 for (int i = 0; i < nx; i++) {
-                    fout << dsolver.GetU(0, i, j) << "\t" << dsolver.GetU(1, i, j) << "\t" << 0.0 << std::endl;
+                    fout << dsolver.GetU(0, particle.GetIndex(i, j)) << "\t" << dsolver.GetU(1, particle.GetIndex(i, j)) << "\t" << 0.0 << std::endl;
                 }
             }
 

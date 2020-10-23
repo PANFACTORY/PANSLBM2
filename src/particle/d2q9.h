@@ -35,6 +35,7 @@ public:
         void Stream();
         
         bool GetBarrier(int _i, int _j) const;
+        BOUNDARYTYPE GetBoundary(int _i, int _j) const;
         
         const int nx, ny, np;                               //  nx&ny : number of points along x&y coordinate, np : number of all points
         static const int nc = 9, nd = 2, ci[nc][nd];        //  nc : number of particles, nd : number of dimensions
@@ -469,5 +470,26 @@ public:
     bool D2Q9<T>::GetBarrier(int _i, int _j) const {
         assert(0 <= _i && _i < this->nx && 0 <= _j && _j < this->ny);
         return this->barrier[0][this->ny*_i + _j];
+    }
+
+
+    template<class T>
+    BOUNDARYTYPE D2Q9<T>::GetBoundary(int _i, int _j) const {
+        assert(0 <= _i && _i < this->nx && 0 <= _j && _j < this->ny);
+        if (_i == 0) {
+            return this->btxmin[_j];
+        } else if (_i == this->nx - 1) {
+            return this->btxmax[_j];
+        } else if (_j == 0) {
+            return this->btymin[_i];
+        } else if (_j == this->ny - 1) {
+            return this->btymax[_i];
+        } else {
+            if (this->barrier[0][this->ny*_i + _j]) {
+                return BARRIER;
+            } else {
+                return OTHER;
+            }
+        }
     }
 }

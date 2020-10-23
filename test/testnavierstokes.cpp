@@ -10,16 +10,16 @@ using namespace PANSLBM2;
 int main() {
     //--------------------Set parameters--------------------
     int tmax = 100000, nx = 100, ny = 100;
-    double nu = 0.05, u0 = 0.1;
+    double nu = 0.1, u0 = -0.1;
     
     D2Q9<double> particle = D2Q9<double>(nx, ny);
-    for (int j = 0; j < ny - 1; j++) {
-        particle.SetBoundary(0, j, BARRIER);
+    for (int j = 0; j < ny; j++) {
+        particle.SetBoundary(0, j, OTHER);
         particle.SetBoundary(nx - 1, j, BARRIER);
     }
-    for (int i = 0; i < nx - 1; i++) {
+    for (int i = 0; i < nx; i++) {
+        particle.SetBoundary(i, 0, BARRIER);
         particle.SetBoundary(i, ny - 1, BARRIER);
-        particle.SetBoundary(i, 0, OTHER);
     }
 
     NS<double, D2Q9> dsolver = NS<double, D2Q9>(&particle, nu);
@@ -32,7 +32,7 @@ int main() {
         dsolver.Collision();        //  Collision
         particle.Stream();          //  Stream
         for (int i = 0; i < nx - 1; i++) {
-            particle.SetU(i, 0, u0, 0.0);
+            particle.SetU(0, i, 0.0, u0);
         }                           //  Boundary condition (inlet)
         dsolver.ExternalForce();    //  External force by thermal
         
@@ -65,6 +65,14 @@ int main() {
             for (int j = 0; j < ny; j++) {
                 for (int i = 0; i < nx; i++) {
                     fout << dsolver.GetU(0, i, j) << "\t" << dsolver.GetU(1, i, j) << "\t" << 0.0 << std::endl;
+                }
+            }
+
+            fout << "SCALARS\tboundary\tfloat" << std::endl;
+            fout << "LOOKUP_TABLE\tdefault" << std::endl;
+            for (int j = 0; j < ny; j++) {
+                for (int i = 0; i < nx; i++) {
+                    fout << particle.GetBoundary(i, j) << std::endl;
                 }
             }
         } 

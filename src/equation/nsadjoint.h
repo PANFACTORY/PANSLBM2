@@ -266,15 +266,6 @@ protected:
     template<class T, template<class>class P>
     void NSAdjoint<T, P>::iExternalForce() {
         for (int i = 0; i < this->np; i++) {
-            /*T tmpm[P<T>::nd];
-            for (int k = 0; k < P<T>::nd; k++) {
-                tmpm[k] = T();
-                for (int j = 0; j < P<T>::nc; j++) {
-                    tmpm[k] += P<T>::ei[j]*P<T>::ci[j][k]*this->f->ft[j][i];
-                }
-                tmpm[k] *= 3.0*this->f->dx*this->alpha[i];
-            }*/
-
             int ti = this->np*this->t + i;
 
             T tmpm[P<T>::nd];
@@ -287,8 +278,6 @@ protected:
 
             for (int j = 0; j < P<T>::nc; j++) {
                 for (int k = 0; k < P<T>::nd; k++) {
-                    //this->f->ft[j][i] -= tmpm[k]*(P<T>::ci[j][k] - this->u[k][ii])/this->rho[ii];
-                    //this->f->ft[j][i] -= 3.0*this->alpha[i]*P<T>::ei[j]*P<T>::ci[j][k]*tmpm[k];
                     this->f->ft[j][i] -= 3.0*this->alpha[i]*tmpm[k]*(P<T>::ci[j][k] - this->u[k][ti])/this->rho[ti];
                 }
             }

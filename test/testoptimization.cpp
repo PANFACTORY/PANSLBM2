@@ -13,8 +13,8 @@ using namespace PANSFEM2;
 
 int main() {
     //********************Setting parameters********************
-    int nt = 30000, nx = 100, ny = 100;
-    double nu = 0.1, u0 = 0.025, rho0 = 1.0;
+    int nt = 20000, nx = 100, ny = 100;
+    double nu = 0.1, u0 = 0.05, rho0 = 1.0;
     double q = 0.1, alpha0 = 1.0, scale0 = 1.0e0, weightlimit = 0.25;
 
     std::vector<double> s = std::vector<double>(nx*ny, 1.0);
@@ -23,7 +23,7 @@ int main() {
 		std::vector<double>(1, 10000.0),
 		std::vector<double>(1, 0.0), 
 		std::vector<double>(s.size(), 0.0), std::vector<double>(s.size(), 1.0));
-	optimizer.SetParameters(1.0e-5, 0.1, 0.2, 0.5, 0.7, 1.2, 1.0e-6);
+	optimizer.SetParameters(1.0e-5, 0.1, 0.5, 0.5, 0.7, 1.2, 1.0e-6);
 
     for (int k = 0; k < 50; k++) {
         std::cout << "k = " << k << "\t";
@@ -69,7 +69,12 @@ int main() {
             for (int i = 0; i < nx; i++) {
                 if (0.7*nx < i && i < 0.9*nx) {
                     particle.SetRho(i, 0, rho0, 0.0);
-                    particle.SetU(0, i, u0, 0.0);
+                }
+            }
+            for (int j = 0; j < ny; j++) {
+                if (0.7*ny < j && j < 0.9*ny) {
+                    double uj = -u0*(j - 0.7*ny)*(j - 0.9*ny)/(0.01*ny*ny);
+                    particle.SetU(0, j, uj, 0.0);
                 }
             }                               //  Boundary condition (inlet)
             dsolver.ExternalForce();        //  External force by Brinkman model
@@ -85,11 +90,16 @@ int main() {
         for (dsolver.t = dsolver.t >= nt ? nt - 1 : dsolver.t; dsolver.t >= 0; dsolver.t--) {
             dsolver.iUpdateMacro();         //  Update macroscopic values
             dsolver.iCollision();           //  Collision
-            particle.Stream();              //  Stream
+            particle.iStream();              //  Stream
             for (int i = 0; i < nx; i++) {
                 if (0.7*nx < i && i < 0.9*nx) {
                     particle.SetiRho(i, 0);
-                    particle.SetiU(0, i, u0, 0.0);
+                }
+            }
+            for (int j = 0; j < ny; j++) {
+                if (0.7*ny < j && j < 0.9*ny) {
+                    double uj = -u0*(j - 0.7*ny)*(j - 0.9*ny)/(0.01*ny*ny);
+                    particle.SetiU(0, j, uj, 0.0);
                 }
             }                               //  Boundary condition (inlet)
             dsolver.iExternalForce();       //  External force by Brinkman model   
@@ -119,6 +129,20 @@ int main() {
         }
 
         fout << "POINT_DATA\t" << nx*ny << std::endl;
+        fout << "SCALARS\trho\tfloat" << std::endl;
+        fout << "LOOKUP_TABLE\tdefault" << std::endl;
+        for (int j = 0; j < ny; j++) {
+            for (int i = 0; i < nx; i++) {
+                fout << dsolver.GetRho(particle.GetIndex(i, j), dsolver.tmax) << std::endl;
+            }
+        }
+
+        fout << "VECTORS\tu\tfloat" << std::endl;
+        for (int j = 0; j < ny; j++) {
+            for (int i = 0; i < nx; i++) {
+                fout << dsolver.GetU(0, particle.GetIndex(i, j), dsolver.tmax) << "\t" << dsolver.GetU(1, particle.GetIndex(i, j), dsolver.tmax) << "\t" << 0.0 << std::endl;
+            }
+        }
 
         fout << "SCALARS\ts\tfloat" << std::endl;
         fout << "LOOKUP_TABLE\tdefault" << std::endl;
@@ -135,21 +159,6 @@ int main() {
                 fout << dfds[particle.GetIndex(i, j)] << std::endl;
             }
         }
-
-        /*fout << "SCALARS\trho\tfloat" << std::endl;
-        fout << "LOOKUP_TABLE\tdefault" << std::endl;
-        for (int j = 0; j < ny; j++) {
-            for (int i = 0; i < nx; i++) {
-                fout << dsolver.GetRho(i, j) << std::endl;
-            }
-        }
-
-        fout << "VECTORS\tu\tfloat" << std::endl;
-        for (int j = 0; j < ny; j++) {
-            for (int i = 0; i < nx; i++) {
-                fout << dsolver.GetU(0, i, j) << "\t" << dsolver.GetU(1, i, j) << "\t" << 0.0 << std::endl;
-            }
-        }*/
 
         fout << "SCALARS\tq\tfloat" << std::endl;
         fout << "LOOKUP_TABLE\tdefault" << std::endl;

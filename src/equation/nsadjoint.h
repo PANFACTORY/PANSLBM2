@@ -31,23 +31,23 @@ public:
         virtual void iExternalForce();
 
         bool CheckConvergence(T _eps);
-        void SwitchDirection();
+        void SetFt(T _rho, T _ux, T _uy);
 
         virtual T GetRho(int _i, int _t) const;
         virtual T GetU(int _d, int _i, int _t) const;
         virtual T GetQ(int _i) const;
         virtual T GetV(int _d, int _i) const;
+        virtual T GetR(int _d, int _i) const;
         virtual T GetSensitivity(int _i) const;
         
         const int nt;
-        int t = 0;
+        int t = 0, tmax;
 
 protected:
         const int np;           //  np : number of particle
         P<T>* f;
-        int tmax;
         T omega;
-        T *rho, *u[P<T>::nd], *q, *v[P<T>::nd], *alpha, *sensitivity;
+        T *rho, *u[P<T>::nd], *q, *v[P<T>::nd], *r[P<T>::nd], *alpha, *sensitivity;
     };
 
 
@@ -75,6 +75,7 @@ protected:
         this->q = new T[this->np];
          for (int k = 0; k < P<T>::nd; k++) {
             this->v[k] = new T[this->np];
+            this->r[k] = new T[this->np];
         }
         this->alpha = new T[this->np];
         this->sensitivity = new T[this->np];
@@ -83,6 +84,7 @@ protected:
             this->q[i] = T();
             for (int k = 0; k < P<T>::nd; k++) {
                 this->v[k][i] = T();
+                this->r[k][i] = T();
             }
             this->alpha[i] = T();
             this->sensitivity[i] = T();
@@ -112,6 +114,7 @@ protected:
         this->q = new T[this->np];
         for (int k = 0; k < P<T>::nd; k++) {
             this->v[k] = new T[this->np];
+            this->r[k] = new T[this->np];
         }
         this->alpha = new T[this->np];
         this->sensitivity = new T[this->np];
@@ -120,6 +123,7 @@ protected:
             this->q[i] = _e.q[i];
             for (int k = 0; k < P<T>::nd; k++) {
                 this->v[k][i] = _e.v[k][i];
+                this->r[k][i] = _e.r[k][i];
             }
             this->alpha[i] = _e.alpha[i];
             this->sensitivity[i] = _e.sensitivity[i];
@@ -130,12 +134,11 @@ protected:
     template<class T, template<class>class P>
     NSAdjoint<T, P>::~NSAdjoint() {
         delete[] this->rho;
-        for (int k = 0; k < P<T>::nd; k++) {
-            delete[] this->u[k];
-        }
         delete[] this->q;
         for (int k = 0; k < P<T>::nd; k++) {
+            delete[] this->u[k];
             delete[] this->v[k];
+            delete[] this->r[k];
         }
         delete[] this->alpha;
         delete[] this->sensitivity;
@@ -144,6 +147,7 @@ protected:
 
     template<class T, template<class>class P>
     void NSAdjoint<T, P>::SetAlpha(int _i, T _alpha) {
+        assert(0 <= _i && _i < this->np);
         this->alpha[_i] = _alpha;
     }
 
@@ -151,19 +155,19 @@ protected:
     template<class T, template<class>class P>
     void NSAdjoint<T, P>::UpdateMacro() {
         for (int i = 0; i < this->np; i++) {
-            int ii = this->np*this->t + i;
-            this->rho[ii] = T();
+            int ti = this->np*this->t + i;
+            this->rho[ti] = T();
             for (int k = 0; k < P<T>::nd; k++) {
-                this->u[k][ii] = T();
+                this->u[k][ti] = T();
             }
             for (int j = 0; j < P<T>::nc; j++) {
-                this->rho[ii] += this->f->ft[j][i];
+                this->rho[ti] += this->f->ft[j][i];
                 for (int k = 0; k < P<T>::nd; k++) {
-                    this->u[k][ii] += P<T>::ci[j][k]*this->f->ft[j][i];
+                    this->u[k][ti] += P<T>::ci[j][k]*this->f->ft[j][i];
                 }
             }
             for (int k = 0; k < P<T>::nd; k++) {
-                this->u[k][ii] /= this->rho[ii];
+                this->u[k][ti] /= this->rho[ti];
             }
         }
     }
@@ -172,15 +176,15 @@ protected:
     template<class T, template<class>class P>
     void NSAdjoint<T, P>::Collision() {
         for (int i = 0; i < this->np; i++) {
-            int ii = this->np*this->t + i;
+            int ti = this->np*this->t + i;
             for (int j = 0; j < P<T>::nc; j++) {
                 T ciu = T();
                 T uu = T();
                 for (int k = 0; k < P<T>::nd; k++) {
-                    ciu += P<T>::ci[j][k]*this->u[k][ii];
-                    uu += this->u[k][ii]*this->u[k][ii];
+                    ciu += P<T>::ci[j][k]*this->u[k][ti];
+                    uu += this->u[k][ti]*this->u[k][ti];
                 }
-                T fieq = P<T>::ei[j]*this->rho[ii]*(1.0 + 3.0*ciu + 4.5*ciu*ciu - 1.5*uu);
+                T fieq = P<T>::ei[j]*this->rho[ti]*(1.0 + 3.0*ciu + 4.5*ciu*ciu - 1.5*uu);
                 this->f->ftp1[j][i] = (1.0 - this->omega)*this->f->ft[j][i] + this->omega*fieq;
             }
         }
@@ -217,24 +221,28 @@ protected:
     template<class T, template<class>class P>
     void NSAdjoint<T, P>::iUpdateMacro() {
         for (int i = 0; i < this->np; i++) {
-            int ii = this->np*this->t + i;
+            int ti = this->np*this->t + i;
 
             this->q[i] = T();
             for (int k = 0; k < P<T>::nd; k++) {
                 this->v[k][i] = T();
+                this->r[k][i] = T();
             }
             for (int j = 0; j < P<T>::nc; j++) {
                 T ciu = T();
                 T uu = T();
                 for (int k = 0; k < P<T>::nd; k++) {
-                    ciu += -P<T>::ci[j][k]*this->u[k][ii];
-                    uu += this->u[k][ii]*this->u[k][ii];
+                    ciu += P<T>::ci[j][k]*this->u[k][ti];
+                    uu += this->u[k][ti]*this->u[k][ti];
                 }
                 this->q[i] += this->f->ft[j][i]*P<T>::ei[j]*(1.0 + 3.0*ciu + 4.5*ciu*ciu - 1.5*uu);
                 for (int k = 0; k < P<T>::nd; k++) {
-                    this->v[k][i] += this->f->ft[j][i]*P<T>::ei[j]*(-P<T>::ci[j][k] - 3.0*ciu*P<T>::ci[j][k] - this->u[k][ii]);
+                    this->v[k][i] += this->f->ft[j][i]*P<T>::ei[j]*(P<T>::ci[j][k] + 3.0*ciu*P<T>::ci[j][k] - this->u[k][ti]);
+                    this->r[k][i] += this->f->ft[j][i]*P<T>::ei[j]*P<T>::ci[j][k];
                 }
-                this->sensitivity[i] += 3.0*this->f->dx*this->f->ft[j][i]*P<T>::ei[j]*ciu;
+            }
+            for (int k = 0; k < P<T>::nd; k++) {
+                this->sensitivity[i] += 3.0*this->f->dx*r[k][i]*this->u[k][ti];
             }
         }
     }
@@ -243,11 +251,11 @@ protected:
     template<class T, template<class>class P>
     void NSAdjoint<T, P>::iCollision() {
         for (int i = 0; i < this->np; i++) {
-            int ii = this->np*this->t + i;
+            int ti = this->np*this->t + i;
             for (int j = 0; j < P<T>::nc; j++) {
                 T feq = this->q[i];
                 for (int k = 0; k < P<T>::nd; k++) {
-                    feq += 3.0*this->v[k][i]*(-P<T>::ci[j][k] - this->u[k][ii]);
+                    feq += 3.0*this->v[k][i]*(P<T>::ci[j][k] - this->u[k][ti]);
                 }
                 this->f->ftp1[j][i] = (1.0 - this->omega)*this->f->ft[j][i] + this->omega*feq;
             }
@@ -258,19 +266,30 @@ protected:
     template<class T, template<class>class P>
     void NSAdjoint<T, P>::iExternalForce() {
         for (int i = 0; i < this->np; i++) {
+            /*T tmpm[P<T>::nd];
+            for (int k = 0; k < P<T>::nd; k++) {
+                tmpm[k] = T();
+                for (int j = 0; j < P<T>::nc; j++) {
+                    tmpm[k] += P<T>::ei[j]*P<T>::ci[j][k]*this->f->ft[j][i];
+                }
+                tmpm[k] *= 3.0*this->f->dx*this->alpha[i];
+            }*/
+
+            int ti = this->np*this->t + i;
+
             T tmpm[P<T>::nd];
             for (int k = 0; k < P<T>::nd; k++) {
                 tmpm[k] = T();
                 for (int j = 0; j < P<T>::nc; j++) {
-                    tmpm[k] += -P<T>::ei[j]*P<T>::ci[j][k]*this->f->ft[j][i];
+                    tmpm[k] += P<T>::ei[j]*P<T>::ci[j][k]*this->f->ft[j][i];
                 }
-                tmpm[k] *= 3.0*this->f->dx*this->alpha[i];
             }
 
-            int ii = this->np*this->t + i;
             for (int j = 0; j < P<T>::nc; j++) {
                 for (int k = 0; k < P<T>::nd; k++) {
-                    this->f->ft[j][i] -= tmpm[k]*(-P<T>::ci[j][k] - this->u[k][ii])/this->rho[ii];
+                    //this->f->ft[j][i] -= tmpm[k]*(P<T>::ci[j][k] - this->u[k][ii])/this->rho[ii];
+                    //this->f->ft[j][i] -= 3.0*this->alpha[i]*P<T>::ei[j]*P<T>::ci[j][k]*tmpm[k];
+                    this->f->ft[j][i] -= 3.0*this->alpha[i]*tmpm[k]*(P<T>::ci[j][k] - this->u[k][ti])/this->rho[ti];
                 }
             }
         }
@@ -282,11 +301,11 @@ protected:
         T unorm = T();
         T dunorm = T();
         for (int i = 0; i < this->np; i++) {
-            int ii = this->np*this->t + i;
-            int jj = this->np*(this->t - 1) + i;
+            int ti = this->np*this->t + i;
+            int tm1i = this->np*(this->t - 1) + i;
             for (int k = 0; k < P<T>::nd; k++) {
-                unorm += this->u[k][ii]*this->u[k][ii];
-                dunorm += (this->u[k][ii] - this->u[k][jj])*(this->u[k][ii] - this->u[k][jj]);
+                unorm += this->u[k][ti]*this->u[k][ti];
+                dunorm += (this->u[k][ti] - this->u[k][tm1i])*(this->u[k][ti] - this->u[k][tm1i]);
             }
         }
         this->tmax = this->t;
@@ -295,11 +314,12 @@ protected:
 
 
     template<class T, template<class>class P>
-    void NSAdjoint<T, P>::SwitchDirection() {
+    void NSAdjoint<T, P>::SetFt(T _rho, T _ux, T _uy) {
         for (int i = 0; i < this->np; i++) {
             for (int j = 0; j < P<T>::nc; j++) {
-                this->f->ft[j][i] = T();
-                this->f->ftp1[j][i] = T();
+                T ciu = P<T>::ci[j][0]*_ux + P<T>::ci[j][0]*_uy;
+                T uu = _ux*_ux + _uy*_uy;
+                this->f->ft[j][i] = P<T>::ei[j]*_rho*(1.0 + 3.0*ciu + 4.5*ciu*ciu - 1.5*uu);
             }
         }
     }
@@ -330,6 +350,13 @@ protected:
     T NSAdjoint<T, P>::GetV(int _d, int _i) const {
         assert(0 <= _i && _i < this->np);
         return this->v[_d][_i];
+    }
+
+
+    template<class T, template<class>class P>
+    T NSAdjoint<T, P>::GetR(int _d, int _i) const {
+        assert(0 <= _i && _i < this->np);
+        return this->r[_d][_i];
     }
 
 

@@ -352,6 +352,10 @@ protected:
     template<class T, template<class>class P>
     T NSAdjoint<T, P>::GetSensitivity(int _i) const {
         assert(0 <= _i && _i < this->np);
-        return this->sensitivity[_i];
+        T sens = T();
+        for (int k = 0; k < P<T>::nd; k++) {
+            sens += 3.0*this->r[k][_i]*this->u[k][this->np*this->tmax + _i];
+        }
+        return sens;
     }
 }

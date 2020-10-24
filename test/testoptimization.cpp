@@ -15,7 +15,7 @@ int main() {
     //********************Setting parameters********************
     int nt = 20000, nx = 100, ny = 100;
     double nu = 0.1, u0 = 0.05, rho0 = 1.0;
-    double q = 0.1, alpha0 = 1.0, scale0 = 1.0e0, weightlimit = 0.25;
+    double q = 0.1, alpha0 = 1.0, scale0 = 1.0e5, weightlimit = 0.25;
 
     std::vector<double> s = std::vector<double>(nx*ny, 1.0);
     MMA<double> optimizer = MMA<double>(s.size(), 1, 1.0,
@@ -86,7 +86,7 @@ int main() {
         }
 
         //--------------------Invert analyze--------------------
-        dsolver.SwitchDirection();
+        dsolver.SetFt(0.0, 0.0, 0.0);
         for (dsolver.t = dsolver.t >= nt ? nt - 1 : dsolver.t; dsolver.t >= 0; dsolver.t--) {
             dsolver.iUpdateMacro();         //  Update macroscopic values
             dsolver.iCollision();           //  Collision
@@ -107,9 +107,18 @@ int main() {
 
         //--------------------Get sensitivity--------------------
         double f = 0.0;
+        for (int j = 0; j < ny; j++) {
+            if (0.7*ny < j && j < 0.9*ny) {
+                f += dsolver.GetRho(particle.GetIndex(0, j), dsolver.tmax);
+            }
+        }
+        for (int i = 0; i < nx; i++) {
+            if (0.7*nx < i && i < 0.9*nx) {
+                f -= dsolver.GetRho(particle.GetIndex(i, 0), dsolver.tmax);
+            }
+        }
         std::vector<double> dfds = std::vector<double>(s.size(), 0.0);
         for (int i = 0; i < s.size(); i++) {  
-            //f += scale0*dsolver.GetU(0, i, j)*alpha0*q*(1.0 - s[ny*i + j])/(s[ny*i + j] + q);
             dfds[i] = scale0*dsolver.GetSensitivity(i)*(-alpha0*q*(q + 1.0)/pow(q + s[i], 2.0));
         }
 

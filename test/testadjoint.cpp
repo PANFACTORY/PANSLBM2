@@ -9,7 +9,7 @@
 using namespace PANSLBM2;
 
 int main() {
-    //********************Setting parameters********************
+    //--------------------Setting parameters--------------------
     int nt = 20000, nx = 100, ny = 100;
     double nu = 0.1, u0 = 0.1, rho0 = 1.0;
     double q = 0.1, alpha0 = 1.0;

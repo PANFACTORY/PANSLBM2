@@ -1,11 +1,10 @@
 #include <iostream>
-#include <fstream>
-#include <vector>
 #include <cmath>
 #include <chrono>
 
 #include "../src/particle/d2q9.h"
 #include "../src/equation/nsadjoint.h"
+#include "vtkexport.h"
 
 using namespace PANSLBM2;
 
@@ -15,7 +14,7 @@ int main() {
     double nu = 0.1, u0 = 0.1, rho0 = 1.0;
     double q = 0.1, alpha0 = 1.0;
 
-    D2Q9<double> particle = D2Q9<double>(nx, ny);
+    D2Q9<double> particle(nx, ny);
     for (int j = 0; j < ny; j++) {
         if (0.3*ny < j && j < 0.7*ny) {
             particle.SetBoundary(0, j, OTHER);
@@ -30,7 +29,7 @@ int main() {
         particle.SetBoundary(i, ny - 1, BARRIER);
     }
 
-    NSAdjoint<double, D2Q9> dsolver = NSAdjoint<double, D2Q9>(&particle, nu, nt);
+    NSAdjoint<double, D2Q9> dsolver(&particle, nu, nt);
 
     for (int i = 0; i < nx; i++) {
         for (int j = 0; j < ny; j++) {
@@ -76,66 +75,25 @@ int main() {
     }
 
     //--------------------Export result--------------------
-    std::ofstream fout("result/adjoint.vtk");
-    fout << "# vtk DataFile Version 3.0" << std::endl;
-    fout << "2D flow" << std::endl;
-    fout << "ASCII" << std::endl;
-    fout << "DATASET\tSTRUCTURED_GRID" << std::endl;
-    fout << "DIMENSIONS\t" << nx << "\t" << ny << "\t" << 1 << std::endl;
-    
-    fout << "POINTS\t" << nx*ny << "\t" << "float" << std::endl;
-    for (int j = 0; j < ny; j++) {
-        for (int i = 0; i < nx; i++) {
-            fout << i << "\t" << j << "\t" << 0.0 << std::endl;
-        }
-    }
-
-    fout << "POINT_DATA\t" << nx*ny << std::endl;
-
-    fout << "SCALARS\trho\tfloat" << std::endl;
-    fout << "LOOKUP_TABLE\tdefault" << std::endl;
-    for (int j = 0; j < ny; j++) {
-        for (int i = 0; i < nx; i++) {
-            fout << dsolver.GetRho(particle.GetIndex(i, j), dsolver.tmax) << std::endl;
-        }
-    }
-
-    fout << "VECTORS\tu\tfloat" << std::endl;
-    for (int j = 0; j < ny; j++) {
-        for (int i = 0; i < nx; i++) {
-            fout << dsolver.GetU(0, particle.GetIndex(i, j), dsolver.tmax) << "\t" << dsolver.GetU(1, particle.GetIndex(i, j), dsolver.tmax) << "\t" << 0.0 << std::endl;
-        }
-    }
-
-    fout << "SCALARS\tq\tfloat" << std::endl;
-    fout << "LOOKUP_TABLE\tdefault" << std::endl;
-    for (int j = 0; j < ny; j++) {
-        for (int i = 0; i < nx; i++) {
-            fout << dsolver.GetQ(particle.GetIndex(i, j)) << std::endl;
-        }
-    }
-
-    fout << "VECTORS\tv\tfloat" << std::endl;
-    for (int j = 0; j < ny; j++) {
-        for (int i = 0; i < nx; i++) {
-            fout << dsolver.GetV(0, particle.GetIndex(i, j)) << "\t" << dsolver.GetV(1, particle.GetIndex(i, j)) << "\t" << 0.0 << std::endl;
-        }
-    }
-
-    fout << "VECTORS\tr\tfloat" << std::endl;
-    for (int j = 0; j < ny; j++) {
-        for (int i = 0; i < nx; i++) {
-            fout << dsolver.GetR(0, particle.GetIndex(i, j)) << "\t" << dsolver.GetR(1, particle.GetIndex(i, j)) << "\t" << 0.0 << std::endl;
-        }
-    }
-
-    fout << "SCALARS\tsensitivity\tfloat" << std::endl;
-    fout << "LOOKUP_TABLE\tdefault" << std::endl;
-    for (int j = 0; j < ny; j++) {
-        for (int i = 0; i < nx; i++) {
-            fout << dsolver.GetSensitivity(particle.GetIndex(i, j)) << std::endl;
-        }
-    }
+    VTKExport file("result/adjoint.vtk", nx, ny);
+    file.AddPointScaler("rho", [&](int _i, int _j, int _k) { return dsolver.GetRho(particle.GetIndex(_i, _j), dsolver.tmax); });
+    file.AddPointVector("u", 
+        [&](int _i, int _j, int _k) { return dsolver.GetU(0, particle.GetIndex(_i, _j), dsolver.tmax); },
+        [&](int _i, int _j, int _k) { return dsolver.GetU(1, particle.GetIndex(_i, _j), dsolver.tmax); },
+        [](int _i, int _j, int _k) { return 0.0; }
+    );
+    file.AddPointScaler("dfds", [&](int _i, int _j, int _k) { return dsolver.GetSensitivity(particle.GetIndex(_i, _j)); });
+    file.AddPointScaler("q", [&](int _i, int _j, int _k) { return dsolver.GetQ(particle.GetIndex(_i, _j)); });
+    file.AddPointVector("v", 
+        [&](int _i, int _j, int _k) { return dsolver.GetV(0, particle.GetIndex(_i, _j)); },
+        [&](int _i, int _j, int _k) { return dsolver.GetV(1, particle.GetIndex(_i, _j)); },
+        [](int _i, int _j, int _k) { return 0.0; }
+    );
+    file.AddPointVector("r", 
+        [&](int _i, int _j, int _k) { return dsolver.GetR(0, particle.GetIndex(_i, _j)); },
+        [&](int _i, int _j, int _k) { return dsolver.GetR(1, particle.GetIndex(_i, _j)); },
+        [](int _i, int _j, int _k) { return 0.0; }
+    );
 
     return 0;
 }

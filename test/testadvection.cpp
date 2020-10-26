@@ -1,9 +1,9 @@
 #include <iostream>
-#include <fstream>
 #include <chrono>
 
 #include "../src/particle/d2q9.h"
 #include "../src/equation/advection.h"
+#include "vtkexport.h"
 
 using namespace PANSLBM2;
 
@@ -12,8 +12,8 @@ int main() {
     int tmax = 100000, nx = 100, ny = 50;
     double nu = 0.02, alpha = 0.02, Th = 2.0, Tl = 1.0;
     
-    D2Q9<double> particlef = D2Q9<double>(nx, ny);
-    D2Q9<double> particleg = D2Q9<double>(nx, ny);
+    D2Q9<double> particlef(nx, ny);
+    D2Q9<double> particleg(nx, ny);
     for (int j = 0; j < ny; j++) {
         particlef.SetBoundary(0, j, PERIODIC);
         particlef.SetBoundary(nx - 1, j, PERIODIC);
@@ -27,7 +27,7 @@ int main() {
         particleg.SetBoundary(i, ny - 1, OTHER);
     }
         
-    AD<double, D2Q9, D2Q9> dsolver = AD<double, D2Q9, D2Q9>(&particlef, &particleg, nu, alpha);
+    AD<double, D2Q9, D2Q9> dsolver(&particlef, &particleg, nu, alpha);
 
     std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
 
@@ -45,59 +45,16 @@ int main() {
         
         if (t%1000 == 0) {
             std::cout << t/1000 << std::endl;
-            std::ofstream fout("result/thermal" + std::to_string(t/1000) + ".vtk");
-            fout << "# vtk DataFile Version 3.0" << std::endl;
-            fout << "2D flow" << std::endl;
-            fout << "ASCII" << std::endl;
-            fout << "DATASET\tSTRUCTURED_GRID" << std::endl;
-            fout << "DIMENSIONS\t" << nx << "\t" << ny << "\t" << 1 << std::endl;
-            
-            fout << "POINTS\t" << nx*ny << "\t" << "float" << std::endl;
-            for (int j = 0; j < ny; j++) {
-                for (int i = 0; i < nx; i++) {
-                    fout << i << "\t" << j << "\t" << 0.0 << std::endl;
-                }
-            }
-
-            fout << "POINT_DATA\t" << nx*ny << std::endl;
-            fout << "SCALARS\trho\tfloat" << std::endl;
-            fout << "LOOKUP_TABLE\tdefault" << std::endl;
-            for (int j = 0; j < ny; j++) {
-                for (int i = 0; i < nx; i++) {
-                    fout << dsolver.GetRho(particlef.GetIndex(i, j)) << std::endl;
-                }
-            }
-
-            fout << "VECTORS\tu\tfloat" << std::endl;
-            for (int j = 0; j < ny; j++) {
-                for (int i = 0; i < nx; i++) {
-                    fout << dsolver.GetU(0, particlef.GetIndex(i, j)) << "\t" << dsolver.GetU(1, particlef.GetIndex(i, j)) << "\t" << 0.0 << std::endl;
-                }
-            }
-
-            fout << "SCALARS\tT\tfloat" << std::endl;
-            fout << "LOOKUP_TABLE\tdefault" << std::endl;
-            for (int j = 0; j < ny; j++) {
-                for (int i = 0; i < nx; i++) {
-                    fout << dsolver.GetTemperature(particleg.GetIndex(i, j)) << std::endl;
-                }
-            }
-
-            fout << "SCALARS\tboundaryf\tint" << std::endl;
-            fout << "LOOKUP_TABLE\tdefault" << std::endl;
-            for (int j = 0; j < ny; j++) {
-                for (int i = 0; i < nx; i++) {
-                    fout << particlef.GetBoundary(i, j) << std::endl;
-                }
-            }
-
-            fout << "SCALARS\tboundaryg\tint" << std::endl;
-            fout << "LOOKUP_TABLE\tdefault" << std::endl;
-            for (int j = 0; j < ny; j++) {
-                for (int i = 0; i < nx; i++) {
-                    fout << particleg.GetBoundary(i, j) << std::endl;
-                }
-            }
+            VTKExport file("result/thermal" + std::to_string(t/1000) + ".vtk", nx, ny);
+            file.AddPointScaler("rho", [&](int _i, int _j, int _k) { return dsolver.GetRho(particlef.GetIndex(_i, _j)); });
+            file.AddPointVector("u", 
+                [&](int _i, int _j, int _k) { return dsolver.GetU(0, particlef.GetIndex(_i, _j)); },
+                [&](int _i, int _j, int _k) { return dsolver.GetU(1, particlef.GetIndex(_i, _j)); },
+                [](int _i, int _j, int _k) { return 0.0; }
+            );
+            file.AddPointScaler("T", [&](int _i, int _j, int _k) { return dsolver.GetTemperature(particleg.GetIndex(_i, _j)); });
+            file.AddPointScaler("boundaryf", [&](int _i, int _j, int _k) { return particlef.GetBoundary(_i, _j); });
+            file.AddPointScaler("boundaryg", [&](int _i, int _j, int _k) { return particleg.GetBoundary(_i, _j); });
         } 
     }
 

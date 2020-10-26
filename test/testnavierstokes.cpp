@@ -1,9 +1,9 @@
 #include <iostream>
-#include <fstream>
 #include <chrono>
 
 #include "../src/particle/d2q9.h"
 #include "../src/equation/navierstokes.h"
+#include "vtkexport.h"
 
 using namespace PANSLBM2;
 
@@ -12,7 +12,7 @@ int main() {
     int tmax = 100000, nx = 100, ny = 100;
     double nu = 0.1, u0 = 0.1;
     
-    D2Q9<double> particle = D2Q9<double>(nx, ny);
+    D2Q9<double> particle(nx, ny);
     for (int j = 0; j < ny; j++) {
         particle.SetBoundary(0, j, BARRIER);
         particle.SetBoundary(nx - 1, j, BARRIER);
@@ -22,7 +22,7 @@ int main() {
         particle.SetBoundary(i, ny - 1, OTHER);
     }
     
-    NS<double, D2Q9> dsolver = NS<double, D2Q9>(&particle, nu);
+    NS<double, D2Q9> dsolver(&particle, nu);
 
     std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
 
@@ -38,43 +38,14 @@ int main() {
         
         if (t%1000 == 0) {
             std::cout << t/1000 << std::endl;
-            std::ofstream fout("result/ns" + std::to_string(t/1000) + ".vtk");
-            fout << "# vtk DataFile Version 3.0" << std::endl;
-            fout << "2D flow" << std::endl;
-            fout << "ASCII" << std::endl;
-            fout << "DATASET\tSTRUCTURED_GRID" << std::endl;
-            fout << "DIMENSIONS\t" << nx << "\t" << ny << "\t" << 1 << std::endl;
-            
-            fout << "POINTS\t" << nx*ny << "\t" << "float" << std::endl;
-            for (int j = 0; j < ny; j++) {
-                for (int i = 0; i < nx; i++) {
-                    fout << i << "\t" << j << "\t" << 0.0 << std::endl;
-                }
-            }
-
-            fout << "POINT_DATA\t" << nx*ny << std::endl;
-            fout << "SCALARS\trho\tfloat" << std::endl;
-            fout << "LOOKUP_TABLE\tdefault" << std::endl;
-            for (int j = 0; j < ny; j++) {
-                for (int i = 0; i < nx; i++) {
-                    fout << dsolver.GetRho(particle.GetIndex(i, j)) << std::endl;
-                }
-            }
-
-            fout << "VECTORS\tu\tfloat" << std::endl;
-            for (int j = 0; j < ny; j++) {
-                for (int i = 0; i < nx; i++) {
-                    fout << dsolver.GetU(0, particle.GetIndex(i, j)) << "\t" << dsolver.GetU(1, particle.GetIndex(i, j)) << "\t" << 0.0 << std::endl;
-                }
-            }
-
-            fout << "SCALARS\tboundary\tfloat" << std::endl;
-            fout << "LOOKUP_TABLE\tdefault" << std::endl;
-            for (int j = 0; j < ny; j++) {
-                for (int i = 0; i < nx; i++) {
-                    fout << particle.GetBoundary(i, j) << std::endl;
-                }
-            }
+            VTKExport file("result/ns" + std::to_string(t/1000) + ".vtk", nx, ny);
+            file.AddPointScaler("rho", [&](int _i, int _j, int _k) { return dsolver.GetRho(particle.GetIndex(_i, _j)); });
+            file.AddPointVector("u", 
+                [&](int _i, int _j, int _k) { return dsolver.GetU(0, particle.GetIndex(_i, _j)); },
+                [&](int _i, int _j, int _k) { return dsolver.GetU(1, particle.GetIndex(_i, _j)); },
+                [](int _i, int _j, int _k) { return 0.0; }
+            );
+            file.AddPointScaler("boundary", [&](int _i, int _j, int _k) { return particle.GetBoundary(_i, _j); });
         } 
     }
 

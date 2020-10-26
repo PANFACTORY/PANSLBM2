@@ -12,18 +12,11 @@ using namespace PANSFEM2;
 
 int main() {
     //********************Setting parameters********************
-    int nt = 20000, nx = 150, ny = 100, nk = 40;
-    double nu = 0.1, u0 = 0.01, rho0 = 1.0;
-    double q = 0.1, alpha0 = 1.0, scale0 = 1.0e5, weightlimit = 0.9;
+    int nt = 20000, nx = 100, ny = 100, nk = 40;
+    double nu = 0.1, u0 = 0.001, rho0 = 1.0;
+    double q = 0.1, alpha0 = 1.0, scale0 = 1.0e0, weightlimit = 0.5;
 
     std::vector<double> s(nx*ny, 1.0);
-    for (int i = 0; i < nx; i++) {
-        for (int j = 0; j < ny; j++) {
-            if(pow(i - 0.3*nx, 2.0) + pow(j - 0.5*ny, 2.0) < pow(10.0, 2.0)) {
-                s[ny*i + j] = 0.0;
-            }
-        }
-    }
     MMA<double> optimizer(s.size(), 1, 1.0,
 		std::vector<double>(1, 0.0),
 		std::vector<double>(1, 10000.0),
@@ -46,11 +39,15 @@ int main() {
         D2Q9<double> particle(nx, ny);
         for (int j = 0; j < ny; j++) {
             particle.SetBoundary(0, j, OTHER);
-            particle.SetBoundary(nx - 1, j, OTHER);
+            if (0.35*ny <= j && j <= 0.66*ny) {
+                particle.SetBoundary(nx - 1, j, OTHER);
+            } else {
+                particle.SetBoundary(nx - 1, j, BARRIER);
+            }
         }
         for (int i = 0; i < nx; i++) {
-            particle.SetBoundary(i, 0, MIRROR);
-            particle.SetBoundary(i, ny - 1, MIRROR);
+            particle.SetBoundary(i, 0, BARRIER);
+            particle.SetBoundary(i, ny - 1, BARRIER);
         }
 
         NSAdjoint<double, D2Q9> dsolver(&particle, nu, nt);
@@ -65,8 +62,11 @@ int main() {
             dsolver.Collision();            //  Collision
             particle.Stream();              //  Stream
             for (int j = 0; j < ny; j++) {
-                particle.SetU(0, j, u0, 0.0);
-                particle.SetRho(nx - 1, j, rho0, 0.0);
+                double uj = -u0*j*(j - ny)/2500.0;
+                particle.SetU(0, j, uj, 0.0);
+                if (0.35*ny <= j && j <= 0.66*ny) {
+                    particle.SetRho(nx - 1, j, rho0, 0.0);
+                }
             }                               //  Boundary condition (inlet)
             dsolver.ExternalForce();        //  External force by Brinkman model
 
@@ -83,8 +83,11 @@ int main() {
             dsolver.iCollision();           //  Collision
             particle.iStream();              //  Stream
             for (int j = 0; j < ny; j++) {
-                particle.SetiU(0, j, u0, 0.0);
-                particle.SetiRho(nx - 1, j);
+                double uj = -u0*j*(j - ny)/2500.0;
+                particle.SetiU(0, j, uj, 0.0);
+                if (0.35*ny <= j && j <= 0.66*ny) {
+                    particle.SetiRho(nx - 1, j);
+                }
             }                               //  Boundary condition (inlet)
             dsolver.iExternalForce();       //  External force by Brinkman model   
         }
@@ -93,7 +96,9 @@ int main() {
         double f = 0.0;
         for (int j = 0; j < ny; j++) {
             f += dsolver.GetRho(particle.GetIndex(0, j), dsolver.tmax);
-            f -= dsolver.GetRho(particle.GetIndex(nx - 1, j), dsolver.tmax);
+            if (0.35*ny <= j && j <= 0.66*ny) {
+                f -= dsolver.GetRho(particle.GetIndex(nx - 1, j), dsolver.tmax);
+            }
         }
         std::vector<double> dfds(s.size(), 0.0);
         for (int i = 0; i < s.size(); i++) {  

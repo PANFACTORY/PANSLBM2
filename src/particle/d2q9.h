@@ -21,7 +21,7 @@ public:
         D2Q9() = delete;
         D2Q9(int _nx, int _ny);
         D2Q9(const D2Q9<T>& _p);
-        virtual ~D2Q9();
+        ~D2Q9();
 
         void SetBarrier(int _i, int _j, bool _isbarrier);
         void SetBoundary(int _i, int _j, BOUNDARYTYPE _boundarytype);

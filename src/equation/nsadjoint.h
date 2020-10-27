@@ -18,32 +18,32 @@ public:
         NSAdjoint() = delete;
         NSAdjoint(P<T>* _f, T _viscosity, int _nt);
         NSAdjoint(const NSAdjoint<T, P>& _e);
-        virtual ~NSAdjoint();
+        ~NSAdjoint();
 
-        virtual void UpdateMacro();
-        virtual void Collision();
-        virtual void ExternalForce();
+        void UpdateMacro();
+        void Collision();
+        void ExternalForce();
 
-        virtual void iUpdateMacro();
-        virtual void iCollision();
-        virtual void iExternalForce();
+        void iUpdateMacro();
+        void iCollision();
+        void iExternalForce();
 
         bool CheckConvergence(T _eps);
         void SetAlpha(int _i, T _alpha);
         template<class ...Ts>
         void SetFt(int _i, T _rho, Ts ..._u);
 
-        virtual T GetRho(int _i, int _t) const;
-        virtual T GetU(int _d, int _i, int _t) const;
-        virtual T GetQ(int _i) const;
-        virtual T GetV(int _d, int _i) const;
-        virtual T GetR(int _d, int _i) const;
-        virtual T GetSensitivity(int _i) const;
+        T GetRho(int _i, int _t) const;
+        T GetU(int _d, int _i, int _t) const;
+        T GetQ(int _i) const;
+        T GetV(int _d, int _i) const;
+        T GetR(int _d, int _i) const;
+        T GetSensitivity(int _i) const;
         
         const int nt;
         int t = 0, tmax;
 
-protected:
+private:
         const int np;           //  np : number of particle
         P<T>* f;
         T omega;

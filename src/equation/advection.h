@@ -17,17 +17,21 @@ public:
         AD() = delete;
         AD(P<T>* _f, Q<T>* _g, T _viscosity, T _diffusivity);
         AD(const AD<T, P, Q>& _e);
-        virtual ~AD();
+        ~AD();
 
-        virtual void UpdateMacro();
-        virtual void Collision();
-        virtual void ExternalForce();
+        void UpdateMacro();
+        void Collision();
+        void ExternalForce();
 
-        virtual T GetRho(int _i) const;
-        virtual T GetU(int _d, int _i) const;
-        virtual T GetTemperature(int _i) const;
+        template<class ...Ts>
+        void SetFt(int _i, T _rho, Ts ..._u);
+        void SetGt(int _i, T _Temperature);
 
-protected:
+        T GetRho(int _i) const;
+        T GetU(int _d, int _i) const;
+        T GetTemperature(int _i) const;
+
+private:
         const int np;           //  np : number of particle
         T omegaf, omegag;
         P<T> *f;
@@ -121,8 +125,7 @@ protected:
     void AD<T, P, Q>::Collision() {
         for (int i = 0; i < this->np; i++) {
             for (int j = 0; j < P<T>::nc; j++) {
-                T ciu = T();
-                T uu = T();
+                T ciu = T(), uu = T();
                 for (int k = 0; k < P<T>::nd; k++) {
                     ciu += P<T>::ci[j][k]*this->u[k][i];
                     uu += this->u[k][i]*this->u[k][i];
@@ -158,6 +161,35 @@ protected:
 
 
     template<class T, template<class>class P, template<class>class Q>
+    template<class ...Ts>
+    void AD<T, P, Q>::SetFt(int _i, T _rho, Ts ..._u) {
+        assert(P<T>::nd == sizeof...(Ts) && 0 <= _i && _i < this->np);
+        T us[P<T>::nd] = { _u... };
+        for (int j = 0; j < P<T>::nc; j++) {
+            T ciu = T(), uu = T();
+            for (int k = 0; k < P<T>::nd; k++) {
+                ciu += P<T>::ci[j][k]*us[k];
+                uu += us[k]*us[k];
+            }
+            this->f->ft[j][_i] = P<T>::ei[j]*_rho*(1.0 + 3.0*ciu + 4.5*ciu*ciu - 1.5*uu);
+        }
+    }
+
+
+    template<class T, template<class>class P, template<class>class Q>
+    void AD<T, P, Q>::SetGt(int _i, T _Temperature) {
+        assert(0 <= _i && _i < this->np);
+        for (int j = 0; j < Q<T>::nc; j++) {
+            T ciu = T();
+            for (int k = 0; k < Q<T>::nd; k++) {
+                ciu += Q<T>::ci[j][k]*this->u[k][_i];
+            }
+            this->g->ft[j][_i] = Q<T>::ei[j]*_Temperature*(1.0 + 3.0*ciu);
+        }
+    }
+
+
+    template<class T, template<class>class P, template<class>class Q>
     T AD<T, P, Q>::GetRho(int _i) const {
         assert(0 <= _i && _i < this->np);
         return this->rho[_i];
@@ -166,7 +198,7 @@ protected:
 
     template<class T, template<class>class P, template<class>class Q>
     T AD<T, P, Q>::GetU(int _d, int _i) const {
-        assert(0 < _d < P<T>::nd && 0 <= _i && _i < this->np);
+        assert(0 <= _d && _d < P<T>::nd && 0 <= _i && _i < this->np);
         return this->u[_d][_i];
     }
 

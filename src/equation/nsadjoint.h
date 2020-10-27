@@ -20,8 +20,6 @@ public:
         NSAdjoint(const NSAdjoint<T, P>& _e);
         virtual ~NSAdjoint();
 
-        void SetAlpha(int _i, T _alpha);
-
         virtual void UpdateMacro();
         virtual void Collision();
         virtual void ExternalForce();
@@ -31,7 +29,9 @@ public:
         virtual void iExternalForce();
 
         bool CheckConvergence(T _eps);
-        void SetFt(T _rho, T _ux, T _uy);
+        void SetAlpha(int _i, T _alpha);
+        template<class ...Ts>
+        void SetFt(int _i, T _rho, Ts ..._u);
 
         virtual T GetRho(int _i, int _t) const;
         virtual T GetU(int _d, int _i, int _t) const;
@@ -146,13 +146,6 @@ protected:
 
 
     template<class T, template<class>class P>
-    void NSAdjoint<T, P>::SetAlpha(int _i, T _alpha) {
-        assert(0 <= _i && _i < this->np);
-        this->alpha[_i] = _alpha;
-    }
-
-
-    template<class T, template<class>class P>
     void NSAdjoint<T, P>::UpdateMacro() {
         for (int i = 0; i < this->np; i++) {
             int ti = this->np*this->t + i;
@@ -178,8 +171,7 @@ protected:
         for (int i = 0; i < this->np; i++) {
             int ti = this->np*this->t + i;
             for (int j = 0; j < P<T>::nc; j++) {
-                T ciu = T();
-                T uu = T();
+                T ciu = T(), uu = T();
                 for (int k = 0; k < P<T>::nd; k++) {
                     ciu += P<T>::ci[j][k]*this->u[k][ti];
                     uu += this->u[k][ti]*this->u[k][ti];
@@ -229,8 +221,7 @@ protected:
                 this->r[k][i] = T();
             }
             for (int j = 0; j < P<T>::nc; j++) {
-                T ciu = T();
-                T uu = T();
+                T ciu = T(), uu = T();
                 for (int k = 0; k < P<T>::nd; k++) {
                     ciu += P<T>::ci[j][k]*this->u[k][ti];
                     uu += this->u[k][ti]*this->u[k][ti];
@@ -287,8 +278,7 @@ protected:
 
     template<class T, template<class>class P>
     bool NSAdjoint<T, P>::CheckConvergence(T _eps) {
-        T unorm = T();
-        T dunorm = T();
+        T unorm = T(), dunorm = T();
         for (int i = 0; i < this->np; i++) {
             int ti = this->np*this->t + i;
             int tm1i = this->np*(this->t - 1) + i;
@@ -303,13 +293,24 @@ protected:
 
 
     template<class T, template<class>class P>
-    void NSAdjoint<T, P>::SetFt(T _rho, T _ux, T _uy) {
-        for (int i = 0; i < this->np; i++) {
-            for (int j = 0; j < P<T>::nc; j++) {
-                T ciu = P<T>::ci[j][0]*_ux + P<T>::ci[j][0]*_uy;
-                T uu = _ux*_ux + _uy*_uy;
-                this->f->ft[j][i] = P<T>::ei[j]*_rho*(1.0 + 3.0*ciu + 4.5*ciu*ciu - 1.5*uu);
+    void NSAdjoint<T, P>::SetAlpha(int _i, T _alpha) {
+        assert(0 <= _i && _i < this->np);
+        this->alpha[_i] = _alpha;
+    }
+
+
+    template<class T, template<class>class P>
+    template<class ...Ts>
+    void NSAdjoint<T, P>::SetFt(int _i, T _rho, Ts ..._u) {
+        assert(P<T>::nd == sizeof...(Ts) && 0 <= _i && _i < this->np);
+        T us[P<T>::nd] = { _u... };
+        for (int j = 0; j < P<T>::nc; j++) {
+            T ciu = T(), uu = T();
+            for (int k = 0; k < P<T>::nd; k++) {
+                ciu += P<T>::ci[j][k]*us[k];
+                uu += us[k]*us[k];
             }
+            this->f->ft[j][_i] = P<T>::ei[j]*_rho*(1.0 + 3.0*ciu + 4.5*ciu*ciu - 1.5*uu);
         }
     }
 
@@ -323,7 +324,7 @@ protected:
 
     template<class T, template<class>class P>
     T NSAdjoint<T, P>::GetU(int _d, int _i, int _t) const {
-        assert(0 <= _i && _i < this->np && 0 <= _t && _t < this->nt);
+        assert(0 <= _d && _d < P<T>::nd && 0 <= _i && _i < this->np && 0 <= _t && _t < this->nt);
         return this->u[_d][this->np*_t + _i];
     }
 
@@ -337,14 +338,14 @@ protected:
 
     template<class T, template<class>class P>
     T NSAdjoint<T, P>::GetV(int _d, int _i) const {
-        assert(0 <= _i && _i < this->np);
+        assert(0 <= _d && _d < P<T>::nd && 0 <= _i && _i < this->np);
         return this->v[_d][_i];
     }
 
 
     template<class T, template<class>class P>
     T NSAdjoint<T, P>::GetR(int _d, int _i) const {
-        assert(0 <= _i && _i < this->np);
+        assert(0 <= _d && _d < P<T>::nd && 0 <= _i && _i < this->np);
         return this->r[_d][_i];
     }
 

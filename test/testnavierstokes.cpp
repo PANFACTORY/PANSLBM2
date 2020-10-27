@@ -23,6 +23,9 @@ int main() {
     }
     
     NS<double, D2Q9> dsolver(&particle, nu);
+    for (int i = 0; i < nx*ny; i++) {
+        dsolver.SetFt(i, 1.0, 0.0, 0.0);
+    }
 
     std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
 

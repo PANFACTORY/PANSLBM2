@@ -51,7 +51,6 @@ int main() {
         }
 
         NSAdjoint<double, D2Q9> dsolver(&particle, nu, nt);
-        
         for (int i = 0; i < s.size(); i++) {            
             dsolver.SetAlpha(i, alpha0*q*(1.0 - s[i])/(s[i] + q));
         }
@@ -77,7 +76,9 @@ int main() {
         }
 
         //--------------------Invert analyze--------------------
-        dsolver.SetFt(0.0, 0.0, 0.0);
+        for (int i = 0; i < s.size(); i++) {            
+            dsolver.SetFt(i, 0.0, 0.0, 0.0);
+        }
         for (dsolver.t = dsolver.t >= nt ? nt - 1 : dsolver.t; dsolver.t >= 0; dsolver.t--) {
             dsolver.iUpdateMacro();         //  Update macroscopic values
             dsolver.iCollision();           //  Collision

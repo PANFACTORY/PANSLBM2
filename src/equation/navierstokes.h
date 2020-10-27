@@ -17,16 +17,19 @@ public:
         NS() = delete;
         NS(P<T>* _f, T _viscosity);
         NS(const NS<T, P>& _e);
-        virtual ~NS();
+        ~NS();
 
-        virtual void UpdateMacro();
-        virtual void Collision();
-        virtual void ExternalForce();
+        void UpdateMacro();
+        void Collision();
+        void ExternalForce();
 
-        virtual T GetRho(int _i) const;
-        virtual T GetU(int _d, int _i) const;
+        template<class ...Ts>
+        void SetFt(int _i, T _rho, Ts ..._u);
+
+        T GetRho(int _i) const;
+        T GetU(int _d, int _i) const;
         
-protected:
+private:
         const int np;           //  np : number of particle
         T omega;
         P<T>* f;
@@ -106,8 +109,7 @@ protected:
     void NS<T, P>::Collision() {
         for (int i = 0; i < this->np; i++) {
             for (int j = 0; j < P<T>::nc; j++) {
-                T ciu = T();
-                T uu = T();
+                T ciu = T(), uu = T();
                 for (int k = 0; k < P<T>::nd; k++) {
                     ciu += P<T>::ci[j][k]*this->u[k][i];
                     uu += this->u[k][i]*this->u[k][i];
@@ -128,6 +130,22 @@ protected:
 
 
     template<class T, template<class>class P>
+    template<class ...Ts>
+    void NS<T, P>::SetFt(int _i, T _rho, Ts ..._u) {
+        assert(P<T>::nd == sizeof...(Ts) && 0 <= _i && _i < this->np);
+        T us[P<T>::nd] = { _u... };
+        for (int j = 0; j < P<T>::nc; j++) {
+            T ciu = T(), uu = T();
+            for (int k = 0; k < P<T>::nd; k++) {
+                ciu += P<T>::ci[j][k]*us[k];
+                uu += us[k]*us[k];
+            }
+            this->f->ft[j][_i] = P<T>::ei[j]*_rho*(1.0 + 3.0*ciu + 4.5*ciu*ciu - 1.5*uu);
+        }
+    }
+
+
+    template<class T, template<class>class P>
     T NS<T, P>::GetRho(int _i) const {
         assert(0 <= _i && _i < this->np);
         return this->rho[_i];
@@ -136,7 +154,7 @@ protected:
 
     template<class T, template<class>class P>
     T NS<T, P>::GetU(int _d, int _i) const {
-        assert(0 < _d < P<T>::nd && 0 <= _i && _i < this->np);
+        assert(0 <= _d && _d < P<T>::nd && 0 <= _i && _i < this->np);
         return this->u[_d][_i];
     }
 }

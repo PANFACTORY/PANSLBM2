@@ -28,7 +28,14 @@ int main() {
     }
         
     AD<double, D2Q9, D2Q9> dsolver(&particlef, &particleg, nu, alpha);
-
+    for (int i = 0; i < nx*ny; i++) {
+        dsolver.SetFt(i, 1.0, 0.0, 0.0);
+    }
+    dsolver.UpdateMacro();
+    for (int i = 0; i < nx*ny; i++) {
+        dsolver.SetGt(i, 1.5);
+    }
+    
     std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
 
     //--------------------Direct analyze--------------------

@@ -21,21 +21,21 @@ int main() {
     for (int i = 0; i < nx; i++) {
         particle.SetBoundary(i, 0, BARRIER);
         particle.SetBoundary(i, ny - 1, OTHER);
-    }                                           //  Set boundary condition
+    }                                               //  Set boundary condition
     for (int i = 0; i < nx*ny; i++) {
-        NS::InitialCondition(i, particle, 1.0, 0.0, 0.0);
-    }                                           //  Set initial condition
+        NS2::InitialCondition(i, particle, 1.0, 0.0, 0.0);
+    }                                               //  Set initial condition
     
     std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
 
     //--------------------Direct analyze--------------------
     for (int t = 0; t < tmax; t++) {
-        NS::UpdateMacro(particle, rho, u, v);   //  Update macroscopic values
-        NS::Collision(nu, particle, rho, u, v); //  Collision
-        particle.Stream();                      //  Stream
+        NS2::UpdateMacro(particle, rho, u, v);      //  Update macroscopic values
+        NS2::Collision(nu, particle, rho, u, v);    //  Collision
+        particle.Stream();                          //  Stream
         for (int i = 0; i < nx; i++) {
             particle.SetU(i, ny - 1, u0, 0.0);
-        }                                       //  Boundary condition (inlet)
+        }                                           //  Boundary condition (inlet)
         
         if (t%1000 == 0) {
             std::cout << t/1000 << std::endl;
@@ -47,7 +47,7 @@ int main() {
                 [](int _i, int _j, int _k) { return 0.0; }
             );
             file.AddPointScaler("boundary", [&](int _i, int _j, int _k) { return particle.GetBoundary(_i, _j); });
-        }                                       //  Export result per 1000 steps 
+        }                                           //  Export result per 1000 steps 
     }
 
     std::chrono::system_clock::time_point end = std::chrono::system_clock::now();

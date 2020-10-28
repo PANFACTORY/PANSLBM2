@@ -21,13 +21,13 @@ namespace PANSLBM2 {
                 T rho = T(), ux = T(), uy = T();
                 for (int j = 0; j < P<T>::nc; j++) {
                     rho += _particle.ft[j][i];
-                    ux += P<T>::ci[j][0]*_particle.ft[j][i];
-                    uy += P<T>::ci[j][1]*_particle.ft[j][i];
+                    ux += P<T>::cx[j]*_particle.ft[j][i];
+                    uy += P<T>::cy[j]*_particle.ft[j][i];
                 }
                 ux /= rho;
                 uy /= rho;
                 for (int j = 0; j < P<T>::nc; j++) {
-                    _particle.ft[j][i] += -3.0*_particle.dx*P<T>::ei[j]*_alpha[i]*(P<T>::ci[j][0]*ux + P<T>::ci[j][1]*uy);
+                    _particle.ft[j][i] += -3.0*_particle.dx*P<T>::ei[j]*_alpha[i]*(P<T>::cx[j]*ux + P<T>::cy[j]*uy);
                 }
             }
         }
@@ -58,11 +58,11 @@ namespace PANSLBM2 {
                 _vx[i] = T();
                 _vy[i] = T();
                 for (int j = 0; j < P<T>::nc; j++) {
-                    T ciu = P<T>::ci[j][0]*_ux[i] + P<T>::ci[j][1]*_uy[i]; 
+                    T ciu = P<T>::cx[j]*_ux[i] + P<T>::cy[j]*_uy[i]; 
                     T uu = _ux[i]*_ux[i] + _uy[i]*_uy[i];
                     _q[i] += _particle.ft[j][i]*P<T>::ei[j]*(1.0 + 3.0*ciu + 4.5*ciu*ciu - 1.5*uu);
-                    _vx[i] += _particle.ft[j][i]*P<T>::ei[j]*(P<T>::ci[j][0] + 3.0*ciu*P<T>::ci[j][0] - _ux[i]);
-                    _vy[i] += _particle.ft[j][i]*P<T>::ei[j]*(P<T>::ci[j][1] + 3.0*ciu*P<T>::ci[j][1] - _uy[i]);
+                    _vx[i] += _particle.ft[j][i]*P<T>::ei[j]*(P<T>::cx[j] + 3.0*ciu*P<T>::cx[j] - _ux[i]);
+                    _vy[i] += _particle.ft[j][i]*P<T>::ei[j]*(P<T>::cy[j] + 3.0*ciu*P<T>::cy[j] - _uy[i]);
                 }
             }
         }
@@ -76,7 +76,7 @@ namespace PANSLBM2 {
             T omega = 1.0/(3.0*_viscosity*_particle.dt/(_particle.dx*_particle.dx) + 0.5);
             for (int i = 0; i < _particle.np; i++) {
                 for (int j = 0; j < P<T>::nc; j++) {
-                    T feq = _q[i] + 3.0*(_vx[i]*(P<T>::ci[j][0] - _ux[i]) + _vy[i]*(P<T>::ci[j][1] - _uy[i]));
+                    T feq = _q[i] + 3.0*(_vx[i]*(P<T>::cx[j] - _ux[i]) + _vy[i]*(P<T>::cy[j] - _uy[i]));
                     _particle.ftp1[j][i] = (1.0 - omega)*_particle.ft[j][i] + omega*feq;
                 }
             }
@@ -91,11 +91,11 @@ namespace PANSLBM2 {
             for (int i = 0; i < _particle.np; i++) {
                 T mx = T(), my = T();
                 for (int j = 0; j < P<T>::nc; j++) {
-                    mx += P<T>::ei[j]*P<T>::ci[j][0]*_particle.ft[j][i];
-                    my += P<T>::ei[j]*P<T>::ci[j][1]*_particle.ft[j][i];
+                    mx += P<T>::ei[j]*P<T>::cx[j]*_particle.ft[j][i];
+                    my += P<T>::ei[j]*P<T>::cy[j]*_particle.ft[j][i];
                 }
                 for (int j = 0; j < P<T>::nc; j++) {
-                    _particle.ft[j][i] -= 3.0*_alpha[i]*(mx*(P<T>::ci[j][0] - _ux[i]) + my*(P<T>::ci[j][1] - _uy[i]))/_rho[i];
+                    _particle.ft[j][i] -= 3.0*_alpha[i]*(mx*(P<T>::cx[j] - _ux[i]) + my*(P<T>::cy[j] - _uy[i]))/_rho[i];
                 }
             }
         }

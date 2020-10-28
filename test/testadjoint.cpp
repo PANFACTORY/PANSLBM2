@@ -13,14 +13,9 @@ int main() {
     //--------------------Setting parameters--------------------
     int nt = 20000, nx = 100, ny = 100, tmax = nt;
     double nu = 0.1, u0 = 0.1, rho0 = 1.0;    
-    double q = 0.1, alpha0 = 1.0;
-    double *alpha = new double[nx*ny];  //  Inverse permeation
-    double *rho = new double[nt*nx*ny];
-    double *ux = new double[nt*nx*ny];
-    double *uy = new double[nt*nx*ny];  //  State variable
-    double *qho = new double[nx*ny];
-    double *vx = new double[nx*ny];
-    double *vy = new double[nx*ny];     //  Adjoint variable
+    double q = 0.1, alpha0 = 1.0, *alpha = new double[nx*ny];                                   //  Inverse permeation
+    double *rho = new double[nt*nx*ny], *ux = new double[nt*nx*ny], *uy = new double[nt*nx*ny]; //  State variable
+    double *qho = new double[nx*ny], *vx = new double[nx*ny], *vy = new double[nx*ny];          //  Adjoint variable
 
     D2Q9<double> particle(nx, ny);
     for (int j = 0; j < ny; j++) {
@@ -103,12 +98,8 @@ int main() {
     );
     
     delete[] alpha;
-    delete[] rho;
-    delete[] ux;
-    delete[] uy;
-    delete[] qho;
-    delete[] vx;
-    delete[] vy;
+    delete[] rho;   delete[] ux;    delete[] uy;
+    delete[] qho;   delete[] vx;    delete[] vy;
 
     return 0;
 }

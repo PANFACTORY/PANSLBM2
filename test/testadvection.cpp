@@ -29,25 +29,25 @@ int main() {
         particleg.SetBoundary(i, ny - 1, OTHER);
     }                                               //  Set boundary condition
     for (int i = 0; i < nx*ny; i++) {
-        NS::InitialCondition(i, particlef, 1.0, 0.0, 0.0);
-        AD::InitialCondition(i, particleg, 1.5, 0.0, 0.0);
+        NS2::InitialCondition(i, particlef, 1.0, 0.0, 0.0);
+        AD2::InitialCondition(i, particleg, 1.5, 0.0, 0.0);
     }                                               //  Set initial condition
     
     std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
 
     //--------------------Direct analyze--------------------
     for (int t = 0; t < tmax; t++) {
-        NS::UpdateMacro(particlef, rho, u, v);
-        AD::UpdateMacro(particleg, T);              //  Update macroscopic values
-        NS::Collision(nu, particlef, rho, u, v);
-        AD::Collision(alpha, particleg, T, u, v);   //  Collision
+        NS2::UpdateMacro(particlef, rho, u, v);
+        AD2::UpdateMacro(particleg, T);             //  Update macroscopic values
+        NS2::Collision(nu, particlef, rho, u, v);
+        AD2::Collision(alpha, particleg, T, u, v);  //  Collision
         particlef.Stream();
         particleg.Stream();                         //  Stream
         for (int i = 0; i < nx; i++) {
             particleg.SetTemperature(i, 0, Th);
             particleg.SetTemperature(i, ny - 1, Tl);
         }                                           //  Boundary condition (Fix temperature)
-        NS::ExternalForceNaturalConvection(0.0, 1.6e-5, 1.5, particlef, particleg);  //  External force with natural convection
+        NS2::ExternalForceNaturalConvection(0.0, 1.6e-5, 1.5, particlef, particleg);    //  External force with natural convection
         
         if (t%1000 == 0) {
             std::cout << t/1000 << std::endl;

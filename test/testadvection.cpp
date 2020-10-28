@@ -47,7 +47,7 @@ int main() {
             particleg.SetTemperature(i, 0, Th);
             particleg.SetTemperature(i, ny - 1, Tl);
         }                                           //  Boundary condition (Fix temperature)
-        NS::ExternalForceNaturalConvection(1.6e-5, 1.5, particlef, particleg);  //  External force with natural convection
+        NS::ExternalForceNaturalConvection(0.0, 1.6e-5, 1.5, particlef, particleg);  //  External force with natural convection
         
         if (t%1000 == 0) {
             std::cout << t/1000 << std::endl;

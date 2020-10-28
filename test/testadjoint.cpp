@@ -76,7 +76,7 @@ int main() {
                 particle.SetiRho(nx - 1, j);
             }
         }                                               //  Boundary condition (inlet)
-        ANS2::ExternalForce(particle, alpha, &rho[nx*ny*t], &ux[nx*ny*t], &uy[nx*ny*t]);        //  External force by Brinkman model
+        ANS2::ExternalForceBrinkman(particle, alpha, &rho[nx*ny*t], &ux[nx*ny*t], &uy[nx*ny*t]);        //  External force by Brinkman model
     }
 
     //--------------------Export result--------------------

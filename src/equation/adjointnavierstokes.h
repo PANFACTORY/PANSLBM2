@@ -86,7 +86,7 @@ namespace PANSLBM2 {
         //  Adjoint Navier-Stokes 2D    :   External force with Brinkman model
         //*********************************************************************
         template<class T, template<class>class P, class ...Ts>
-        void ExternalForce(P<T>& _particle, T* _alpha, T* _rho, T* _ux, T* _uy) {
+        void ExternalForceBrinkman(P<T>& _particle, T* _alpha, T* _rho, T* _ux, T* _uy) {
             assert(P<T>::nd == 2);
             for (int i = 0; i < _particle.np; i++) {
                 T mx = T(), my = T();

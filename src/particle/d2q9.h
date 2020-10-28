@@ -40,7 +40,7 @@ public:
         int GetIndex(int _i, int _j);
         
         const int nx, ny, np;                               //  nx&ny : number of points along x&y coordinate, np : number of all points
-        static const int nc = 9, nd = 2, ci[nc][nd];        //  nc : number of particles, nd : number of dimensions
+        static const int nc = 9, nd = 2, cx[nc], cy[nc];    //  nc : number of particles, nd : number of dimensions
         static const T ei[nc];
 
         T dx, dt;
@@ -51,31 +51,15 @@ public:
 
 
     template<class T>
-    const int D2Q9<T>::ci[D2Q9<T>::nc][nd] = {
-        { 0, 0 },
-        { 1, 0 },
-        { 0, 1 },
-        { -1, 0 },
-        { 0, -1 },
-        { 1, 1 },
-        { -1, 1 },
-        { -1, -1 },
-        { 1, -1 }
-    };
+    const int D2Q9<T>::cx[D2Q9<T>::nc] = { 0, 1, 0, -1, 0, 1, -1, -1, 1 };
 
 
     template<class T>
-    const T D2Q9<T>::ei[D2Q9<T>::nc] = {
-        4.0/9.0, 
-        1.0/9.0, 
-        1.0/9.0, 
-        1.0/9.0, 
-        1.0/9.0, 
-        1.0/36.0, 
-        1.0/36.0, 
-        1.0/36.0, 
-        1.0/36.0
-    };
+    const int D2Q9<T>::cy[D2Q9<T>::nc] = { 0, 0, 1, 0, -1, 1, 1, -1, -1 };
+
+
+    template<class T>
+    const T D2Q9<T>::ei[D2Q9<T>::nc] = { 4.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/36.0, 1.0/36.0, 1.0/36.0, 1.0/36.0 };
 
 
     template<class T>
@@ -366,8 +350,8 @@ public:
         for (int i = 0; i < this->nx; i++) {
             for (int j = 0; j < this->ny; j++) {
                 for (int k = 0; k < D2Q9<T>::nc; k++) {
-                    int ip1 = i - D2Q9<T>::ci[k][0] == -1 ? this->nx - 1 : (i - D2Q9<T>::ci[k][0] == this->nx ? 0 : i - D2Q9<T>::ci[k][0]);
-                    int jp1 = j - D2Q9<T>::ci[k][1] == -1 ? this->ny - 1 : (j - D2Q9<T>::ci[k][1] == this->ny ? 0 : j - D2Q9<T>::ci[k][1]);
+                    int ip1 = i - D2Q9<T>::cx[k] == -1 ? this->nx - 1 : (i - D2Q9<T>::cx[k] == this->nx ? 0 : i - D2Q9<T>::cx[k]);
+                    int jp1 = j - D2Q9<T>::cy[k] == -1 ? this->ny - 1 : (j - D2Q9<T>::cy[k] == this->ny ? 0 : j - D2Q9<T>::cy[k]);
                     this->ft[k][this->ny*i + j] = this->ftp1[k][this->ny*ip1 + jp1];
                 }
             }
@@ -474,8 +458,8 @@ public:
         for (int i = 0; i < this->nx; i++) {
             for (int j = 0; j < this->ny; j++) {
                 for (int k = 0; k < D2Q9<T>::nc; k++) {
-                    int ip1 = i + D2Q9<T>::ci[k][0] == -1 ? this->nx - 1 : (i + D2Q9<T>::ci[k][0] == this->nx ? 0 : i + D2Q9<T>::ci[k][0]);
-                    int jp1 = j + D2Q9<T>::ci[k][1] == -1 ? this->ny - 1 : (j + D2Q9<T>::ci[k][1] == this->ny ? 0 : j + D2Q9<T>::ci[k][1]);
+                    int ip1 = i + D2Q9<T>::cx[k] == -1 ? this->nx - 1 : (i + D2Q9<T>::cx[k] == this->nx ? 0 : i + D2Q9<T>::cx[k]);
+                    int jp1 = j + D2Q9<T>::cy[k] == -1 ? this->ny - 1 : (j + D2Q9<T>::cy[k] == this->ny ? 0 : j + D2Q9<T>::cy[k]);
                     this->ft[k][this->ny*i + j] = this->ftp1[k][this->ny*ip1 + jp1];
                 }
             }

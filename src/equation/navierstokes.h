@@ -1,160 +1,73 @@
 //*****************************************************************************
 //  Title       :   src/navierstokes.h
 //  Author      :   Tanabe Yuta
-//  Date        :   2020/10/20
+//  Date        :   2020/10/28
 //  Copyright   :   (C)2020 TanabeYuta
 //*****************************************************************************
-
 
 #pragma once
 #include <cassert>
 
-
 namespace PANSLBM2 {
-    template<class T, template<class>class P>
-    class NS {
-public:
-        NS() = delete;
-        NS(P<T>* _f, T _viscosity);
-        NS(const NS<T, P>& _e);
-        ~NS();
-
-        void UpdateMacro();
-        void Collision();
-        void ExternalForce();
-
-        template<class ...Ts>
-        void SetFt(int _i, T _rho, Ts ..._u);
-
-        T GetRho(int _i) const;
-        T GetU(int _d, int _i) const;
-        
-private:
-        const int np;           //  np : number of particle
-        T omega;
-        P<T>* f;
-        T *rho, *u[P<T>::nd];
-    };
-
-
-    template<class T, template<class>class P>
-    NS<T, P>::NS(P<T>* _f, T _viscosity) : np(_f->np) {
-        assert(0 < _f->np);
-        this->f = _f;
-        this->omega = 1.0/(3.0*_viscosity*this->f->dt/(this->f->dx*this->f->dx) + 0.5);
-
-        this->rho = new T[this->np];
-        for (int k = 0; k < P<T>::nd; k++) {
-            this->u[k] = new T[this->np];
-        }
-
-        for (int i = 0; i < this->np; i++) {
-            this->rho[i] = T();
-            for (int k = 0; k < P<T>::nd; k++) {
-                this->u[k][i] = T();
-            }
-        }
-    }
-
-
-    template<class T, template<class>class P>
-    NS<T, P>::NS(const NS<T, P>& _e) : np(_e.np) {
-        this->f = _e.f;
-        this->omega = _e.omega;
-
-        this->rho = new T[this->np];
-        for (int k = 0; k < P<T>::nd; k++) {
-            this->u[k] = new T[this->np];
-        }
-
-        for (int i = 0; i < this->np; i++) {
-            this->rho[i] = _e.rho[i];
-            for (int k = 0; k < P<T>::nd; k++) {
-                this->u[k][i] = _e.u[k][i];
-            }
-        }
-    }
-
-
-    template<class T, template<class>class P>
-    NS<T, P>::~NS() {
-        delete[] this->rho;
-        for (int k = 0; k < P<T>::nd; k++) {
-            delete[] this->u[k];
-        }
-    }
-
-
-    template<class T, template<class>class P>
-    void NS<T, P>::UpdateMacro() {
-        for (int i = 0; i < this->np; i++) {
-            this->rho[i] = T();
-            for (int k = 0; k < P<T>::nd; k++) {
-                this->u[k][i] = T();
-            }
-            for (int j = 0; j < P<T>::nc; j++) {
-                this->rho[i] += this->f->ft[j][i];
-                for (int k = 0; k < P<T>::nd; k++) {
-                    this->u[k][i] += P<T>::ci[j][k]*this->f->ft[j][i];
+    namespace NS {
+        //*********************************************************************
+        //  Navier-Stokes   :   Update macroscopic values, rho, u, v, w
+        //*********************************************************************
+        template<class T, template<class>class P, class ...Ts>
+        void UpdateMacro(P<T>& _particle, T* _rho, Ts ..._u) {
+            assert(P<T>::nd == sizeof...(Ts));
+            T* u[P<T>::nd] = { _u... };
+            for (int i = 0; i < _particle.np; i++) {
+                _rho[i] = T();
+                for (int d = 0; d < P<T>::nd; d++) {
+                    u[d][i] = T();
+                }
+                for (int j = 0; j < P<T>::nc; j++) {
+                    _rho[i] += _particle.ft[j][i];
+                    for (int d = 0; d < P<T>::nd; d++) {
+                        u[d][i] += P<T>::ci[j][d]*_particle.ft[j][i];
+                    }
+                }
+                for (int d = 0; d < P<T>::nd; d++) {
+                    u[d][i] /= _rho[i];
                 }
             }
-            for (int k = 0; k < P<T>::nd; k++) {
-                this->u[k][i] /= this->rho[i];
+        }
+
+        //*********************************************************************
+        //  Navier-Stokes   :   Collision term
+        //*********************************************************************
+        template<class T, template<class>class P, class ...Ts>
+        void Collision(T _viscosity, P<T>& _particle, T* _rho, Ts ..._u) {
+            T omega = 1.0/(3.0*_viscosity*_particle.dt/(_particle.dx*_particle.dx) + 0.5);
+            T* u[P<T>::nd] = { _u... };
+            for (int i = 0; i < _particle.np; i++) {
+                for (int j = 0; j < P<T>::nc; j++) {
+                    T ciu = T(), uu = T();
+                    for (int d = 0; d < P<T>::nd; d++) {
+                        ciu += P<T>::ci[j][d]*u[d][i];
+                        uu += u[d][i]*u[d][i];
+                    }
+                    _particle.ftp1[j][i] = (1.0 - omega)*_particle.ft[j][i] + omega*P<T>::ei[j]*_rho[i]*(1.0 + 3.0*ciu + 4.5*ciu*ciu - 1.5*uu);
+                }
             }
         }
-    }
 
-
-    template<class T, template<class>class P>
-    void NS<T, P>::Collision() {
-        for (int i = 0; i < this->np; i++) {
+        //*********************************************************************
+        //  Navier-Stokes   :   Initial condition
+        //*********************************************************************
+        template<class T, template<class>class P, class ...Ts>
+        void InitialCondition(int _i, P<T>& _particle, T _rho, Ts ..._u) {
+            assert(P<T>::nd == sizeof...(Ts) && 0 <= _i && _i < _particle.np);
+            T us[P<T>::nd] = { _u... };
             for (int j = 0; j < P<T>::nc; j++) {
                 T ciu = T(), uu = T();
-                for (int k = 0; k < P<T>::nd; k++) {
-                    ciu += P<T>::ci[j][k]*this->u[k][i];
-                    uu += this->u[k][i]*this->u[k][i];
+                for (int d = 0; d < P<T>::nd; d++) {
+                    ciu += P<T>::ci[j][d]*us[d];
+                    uu += us[d]*us[d];
                 }
-                T fieq = P<T>::ei[j]*this->rho[i]*(1.0 + 3.0*ciu + 4.5*ciu*ciu - 1.5*uu);
-                this->f->ftp1[j][i] = (1.0 - this->omega)*this->f->ft[j][i] + this->omega*fieq;
+                _particle.ft[j][_i] = P<T>::ei[j]*_rho*(1.0 + 3.0*ciu + 4.5*ciu*ciu - 1.5*uu);
             }
         }
-    }
-
-
-    template<class T, template<class>class P>
-    void NS<T, P>::ExternalForce() {
-        for (int i = 0; i < this->np; i++) {
-            
-        }
-    }
-
-
-    template<class T, template<class>class P>
-    template<class ...Ts>
-    void NS<T, P>::SetFt(int _i, T _rho, Ts ..._u) {
-        assert(P<T>::nd == sizeof...(Ts) && 0 <= _i && _i < this->np);
-        T us[P<T>::nd] = { _u... };
-        for (int j = 0; j < P<T>::nc; j++) {
-            T ciu = T(), uu = T();
-            for (int k = 0; k < P<T>::nd; k++) {
-                ciu += P<T>::ci[j][k]*us[k];
-                uu += us[k]*us[k];
-            }
-            this->f->ft[j][_i] = P<T>::ei[j]*_rho*(1.0 + 3.0*ciu + 4.5*ciu*ciu - 1.5*uu);
-        }
-    }
-
-
-    template<class T, template<class>class P>
-    T NS<T, P>::GetRho(int _i) const {
-        assert(0 <= _i && _i < this->np);
-        return this->rho[_i];
-    }
-
-
-    template<class T, template<class>class P>
-    T NS<T, P>::GetU(int _d, int _i) const {
-        assert(0 <= _d && _d < P<T>::nd && 0 <= _i && _i < this->np);
-        return this->u[_d][_i];
     }
 }

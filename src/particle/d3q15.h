@@ -485,7 +485,7 @@ public:
                     this->ft[13][imink] = this->ft[11][imink];
                 }
 
-                //.....xmax.....
+                //.....ymax.....
                 int imaxk = i + this->nx*(this->ny - 1) + this->nx*this->ny*k;
                 int imaxm1k = i + this->nx*(this->ny - 2) + this->nx*this->ny*k;
                 if (this->btymax[ki] == OUTLET) {
@@ -531,12 +531,11 @@ public:
                     this->ft[9][ijmin] = this->ft[13][ijmin];
                     this->ft[14][ijmin] = this->ft[10][ijmin];
                 } else if (this->btzmin[ki] == MIRROR) {
-//  要修正
-                    this->ft[3][ijmin] = this->ft[4][ijmin];
-                    this->ft[7][ijmin] = this->ft[11][ijmin];
+                    this->ft[3][ijmin] = this->ft[6][ijmin];
+                    this->ft[7][ijmin] = this->ft[10][ijmin];
                     this->ft[8][ijmin] = this->ft[13][ijmin];
-                    this->ft[9][ijmin] = this->ft[14][ijmin];
-                    this->ft[14][ijmin] = this->ft[8][ijmin];
+                    this->ft[9][ijmin] = this->ft[12][ijmin];
+                    this->ft[14][ijmin] = this->ft[11][ijmin];
                 }
 
                 //.....zmax.....
@@ -555,12 +554,11 @@ public:
                     this->ft[12][ijmax] = this->ft[8][ijmax];
                     this->ft[13][ijmax] = this->ft[9][ijmax];
                 } else if (this->btzmax[ki] == MIRROR) {
-//  要修正
-                    this->ft[6][ijmax] = this->ft[2][ijmax];
+                    this->ft[6][ijmax] = this->ft[3][ijmax];
                     this->ft[10][ijmax] = this->ft[7][ijmax];
-                    this->ft[11][ijmax] = this->ft[8][ijmax];
-                    this->ft[12][ijmax] = this->ft[10][ijmax];
-                    this->ft[13][ijmax] = this->ft[13][ijmax];
+                    this->ft[11][ijmax] = this->ft[14][ijmax];
+                    this->ft[12][ijmax] = this->ft[9][ijmax];
+                    this->ft[13][ijmax] = this->ft[8][ijmax];
                 }
             }
         }
@@ -572,108 +570,192 @@ public:
         //----------Stream and periodic boundary----------
         for (int i = 0; i < this->nx; i++) {
             for (int j = 0; j < this->ny; j++) {
-                for (int k = 0; k < D3Q15<T>::nc; k++) {
-                    int ip1 = i + D3Q15<T>::cx[k] == -1 ? this->nx - 1 : (i + D3Q15<T>::cx[k] == this->nx ? 0 : i + D3Q15<T>::cx[k]);
-                    int jp1 = j + D3Q15<T>::cy[k] == -1 ? this->ny - 1 : (j + D3Q15<T>::cy[k] == this->ny ? 0 : j + D3Q15<T>::cy[k]);
-                    this->ft[k][this->ny*i + j] = this->ftp1[k][this->ny*ip1 + jp1];
+                for (int k = 0; k < this->nz; k++) {
+                    for (int l = 0; l < D3Q15<T>::nc; l++) {
+                        int ip1 = i + D3Q15<T>::cx[l] == -1 ? this->nx - 1 : (i + D3Q15<T>::cx[l] == this->nx ? 0 : i + D3Q15<T>::cx[l]);
+                        int jp1 = j + D3Q15<T>::cy[l] == -1 ? this->ny - 1 : (j + D3Q15<T>::cy[l] == this->ny ? 0 : j + D3Q15<T>::cy[l]);
+                        int kp1 = k + D3Q15<T>::cz[l] == -1 ? this->nz - 1 : (k + D3Q15<T>::cz[l] == this->nz ? 0 : k + D3Q15<T>::cz[l]);
+                        this->ft[l][i + this->nx*j + this->nx*this->ny*k] = this->ftp1[k][ip1 + this->nx*jp1 + this->nx*this->ny*kp1];
+                    }
                 }
             }
         }
         
         //----------Bouns-Back (inner boundary)----------
         for (int i = 0; i < this->np; i++) {
-            if (this->barrier[1][i]) {    
-                this->ft[3][i] = this->ftp1[1][i];  
-            }
-            if (this->barrier[2][i]) {    
-                this->ft[4][i] = this->ftp1[2][i];  
-            }
-            if (this->barrier[3][i]) {    
-                this->ft[1][i] = this->ftp1[3][i];  
-            }
-            if (this->barrier[4][i]) {    
-                this->ft[2][i] = this->ftp1[4][i];  
-            }
-            if (this->barrier[5][i]) {    
-                this->ft[7][i] = this->ftp1[5][i];  
-            }
-            if (this->barrier[6][i]) {    
-                this->ft[8][i] = this->ftp1[6][i];  
-            }
-            if (this->barrier[7][i]) {    
-                this->ft[5][i] = this->ftp1[7][i];  
-            }
-            if (this->barrier[8][i]) {    
-                this->ft[6][i] = this->ftp1[8][i];  
-            }
+            if (this->barrier[1][i])    {   this->ft[4][i] = this->ftp1[1][i];      }
+            if (this->barrier[2][i])    {   this->ft[5][i] = this->ftp1[2][i];      }
+            if (this->barrier[3][i])    {   this->ft[6][i] = this->ftp1[3][i];      }
+            if (this->barrier[4][i])    {   this->ft[1][i] = this->ftp1[4][i];      }
+            if (this->barrier[5][i])    {   this->ft[2][i] = this->ftp1[5][i];      }
+            if (this->barrier[6][i])    {   this->ft[3][i] = this->ftp1[6][i];      }
+            if (this->barrier[7][i])    {   this->ft[11][i] = this->ftp1[7][i];     }
+            if (this->barrier[8][i])    {   this->ft[12][i] = this->ftp1[8][i];     }
+            if (this->barrier[9][i])    {   this->ft[13][i] = this->ftp1[9][i];     }
+            if (this->barrier[10][i])   {   this->ft[14][i] = this->ftp1[10][i];    }
+            if (this->barrier[11][i])   {   this->ft[7][i] = this->ftp1[11][i];     }
+            if (this->barrier[12][i])   {   this->ft[8][i] = this->ftp1[12][i];     }
+            if (this->barrier[13][i])   {   this->ft[9][i] = this->ftp1[13][i];     }
+            if (this->barrier[14][i])   {   this->ft[10][i] = this->ftp1[14][i];    }
         }
 
         //----------boundary (Bouns-Back, Outlet and Mirror)----------
+        //  xmin and xmax
         for (int j = 0; j < this->ny; j++) {
-            //.....xmin.....
-//  要修正
-            if (this->btxmin[j] == OUTLET) {
-                this->ft[3][j] = this->ft[3][this->ny + j];
-                this->ft[6][j] = this->ft[6][this->ny + j];
-                this->ft[7][j] = this->ft[7][this->ny + j];
-            } else if (this->btxmin[j] == BARRIER) {
-                this->ft[3][j] = this->ftp1[1][j];
-                this->ft[6][j] = this->ftp1[8][j];
-                this->ft[7][j] = this->ftp1[5][j];
-            } else if (this->btxmin[j] == MIRROR) {
-                this->ft[3][j] = this->ftp1[1][j];
-                this->ft[6][j] = this->ftp1[5][j];
-                this->ft[7][j] = this->ftp1[8][j];
-            }
+            for (int k = 0; k < this->nz; k++) {
+                int jk = j + this->ny*k;
 
-            //.....xmax.....
-//  要修正
-            if (this->btxmax[j] == OUTLET) {
-                this->ft[1][this->ny*(this->nx - 1) + j] = this->ft[1][this->ny*(this->nx - 2) + j];
-                this->ft[5][this->ny*(this->nx - 1) + j] = this->ft[5][this->ny*(this->nx - 2) + j];
-                this->ft[8][this->ny*(this->nx - 1) + j] = this->ft[8][this->ny*(this->nx - 2) + j];
-            } else if (this->btxmax[j] == BARRIER) {
-                this->ft[1][this->ny*(this->nx - 1) + j] = this->ftp1[3][this->ny*(this->nx - 1) + j];
-                this->ft[5][this->ny*(this->nx - 1) + j] = this->ftp1[7][this->ny*(this->nx - 1) + j];
-                this->ft[8][this->ny*(this->nx - 1) + j] = this->ftp1[6][this->ny*(this->nx - 1) + j];
-            } else if (this->btxmax[j] == MIRROR) {
-                this->ft[1][this->ny*(this->nx - 1) + j] = this->ftp1[3][this->ny*(this->nx - 1) + j];
-                this->ft[5][this->ny*(this->nx - 1) + j] = this->ftp1[6][this->ny*(this->nx - 1) + j];
-                this->ft[8][this->ny*(this->nx - 1) + j] = this->ftp1[7][this->ny*(this->nx - 1) + j];
+                //.....xmin.....
+                int minjk = 0 + this->nx*j + this->nx*this->ny*k;
+                int minp1jk = 1 + this->nx*j + this->nx*this->ny*k;
+                if (this->btxmin[jk] == OUTLET) {
+                    this->ft[4][minjk] = this->ft[4][minp1jk];
+                    this->ft[8][minjk] = this->ft[8][minp1jk];
+                    this->ft[11][minjk] = this->ft[11][minp1jk];
+                    this->ft[13][minjk] = this->ft[13][minp1jk];
+                    this->ft[14][minjk] = this->ft[14][minp1jk];
+                } else if (this->btxmin[jk] == BARRIER) {
+                    this->ft[4][minjk] = this->ft[1][minjk];
+                    this->ft[8][minjk] = this->ft[12][minjk];
+                    this->ft[11][minjk] = this->ft[7][minjk];
+                    this->ft[13][minjk] = this->ft[9][minjk];
+                    this->ft[14][minjk] = this->ft[10][minjk];
+                } else if (this->btxmin[jk] == MIRROR) {
+                    this->ft[4][minjk] = this->ft[1][minjk];
+                    this->ft[8][minjk] = this->ft[7][minjk];
+                    this->ft[11][minjk] = this->ft[12][minjk];
+                    this->ft[13][minjk] = this->ft[10][minjk];
+                    this->ft[14][minjk] = this->ft[9][minjk];
+                }
+
+                //.....xmax.....
+                int maxjk = (this->nx - 1) + this->nx*j + this->nx*this->ny*k;
+                int maxm1jk = (this->nx - 2) + this->nx*j + this->nx*this->ny*k;
+                if (this->btxmax[jk] == OUTLET) {
+                    this->ft[1][maxjk] = this->ft[1][maxm1jk];
+                    this->ft[7][maxjk] = this->ft[7][maxm1jk];
+                    this->ft[9][maxjk] = this->ft[9][maxm1jk];
+                    this->ft[10][maxjk] = this->ft[10][maxm1jk];
+                    this->ft[12][maxjk] = this->ft[12][maxm1jk];
+                } else if (this->btxmax[jk] == BARRIER) {
+                    this->ft[1][maxjk] = this->ft[4][maxjk];
+                    this->ft[7][maxjk] = this->ft[11][maxjk];
+                    this->ft[9][maxjk] = this->ft[13][maxjk];
+                    this->ft[10][maxjk] = this->ft[14][maxjk];
+                    this->ft[12][maxjk] = this->ft[8][maxjk];
+                } else if (this->btxmax[jk] == MIRROR) {
+                    this->ft[1][maxjk] = this->ft[4][maxjk];
+                    this->ft[7][maxjk] = this->ft[8][maxjk];
+                    this->ft[9][maxjk] = this->ft[14][maxjk];
+                    this->ft[10][maxjk] = this->ft[13][maxjk];
+                    this->ft[12][maxjk] = this->ft[11][maxjk];
+                }
             }
         }
 
-        for (int i = 0; i < this->nx; i++) {
-            //.....ymin.....
-//  要修正
-            if (this->btymin[i] == OUTLET) {
-                this->ft[4][this->ny*i] = this->ft[4][this->ny*i + 1];
-                this->ft[7][this->ny*i] = this->ft[7][this->ny*i + 1];
-                this->ft[8][this->ny*i] = this->ft[8][this->ny*i + 1];
-            } else if (this->btymin[i] == BARRIER) {
-                this->ft[4][this->ny*i] = this->ftp1[2][this->ny*i];
-                this->ft[7][this->ny*i] = this->ftp1[5][this->ny*i];
-                this->ft[8][this->ny*i] = this->ftp1[6][this->ny*i];
-            } else if (this->btymin[i] == MIRROR) {
-                this->ft[4][this->ny*i] = this->ftp1[2][this->ny*i];
-                this->ft[7][this->ny*i] = this->ftp1[6][this->ny*i];
-                this->ft[8][this->ny*i] = this->ftp1[5][this->ny*i];
-            }
+        //  ymin and ymax
+        for (int k = 0; k < this->nz; k++) {
+            for (int i = 0; i < this->nx; i++) {
+                int ki = k + this->nz*i;
 
-            //.....ymax.....
-//  要修正
-            if (this->btymax[i] == OUTLET) {
-                this->ft[2][this->ny*(i + 1) - 1] = this->ft[2][this->ny*(i + 1) - 2];
-                this->ft[5][this->ny*(i + 1) - 1] = this->ft[5][this->ny*(i + 1) - 2];
-                this->ft[6][this->ny*(i + 1) - 1] = this->ft[6][this->ny*(i + 1) - 2];
-            } else if (this->btymax[i] == BARRIER) {
-                this->ft[2][this->ny*(i + 1) - 1] = this->ftp1[4][this->ny*(i + 1) - 1];
-                this->ft[5][this->ny*(i + 1) - 1] = this->ftp1[7][this->ny*(i + 1) - 1];
-                this->ft[6][this->ny*(i + 1) - 1] = this->ftp1[8][this->ny*(i + 1) - 1];
-            } else if (this->btymax[i] == MIRROR) {
-                this->ft[2][this->ny*(i + 1) - 1] = this->ftp1[4][this->ny*(i + 1) - 1];
-                this->ft[5][this->ny*(i + 1) - 1] = this->ftp1[8][this->ny*(i + 1) - 1];
-                this->ft[6][this->ny*(i + 1) - 1] = this->ftp1[7][this->ny*(i + 1) - 1];
+                //.....ymin.....
+                int imink = i + this->nx*0 + this->nx*this->ny*k;
+                int iminp1k = i + this->nx*1 + this->nx*this->ny*k;
+                if (this->btymin[ki] == OUTLET) {
+                    this->ft[5][imink] = this->ft[5][iminp1k];
+                    this->ft[9][imink] = this->ft[9][iminp1k];
+                    this->ft[11][imink] = this->ft[11][iminp1k];
+                    this->ft[12][imink] = this->ft[12][iminp1k];
+                    this->ft[14][imink] = this->ft[14][iminp1k];
+                } else if (this->btymin[ki] == BARRIER) {
+                    this->ft[5][imink] = this->ft[2][imink];
+                    this->ft[9][imink] = this->ft[13][imink];
+                    this->ft[11][imink] = this->ft[7][imink];
+                    this->ft[12][imink] = this->ft[8][imink];
+                    this->ft[14][imink] = this->ft[10][imink];
+                } else if (this->btymin[ki] == MIRROR) {
+                    this->ft[5][imink] = this->ft[2][imink];
+                    this->ft[9][imink] = this->ft[7][imink];
+                    this->ft[11][imink] = this->ft[13][imink];
+                    this->ft[12][imink] = this->ft[10][imink];
+                    this->ft[14][imink] = this->ft[8][imink];
+                }
+
+                //.....ymax.....
+                int imaxk = i + this->nx*(this->ny - 1) + this->nx*this->ny*k;
+                int imaxm1k = i + this->nx*(this->ny - 2) + this->nx*this->ny*k;
+                if (this->btymax[ki] == OUTLET) {
+                    this->ft[2][imaxk] = this->ft[2][imaxm1k];
+                    this->ft[7][imaxk] = this->ft[7][imaxm1k];
+                    this->ft[8][imaxk] = this->ft[8][imaxm1k];
+                    this->ft[10][imaxk] = this->ft[10][imaxm1k];
+                    this->ft[13][imaxk] = this->ft[13][imaxm1k];
+                } else if (this->btymax[ki] == BARRIER) {
+                    this->ft[2][imaxk] = this->ft[5][imaxk];
+                    this->ft[7][imaxk] = this->ft[11][imaxk];
+                    this->ft[8][imaxk] = this->ft[12][imaxk];
+                    this->ft[10][imaxk] = this->ft[14][imaxk];
+                    this->ft[13][imaxk] = this->ft[9][imaxk];
+                } else if (this->btymax[ki] == MIRROR) {
+                    this->ft[2][imaxk] = this->ft[5][imaxk];
+                    this->ft[7][imaxk] = this->ft[9][imaxk];
+                    this->ft[8][imaxk] = this->ft[14][imaxk];
+                    this->ft[10][imaxk] = this->ft[12][imaxk];
+                    this->ft[13][imaxk] = this->ft[11][imaxk];
+                }
+            }
+        }
+
+        //  zmin and zmax
+        for (int i = 0; i < this->nx; i++) {
+            for (int j = 0; j < this->ny; i++) {
+                int ij = i + this->nx*j;
+
+                //.....zmin.....
+                int ijmin = i + this->nx*j + this->nx*this->ny*0;
+                int ijminp1 = i + this->nx*j + this->nx*this->ny*1;
+                if (this->btzmin[ki] == OUTLET) {
+                    this->ft[6][ijmin] = this->ft[6][ijminp1];
+                    this->ft[10][ijmin] = this->ft[10][ijminp1];
+                    this->ft[11][ijmin] = this->ft[11][ijminp1];
+                    this->ft[12][ijmin] = this->ft[12][ijminp1];
+                    this->ft[13][ijmin] = this->ft[13][ijminp1];
+                } else if (this->btzmin[ki] == BARRIER) {
+                    this->ft[6][ijmin] = this->ft[3][ijmin];
+                    this->ft[10][ijmin] = this->ft[14][ijmin];
+                    this->ft[11][ijmin] = this->ft[7][ijmin];
+                    this->ft[12][ijmin] = this->ft[8][ijmin];
+                    this->ft[13][ijmin] = this->ft[9][ijmin];
+                } else if (this->btzmin[ki] == MIRROR) {
+                    this->ft[6][ijmin] = this->ft[3][ijmin];
+                    this->ft[10][ijmin] = this->ft[7][ijmin];
+                    this->ft[11][ijmin] = this->ft[14][ijmin];
+                    this->ft[12][ijmin] = this->ft[9][ijmin];
+                    this->ft[13][ijmin] = this->ft[8][ijmin];
+                }
+
+                //.....zmax.....
+                int ijmax = i + this->nx*j + this->nx*this->ny*(this->nz - 1);
+                int ijmaxm1 = i + this->nx*j + this->nx*this->ny*(this->nz - 2);
+                if (this->btzmax[ki] == OUTLET) {
+                    this->ft[3][ijmax] = this->ft[3][ijmaxm1];
+                    this->ft[7][ijmax] = this->ft[7][ijmaxm1];
+                    this->ft[8][ijmax] = this->ft[8][ijmaxm1];
+                    this->ft[9][ijmax] = this->ft[9][ijmaxm1];
+                    this->ft[14][ijmax] = this->ft[14][ijmaxm1];
+                } else if (this->btzmax[ki] == BARRIER) {
+                    this->ft[3][ijmax] = this->ft[6][ijmax];
+                    this->ft[7][ijmax] = this->ft[11][ijmax];
+                    this->ft[8][ijmax] = this->ft[12][ijmax];
+                    this->ft[9][ijmax] = this->ft[13][ijmax];
+                    this->ft[14][ijmax] = this->ft[10][ijmax];
+                } else if (this->btzmax[ki] == MIRROR) {
+                    this->ft[3][ijmax] = this->ft[6][ijmax];
+                    this->ft[7][ijmax] = this->ft[10][ijmax];
+                    this->ft[8][ijmax] = this->ft[13][ijmax];
+                    this->ft[9][ijmax] = this->ft[12][ijmax];
+                    this->ft[14][ijmax] = this->ft[11][ijmax];
+                }
             }
         }
     }

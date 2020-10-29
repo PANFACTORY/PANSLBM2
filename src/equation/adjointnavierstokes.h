@@ -85,7 +85,7 @@ namespace PANSLBM2 {
         //*********************************************************************
         //  Adjoint Navier-Stokes 2D    :   External force with Brinkman model
         //*********************************************************************
-        template<class T, template<class>class P, class ...Ts>
+        template<class T, template<class>class P>
         void ExternalForceBrinkman(P<T>& _particle, T* _alpha, T* _rho, T* _ux, T* _uy) {
             assert(P<T>::nd == 2);
             for (int i = 0; i < _particle.np; i++) {
@@ -97,6 +97,22 @@ namespace PANSLBM2 {
                 for (int j = 0; j < P<T>::nc; j++) {
                     _particle.ft[j][i] -= 3.0*_alpha[i]*(mx*(P<T>::cx[j] - _ux[i]) + my*(P<T>::cy[j] - _uy[i]))/_rho[i];
                 }
+            }
+        }
+
+        //*********************************************************************
+        //  Adjoint Navier-Stokes 2D    :   Update sensitivity
+        //*********************************************************************
+        template<class T, template<class>class P>
+        void UpdateSensitivity(P<T>& _particle, T* _ux, T* _uy, T* _sensitivity) {
+            assert(P<T>::nd == 2);
+            for (int i = 0; i < _particle.np; i++) {
+                T mx = T(), my = T();
+                for (int j = 0; j < P<T>::nc; j++) {
+                    mx += P<T>::ei[j]*P<T>::cx[j]*_particle.ft[j][i];
+                    my += P<T>::ei[j]*P<T>::cy[j]*_particle.ft[j][i];
+                }
+                _sensitivity[i] += 3.0*(mx*_ux[i] + my*_uy[i]);
             }
         }
     }  

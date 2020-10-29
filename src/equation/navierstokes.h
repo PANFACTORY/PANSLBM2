@@ -49,6 +49,7 @@ namespace PANSLBM2 {
         //*********************************************************************
         //  Navier-Stokes 2D    :   External force with immersed boundary method
         //*********************************************************************
+//  要修正
         template<class T, template<class>class P>
         void ExternalForceImmersedBoundary(P<T>& _particle, int _nb, T* _Xbx, T* _Xby, T* _Ubx, T* _Uby) {
             //  Step0：境界点上の体積力を初期化する

@@ -13,11 +13,12 @@ using namespace PANSFEM2;
 
 int main() {
     //********************Setting parameters********************
-    int nt = 20000, nx = 100, ny = 100, nk = 40, tmax = nt;
-    double nu = 0.1, u0 = 0.05, rho0 = 1.0;
-    double q = 0.1, alpha0 = 1.0, scale0 = 1.0e5, weightlimit = 0.25, *alpha = new double[nx*ny];
+    int nt = 20000, nx = 100, ny = 100, nk = 100, tmax = nt;
+    double nu = 0.1, u0 = 0.0025, rho0 = 1.0;
+    double q = 0.1, alpha0 = 1.0, scale0 = 1.0e0, weightlimit = 0.25, *alpha = new double[nx*ny];
     double *rho = new double[nt*nx*ny], *ux = new double[nt*nx*ny], *uy = new double[nt*nx*ny]; //  State variable
     double *qho = new double[nx*ny], *vx = new double[nx*ny], *vy = new double[nx*ny];
+    double *sensitivity = new double[nx*ny];
 
     std::vector<double> s(nx*ny, 1.0);
     MMA<double> optimizer(s.size(), 1, 1.0,
@@ -60,6 +61,7 @@ int main() {
         //--------------------Set inverse permeation--------------------        
         for (int i = 0; i < s.size(); i++) {            
             alpha[i] = alpha0*q*(1.0 - s[i])/(s[i] + q);
+            sensitivity[i] = 0.0;
         }
 
         //--------------------Direct analyze--------------------
@@ -107,6 +109,7 @@ int main() {
                 }
             }                               //  Boundary condition (inlet)
             ANS2::ExternalForceBrinkman(particle, alpha, &rho[nx*ny*t], &ux[nx*ny*t], &uy[nx*ny*t]);        //  External force by Brinkman model
+            ANS2::UpdateSensitivity(particle, &ux[nx*ny*t], &uy[nx*ny*t], sensitivity);             //  Update sensitivity
         }
 
         //--------------------Get sensitivity--------------------
@@ -123,19 +126,19 @@ int main() {
         }
         std::vector<double> dfds(s.size(), 0.0);
         for (int i = 0; i < s.size(); i++) {  
-            dfds[i] = scale0*3.0*(vx[i]*ux[nx*ny*tmax + i] + vy[i]*uy[nx*ny*tmax + i])*(-alpha0*q*(q + 1.0)/pow(q + s[i], 2.0));
+            dfds[i] = scale0*sensitivity[i]*(-alpha0*q*(q + 1.0)/pow(q + s[i], 2.0));
         }
 
         //--------------------Export result--------------------
         VTKExport file("result/pipebend" + std::to_string(k) + ".vtk", nx, ny);
-        file.AddPointScaler("rho", [&](int _i, int _j, int _k) { return rho[nx*ny*tmax + particle.GetIndex(_i, _j)]; });
+        file.AddPointScaler("p", [&](int _i, int _j, int _k) { return rho[nx*ny*tmax + particle.GetIndex(_i, _j)]/3.0; });
         file.AddPointVector("u", 
             [&](int _i, int _j, int _k) { return ux[nx*ny*tmax + particle.GetIndex(_i, _j)]; },
             [&](int _i, int _j, int _k) { return uy[nx*ny*tmax + particle.GetIndex(_i, _j)]; },
             [](int _i, int _j, int _k) { return 0.0; }
         );
         file.AddPointScaler("s", [&](int _i, int _j, int _k) { return s[particle.GetIndex(_i, _j)]; });
-        file.AddPointScaler("dfds", [&](int _i, int _j, int _k) { return dfds[particle.GetIndex(_i, _j)]; });
+        file.AddPointScaler("dfds", [&](int _i, int _j, int _k) { return dfds[particle.GetIndex(_i, _j)]; });        
         file.AddPointScaler("q", [&](int _i, int _j, int _k) { return qho[particle.GetIndex(_i, _j)]; });
         file.AddPointVector("v", 
             [&](int _i, int _j, int _k) { return vx[particle.GetIndex(_i, _j)]; },
@@ -158,6 +161,7 @@ int main() {
     delete[] alpha;
     delete[] rho;   delete[] ux;    delete[] uy;
     delete[] qho;   delete[] vx;    delete[] vy;
+    delete[] sensitivity;
 
     return 0;
 }

@@ -24,12 +24,12 @@ public:
 
         void SetBarrier(int _i, int _j, int _k, bool _isbarrier);
         void SetBoundary(int _i, int _j, int _k, BOUNDARYTYPE _boundarytype);
-        void SetRho(int _i, int _j, T _rho, T _u);                      //  Set boundary condition for NavierStokes  
-        void SetU(int _i, int _j, T _ux, T _uy);
-        void SetTemperature(int _i, int _j, int _temperature);          //  Set boundary condition for Advection
-        void SetFlux(int _i, int _j, T _ux, T _uy, T _q);
-        void SetiRho(int _i, int _j);                                   //  Set boundary condition for Adjoint of NavierStokes  
-        void SetiU(int _i, int _j, T _ux, T _uy);
+        void SetRho(int _i, int _j, int _k, T _rho, T _u0, T _u1);      //  Set boundary condition for NavierStokes  
+        void SetU(int _i, int _j, int _k, T _ux, T _uy, T _uz);
+        void SetTemperature(int _i, int _j, int _k, int _temperature);  //  Set boundary condition for Advection
+        void SetFlux(int _i, int _j, int _k, T _ux, T _uy, T _uz, T _q);
+        void SetiRho(int _i, int _j, int _k);                           //  Set boundary condition for Adjoint of NavierStokes  
+        void SetiU(int _i, int _j, int _k, T _ux, T _uy, T _uz);
 
         void Stream();
         void iStream();
@@ -258,28 +258,50 @@ public:
 
 
     template<class T>
-    void D3Q15<T>::SetTemperature(int _i, int _j, int _temperature) {
-        int ij = this->ny*_i + _j;
+    void D3Q15<T>::SetTemperature(int _i, int _j, int _k, int _temperature) {
+        int ijk = _i + this->nx*_j + this->nx*this->ny*_k;
         if (_i == 0) {
-            T temperature0 = 6.0*(_temperature - this->ft[0][ij] - this->ft[2][ij] - this->ft[3][ij] - this->ft[4][ij] - this->ft[6][ij] - this->ft[7][ij]);
-            this->ft[1][ij] = temperature0/9.0;
-            this->ft[5][ij] = temperature0/36.0;
-            this->ft[8][ij] = temperature0/36.0;
+            T temperature0 = 6.0*(_temperature - this->ft[0][ijk] - this->ft[2][ijk] - this->ft[3][ijk] - this->ft[4][ijk] - this->ft[5][ijk] - this->ft[6][ijk] - this->ft[8][ijk] - this->ft[11][ijk] - this->ft[13][ijk] - this->ft[14][ijk]);
+            this->ft[1][ijk] = temperature0/9.0;
+            this->ft[7][ijk] = temperature0/72.0;
+            this->ft[9][ijk] = temperature0/72.0;
+            this->ft[10][ijk] = temperature0/72.0;
+            this->ft[12][ijk] = temperature0/72.0;
         } else if (_i == this->nx - 1) {
-            T temperature0 = 6.0*(_temperature - this->ft[0][ij] - this->ft[1][ij] - this->ft[2][ij] - this->ft[4][ij] - this->ft[5][ij] - this->ft[8][ij]);
-            this->ft[3][ij] = temperature0/9.0;
-            this->ft[6][ij] = temperature0/36.0;
-            this->ft[7][ij] = temperature0/36.0;
+            T temperature0 = 6.0*(_temperature - this->ft[0][ijk] - this->ft[1][ijk] - this->ft[2][ijk] - this->ft[3][ijk] - this->ft[5][ijk] - this->ft[6][ijk] - this->ft[7][ijk] - this->ft[9][ijk] - this->ft[10][ijk] - this->ft[12][ijk]);
+            this->ft[4][ijk] = temperature0/9.0;
+            this->ft[8][ijk] = temperature0/72.0;
+            this->ft[11][ijk] = temperature0/72.0;
+            this->ft[13][ijk] = temperature0/72.0;
+            this->ft[14][ijk] = temperature0/72.0;
         } else if (_j == 0) {
-            T temperature0 = 6.0*(_temperature - this->ft[0][ij] - this->ft[1][ij] - this->ft[3][ij] - this->ft[4][ij] - this->ft[7][ij] - this->ft[8][ij]);
-            this->ft[2][ij] = temperature0/9.0;
-            this->ft[5][ij] = temperature0/36.0;
-            this->ft[6][ij] = temperature0/36.0;
+            T temperature0 = 6.0*(_temperature - this->ft[0][ijk] - this->ft[1][ijk] - this->ft[3][ijk] - this->ft[4][ijk] - this->ft[5][ijk] - this->ft[6][ijk] - this->ft[9][ijk] - this->ft[11][ijk] - this->ft[12][ijk] - this->ft[14][ijk]);
+            this->ft[2][ijk] = temperature0/9.0;
+            this->ft[7][ijk] = temperature0/72.0;
+            this->ft[8][ijk] = temperature0/72.0;
+            this->ft[10][ijk] = temperature0/72.0;
+            this->ft[13][ijk] = temperature0/72.0;
         } else if (_j == this->ny - 1) {
-            T temperature0 = 6.0*(_temperature - this->ft[0][ij] - this->ft[1][ij] - this->ft[2][ij] - this->ft[3][ij] - this->ft[5][ij] - this->ft[6][ij]);
-            this->ft[4][ij] = temperature0/9.0;
-            this->ft[7][ij] = temperature0/36.0;
-            this->ft[8][ij] = temperature0/36.0;
+            T temperature0 = 6.0*(_temperature - this->ft[0][ijk] - this->ft[1][ijk] - this->ft[2][ijk] - this->ft[3][ijk] - this->ft[4][ijk] - this->ft[6][ijk] - this->ft[7][ijk] - this->ft[8][ijk] - this->ft[10][ijk] - this->ft[13][ijk]);
+            this->ft[5][ijk] = temperature0/9.0;
+            this->ft[9][ijk] = temperature0/72.0;
+            this->ft[11][ijk] = temperature0/72.0;
+            this->ft[12][ijk] = temperature0/72.0;
+            this->ft[14][ijk] = temperature0/72.0;
+        } else if (_k == 0) {
+            T temperature0 = 6.0*(_temperature - this->ft[0][ijk] - this->ft[1][ijk] - this->ft[2][ijk] - this->ft[4][ijk] - this->ft[5][ijk] - this->ft[6][ijk] - this->ft[10][ijk] - this->ft[11][ijk] - this->ft[12][ijk] - this->ft[13][ijk]);
+            this->ft[3][ijk] = temperature0/9.0;
+            this->ft[7][ijk] = temperature0/72.0;
+            this->ft[8][ijk] = temperature0/72.0;
+            this->ft[9][ijk] = temperature0/72.0;
+            this->ft[14][ijk] = temperature0/72.0;
+        } else if (_k == this->nz - 1) {
+            T temperature0 = 6.0*(_temperature - this->ft[0][ijk] - this->ft[1][ijk] - this->ft[2][ijk] - this->ft[3][ijk] - this->ft[4][ijk] - this->ft[5][ijk] - this->ft[7][ijk] - this->ft[8][ijk] - this->ft[9][ijk] - this->ft[14][ijk]);
+            this->ft[6][ijk] = temperature0/9.0;
+            this->ft[10][ijk] = temperature0/72.0;
+            this->ft[11][ijk] = temperature0/72.0;
+            this->ft[12][ijk] = temperature0/72.0;
+            this->ft[13][ijk] = temperature0/72.0;
         } else {
             //  境界に沿っていないことを警告する
         }
@@ -287,28 +309,50 @@ public:
     
     
     template<class T>
-    void D3Q15<T>::SetFlux(int _i, int _j, T _ux, T _uy, T _q) {
-        int ij = this->ny*_i + _j;
+    void D3Q15<T>::SetFlux(int _i, int _j, int _k, T _ux, T _uy, T _uz, T _q) {
+        int ijk = _i + this->nx*_j + this->nx*this->ny*_k;
         if (_i == 0) {
-            T temperature0 = 6.0*(_q + this->ft[3][ij] + this->ft[6][ij] + this->ft[7][ij])/(1.0 - 3.0*_ux);
-            this->ft[1][ij] = temperature0*(1.0 + 3.0*_ux)/9.0;
-            this->ft[5][ij] = temperature0*(1.0 + 3.0*_ux + 3.0*_uy)/36.0;
-            this->ft[8][ij] = temperature0*(1.0 + 3.0*_ux + 3.0*_uy)/36.0;
-        } else if (_i == this->g->nx - 1) {
-            T temperature0 = 6.0*(-_q + this->ft[1][ij] + this->ft[5][ij] + this->ft[8][ij])/(1.0 + 3.0*_ux);
-            this->ft[3][ij] = temperature0*(1.0 - 3.0*_ux)/9.0;
-            this->ft[6][ij] = temperature0*(1.0 - 3.0*_ux + 3.0*_uy)/36.0;
-            this->ft[7][ij] = temperature0*(1.0 - 3.0*_ux - 3.0*_uy)/36.0;
+            T temperature0 = 6.0*(_q + this->ft[4][ijk] + this->ft[8][ijk] + this->ft[11][ijk] + this->ft[13][ijk] + this->ft[14][ijk])/(1.0 - 3.0*_ux);
+            this->ft[1][ijk] = temperature0*(1.0 + 3.0*_ux)/9.0;
+            this->ft[7][ijk] = temperature0*(1.0 + 3.0*_ux + 3.0*_uy + 3.0*_uz)/72.0;
+            this->ft[9][ijk] = temperature0*(1.0 + 3.0*_ux - 3.0*_uy + 3.0*_uz)/72.0;
+            this->ft[10][ijk] = temperature0*(1.0 + 3.0*_ux + 3.0*_uy - 3.0*_uz)/72.0;
+            this->ft[12][ijk] = temperature0*(1.0 + 3.0*_ux - 3.0*_uy - 3.0*_uz)/72.0;
+        } else if (_i == this->nx - 1) {
+            T temperature0 = 6.0*(-_q + this->ft[1][ijk] + this->ft[7][ijk] + this->ft[9][ijk] + this->ft[10][ijk] + this->ft[12][ijk])/(1.0 + 3.0*_ux);
+            this->ft[4][ijk] = temperature0*(1.0 - 3.0*_ux)/9.0;
+            this->ft[8][ijk] = temperature0*(1.0 - 3.0*_ux + 3.0*_uy + 3.0*_uz)/72.0;
+            this->ft[11][ijk] = temperature0*(1.0 - 3.0*_ux - 3.0*_uy - 3.0*_uz)/72.0;
+            this->ft[13][ijk] = temperature0*(1.0 - 3.0*_ux + 3.0*_uy - 3.0*_uz)/72.0;
+            this->ft[14][ijk] = temperature0*(1.0 - 3.0*_ux - 3.0*_uy + 3.0*_uz)/72.0;
         } else if (_j == 0) {
-            T temperature0 = 6.0*(_q + this->ft[4][ij] + this->ft[7][ij] + this->ft[8][ij])/(1.0 - 3.0*_uy);
-            this->ft[2][ij] = temperature0*(1.0 + 3.0*_uy)/9.0;
-            this->ft[5][ij] = temperature0*(1.0 + 3.0*_ux + 3.0*_uy)/36.0;
-            this->ft[6][ij] = temperature0*(1.0 - 3.0*_ux + 3.0*_uy)/36.0;
+            T temperature0 = 6.0*(_q + this->ft[5][ijk] + this->ft[9][ijk] + this->ft[11][ijk] + this->ft[12][ijk] + this->ft[14][ijk])/(1.0 - 3.0*_uy);
+            this->ft[2][ijk] = temperature0*(1.0 + 3.0*_uy)/9.0;
+            this->ft[7][ijk] = temperature0*(1.0 + 3.0*_ux + 3.0*_uy + 3.0*_uz)/72.0;
+            this->ft[8][ijk] = temperature0*(1.0 - 3.0*_ux + 3.0*_uy + 3.0*_uz)/72.0;
+            this->ft[10][ijk] = temperature0*(1.0 + 3.0*_ux + 3.0*_uy - 3.0*_uz)/72.0;
+            this->ft[13][ijk] = temperature0*(1.0 - 3.0*_ux + 3.0*_uy - 3.0*_uz)/72.0;
         } else if (_j == this->ny - 1) {
-            T temperature0 = 6.0*(-_q + this->ft[2][ij] + this->ft[5][ij] + this->ft[6][ij])/(1.0 + 3.0*_uy);
-            this->ft[4][ij] = temperature0*(1.0 - 3.0*_uy)/9.0;
-            this->ft[7][ij] = temperature0*(1.0 - 3.0*_ux - 3.0*_uy)/36.0;
-            this->ft[8][ij] = temperature0*(1.0 + 3.0*_ux - 3.0*_uy)/36.0;
+            T temperature0 = 6.0*(-_q + this->ft[2][ijk] + this->ft[7][ijk] + this->ft[8][ijk] + this->ft[10][ijk] + this->ft[13][ijk])/(1.0 + 3.0*_uy);
+            this->ft[5][ijk] = temperature0*(1.0 - 3.0*_uy)/9.0;
+            this->ft[9][ijk] = temperature0*(1.0 + 3.0*_ux - 3.0*_uy + 3.0*_uz)/72.0;
+            this->ft[11][ijk] = temperature0*(1.0 - 3.0*_ux - 3.0*_uy - 3.0*_uz)/72.0;
+            this->ft[12][ijk] = temperature0*(1.0 + 3.0*_ux - 3.0*_uy - 3.0*_uz)/72.0;
+            this->ft[14][ijk] = temperature0*(1.0 - 3.0*_ux - 3.0*_uy + 3.0*_uz)/72.0;
+        } else if (_k == 0) {
+            T temperature0 = 6.0*(_q + this->ft[6][ijk] + this->ft[10][ijk] + this->ft[11][ijk] + this->ft[12][ijk] + this->ft[13][ijk])/(1.0 - 3.0*_uz);
+            this->ft[3][ijk] = temperature0*(1.0 + 3.0*_uz)/9.0;
+            this->ft[7][ijk] = temperature0*(1.0 + 3.0*_ux + 3.0*_uy + 3.0*_uz)/72.0;
+            this->ft[8][ijk] = temperature0*(1.0 - 3.0*_ux + 3.0*_uy + 3.0*_uz)/72.0;
+            this->ft[9][ijk] = temperature0*(1.0 + 3.0*_ux - 3.0*_uy + 3.0*_uz)/72.0;
+            this->ft[14][ijk] = temperature0*(1.0 - 3.0*_ux - 3.0*_uy + 3.0*_uz)/72.0;
+        } else if (_k == this->nz - 1) {
+            T temperature0 = 6.0*(-_q + this->ft[3][ijk] + this->ft[7][ijk] + this->ft[8][ijk] + this->ft[9][ijk] + this->ft[14][ijk])/(1.0 + 3.0*_uz);
+            this->ft[6][ijk] = temperature0*(1.0 - 3.0*_uz)/9.0;
+            this->ft[10][ijk] = temperature0*(1.0 + 3.0*_ux + 3.0*_uy - 3.0*_uz)/72.0;
+            this->ft[11][ijk] = temperature0*(1.0 - 3.0*_ux - 3.0*_uy - 3.0*_uz)/72.0;
+            this->ft[12][ijk] = temperature0*(1.0 + 3.0*_ux - 3.0*_uy - 3.0*_uz)/72.0;
+            this->ft[13][ijk] = temperature0*(1.0 - 3.0*_ux + 3.0*_uy - 3.0*_uz)/72.0;
         } else {
             //  境界に沿っていないことを警告する
         }

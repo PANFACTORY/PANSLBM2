@@ -268,8 +268,8 @@ public:
             T temperature0 = 6.0*(_q + this->ft[3][ij] + this->ft[6][ij] + this->ft[7][ij])/(1.0 - 3.0*_ux);
             this->ft[1][ij] = temperature0*(1.0 + 3.0*_ux)/9.0;
             this->ft[5][ij] = temperature0*(1.0 + 3.0*_ux + 3.0*_uy)/36.0;
-            this->ft[8][ij] = temperature0*(1.0 + 3.0*_ux + 3.0*_uy)/36.0;
-        } else if (_i == this->g->nx - 1) {
+            this->ft[8][ij] = temperature0*(1.0 + 3.0*_ux - 3.0*_uy)/36.0;
+        } else if (_i == this->nx - 1) {
             T temperature0 = 6.0*(-_q + this->ft[1][ij] + this->ft[5][ij] + this->ft[8][ij])/(1.0 + 3.0*_ux);
             this->ft[3][ij] = temperature0*(1.0 - 3.0*_ux)/9.0;
             this->ft[6][ij] = temperature0*(1.0 - 3.0*_ux + 3.0*_uy)/36.0;

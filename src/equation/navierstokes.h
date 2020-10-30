@@ -9,7 +9,7 @@
 #include <cassert>
 
 namespace PANSLBM2 {
-    namespace NS2 {
+    namespace NS {
         //*********************************************************************
         //  Navier-Stokes 2D    :   Update macroscopic values, rho, ux, uy
         //*********************************************************************
@@ -31,6 +31,29 @@ namespace PANSLBM2 {
         }
 
         //*********************************************************************
+        //  Navier-Stokes 3D    :   Update macroscopic values, rho, ux, uy, uz
+        //*********************************************************************
+        template<class T, template<class>class P>
+        void UpdateMacro(P<T>& _particle, T* _rho, T* _ux, T* _uy, T* _uz) {
+            assert(P<T>::nd == 3);
+            for (int i = 0; i < _particle.np; i++) {
+                _rho[i] = T();
+                _ux[i] = T();
+                _uy[i] = T();
+                _uz[i] = T();
+                for (int j = 0; j < P<T>::nc; j++) {
+                    _rho[i] += _particle.ft[j][i];
+                    _ux[i] += P<T>::cx[j]*_particle.ft[j][i];
+                    _uy[i] += P<T>::cy[j]*_particle.ft[j][i];
+                    _uz[i] += P<T>::cz[j]*_particle.ft[j][i];
+                }
+                _ux[i] /= _rho[i];
+                _uy[i] /= _rho[i];
+                _uz[i] /= _rho[i];
+            }
+        }
+
+        //*********************************************************************
         //  Navier-Stokes 2D    :   Collision term
         //*********************************************************************
         template<class T, template<class>class P>
@@ -41,6 +64,22 @@ namespace PANSLBM2 {
                 for (int j = 0; j < P<T>::nc; j++) {
                     T ciu = P<T>::cx[j]*_ux[i] + P<T>::cy[j]*_uy[i];
                     T uu = _ux[i]*_ux[i] + _uy[i]*_uy[i];
+                    _particle.ftp1[j][i] = (1.0 - omega)*_particle.ft[j][i] + omega*P<T>::ei[j]*_rho[i]*(1.0 + 3.0*ciu + 4.5*ciu*ciu - 1.5*uu);
+                }
+            }
+        }
+
+        //*********************************************************************
+        //  Navier-Stokes 3D    :   Collision term
+        //*********************************************************************
+        template<class T, template<class>class P>
+        void Collision(T _viscosity, P<T>& _particle, T* _rho, T* _ux, T* _uy, T* _uz) {
+            assert(P<T>::nd == 3);
+            T omega = 1.0/(3.0*_viscosity*_particle.dt/(_particle.dx*_particle.dx) + 0.5);
+            for (int i = 0; i < _particle.np; i++) {
+                for (int j = 0; j < P<T>::nc; j++) {
+                    T ciu = P<T>::cx[j]*_ux[i] + P<T>::cy[j]*_uy[i] + P<T>::cz[j]*_uz[i];
+                    T uu = _ux[i]*_ux[i] + _uy[i]*_uy[i] + _uz[i]*_uz[i];
                     _particle.ftp1[j][i] = (1.0 - omega)*_particle.ft[j][i] + omega*P<T>::ei[j]*_rho[i]*(1.0 + 3.0*ciu + 4.5*ciu*ciu - 1.5*uu);
                 }
             }
@@ -125,6 +164,19 @@ namespace PANSLBM2 {
             for (int j = 0; j < P<T>::nc; j++) {
                 T ciu = P<T>::cx[j]*_ux + P<T>::cy[j]*_uy; 
                 T uu = _ux*_ux + _uy*_uy;
+                _particle.ft[j][_i] = P<T>::ei[j]*_rho*(1.0 + 3.0*ciu + 4.5*ciu*ciu - 1.5*uu);
+            }
+        }
+
+        //*********************************************************************
+        //  Navier-Stokes 3D    :   Initial condition
+        //*********************************************************************
+        template<class T, template<class>class P>
+        void InitialCondition(int _i, P<T>& _particle, T _rho, T _ux, T _uy, T _uz) {
+            assert(P<T>::nd == 3 && 0 <= _i && _i < _particle.np);
+            for (int j = 0; j < P<T>::nc; j++) {
+                T ciu = P<T>::cx[j]*_ux + P<T>::cy[j]*_uy + P<T>::cz[j]*_uz; 
+                T uu = _ux*_ux + _uy*_uy + _uz*_uz;
                 _particle.ft[j][_i] = P<T>::ei[j]*_rho*(1.0 + 3.0*ciu + 4.5*ciu*ciu - 1.5*uu);
             }
         }

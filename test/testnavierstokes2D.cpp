@@ -23,15 +23,15 @@ int main() {
         particle.SetBoundary(i, ny - 1, OTHER);
     }                                               //  Set boundary condition
     for (int i = 0; i < nx*ny; i++) {
-        NS2::InitialCondition(i, particle, 1.0, 0.0, 0.0);
+        NS::InitialCondition(i, particle, 1.0, 0.0, 0.0);
     }                                               //  Set initial condition
     
     std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
 
     //--------------------Direct analyze--------------------
     for (int t = 0; t < tmax; t++) {
-        NS2::UpdateMacro(particle, rho, u, v);      //  Update macroscopic values
-        NS2::Collision(nu, particle, rho, u, v);    //  Collision
+        NS::UpdateMacro(particle, rho, u, v);       //  Update macroscopic values
+        NS::Collision(nu, particle, rho, u, v);     //  Collision
         particle.Stream();                          //  Stream
         for (int i = 0; i < nx; i++) {
             particle.SetU(i, ny - 1, u0, 0.0);

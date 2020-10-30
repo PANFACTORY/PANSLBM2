@@ -38,7 +38,7 @@ public:
         BOUNDARYTYPE GetBoundary(int _i, int _j, int _k) const;
         int GetIndex(int _i, int _j, int _k);
         
-        const int nx, ny, nz, np;                                       //  nx&ny : number of points along x&y coordinate, np : number of all points
+        const int nx, ny, nz, np;                                       //  nx&ny&nz : number of points along x&y&z coordinate, np : number of all points
         static const int nc = 15, nd = 3, cx[nc], cy[nc], cz[nc];       //  nc : number of particles, nd : number of dimensions
         static const T ei[nc];
 
@@ -416,24 +416,44 @@ public:
 
 
     template<class T>
-    void D3Q15<T>::SetiRho(int _i, int _j) {
-        int ij = this->ny*_i + _j;
+    void D3Q15<T>::SetiRho(int _i, int _j, int _k) {
+        int ijk = _i + this->nx*_j + this->nx*this->ny*_k;
         if (_i == 0) {
-            this->ft[3][ij] = this->ft[1][ij] - (4.0*this->ft[1][ij] + this->ft[5][ij] + this->ft[8][ij])/3.0;
-            this->ft[6][ij] = this->ft[8][ij] - (4.0*this->ft[1][ij] + this->ft[5][ij] + this->ft[8][ij])/3.0;
-            this->ft[7][ij] = this->ft[5][ij] - (4.0*this->ft[1][ij] + this->ft[5][ij] + this->ft[8][ij])/3.0;
+            this->ft[4][ijk] = this->ft[1][ijk] - (8.0*this->ft[1][ijk] + this->ft[7][ijk] + this->ft[9][ijk] + this->ft[10][ijk] + this->ft[12][ijk])/6.0;
+            this->ft[8][ijk] = this->ft[12][ijk] - (8.0*this->ft[1][ijk] + this->ft[7][ijk] + this->ft[9][ijk] + this->ft[10][ijk] + this->ft[12][ijk])/6.0;
+            this->ft[11][ijk] = this->ft[7][ijk] - (8.0*this->ft[1][ijk] + this->ft[7][ijk] + this->ft[9][ijk] + this->ft[10][ijk] + this->ft[12][ijk])/6.0;
+            this->ft[13][ijk] = this->ft[9][ijk] - (8.0*this->ft[1][ijk] + this->ft[7][ijk] + this->ft[9][ijk] + this->ft[10][ijk] + this->ft[12][ijk])/6.0;
+            this->ft[14][ijk] = this->ft[10][ijk] - (8.0*this->ft[1][ijk] + this->ft[7][ijk] + this->ft[9][ijk] + this->ft[10][ijk] + this->ft[12][ijk])/6.0;
         } else if (_i == this->nx - 1) {
-            this->ft[1][ij] = this->ft[3][ij] - (4.0*this->ft[3][ij] + this->ft[6][ij] + this->ft[7][ij])/3.0;
-            this->ft[5][ij] = this->ft[7][ij] - (4.0*this->ft[3][ij] + this->ft[6][ij] + this->ft[7][ij])/3.0;
-            this->ft[8][ij] = this->ft[6][ij] - (4.0*this->ft[3][ij] + this->ft[6][ij] + this->ft[7][ij])/3.0;
+            this->ft[1][ijk] = this->ft[4][ijk] - (8.0*this->ft[4][ijk] + this->ft[8][ijk] + this->ft[11][ijk] + this->ft[13][ijk] + this->ft[14][ijk])/6.0;
+            this->ft[7][ijk] = this->ft[11][ijk] - (8.0*this->ft[4][ijk] + this->ft[8][ijk] + this->ft[11][ijk] + this->ft[13][ijk] + this->ft[14][ijk])/6.0;
+            this->ft[9][ijk] = this->ft[13][ijk] - (8.0*this->ft[4][ijk] + this->ft[8][ijk] + this->ft[11][ijk] + this->ft[13][ijk] + this->ft[14][ijk])/6.0;
+            this->ft[10][ijk] = this->ft[14][ijk] - (8.0*this->ft[4][ijk] + this->ft[8][ijk] + this->ft[11][ijk] + this->ft[13][ijk] + this->ft[14][ijk])/6.0;
+            this->ft[12][ijk] = this->ft[8][ijk] - (8.0*this->ft[4][ijk] + this->ft[8][ijk] + this->ft[11][ijk] + this->ft[13][ijk] + this->ft[14][ijk])/6.0;
         } else if (_j == 0) {
-            this->ft[4][ij] = this->ft[2][ij] - (4.0*this->ft[2][ij] + this->ft[5][ij] + this->ft[6][ij])/3.0;
-            this->ft[7][ij] = this->ft[5][ij] - (4.0*this->ft[2][ij] + this->ft[5][ij] + this->ft[6][ij])/3.0;
-            this->ft[8][ij] = this->ft[6][ij] - (4.0*this->ft[2][ij] + this->ft[5][ij] + this->ft[6][ij])/3.0;
+            this->ft[5][ijk] = this->ft[2][ijk] - (8.0*this->ft[2][ijk] + this->ft[7][ijk] + this->ft[8][ijk] + this->ft[10][ijk] + this->ft[13][ijk])/6.0;
+            this->ft[9][ijk] = this->ft[13][ijk] - (8.0*this->ft[2][ijk] + this->ft[7][ijk] + this->ft[8][ijk] + this->ft[10][ijk] + this->ft[13][ijk])/6.0;
+            this->ft[11][ijk] = this->ft[7][ijk] - (8.0*this->ft[2][ijk] + this->ft[7][ijk] + this->ft[8][ijk] + this->ft[10][ijk] + this->ft[13][ijk])/6.0;
+            this->ft[12][ijk] = this->ft[8][ijk] - (8.0*this->ft[2][ijk] + this->ft[7][ijk] + this->ft[8][ijk] + this->ft[10][ijk] + this->ft[13][ijk])/6.0;
+            this->ft[14][ijk] = this->ft[10][ijk] - (8.0*this->ft[2][ijk] + this->ft[7][ijk] + this->ft[8][ijk] + this->ft[10][ijk] + this->ft[13][ijk])/6.0;
         } else if (_j == this->ny - 1) {
-            this->ft[2][ij] = this->ft[4][ij] - (4.0*this->ft[4][ij] + this->ft[7][ij] + this->ft[8][ij])/3.0;
-            this->ft[5][ij] = this->ft[7][ij] - (4.0*this->ft[4][ij] + this->ft[7][ij] + this->ft[8][ij])/3.0;
-            this->ft[6][ij] = this->ft[8][ij] - (4.0*this->ft[4][ij] + this->ft[7][ij] + this->ft[8][ij])/3.0;
+            this->ft[2][ijk] = this->ft[5][ijk] - (8.0*this->ft[5][ijk] + this->ft[9][ijk] + this->ft[11][ijk] + this->ft[12][ijk] + this->ft[14][ijk])/6.0;
+            this->ft[7][ijk] = this->ft[11][ijk] - (8.0*this->ft[5][ijk] + this->ft[9][ijk] + this->ft[11][ijk] + this->ft[12][ijk] + this->ft[14][ijk])/6.0;
+            this->ft[8][ijk] = this->ft[12][ijk] - (8.0*this->ft[5][ijk] + this->ft[9][ijk] + this->ft[11][ijk] + this->ft[12][ijk] + this->ft[14][ijk])/6.0;
+            this->ft[10][ijk] = this->ft[14][ijk] - (8.0*this->ft[5][ijk] + this->ft[9][ijk] + this->ft[11][ijk] + this->ft[12][ijk] + this->ft[14][ijk])/6.0;
+            this->ft[13][ijk] = this->ft[9][ijk] - (8.0*this->ft[5][ijk] + this->ft[9][ijk] + this->ft[11][ijk] + this->ft[12][ijk] + this->ft[14][ijk])/6.0;
+        } else if (_k == 0) {
+            this->ft[6][ijk] = this->ft[3][ijk] - (8.0*this->ft[3][ijk] + this->ft[7][ijk] + this->ft[8][ijk] + this->ft[9][ijk] + this->ft[14][ijk])/6.0;
+            this->ft[10][ijk] = this->ft[14][ijk] - (8.0*this->ft[3][ijk] + this->ft[7][ijk] + this->ft[8][ijk] + this->ft[9][ijk] + this->ft[14][ijk])/6.0;
+            this->ft[11][ijk] = this->ft[7][ijk] - (8.0*this->ft[3][ijk] + this->ft[7][ijk] + this->ft[8][ijk] + this->ft[9][ijk] + this->ft[14][ijk])/6.0;
+            this->ft[12][ijk] = this->ft[8][ijk] - (8.0*this->ft[3][ijk] + this->ft[7][ijk] + this->ft[8][ijk] + this->ft[9][ijk] + this->ft[14][ijk])/6.0;
+            this->ft[13][ijk] = this->ft[9][ijk] - (8.0*this->ft[3][ijk] + this->ft[7][ijk] + this->ft[8][ijk] + this->ft[9][ijk] + this->ft[14][ijk])/6.0;
+        } else if (_k == this->nz - 1) {
+            this->ft[3][ijk] = this->ft[6][ijk] - (8.0*this->ft[6][ijk] + this->ft[10][ijk] + this->ft[11][ijk] + this->ft[12][ijk] + this->ft[13][ijk])/6.0;
+            this->ft[7][ijk] = this->ft[11][ijk] - (8.0*this->ft[6][ijk] + this->ft[10][ijk] + this->ft[11][ijk] + this->ft[12][ijk] + this->ft[13][ijk])/6.0;
+            this->ft[8][ijk] = this->ft[12][ijk] - (8.0*this->ft[6][ijk] + this->ft[10][ijk] + this->ft[11][ijk] + this->ft[12][ijk] + this->ft[13][ijk])/6.0;
+            this->ft[9][ijk] = this->ft[13][ijk] - (8.0*this->ft[6][ijk] + this->ft[10][ijk] + this->ft[11][ijk] + this->ft[12][ijk] + this->ft[13][ijk])/6.0;
+            this->ft[14][ij] = this->ft[10][ijk] - (8.0*this->ft[6][ijk] + this->ft[10][ijk] + this->ft[11][ijk] + this->ft[12][ijk] + this->ft[13][ijk])/6.0;
         } else {
             //  境界に沿っていないことを警告する
         }

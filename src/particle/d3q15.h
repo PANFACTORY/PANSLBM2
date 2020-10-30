@@ -251,7 +251,7 @@ public:
             T ux = _u0;
             T uy = _u1;
             T uz = -1.0 - (this->ft[0][ijk] + this->ft[1][ijk] + this->ft[2][ijk] + this->ft[4][ijk] + this->ft[5][ijk] + 2.0*(this->ft[3][ijk] + this->ft[7][ijk] + this->ft[8][ijk] + this->ft[9][ijk] + this->ft[14][ijk]))/_rho;
-            this->ft[6][ijk] = this->ft[3][ijk] - 2.0*_rho*uz0/3.0;
+            this->ft[6][ijk] = this->ft[3][ijk] - 2.0*_rho*uz/3.0;
             this->ft[10][ijk] = this->ft[14][ijk] - 0.25*(this->ft[1][ijk] - this->ft[4][ijk] - _rho*ux) - 0.25*(this->ft[2][ijk] - this->ft[5][ijk] - _rho*uy) - _rho*uz/12.0;
             this->ft[11][ijk] = this->ft[7][ijk] + 0.25*(this->ft[1][ijk] - this->ft[4][ijk] - _rho*ux) + 0.25*(this->ft[2][ijk] - this->ft[5][ijk] - _rho*uy) - _rho*uz/12.0;
             this->ft[12][ijk] = this->ft[8][ijk] - 0.25*(this->ft[1][ijk] - this->ft[4][ijk] - _rho*ux) + 0.25*(this->ft[2][ijk] - this->ft[5][ijk] - _rho*uy) - _rho*uz/12.0;
@@ -290,9 +290,9 @@ public:
             T rho = (this->ft[0][ijk] + this->ft[1][ijk] + this->ft[3][ijk] + this->ft[4][ijk] + this->ft[6][ijk] + 2.0*(this->ft[2][ijk] + this->ft[7][ijk] + this->ft[8][ijk] + this->ft[10][ijk] + this->ft[13][ijk]))/(1.0 + _uy);
             this->ft[5][ijk] = this->ft[2][ijk] - 2.0*rho*_uy/3.0;
             this->ft[9][ijk] = this->ft[13][ijk] - 0.25*(this->ft[1][ijk] - this->ft[4][ijk] - rho*_ux) - rho*_uy/12.0 - 0.25*(this->ft[3][ijk] - this->ft[6][ijk] - rho*_uz);
-            this->ft[11][ijk] = this->ft[7][ijk] + 0.25*(this->ft[1][ijk] - this->ft[4][ijk] - rho*_ux) - _rho*uy/12.0 + 0.25*(this->ft[3][ijk] - this->ft[6][ijk] - rho*_uz);
-            this->ft[12][ijk] = this->ft[8][ijk] - 0.25*(this->ft[1][ijk] - this->ft[4][ijk] - rho*_ux) - _rho*uy/12.0 + 0.25*(this->ft[3][ijk] - this->ft[6][ijk] - rho*_uz);
-            this->ft[14][ijk] = this->ft[10][ijk] + 0.25*(this->ft[1][ijk] - this->ft[4][ijk] - rho*_ux) - _rho*uy/12.0 - 0.25*(this->ft[3][ijk] - this->ft[6][ijk] - rho*_uz);
+            this->ft[11][ijk] = this->ft[7][ijk] + 0.25*(this->ft[1][ijk] - this->ft[4][ijk] - rho*_ux) - rho*_uy/12.0 + 0.25*(this->ft[3][ijk] - this->ft[6][ijk] - rho*_uz);
+            this->ft[12][ijk] = this->ft[8][ijk] - 0.25*(this->ft[1][ijk] - this->ft[4][ijk] - rho*_ux) - rho*_uy/12.0 + 0.25*(this->ft[3][ijk] - this->ft[6][ijk] - rho*_uz);
+            this->ft[14][ijk] = this->ft[10][ijk] + 0.25*(this->ft[1][ijk] - this->ft[4][ijk] - rho*_ux) - rho*_uy/12.0 - 0.25*(this->ft[3][ijk] - this->ft[6][ijk] - rho*_uz);
         } else if (_k == 0) {
             T rho = (this->ft[0][ijk] + this->ft[1][ijk] + this->ft[2][ijk] + this->ft[4][ijk] + this->ft[5][ijk] + 2.0*(this->ft[6][ijk] + this->ft[10][ijk] + this->ft[11][ijk] + this->ft[12][ijk] + this->ft[13][ijk]))/(1.0 - _uz);
             this->ft[3][ijk] = this->ft[6][ijk] + 2.0*rho*_uz/3.0;
@@ -302,7 +302,7 @@ public:
             this->ft[14][ijk] = this->ft[10][ijk] + 0.25*(this->ft[1][ijk] - this->ft[4][ijk] - rho*_ux) + 0.25*(this->ft[2][ijk] - this->ft[5][ijk] - rho*_uy) + rho*_uz/12.0;
         } else if (_k == this->nz - 1) {
             T rho = (this->ft[0][ijk] + this->ft[1][ijk] + this->ft[2][ijk] + this->ft[4][ijk] + this->ft[5][ijk] + 2.0*(this->ft[3][ijk] + this->ft[7][ijk] + this->ft[8][ijk] + this->ft[9][ijk] + this->ft[14][ijk]))/(1.0 + _uz);
-            this->ft[6][ijk] = this->ft[3][ijk] - 2.0*rho*_uz0/3.0;
+            this->ft[6][ijk] = this->ft[3][ijk] - 2.0*rho*_uz/3.0;
             this->ft[10][ijk] = this->ft[14][ijk] - 0.25*(this->ft[1][ijk] - this->ft[4][ijk] - rho*_ux) - 0.25*(this->ft[2][ijk] - this->ft[5][ijk] - rho*_uy) - rho*_uz/12.0;
             this->ft[11][ijk] = this->ft[7][ijk] + 0.25*(this->ft[1][ijk] - this->ft[4][ijk] - rho*_ux) + 0.25*(this->ft[2][ijk] - this->ft[5][ijk] - rho*_uy) - rho*_uz/12.0;
             this->ft[12][ijk] = this->ft[8][ijk] - 0.25*(this->ft[1][ijk] - this->ft[4][ijk] - rho*_ux) + 0.25*(this->ft[2][ijk] - this->ft[5][ijk] - rho*_uy) - rho*_uz/12.0;
@@ -453,7 +453,7 @@ public:
             this->ft[7][ijk] = this->ft[11][ijk] - (8.0*this->ft[6][ijk] + this->ft[10][ijk] + this->ft[11][ijk] + this->ft[12][ijk] + this->ft[13][ijk])/6.0;
             this->ft[8][ijk] = this->ft[12][ijk] - (8.0*this->ft[6][ijk] + this->ft[10][ijk] + this->ft[11][ijk] + this->ft[12][ijk] + this->ft[13][ijk])/6.0;
             this->ft[9][ijk] = this->ft[13][ijk] - (8.0*this->ft[6][ijk] + this->ft[10][ijk] + this->ft[11][ijk] + this->ft[12][ijk] + this->ft[13][ijk])/6.0;
-            this->ft[14][ij] = this->ft[10][ijk] - (8.0*this->ft[6][ijk] + this->ft[10][ijk] + this->ft[11][ijk] + this->ft[12][ijk] + this->ft[13][ijk])/6.0;
+            this->ft[14][ijk] = this->ft[10][ijk] - (8.0*this->ft[6][ijk] + this->ft[10][ijk] + this->ft[11][ijk] + this->ft[12][ijk] + this->ft[13][ijk])/6.0;
         } else {
             //  境界に沿っていないことを警告する
         }
@@ -516,7 +516,7 @@ public:
             this->ft[7][ijk] = this->ft[11][ijk] + rho;
             this->ft[8][ijk] = this->ft[12][ijk] + rho;
             this->ft[9][ijk] = this->ft[13][ijk] + rho;
-            this->ft[14][ij] = this->ft[10][ijk] + rho;
+            this->ft[14][ijk] = this->ft[10][ijk] + rho;
         } else {
             //  境界に沿っていないことを警告する
         }
@@ -533,7 +533,7 @@ public:
                         int ip1 = i - D3Q15<T>::cx[l] == -1 ? this->nx - 1 : (i - D3Q15<T>::cx[l] == this->nx ? 0 : i - D3Q15<T>::cx[l]);
                         int jp1 = j - D3Q15<T>::cy[l] == -1 ? this->ny - 1 : (j - D3Q15<T>::cy[l] == this->ny ? 0 : j - D3Q15<T>::cy[l]);
                         int kp1 = k - D3Q15<T>::cz[l] == -1 ? this->nz - 1 : (k - D3Q15<T>::cz[l] == this->nz ? 0 : k - D3Q15<T>::cz[l]);
-                        this->ft[l][i + this->nx*j + this->nx*this->ny*k] = this->ftp1[k][ip1 + this->nx*jp1 + this->nx*this->ny*kp1];
+                        this->ft[l][i + this->nx*j + this->nx*this->ny*k] = this->ftp1[l][ip1 + this->nx*jp1 + this->nx*this->ny*kp1];
                     }
                 }
             }
@@ -666,25 +666,25 @@ public:
 
         //  zmin and zmax
         for (int i = 0; i < this->nx; i++) {
-            for (int j = 0; j < this->ny; i++) {
+            for (int j = 0; j < this->ny; j++) {
                 int ij = i + this->nx*j;
 
                 //.....zmin.....
                 int ijmin = i + this->nx*j + this->nx*this->ny*0;
                 int ijminp1 = i + this->nx*j + this->nx*this->ny*1;
-                if (this->btzmin[ki] == OUTLET) {
+                if (this->btzmin[ij] == OUTLET) {
                     this->ft[3][ijmin] = this->ft[3][ijminp1];
                     this->ft[7][ijmin] = this->ft[7][ijminp1];
                     this->ft[8][ijmin] = this->ft[8][ijminp1];
                     this->ft[9][ijmin] = this->ft[9][ijminp1];
                     this->ft[14][ijmin] = this->ft[14][ijminp1];
-                } else if (this->btzmin[ki] == BARRIER) {
+                } else if (this->btzmin[ij] == BARRIER) {
                     this->ft[3][ijmin] = this->ft[6][ijmin];
                     this->ft[7][ijmin] = this->ft[11][ijmin];
                     this->ft[8][ijmin] = this->ft[12][ijmin];
                     this->ft[9][ijmin] = this->ft[13][ijmin];
                     this->ft[14][ijmin] = this->ft[10][ijmin];
-                } else if (this->btzmin[ki] == MIRROR) {
+                } else if (this->btzmin[ij] == MIRROR) {
                     this->ft[3][ijmin] = this->ft[6][ijmin];
                     this->ft[7][ijmin] = this->ft[10][ijmin];
                     this->ft[8][ijmin] = this->ft[13][ijmin];
@@ -695,19 +695,19 @@ public:
                 //.....zmax.....
                 int ijmax = i + this->nx*j + this->nx*this->ny*(this->nz - 1);
                 int ijmaxm1 = i + this->nx*j + this->nx*this->ny*(this->nz - 2);
-                if (this->btzmax[ki] == OUTLET) {
+                if (this->btzmax[ij] == OUTLET) {
                     this->ft[6][ijmax] = this->ft[6][ijmaxm1];
                     this->ft[10][ijmax] = this->ft[10][ijmaxm1];
                     this->ft[11][ijmax] = this->ft[11][ijmaxm1];
                     this->ft[12][ijmax] = this->ft[12][ijmaxm1];
                     this->ft[13][ijmax] = this->ft[13][ijmaxm1];
-                } else if (this->btzmax[ki] == BARRIER) {
+                } else if (this->btzmax[ij] == BARRIER) {
                     this->ft[6][ijmax] = this->ft[3][ijmax];
                     this->ft[10][ijmax] = this->ft[14][ijmax];
                     this->ft[11][ijmax] = this->ft[7][ijmax];
                     this->ft[12][ijmax] = this->ft[8][ijmax];
                     this->ft[13][ijmax] = this->ft[9][ijmax];
-                } else if (this->btzmax[ki] == MIRROR) {
+                } else if (this->btzmax[ij] == MIRROR) {
                     this->ft[6][ijmax] = this->ft[3][ijmax];
                     this->ft[10][ijmax] = this->ft[7][ijmax];
                     this->ft[11][ijmax] = this->ft[14][ijmax];
@@ -729,7 +729,7 @@ public:
                         int ip1 = i + D3Q15<T>::cx[l] == -1 ? this->nx - 1 : (i + D3Q15<T>::cx[l] == this->nx ? 0 : i + D3Q15<T>::cx[l]);
                         int jp1 = j + D3Q15<T>::cy[l] == -1 ? this->ny - 1 : (j + D3Q15<T>::cy[l] == this->ny ? 0 : j + D3Q15<T>::cy[l]);
                         int kp1 = k + D3Q15<T>::cz[l] == -1 ? this->nz - 1 : (k + D3Q15<T>::cz[l] == this->nz ? 0 : k + D3Q15<T>::cz[l]);
-                        this->ft[l][i + this->nx*j + this->nx*this->ny*k] = this->ftp1[k][ip1 + this->nx*jp1 + this->nx*this->ny*kp1];
+                        this->ft[l][i + this->nx*j + this->nx*this->ny*k] = this->ftp1[l][ip1 + this->nx*jp1 + this->nx*this->ny*kp1];
                     }
                 }
             }
@@ -862,25 +862,25 @@ public:
 
         //  zmin and zmax
         for (int i = 0; i < this->nx; i++) {
-            for (int j = 0; j < this->ny; i++) {
+            for (int j = 0; j < this->ny; j++) {
                 int ij = i + this->nx*j;
 
                 //.....zmin.....
                 int ijmin = i + this->nx*j + this->nx*this->ny*0;
                 int ijminp1 = i + this->nx*j + this->nx*this->ny*1;
-                if (this->btzmin[ki] == OUTLET) {
+                if (this->btzmin[ij] == OUTLET) {
                     this->ft[6][ijmin] = this->ft[6][ijminp1];
                     this->ft[10][ijmin] = this->ft[10][ijminp1];
                     this->ft[11][ijmin] = this->ft[11][ijminp1];
                     this->ft[12][ijmin] = this->ft[12][ijminp1];
                     this->ft[13][ijmin] = this->ft[13][ijminp1];
-                } else if (this->btzmin[ki] == BARRIER) {
+                } else if (this->btzmin[ij] == BARRIER) {
                     this->ft[6][ijmin] = this->ft[3][ijmin];
                     this->ft[10][ijmin] = this->ft[14][ijmin];
                     this->ft[11][ijmin] = this->ft[7][ijmin];
                     this->ft[12][ijmin] = this->ft[8][ijmin];
                     this->ft[13][ijmin] = this->ft[9][ijmin];
-                } else if (this->btzmin[ki] == MIRROR) {
+                } else if (this->btzmin[ij] == MIRROR) {
                     this->ft[6][ijmin] = this->ft[3][ijmin];
                     this->ft[10][ijmin] = this->ft[7][ijmin];
                     this->ft[11][ijmin] = this->ft[14][ijmin];
@@ -891,19 +891,19 @@ public:
                 //.....zmax.....
                 int ijmax = i + this->nx*j + this->nx*this->ny*(this->nz - 1);
                 int ijmaxm1 = i + this->nx*j + this->nx*this->ny*(this->nz - 2);
-                if (this->btzmax[ki] == OUTLET) {
+                if (this->btzmax[ij] == OUTLET) {
                     this->ft[3][ijmax] = this->ft[3][ijmaxm1];
                     this->ft[7][ijmax] = this->ft[7][ijmaxm1];
                     this->ft[8][ijmax] = this->ft[8][ijmaxm1];
                     this->ft[9][ijmax] = this->ft[9][ijmaxm1];
                     this->ft[14][ijmax] = this->ft[14][ijmaxm1];
-                } else if (this->btzmax[ki] == BARRIER) {
+                } else if (this->btzmax[ij] == BARRIER) {
                     this->ft[3][ijmax] = this->ft[6][ijmax];
                     this->ft[7][ijmax] = this->ft[11][ijmax];
                     this->ft[8][ijmax] = this->ft[12][ijmax];
                     this->ft[9][ijmax] = this->ft[13][ijmax];
                     this->ft[14][ijmax] = this->ft[10][ijmax];
-                } else if (this->btzmax[ki] == MIRROR) {
+                } else if (this->btzmax[ij] == MIRROR) {
                     this->ft[3][ijmax] = this->ft[6][ijmax];
                     this->ft[7][ijmax] = this->ft[10][ijmax];
                     this->ft[8][ijmax] = this->ft[13][ijmax];

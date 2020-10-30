@@ -461,28 +461,62 @@ public:
 
 
     template<class T>
-    void D3Q15<T>::SetiU(int _i, int _j, T _ux, T _uy) {
-        int ij = this->ny*_i + _j;
+    void D3Q15<T>::SetiU(int _i, int _j, int _k, T _ux, T _uy, T _uz) {
+        int ijk = _i + this->nx*_j + this->nx*this->ny*_k;
         if (_i == 0) {
-            T rho0 = (-2.0 + _ux*(4.0*this->ft[1][ij] + this->ft[5][ij] + this->ft[8][ij]) + 3.0*_uy*(this->ft[5][ij] - this->ft[8][ij]))/(3.0*(1.0 - _ux));
-            this->ft[3][ij] = this->ft[1][ij] + rho0;
-            this->ft[6][ij] = this->ft[8][ij] + rho0;
-            this->ft[7][ij] = this->ft[5][ij] + rho0;
-        } else if (_i == this->nx - 1) {          
-            T rho0 = (-2.0 - _ux*(4.0*this->ft[3][ij] + this->ft[6][ij] + this->ft[7][ij]) + 3.0*_uy*(this->ft[6][ij] - this->ft[7][ij]))/(3.0*(1.0 + _ux));
-            this->ft[1][ij] = this->ft[3][ij] + rho0;
-            this->ft[5][ij] = this->ft[7][ij] + rho0;
-            this->ft[8][ij] = this->ft[6][ij] + rho0;
+            T rho = (-4.0 + _ux*(8.0*this->ft[1][ijk] + this->ft[7][ijk] + this->ft[9][ijk] + this->ft[10][ijk] + this->ft[12][ijk])
+                + 3.0*_uy*(this->ft[7][ijk] - this->ft[9][ijk] + this->ft[10][ijk] - this->ft[12][ijk])
+                + 3.0*_uz*(this->ft[7][ijk] + this->ft[9][ijk] - this->ft[10][ijk] - this->ft[12][ijk]))/(6.0*(1.0 - _ux));
+            this->ft[4][ijk] = this->ft[1][ijk] + rho;
+            this->ft[8][ijk] = this->ft[12][ijk] + rho;
+            this->ft[11][ijk] = this->ft[7][ijk] + rho;
+            this->ft[13][ijk] = this->ft[9][ijk] + rho;
+            this->ft[14][ijk] = this->ft[10][ijk] + rho;
+        } else if (_i == this->nx - 1) {
+            T rho = (-4.0 - _ux*(8.0*this->ft[4][ijk] + this->ft[8][ijk] + this->ft[11][ijk] + this->ft[13][ijk] + this->ft[14][ijk])
+                + 3.0*_uy*(this->ft[8][ijk] - this->ft[11][ijk] + this->ft[13][ijk] - this->ft[14][ijk])
+                + 3.0*_uz*(this->ft[8][ijk] - this->ft[11][ijk] - this->ft[13][ijk] + this->ft[14][ijk]))/(6.0*(1.0 + _ux));
+            this->ft[1][ijk] = this->ft[4][ijk] + rho;
+            this->ft[7][ijk] = this->ft[11][ijk] + rho;
+            this->ft[9][ijk] = this->ft[13][ijk] + rho;
+            this->ft[10][ijk] = this->ft[14][ijk] + rho;
+            this->ft[12][ijk] = this->ft[8][ijk] + rho;
         } else if (_j == 0) {
-            T rho0 = (-2.0 + _uy*(4.0*this->ft[2][ij] + this->ft[5][ij] + this->ft[6][ij]) + 3.0*_ux*(this->ft[5][ij] - this->ft[6][ij]))/(3.0*(1.0 - _uy));
-            this->ft[4][ij] = this->ft[2][ij] + rho0;
-            this->ft[7][ij] = this->ft[5][ij] + rho0;
-            this->ft[8][ij] = this->ft[6][ij] + rho0;
+            T rho = (-4.0 + 3.0*_ux*(this->ft[7][ijk] - this->ft[8][ijk] + this->ft[10][ijk] - this->ft[13][ijk]) 
+                + _uy*(8.0*this->ft[2][ijk] + this->ft[7][ijk] + this->ft[8][ijk] + this->ft[10][ijk] + this->ft[13][ijk])
+                + 3.0*_uz*(this->ft[7][ijk] + this->ft[8][ijk] - this->ft[10][ijk] - this->ft[13][ijk]))/(6.0*(1.0 - _uy));
+            this->ft[5][ijk] = this->ft[2][ijk] + rho;
+            this->ft[9][ijk] = this->ft[13][ijk] + rho;
+            this->ft[11][ijk] = this->ft[7][ijk] + rho;
+            this->ft[12][ijk] = this->ft[8][ijk] + rho;
+            this->ft[14][ijk] = this->ft[10][ijk] + rho;
         } else if (_j == this->ny - 1) {
-            T rho0 = (-2.0 - _uy*(4.0*this->ft[4][ij] + this->ft[7][ij] + this->ft[8][ij]) + 3.0*_ux*(this->ft[8][ij] - this->ft[7][ij]))/(3.0*(1.0 + _uy));
-            this->ft[2][ij] = this->ft[4][ij] + rho0;
-            this->ft[5][ij] = this->ft[7][ij] + rho0;
-            this->ft[6][ij] = this->ft[8][ij] + rho0;
+            T rho = (-4.0 + 3.0*_ux*(this->ft[9][ijk] - this->ft[11][ijk] + this->ft[12][ijk] - this->ft[14][ijk]) 
+                - _uy*(8.0*this->ft[5][ijk] + this->ft[9][ijk] + this->ft[11][ijk] + this->ft[12][ijk] + this->ft[14][ijk])
+                + 3.0*_uz*(this->ft[9][ijk] - this->ft[11][ijk] - this->ft[12][ijk] + this->ft[14][ijk]))/(6.0*(1.0 + _uy));
+            this->ft[2][ijk] = this->ft[5][ijk] + rho;
+            this->ft[7][ijk] = this->ft[11][ijk] + rho;
+            this->ft[8][ijk] = this->ft[12][ijk] + rho;
+            this->ft[10][ijk] = this->ft[14][ijk] + rho;
+            this->ft[13][ijk] = this->ft[9][ijk] + rho;
+        } else if (_k == 0) {
+            T rho = (-4.0 + 3.0*_ux*(this->ft[7][ijk] - this->ft[8][ijk] + this->ft[9][ijk] - this->ft[14][ijk])
+                + 3.0*_uy*(this->ft[7][ijk] + this->ft[8][ijk] - this->ft[9][ijk] - this->ft[14][ijk])
+                + _uz*(8.0*this->ft[3][ijk] + this->ft[7][ijk] + this->ft[8][ijk] + this->ft[9][ijk] + this->ft[14][ijk]))/(6.0*(1.0 - _uz));
+            this->ft[6][ijk] = this->ft[3][ijk] + rho;
+            this->ft[10][ijk] = this->ft[14][ijk] + rho;
+            this->ft[11][ijk] = this->ft[7][ijk] + rho;
+            this->ft[12][ijk] = this->ft[8][ijk] + rho;
+            this->ft[13][ijk] = this->ft[9][ijk] + rho;
+        } else if (_k == this->nz - 1) {
+            T rho = (-4.0 + 3.0*_ux*(this->ft[10][ijk] - this->ft[11][ijk] + this->ft[12][ijk] - this->ft[13][ijk])
+                + 3.0*_uy*(this->ft[10][ijk] - this->ft[11][ijk] - this->ft[12][ijk] + this->ft[13][ijk])
+                - _uz*(8.0*this->ft[6][ijk] + this->ft[10][ijk] + this->ft[11][ijk] + this->ft[12][ijk] + this->ft[13][ijk]))/(6.0*(1.0 + _uz));
+            this->ft[3][ijk] = this->ft[6][ijk] + rho;
+            this->ft[7][ijk] = this->ft[11][ijk] + rho;
+            this->ft[8][ijk] = this->ft[12][ijk] + rho;
+            this->ft[9][ijk] = this->ft[13][ijk] + rho;
+            this->ft[14][ij] = this->ft[10][ijk] + rho;
         } else {
             //  境界に沿っていないことを警告する
         }

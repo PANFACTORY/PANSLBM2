@@ -56,7 +56,7 @@ int main() {
                 particle.SetRho(nx - 1, j, rho0, 0.0);
             }
         }                                               //  Boundary condition (inlet)
-        NS::ExternalForceBrinkman(particle, alpha);     //  External force by Brinkman model
+        NS::ExternalForceBrinkman(particle, alpha, alpha);     //  External force by Brinkman model
 
         if (t > 0 && NS::CheckConvergence(particle, 1.0e-4, &ux[nx*ny*t], &uy[nx*ny*t], &ux[nx*ny*(t - 1)], &uy[nx*ny*(t - 1)])) {
             std::cout << "\tt = " << t << "\t";
@@ -80,7 +80,7 @@ int main() {
                 particle.SetiRho(nx - 1, j);
             }
         }                                               //  Boundary condition (inlet)
-        ANS::ExternalForceBrinkman(particle, alpha, &rho[nx*ny*t], &ux[nx*ny*t], &uy[nx*ny*t]); //  External force by Brinkman model
+        ANS::ExternalForceBrinkman(particle, alpha, alpha, &rho[nx*ny*t], &ux[nx*ny*t], &uy[nx*ny*t]); //  External force by Brinkman model
         ANS::UpdateSensitivity(particle, &ux[nx*ny*t], &uy[nx*ny*t], sensitivity);              //  Update sensitivity
     }
 

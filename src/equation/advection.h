@@ -1,5 +1,5 @@
 //*****************************************************************************
-//  Title       :   src/advection.h
+//  Title       :   src/equation/advection.h
 //  Author      :   Tanabe Yuta
 //  Date        :   2020/10/28
 //  Copyright   :   (C)2020 TanabeYuta

@@ -1,3 +1,5 @@
+#define _USE_MATH_DEFINES
+#include <cmath>
 #include <iostream>
 #include <chrono>
 
@@ -10,7 +12,7 @@ using namespace PANSLBM2;
 int main() {
     //--------------------Set parameters--------------------
     int tmax = 100000, nx = 30, ny = 30, nz = 30;
-    double nu = 0.1, u0 = 0.1;
+    double nu = 0.1, u0 = 0.1, theta = 30.0;
     double *rho = new double[nx*ny*nz], *u = new double[nx*ny*nz], *v = new double[nx*ny*nz], *w = new double[nx*ny*nz];
     
     D3Q15<double> particle(nx, ny, nz);
@@ -43,10 +45,9 @@ int main() {
         NS::UpdateMacro(particle, rho, u, v, w);    //  Update macroscopic values
         NS::Collision(nu, particle, rho, u, v, w);  //  Collision
         particle.Stream();                          //  Stream
-
         for (int i = 0; i < nx; i++) {
             for (int j = 0; j < ny; j++) {
-                particle.SetU(i, j, nz - 1, 0.0, u0, 0.0);
+                particle.SetU(i, j, nz - 1, u0*cos(theta*M_PI/180.0), u0*sin(theta*M_PI/180.0), 0.0);
             } 
         }                                           //  Boundary condition (inlet)
       

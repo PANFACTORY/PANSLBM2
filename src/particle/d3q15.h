@@ -36,7 +36,7 @@ public:
         
         bool GetBarrier(int _i, int _j, int _k) const;
         BOUNDARYTYPE GetBoundary(int _i, int _j, int _k) const;
-        int GetIndex(int _i, int _j, int _k);
+        int GetIndex(int _i, int _j, int _k) const;
         
         const int nx, ny, nz, np;                                       //  nx&ny&nz : number of points along x&y&z coordinate, np : number of all points
         static const int nc = 15, nd = 3, cx[nc], cy[nc], cz[nc];       //  nc : number of particles, nd : number of dimensions
@@ -948,7 +948,7 @@ public:
 
 
     template<class T>
-    int D3Q15<T>::GetIndex(int _i, int _j, int _k) {
+    int D3Q15<T>::GetIndex(int _i, int _j, int _k) const {
         assert(0 <= _i && _i < this->nx && 0 <= _j && _j < this->ny && 0 <= _k & _k < this->nz);
         return _i + this->nx*_j + this->nx*this->ny*_k;
     }

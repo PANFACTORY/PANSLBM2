@@ -12,8 +12,8 @@ using namespace PANSLBM2;
 int main() {
     //--------------------Setting parameters--------------------
     int nt = 20000, nx = 100, ny = 100, tmax = nt;
-    double nu = 0.1, u0 = 0.004, rho0 = 1.0;    
-    double q = 0.1, alpha0 = 1.0, *alpha = new double[nx*ny];                                   //  Inverse permeation
+    double nu = 0.1, u0 = 0.002, rho0 = 1.0;    
+    double q = 0.1, alpha0 = 10.0, *alpha = new double[nx*ny];                                   //  Inverse permeation
     double *rho = new double[nt*nx*ny], *ux = new double[nt*nx*ny], *uy = new double[nt*nx*ny]; //  State variable
     double *qho = new double[nx*ny], *vx = new double[nx*ny], *vy = new double[nx*ny];          //  Adjoint variable
     double *sensitivity = new double[nx*ny];
@@ -39,7 +39,7 @@ int main() {
     //--------------------Set design variable--------------------
     for (int i = 0; i < nx; i++) {
         for (int j = 0; j < ny; j++) {
-            double gamma = pow(i - 50, 2.0) + pow(j - 50, 2.0) < pow(15.0, 2.0) ? 0.1 : 0.9;
+            double gamma = pow(i - 50, 2.0) + pow(j - 50, 2.0) < pow(15.0, 2.0) ? 0.1 : 1.0;
             alpha[particle.GetIndex(i, j)] = alpha0*q*(1.0 - gamma)/(gamma + q);
         }
     }

@@ -27,7 +27,7 @@ namespace PANSLBM2 {
                 ux /= rho;
                 uy /= rho;
                 for (int j = 0; j < P<T>::nc; j++) {
-                    _particle.ft[j][i] += -3.0*_particle.dx*P<T>::ei[j]*(_alphax[i]*P<T>::cx[j]*ux + _alphay[i]*P<T>::cy[j]*uy);
+                    _particle.ft[j][i] += -3.0*_particle.dx*P<T>::ei[j]*(_alphax[i]*P<T>::cx[j]*ux/(1.0 + _particle.dx*_alphax[i]/rho) + _alphay[i]*P<T>::cy[j]*uy/(1.0 + _particle.dx*_alphay[i]/rho));
                 }
             }
         }
@@ -50,7 +50,7 @@ namespace PANSLBM2 {
                 uy /= rho;
                 uz /= rho;
                 for (int j = 0; j < P<T>::nc; j++) {
-                    _particle.ft[j][i] += -3.0*_particle.dx*P<T>::ei[j]*(_alphax[i]*P<T>::cx[j]*ux + _alphay[i]*P<T>::cy[j]*uy + _alphaz[i]*P<T>::cz[j]*uz);
+                    _particle.ft[j][i] += -3.0*_particle.dx*P<T>::ei[j]*(_alphax[i]*P<T>::cx[j]*ux/(1.0 + _particle.dx*_alphax[i]/rho) + _alphay[i]*P<T>::cy[j]*uy/(1.0 + _particle.dx*_alphay[i]/rho) + _alphaz[i]*P<T>::cz[j]*uz/(1.0 + _particle.dx*_alphaz[i]/rho));
                 }
             }
         }
@@ -170,7 +170,7 @@ namespace PANSLBM2 {
                     my += P<T>::ei[j]*P<T>::cy[j]*_particle.ft[j][i];
                 }
                 for (int j = 0; j < P<T>::nc; j++) {
-                    _particle.ft[j][i] -= 3.0*(_alphax[i]*mx*(P<T>::cx[j] - _ux[i]) + _alphay[i]*my*(P<T>::cy[j] - _uy[i]))/_rho[i];
+                    _particle.ft[j][i] -= 3.0*(_alphax[i]*mx*(P<T>::cx[j] - _ux[i])/(_rho[i] + _particle.dx*_alphax[i]) + _alphay[i]*my*(P<T>::cy[j] - _uy[i])/(_rho[i] + _particle.dx*_alphay[i]));
                 }
             }
         }
@@ -189,7 +189,7 @@ namespace PANSLBM2 {
                     mz += P<T>::ei[j]*P<T>::cz[j]*_particle.ft[j][i];
                 }
                 for (int j = 0; j < P<T>::nc; j++) {
-                    _particle.ft[j][i] -= 3.0*(_alphax[i]*mx*(P<T>::cx[j] - _ux[i]) + _alphay[i]*my*(P<T>::cy[j] - _uy[i]) + _alphaz[i]*mz*(P<T>::cz[j] - _uz[i]))/_rho[i];
+                    _particle.ft[j][i] -= 3.0*(_alphax[i]*mx*(P<T>::cx[j] - _ux[i])/(_rho[i] + _particle.dx*_alphax[i]) + _alphay[i]*my*(P<T>::cy[j] - _uy[i])/(_rho[i] + _particle.dx*_alphay[i]) + _alphaz[i]*mz*(P<T>::cz[j] - _uz[i])/(_rho[i] + _particle.dx*_alphaz[i]));
                 }
             }
         }

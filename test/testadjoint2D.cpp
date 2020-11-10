@@ -12,7 +12,7 @@ using namespace PANSLBM2;
 int main() {
     //--------------------Setting parameters--------------------
     int nt = 20000, nx = 100, ny = 100, tmax = nt;
-    double nu = 0.1, u0 = 0.002, rho0 = 1.0;    
+    double nu = 0.1, u0 = 0.0218, rho0 = 1.0;    
     double q = 0.1, alpha0 = 10.0, *alpha = new double[nx*ny];                                   //  Inverse permeation
     double *rho = new double[nt*nx*ny], *ux = new double[nt*nx*ny], *uy = new double[nt*nx*ny]; //  State variable
     double *qho = new double[nx*ny], *vx = new double[nx*ny], *vy = new double[nx*ny];          //  Adjoint variable
@@ -83,6 +83,19 @@ int main() {
         ANS::ExternalForceBrinkman(particle, alpha, alpha, &rho[nx*ny*t], &ux[nx*ny*t], &uy[nx*ny*t]); //  External force by Brinkman model
         ANS::UpdateSensitivity(particle, &ux[nx*ny*t], &uy[nx*ny*t], sensitivity);              //  Update sensitivity
     }
+    double sensitivitymax = 0.0;
+    for (int i = 0; i < nx; i++) {
+        for (int j = 0; j < ny; j++) {
+            double gamma = pow(i - 50, 2.0) + pow(j - 50, 2.0) < pow(15.0, 2.0) ? 0.1 : 1.0;
+            sensitivity[particle.GetIndex(i, j)] *= 3.0*(-alpha0*q*(q + 1.0)/pow(q + gamma, 2.0));
+            if (sensitivitymax < fabs(sensitivity[particle.GetIndex(i, j)])) {
+                sensitivitymax = fabs(sensitivity[particle.GetIndex(i, j)]);
+            }
+        }
+    }
+    for (int i = 0; i < nx*ny; i++) {  
+        sensitivity[i] /= sensitivitymax;
+    }
 
     //--------------------Export result--------------------
     VTKExport file("result/adjoint.vtk", nx, ny);
@@ -92,10 +105,7 @@ int main() {
         [&](int _i, int _j, int _k) { return uy[nx*ny*tmax + particle.GetIndex(_i, _j)]; },
         [](int _i, int _j, int _k) { return 0.0; }
     );
-    file.AddPointScaler("dfds", [&](int _i, int _j, int _k) {
-        double gamma = pow(_i - 50, 2.0) + pow(_j - 50, 2.0) < pow(15.0, 2.0) ? 0.1 : 0.9;
-        return sensitivity[particle.GetIndex(_i, _j)]*(-alpha0*q*(q + 1.0)/pow(q + gamma, 2.0)); 
-    });
+    file.AddPointScaler("dfds", [&](int _i, int _j, int _k) {   return sensitivity[particle.GetIndex(_i, _j)];  });
     file.AddPointScaler("q", [&](int _i, int _j, int _k) { return qho[particle.GetIndex(_i, _j)]; });
     file.AddPointVector("v", 
         [&](int _i, int _j, int _k) { return vx[particle.GetIndex(_i, _j)]; },

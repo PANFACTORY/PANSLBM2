@@ -13,12 +13,51 @@ using namespace PANSFEM2;
 
 int main() {
     //********************Setting parameters********************
-    int nt = 20000, nx = 100, ny = 100, nk = 100, tmax = nt;
-    double nu = 0.1, u0 = 0.0025, rho0 = 1.0;
-    double q = 0.1, alpha0 = 1.0, scale0 = 1.0e0, weightlimit = 0.25, *alpha = new double[nx*ny];
+    int nt = 10000, nx = 100, ny = 100, nk = 100, tmax = nt, nt0 = 20000;
+    double nu = 0.1, u0 = 0.01, rho0 = 1.0;
+    double q = 0.1, alpha0 = 10.0, scale0 = 1.0e0, weightlimit = 0.25, *alpha = new double[nx*ny];
     double *rho = new double[nt*nx*ny], *ux = new double[nt*nx*ny], *uy = new double[nt*nx*ny]; //  State variable
+    double *rho1 = new double[nx*ny], *ux1 = new double[nx*ny], *uy1 = new double[nx*ny];       //  State variable
     double *qho = new double[nx*ny], *vx = new double[nx*ny], *vy = new double[nx*ny];
     double *sensitivity = new double[nx*ny];
+
+    D2Q9<double> particle(nx, ny);
+    for (int j = 0; j < ny; j++) {
+        if (0.7*ny < j && j < 0.9*ny) {
+            particle.SetBoundary(0, j, OTHER);
+        } else {
+            particle.SetBoundary(0, j, BARRIER);
+        }
+        particle.SetBoundary(nx - 1, j, BARRIER);
+    }
+    for (int i = 0; i < nx; i++) {
+        if (0.7*nx < i && i < 0.9*nx) {
+            particle.SetBoundary(i, 0, OTHER);
+        } else {
+            particle.SetBoundary(i, 0, BARRIER);
+        }
+        particle.SetBoundary(i, ny - 1, BARRIER);
+    }
+    for (int i = 0; i < nx*ny; i++) {
+        NS::InitialCondition(i, particle, 1.0, 0.0, 0.0);
+    }
+    for (int t = 0; t < nt0; t++) {
+        NS::UpdateMacro(particle, rho1, ux1, uy1);          //  Update macroscopic values
+        NS::Collision(nu, particle, rho1, ux1, uy1);        //  Collision
+        particle.Stream();                                  //  Stream
+        for (int i = 0; i < nx; i++) {
+            if (0.7*nx < i && i < 0.9*nx) {
+                particle.SetRho(i, 0, rho0, 0.0);
+            }
+        }
+        for (int j = 0; j < ny; j++) {
+            if (0.7*ny < j && j < 0.9*ny) {
+                double uj = -u0*(j - 0.7*ny)*(j - 0.9*ny)/(0.01*ny*ny);
+                particle.SetU(0, j, uj, 0.0);
+            }
+        }                                                   //  Boundary condition (inlet)
+        //NS::ExternalForceBrinkman(particle, alpha, alpha);  //  External force by Brinkman model
+    }
 
     std::vector<double> s(nx*ny, 1.0);
     MMA<double> optimizer(s.size(), 1, 1.0,
@@ -40,24 +79,7 @@ int main() {
         }
 
         //********************Get PressureDrop********************
-        D2Q9<double> particle(nx, ny);
-        for (int j = 0; j < ny; j++) {
-            if (0.7*ny < j && j < 0.9*ny) {
-                particle.SetBoundary(0, j, OTHER);
-            } else {
-                particle.SetBoundary(0, j, BARRIER);
-            }
-            particle.SetBoundary(nx - 1, j, BARRIER);
-        }
-        for (int i = 0; i < nx; i++) {
-            if (0.7*nx < i && i < 0.9*nx) {
-                particle.SetBoundary(i, 0, OTHER);
-            } else {
-                particle.SetBoundary(i, 0, BARRIER);
-            }
-            particle.SetBoundary(i, ny - 1, BARRIER);
-        }
-
+        
         //--------------------Set inverse permeation--------------------        
         for (int i = 0; i < s.size(); i++) {            
             alpha[i] = alpha0*q*(1.0 - s[i])/(s[i] + q);
@@ -65,9 +87,12 @@ int main() {
         }
 
         //--------------------Direct analyze--------------------
+        for (int i = 0; i < nx*ny; i++) {
+            NS::InitialCondition(i, particle, rho1[i], ux1[i], uy1[i]);
+        }
         for (int t = 0; t < nt; t++) {
-            NS2::UpdateMacro(particle, &rho[nx*ny*t], &ux[nx*ny*t], &uy[nx*ny*t]);      //  Update macroscopic values
-            NS2::Collision(nu, particle, &rho[nx*ny*t], &ux[nx*ny*t], &uy[nx*ny*t]);    //  Collision
+            NS::UpdateMacro(particle, &rho[nx*ny*t], &ux[nx*ny*t], &uy[nx*ny*t]);      //  Update macroscopic values
+            NS::Collision(nu, particle, &rho[nx*ny*t], &ux[nx*ny*t], &uy[nx*ny*t]);    //  Collision
             particle.Stream();              //  Stream
             for (int i = 0; i < nx; i++) {
                 if (0.7*nx < i && i < 0.9*nx) {
@@ -80,22 +105,27 @@ int main() {
                     particle.SetU(0, j, uj, 0.0);
                 }
             }                               //  Boundary condition (inlet)
-            NS2::ExternalForceBrinkman(particle, alpha);        //  External force by Brinkman model
+            NS::ExternalForceBrinkman(particle, alpha, alpha);        //  External force by Brinkman model
 
-            if (t > 0 && NS2::CheckConvergence(particle, 1.0e-4, &ux[nx*ny*t], &uy[nx*ny*t], &ux[nx*ny*(t - 1)], &uy[nx*ny*(t - 1)])) {
+            if (t > 0 && NS::CheckConvergence(particle, 1.0e-4, &ux[nx*ny*t], &uy[nx*ny*t], &ux[nx*ny*(t - 1)], &uy[nx*ny*(t - 1)])) {
                 std::cout << "\tt = " << t << "\t";
                 tmax = t;
                 break;
             }
         }
+        for (int i = 0; i < nx*ny; i++) {
+            rho1[i] = rho[nx*ny*tmax + i];
+            ux1[i] = ux[nx*ny*tmax + i];
+            uy1[i] = uy[nx*ny*tmax + i];
+        }
 
         //--------------------Invert analyze--------------------
         for (int i = 0; i < nx*ny; i++) {
-            NS2::InitialCondition(i, particle, 0.0, 0.0, 0.0);
+            NS::InitialCondition(i, particle, 0.0, 0.0, 0.0);
         }
         for (int t = tmax; t >= 0; t--) {
-            ANS2::UpdateMacro(particle, &rho[nx*ny*t], &ux[nx*ny*t], &uy[nx*ny*t], qho, vx, vy);         //  Update macroscopic values
-            ANS2::Collision(nu, particle, &ux[nx*ny*t], &uy[nx*ny*t], qho, vx, vy);           //  Collision
+            ANS::UpdateMacro(particle, &rho[nx*ny*t], &ux[nx*ny*t], &uy[nx*ny*t], qho, vx, vy);         //  Update macroscopic values
+            ANS::Collision(nu, particle, &ux[nx*ny*t], &uy[nx*ny*t], qho, vx, vy);           //  Collision
             particle.iStream();              //  Stream
             for (int i = 0; i < nx; i++) {
                 if (0.7*nx < i && i < 0.9*nx) {
@@ -108,8 +138,8 @@ int main() {
                     particle.SetiU(0, j, uj, 0.0);
                 }
             }                               //  Boundary condition (inlet)
-            ANS2::ExternalForceBrinkman(particle, alpha, &rho[nx*ny*t], &ux[nx*ny*t], &uy[nx*ny*t]);        //  External force by Brinkman model
-            ANS2::UpdateSensitivity(particle, &ux[nx*ny*t], &uy[nx*ny*t], sensitivity);             //  Update sensitivity
+            ANS::ExternalForceBrinkman(particle, alpha, alpha, &rho[nx*ny*t], &ux[nx*ny*t], &uy[nx*ny*t]);        //  External force by Brinkman model
+            ANS::UpdateSensitivity(particle, &ux[nx*ny*t], &uy[nx*ny*t], sensitivity);             //  Update sensitivity
         }
 
         //--------------------Get sensitivity--------------------
@@ -125,8 +155,15 @@ int main() {
             }
         }
         std::vector<double> dfds(s.size(), 0.0);
+        double dfdsmax = 0.0;
         for (int i = 0; i < s.size(); i++) {  
-            dfds[i] = scale0*sensitivity[i]*(-alpha0*q*(q + 1.0)/pow(q + s[i], 2.0));
+            dfds[i] = sensitivity[i]*(-alpha0*q*(q + 1.0)/pow(q + s[i], 2.0));
+            if (dfdsmax < fabs(dfds[i])) {
+                dfdsmax = fabs(dfds[i]);
+            }
+        }
+        for (int i = 0; i < s.size(); i++) {  
+            dfds[i] *= scale0/dfdsmax;
         }
 
         //--------------------Export result--------------------

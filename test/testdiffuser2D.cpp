@@ -15,7 +15,7 @@ int main() {
     //********************Setting parameters********************
     int nt = 20000, nx = 100, ny = 100, nk = 40, tmax = nt;
     double nu = 0.1, u0 = 0.001, rho0 = 1.0;
-    double q = 0.1, alpha0 = 1.0e0, scale0 = 1.0e0, weightlimit = 0.75, *alpha = new double[nx*ny];
+    double q = 0.1, alpha0 = 1.0e1, scale0 = 1.0e0, weightlimit = 0.8, *alpha = new double[nx*ny];
     double *rho = new double[nt*nx*ny], *ux = new double[nt*nx*ny], *uy = new double[nt*nx*ny]; //  State variable
     double *qho = new double[nx*ny], *vx = new double[nx*ny], *vy = new double[nx*ny];          //  Adjoint variable
 
@@ -25,7 +25,7 @@ int main() {
 		std::vector<double>(1, 10000.0),
 		std::vector<double>(1, 0.0), 
 		std::vector<double>(s.size(), 0.0), std::vector<double>(s.size(), 1.0));
-	optimizer.SetParameters(1.0e-5, 0.1, 0.2, 0.5, 0.7, 1.2, 1.0e-6);
+	optimizer.SetParameters(1.0e-5, 0.1, 0.5, 0.5, 0.7, 1.2, 1.0e-6);
 
     for (int k = 0; k < nk; k++) {
         std::cout << "k = " << k << "\t";
@@ -106,13 +106,20 @@ int main() {
             }
         }
         std::vector<double> dfds(s.size(), 0.0);
+        double dfdsmax = 0.0;
         for (int i = 0; i < s.size(); i++) {
-            dfds[i] = scale0*3.0*(vx[i]*ux[nx*ny*tmax + i] + vy[i]*uy[nx*ny*tmax + i])*(-alpha0*q*(q + 1.0)/pow(q + s[i], 2.0));
+            dfds[i] = 3.0*(vx[i]*ux[nx*ny*tmax + i] + vy[i]*uy[nx*ny*tmax + i])*(-alpha0*q*(q + 1.0)/pow(q + s[i], 2.0));
+            if (dfdsmax < fabs(dfds[i])) {
+                dfdsmax = fabs(dfds[i]);
+            }
+        }
+        for (int i = 0; i < s.size(); i++) {  
+            dfds[i] *= scale0/dfdsmax;
         }
 
         //--------------------Export result--------------------
         VTKExport file("result/diffuser" + std::to_string(k) + ".vtk", nx, ny);
-        file.AddPointScaler("rho", [&](int _i, int _j, int _k) { return rho[nx*ny*tmax + particle.GetIndex(_i, _j)]; });
+        file.AddPointScaler("p", [&](int _i, int _j, int _k) { return rho[nx*ny*tmax + particle.GetIndex(_i, _j)]/3.0; });
         file.AddPointVector("u", 
             [&](int _i, int _j, int _k) { return ux[nx*ny*tmax + particle.GetIndex(_i, _j)]; },
             [&](int _i, int _j, int _k) { return uy[nx*ny*tmax + particle.GetIndex(_i, _j)]; },

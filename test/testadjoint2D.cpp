@@ -13,7 +13,7 @@ int main() {
     //--------------------Setting parameters--------------------
     int nt = 20000, nx = 100, ny = 100, tmax = nt;
     double nu = 0.1, u0 = 0.0218, rho0 = 1.0;    
-    double q = 0.1, alpha0 = 10.0, *alpha = new double[nx*ny];                                   //  Inverse permeation
+    double q = 0.1, alpha0 = 4e2, *alpha = new double[nx*ny];                                   //  Inverse permeation
     double *rho = new double[nt*nx*ny], *ux = new double[nt*nx*ny], *uy = new double[nt*nx*ny]; //  State variable
     double *qho = new double[nx*ny], *vx = new double[nx*ny], *vy = new double[nx*ny];          //  Adjoint variable
     double *sensitivity = new double[nx*ny];

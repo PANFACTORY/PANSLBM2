@@ -12,8 +12,8 @@ using namespace PANSLBM2;
 int main() {
     //--------------------Setting parameters--------------------
     int nt = 20000, nx = 100, ny = 100, tmax = nt;
-    double nu = 0.1, u0 = 0.0218, rho0 = 1.0;    
-    double q = 0.1, alpha0 = 4e2, *alpha = new double[nx*ny];                                   //  Inverse permeation
+    double nu = 0.1, u0 = 0.0218, rho0 = 1.0, epsdu = 1.0e-5;    
+    double q = 0.1, alpha0 = 1e0, *alpha = new double[nx*ny];                                   //  Inverse permeation
     double *rho = new double[nt*nx*ny], *ux = new double[nt*nx*ny], *uy = new double[nt*nx*ny]; //  State variable
     double *qho = new double[nx*ny], *vx = new double[nx*ny], *vy = new double[nx*ny];          //  Adjoint variable
     double *sensitivity = new double[nx*ny];
@@ -58,7 +58,7 @@ int main() {
         }                                               //  Boundary condition (inlet)
         NS::ExternalForceBrinkman(particle, alpha, alpha);     //  External force by Brinkman model
 
-        if (t > 0 && NS::CheckConvergence(particle, 1.0e-4, &ux[nx*ny*t], &uy[nx*ny*t], &ux[nx*ny*(t - 1)], &uy[nx*ny*(t - 1)])) {
+        if (t > 0 && NS::CheckConvergence(particle, epsdu, &ux[nx*ny*t], &uy[nx*ny*t], &ux[nx*ny*(t - 1)], &uy[nx*ny*(t - 1)])) {
             std::cout << "\tt = " << t << "\t";
             tmax = t;
             break;
@@ -83,13 +83,15 @@ int main() {
         ANS::ExternalForceBrinkman(particle, alpha, alpha, &rho[nx*ny*t], &ux[nx*ny*t], &uy[nx*ny*t]); //  External force by Brinkman model
         ANS::UpdateSensitivity(particle, &ux[nx*ny*t], &uy[nx*ny*t], sensitivity);              //  Update sensitivity
     }
+    ANS::UpdateMacro(particle, rho, ux, uy, qho, vx, vy);     //  Update macroscopic values
     double sensitivitymax = 0.0;
     for (int i = 0; i < nx; i++) {
         for (int j = 0; j < ny; j++) {
             double gamma = pow(i - 50, 2.0) + pow(j - 50, 2.0) < pow(15.0, 2.0) ? 0.1 : 1.0;
-            sensitivity[particle.GetIndex(i, j)] *= 3.0*(-alpha0*q*(q + 1.0)/pow(q + gamma, 2.0));
-            if (sensitivitymax < fabs(sensitivity[particle.GetIndex(i, j)])) {
-                sensitivitymax = fabs(sensitivity[particle.GetIndex(i, j)]);
+            int ij = particle.GetIndex(i, j);
+            sensitivity[ij] = 3.0*(vx[ij]*ux[nx*ny*tmax + ij] + vy[ij]*uy[nx*ny*tmax + ij])*(-alpha0*q*(q + 1.0)/pow(q + gamma, 2.0));
+            if (sensitivitymax < fabs(sensitivity[ij])) {
+                sensitivitymax = fabs(sensitivity[ij]);
             }
         }
     }

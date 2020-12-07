@@ -91,10 +91,12 @@ namespace PANSLBM2 {
             assert(P<T>::nd == 2);
             for (int i = 0; i < _particle.np; i++) {
                 T Ttilde = T();
-                for (int j = 0; j < P<T>nc; j++) {
+                for (int j = 0; j < P<T>::nc; j++) {
                     Ttilde += P<T>::ei[j]*_particle.ft[j][i];
                 }
-                _particle.ft[j][i] -= _beta[i]*(1.0 + _particle.dx*Ttilde);
+                for (int j = 0; j < P<T>::nc; j++) {
+                    _particle.ft[j][i] -= _beta[i]*(1.0 + _particle.dx*Ttilde);
+                }
             }
         }
     }

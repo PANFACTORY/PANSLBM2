@@ -26,7 +26,7 @@ public:
         void SetBoundary(int _i, int _j, int _k, BOUNDARYTYPE _boundarytype);
         void SetRho(int _i, int _j, int _k, T _rho, T _u0, T _u1);      //  Set boundary condition for NavierStokes  
         void SetU(int _i, int _j, int _k, T _ux, T _uy, T _uz);
-        void SetTemperature(int _i, int _j, int _k, int _temperature);  //  Set boundary condition for Advection
+        void SetTemperature(int _i, int _j, int _k, T _temperature);    //  Set boundary condition for Advection
         void SetFlux(int _i, int _j, int _k, T _ux, T _uy, T _uz, T _q);
         void SetiRho(int _i, int _j, int _k);                           //  Set boundary condition for Adjoint of NavierStokes  
         void SetiU(int _i, int _j, int _k, T _ux, T _uy, T _uz);
@@ -314,7 +314,7 @@ public:
 
 
     template<class T>
-    void D3Q15<T>::SetTemperature(int _i, int _j, int _k, int _temperature) {
+    void D3Q15<T>::SetTemperature(int _i, int _j, int _k, T _temperature) {
         int ijk = _i + this->nx*_j + this->nx*this->ny*_k;
         if (_i == 0) {
             T temperature0 = 6.0*(_temperature - this->ft[0][ijk] - this->ft[2][ijk] - this->ft[3][ijk] - this->ft[4][ijk] - this->ft[5][ijk] - this->ft[6][ijk] - this->ft[8][ijk] - this->ft[11][ijk] - this->ft[13][ijk] - this->ft[14][ijk]);

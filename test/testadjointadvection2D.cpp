@@ -13,10 +13,10 @@ using namespace PANSLBM2;
 
 int main() {
     //--------------------Setting parameters--------------------
-    int nt = 15000, nx = 100, ny = 100, tmax = nt - 1;
+    int nt = 30000, nx = 100, ny = 50, tmax = nt - 1;
     double viscosity = 0.1, diffusivity = 0.1; 
-    double u0 = 0.0218, rho0 = 1.0, q0 = 0.0, tem0 = 0.0, epsdu = 1.0e-5, epsdq = 1.0e-5;    
-    double q = 0.1, alpha0 = 1e0, beta0 = 0.1, *alpha = new double[nx*ny], *beta = new double[nx*ny];    //  Inverse permeation
+    double u0 = 0.0218, rho0 = 1.0, q0 = 0.0, tem0 = 0.0, epsdu = 1.0e-6, epsdq = 1.0e-6;    
+    double q = 0.1, alpha0 = 1e0, beta0 = 0.001, *alpha = new double[nx*ny], *beta = new double[nx*ny];    //  Inverse permeation
     double **rho = new double*[nt], **ux = new double*[nt], **uy = new double*[nt];
     double **tem = new double*[nt], **qx = new double*[nt], **qy = new double*[nt];         //  State variable
     for (int t = 0; t < nt; t++) {
@@ -30,7 +30,7 @@ int main() {
     D2Q9<double> particlef(nx, ny);
     D2Q9<double> particleg(nx, ny);
     for (int j = 0; j < ny; j++) {
-        if (0.35*ny < j && j < 0.65*ny) {
+        if (j < 0.33*ny) {
             particlef.SetBoundary(0, j, OTHER);
             particlef.SetBoundary(nx - 1, j, OTHER);
         } else {
@@ -41,16 +41,16 @@ int main() {
         particleg.SetBoundary(nx - 1, j, OTHER);
     }
     for (int i = 0; i < nx; i++) {
-        particlef.SetBoundary(i, 0, BARRIER);
+        particlef.SetBoundary(i, 0, MIRROR);
         particlef.SetBoundary(i, ny - 1, BARRIER);
-        particleg.SetBoundary(i, 0, OTHER);
+        particleg.SetBoundary(i, 0, MIRROR);
         particleg.SetBoundary(i, ny - 1, OTHER);
     }                                                   //  Set boundary condition
 
     //--------------------Set design variable--------------------
     for (int i = 0; i < nx; i++) {
         for (int j = 0; j < ny; j++) {
-            double gamma = pow(i - 50, 2.0) + pow(j - 50, 2.0) < pow(15.0, 2.0) ? 0.1 : 1.0;
+            double gamma = pow(i - 0.5*nx, 2.0) + pow(j, 2.0) < pow(0.15*nx, 2.0) ? 0.1 : 1.0;
             alpha[particlef.GetIndex(i, j)] = alpha0*q*(1.0 - gamma)/(gamma + q);
             beta[particleg.GetIndex(i, j)] = beta0*q*(1.0 - gamma)/(gamma + q);;
         }
@@ -69,8 +69,8 @@ int main() {
         particlef.Stream();
         particleg.Stream();                                                 //  Stream
         for (int j = 0; j < ny; j++) {
-            if (0.35*ny < j && j < 0.65*ny) {
-                double uj = -u0*(j - 0.35*ny)*(j - 0.65*ny)/(0.0225*ny*ny);
+            if (j < 0.33*ny) {
+                double uj = -u0*(j - 0.33*ny)*(j + 0.33*ny)/(0.33*ny*0.33*ny);
                 particlef.SetU(0, j, uj, 0.0);
                 particlef.SetRho(nx - 1, j, rho0, 0.0);
                 particleg.SetTemperature(0, j, tem0);
@@ -107,8 +107,8 @@ int main() {
         particlef.iStream();
         particleg.iStream();                                                //  Stream
         for (int j = 0; j < ny; j++) {
-            if (0.35*ny < j && j < 0.65*ny) {
-                double uj = -u0*(j - 0.35*ny)*(j - 0.65*ny)/(0.0225*ny*ny);
+            if (j < 0.33*ny) {
+                double uj = -u0*(j - 0.33*ny)*(j + 0.33*ny)/(0.33*ny*0.33*ny);
                 particlef.SetiU(0, j, uj, 0.0);
                 particleg.SetiTemperature(0, j);
                 int ij = particlef.GetIndex(nx - 1, j);
@@ -131,7 +131,7 @@ int main() {
     double sensitivitymax = 0.0;
     for (int i = 0; i < nx; i++) {
         for (int j = 0; j < ny; j++) {
-            double gamma = pow(i - 50, 2.0) + pow(j - 50, 2.0) < pow(15.0, 2.0) ? 0.1 : 1.0;
+            double gamma = pow(i - 0.5*nx, 2.0) + pow(j, 2.0) < pow(0.15*nx, 2.0) ? 0.1 : 1.0;
             int ij = particlef.GetIndex(i, j);
             sensitivity[ij] = 3.0*(vx[ij]*ux[tmax][ij] + vy[ij]*uy[tmax][ij])*(-alpha0*q*(q + 1.0)/pow(q + gamma, 2.0)) - (1.0 - tem[tmax][ij])*(1.0 + sem[ij])*(-beta0*q*(q + 1.0)/pow(q + gamma, 2.0));
             if (sensitivitymax < fabs(sensitivity[ij])) {

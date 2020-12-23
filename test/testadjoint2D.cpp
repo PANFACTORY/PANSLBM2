@@ -11,7 +11,7 @@ using namespace PANSLBM2;
 
 int main() {
     //--------------------Setting parameters--------------------
-    int nt = 9500, nx = 200, ny = 200, tmax = nt - 1;
+    int nt = 9500, nx = 200, ny = 100, tmax = nt - 1;
     double nu = 0.1, u0 = 0.0109, rho0 = 1.0, epsdu = 1.0e-5;    
     double q = 0.1, alpha0 = 1e0, *alpha = new double[nx*ny];                           //  Inverse permeation
     double **rho = new double*[nt], **ux = new double*[nt], **uy = new double*[nt];     //  State variable
@@ -28,7 +28,7 @@ int main() {
 
     D2Q9<double> particle(nx, ny);
     for (int j = 0; j < ny; j++) {
-        if (0.35*ny < j && j < 0.65*ny) {
+        if (j < 0.33*ny) {
             particle.SetBoundary(0, j, OTHER);
             particle.SetBoundary(nx - 1, j, OTHER);
         } else {
@@ -37,14 +37,14 @@ int main() {
         }
     }
     for (int i = 0; i < nx; i++) {
-        particle.SetBoundary(i, 0, BARRIER);
+        particle.SetBoundary(i, 0, MIRROR);
         particle.SetBoundary(i, ny - 1, BARRIER);
     }                                                       //  Set boundary condition
 
     //--------------------Set design variable--------------------
     for (int i = 0; i < nx; i++) {
         for (int j = 0; j < ny; j++) {
-            double gamma = pow(i - 0.5*nx, 2.0) + pow(j - 0.5*ny, 2.0) < pow(0.15*nx, 2.0) ? 0.1 : 1.0;
+            double gamma = pow(i - 0.5*nx, 2.0) + pow(j, 2.0) < pow(0.15*nx, 2.0) ? 0.1 : 1.0;
             alpha[particle.GetIndex(i, j)] = alpha0*q*(1.0 - gamma)/(gamma + q);
         }
     }
@@ -55,8 +55,8 @@ int main() {
         NS::Collision(nu, particle, rho[t], ux[t], uy[t]);  //  Collision
         particle.Stream();                                  //  Stream
         for (int j = 0; j < ny; j++) {
-            if (0.35*ny < j && j < 0.65*ny) {
-                double uj = -u0*(j - 0.35*ny)*(j - 0.65*ny)/(0.0225*ny*ny);
+            if (j < 0.33*ny) {
+                double uj = -u0*(j - 0.33*ny)*(j + 0.33*ny)/(0.33*ny*0.33*ny);
                 particle.SetU(0, j, uj, 0.0);
                 particle.SetRho(nx - 1, j, rho0, 0.0);
             }
@@ -79,8 +79,8 @@ int main() {
         ANS::Collision(nu, particle, ux[t], uy[t], qho, vx, vy);        //  Collision
         particle.iStream();                                 //  Stream
         for (int j = 0; j < ny; j++) {
-            if (0.35*ny < j && j < 0.65*ny) {
-                double uj = -u0*(j - 0.35*ny)*(j - 0.65*ny)/(0.0225*ny*ny);
+            if (j < 0.33*ny) {
+                double uj = -u0*(j - 0.33*ny)*(j + 0.33*ny)/(0.33*ny*0.33*ny);
                 particle.SetiU(0, j, uj, 0.0);
                 particle.SetiRho(nx - 1, j);
             }
@@ -92,7 +92,7 @@ int main() {
     double sensitivitymax = 0.0;
     for (int i = 0; i < nx; i++) {
         for (int j = 0; j < ny; j++) {
-            double gamma = pow(i - 0.5*nx, 2.0) + pow(j - 0.5*ny, 2.0) < pow(0.15*nx, 2.0) ? 0.1 : 1.0;
+            double gamma = pow(i - 0.5*nx, 2.0) + pow(j, 2.0) < pow(0.15*nx, 2.0) ? 0.1 : 1.0;
             int ij = particle.GetIndex(i, j);
             sensitivity[ij] = 3.0*(vx[ij]*ux[tmax][ij] + vy[ij]*uy[tmax][ij])*(-alpha0*q*(q + 1.0)/pow(q + gamma, 2.0));
             if (sensitivitymax < fabs(sensitivity[ij])) {

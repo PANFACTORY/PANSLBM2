@@ -29,8 +29,9 @@ public:
         void SetU(int _i, int _j, T _ux, T _uy);
         void SetTemperature(int _i, int _j, T _temperature);            //  Set boundary condition for Advection
         void SetFlux(int _i, int _j, T _ux, T _uy, T _q);
-        void SetiRho(int _i, int _j);                                   //  Set boundary condition for Adjoint of NavierStokes  
-        void SetiU(int _i, int _j, T _ux, T _uy);
+        void SetiRho(int _i, int _j);                                   //  Set boundary condition for Adjoint of NavierStokes
+        void SetiU(int _i, int _j, T _ux, T _uy);  
+        void SetiUPressureDrop(int _i, int _j, T _ux, T _uy);
         void SetiTemperature(int _i, int _j);                           //  Set boundary condition for Adjoint of Advection
         void SetiFlux(int _i, int _j, T _ux, T _uy);
         void SetiRhoFlux(const D2Q9<T>& _g, int _i, int _j, T _rho, T _ux, T _uy, T _temperature);
@@ -320,6 +321,35 @@ public:
 
     template<class T>
     void D2Q9<T>::SetiU(int _i, int _j, T _ux, T _uy) {
+        int ij = this->ny*_i + _j;
+        if (_i == 0) {
+            T rho0 = (_ux*(4.0*this->ft[1][ij] + this->ft[5][ij] + this->ft[8][ij]) + 3.0*_uy*(this->ft[5][ij] - this->ft[8][ij]))/(3.0*(1.0 - _ux));
+            this->ft[3][ij] = this->ft[1][ij] + rho0;
+            this->ft[6][ij] = this->ft[8][ij] + rho0;
+            this->ft[7][ij] = this->ft[5][ij] + rho0;
+        } else if (_i == this->nx - 1) {          
+            T rho0 = (-_ux*(4.0*this->ft[3][ij] + this->ft[6][ij] + this->ft[7][ij]) + 3.0*_uy*(this->ft[6][ij] - this->ft[7][ij]))/(3.0*(1.0 + _ux));
+            this->ft[1][ij] = this->ft[3][ij] + rho0;
+            this->ft[5][ij] = this->ft[7][ij] + rho0;
+            this->ft[8][ij] = this->ft[6][ij] + rho0;
+        } else if (_j == 0) {
+            T rho0 = (_uy*(4.0*this->ft[2][ij] + this->ft[5][ij] + this->ft[6][ij]) + 3.0*_ux*(this->ft[5][ij] - this->ft[6][ij]))/(3.0*(1.0 - _uy));
+            this->ft[4][ij] = this->ft[2][ij] + rho0;
+            this->ft[7][ij] = this->ft[5][ij] + rho0;
+            this->ft[8][ij] = this->ft[6][ij] + rho0;
+        } else if (_j == this->ny - 1) {
+            T rho0 = (-_uy*(4.0*this->ft[4][ij] + this->ft[7][ij] + this->ft[8][ij]) + 3.0*_ux*(this->ft[8][ij] - this->ft[7][ij]))/(3.0*(1.0 + _uy));
+            this->ft[2][ij] = this->ft[4][ij] + rho0;
+            this->ft[5][ij] = this->ft[7][ij] + rho0;
+            this->ft[6][ij] = this->ft[8][ij] + rho0;
+        } else {
+            //  境界に沿っていないことを警告する
+        }
+    }
+
+
+    template<class T>
+    void D2Q9<T>::SetiUPressureDrop(int _i, int _j, T _ux, T _uy) {
         int ij = this->ny*_i + _j;
         if (_i == 0) {
             T rho0 = (-2.0 + _ux*(4.0*this->ft[1][ij] + this->ft[5][ij] + this->ft[8][ij]) + 3.0*_uy*(this->ft[5][ij] - this->ft[8][ij]))/(3.0*(1.0 - _ux));

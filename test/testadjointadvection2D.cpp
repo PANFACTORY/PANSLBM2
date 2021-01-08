@@ -16,7 +16,7 @@ int main() {
     int nt = 30000, nx = 100, ny = 50, tmax = nt - 1;
     double viscosity = 0.1, diffusivity = 0.1; 
     double u0 = 0.0218, rho0 = 1.0, q0 = 0.0, tem0 = 0.0, epsdu = 1.0e-6, epsdq = 1.0e-6;    
-    double q = 0.1, alpha0 = 1e0, beta0 = 0.001, *alpha = new double[nx*ny], *beta = new double[nx*ny];    //  Inverse permeation
+    double q = 0.1, alpha0 = 1e0, beta0 = 0.1, *alpha = new double[nx*ny], *beta = new double[nx*ny];    //  Inverse permeation
     double **rho = new double*[nt], **ux = new double*[nt], **uy = new double*[nt];
     double **tem = new double*[nt], **qx = new double*[nt], **qy = new double*[nt];         //  State variable
     for (int t = 0; t < nt; t++) {
@@ -144,7 +144,7 @@ int main() {
     }
 
     //--------------------Export result--------------------
-    VTKExport file("result/adjointadvection.vtk", nx, ny);
+    VTKExport file("result/adjointadvection_beta1e-1.vtk", nx, ny);
     file.AddPointScaler("p", [&](int _i, int _j, int _k) { return rho[tmax][particlef.GetIndex(_i, _j)]/3.0; });
     file.AddPointVector("u", 
         [&](int _i, int _j, int _k) { return ux[tmax][particlef.GetIndex(_i, _j)]; },

@@ -81,7 +81,7 @@ int main() {
         for (int j = 0; j < ny; j++) {
             if (j < 0.33*ny) {
                 double uj = -u0*(j - 0.33*ny)*(j + 0.33*ny)/(0.33*ny*0.33*ny);
-                particle.SetiU(0, j, uj, 0.0);
+                particle.SetiUPressureDrop(0, j, uj, 0.0);
                 particle.SetiRho(nx - 1, j);
             }
         }                                                   //  Boundary condition (inlet)

@@ -14,7 +14,7 @@ using namespace PANSLBM2;
 int main() {
     //--------------------Setting parameters--------------------
     int nt = 30000, nx = 100, ny = 50, tmax = nt - 1;
-    double viscosity = 0.1, diffusivity = 0.1; 
+    double viscosity = 0.1, diffusivity = 0.1/6.0; 
     double u0 = 0.0218, rho0 = 1.0, q0 = 0.0, tem0 = 0.0, epsdu = 1.0e-6, epsdq = 1.0e-6;    
     double q = 0.1, alpha0 = 1e0, beta0 = 0.1, *alpha = new double[nx*ny], *beta = new double[nx*ny];    //  Inverse permeation
     double **rho = new double*[nt], **ux = new double*[nt], **uy = new double*[nt];
@@ -23,8 +23,8 @@ int main() {
         rho[t] = new double[nx*ny]; ux[t] = new double[nx*ny];  uy[t] = new double[nx*ny];
         tem[t] = new double[nx*ny]; qx[t] = new double[nx*ny];  qy[t] = new double[nx*ny];
     }
-    double *qho = new double[nx*ny], *vx = new double[nx*ny], *vy = new double[nx*ny];
-    double *sem = new double[nx*ny], *rx = new double[nx*ny], *ry = new double[nx*ny];      //  Adjoint variable
+    double *irho = new double[nx*ny], *iux = new double[nx*ny], *iuy = new double[nx*ny];
+    double *item = new double[nx*ny], *iqx = new double[nx*ny], *iqy = new double[nx*ny];   //  Adjoint variable
     double *sensitivity = new double[nx*ny];                                                //  Sensitivity
 
     D2Q9<double> particlef(nx, ny);
@@ -60,14 +60,14 @@ int main() {
     for (int i = 0; i < nx*ny; i++) {
         NS::InitialCondition(i, particlef, 1.0, 0.0, 0.0);
         AD::InitialCondition(i, particleg, 1.0, 0.0, 0.0);
-    }                                                                       //  Set initial condition
+    }                                                                           //  Set initial condition
     for (int t = 0; t < nt; t++) {
         NS::UpdateMacro(particlef, rho[t], ux[t], uy[t]);
-        AD::UpdateMacro(particleg, tem[t], qx[t], qy[t], ux[t], uy[t]);     //  Update macroscopic values
+        AD::UpdateMacro(particleg, tem[t], qx[t], qy[t], ux[t], uy[t]);         //  Update macroscopic values
         NS::Collision(viscosity, particlef, rho[t], ux[t], uy[t]);
-        AD::Collision(diffusivity, particleg, tem[t], ux[t], uy[t]);        //  Collision
+        AD::Collision(diffusivity, particleg, tem[t], ux[t], uy[t]);            //  Collision
         particlef.Stream();
-        particleg.Stream();                                                 //  Stream
+        particleg.Stream();                                                     //  Stream
         for (int j = 0; j < ny; j++) {
             if (j < 0.33*ny) {
                 double uj = -u0*(j - 0.33*ny)*(j + 0.33*ny)/(0.33*ny*0.33*ny);
@@ -84,10 +84,10 @@ int main() {
         for (int i = 0; i < nx; i++) {
             particleg.SetFlux(i, 0, 0.0, 0.0, q0);
             particleg.SetFlux(i, ny - 1, 0.0, 0.0, q0);
-        }                                                                   //  Boundary condition (inlet)
+        }                                                                       //  Boundary condition (inlet)
         NS::ExternalForceBrinkman(particlef, alpha, alpha);
-        AD::ExternalForceHeatgeneration(particleg, beta);                   //  External force term
-        if (t > 0 && NS::CheckConvergence(particlef, epsdu, ux[t], uy[t], ux[t - 1], uy[t - 1])  && NS::CheckConvergence(particleg, epsdq, qx[t], qy[t], qx[t - 1], qy[t - 1])) {
+        AD::ExternalForceHeatgeneration(particleg, beta);                       //  External force term
+        if (t > 0 && NS::CheckConvergence(particlef, epsdu, ux[t], uy[t], ux[t - 1], uy[t - 1]) && NS::CheckConvergence(particleg, epsdq, qx[t], qy[t], qx[t - 1], qy[t - 1])) {
             std::cout << "\tt = " << t << "\t";
             tmax = t;
             break;
@@ -98,14 +98,14 @@ int main() {
     for (int i = 0; i < nx*ny; i++) {
         NS::InitialCondition(i, particlef, 0.0, 0.0, 0.0);
         AD::InitialCondition(i, particleg, 0.0, 0.0, 0.0);
-    }                                                                       //  Set initial condition
+    }                                                                           //  Set initial condition
     for (int t = tmax; t >= 0; t--) {
-        ANS::UpdateMacro(particlef, rho[t], ux[t], uy[t], qho, vx, vy);
-        AAD::UpdateMacro(particleg, sem, rx, ry);                           //  Update macroscopic values
-        ANS::Collision(viscosity, particlef, ux[t], uy[t], qho, vx, vy);
-        AAD::Collision(diffusivity, particleg, ux[t], uy[t], sem, rx, ry);  //  Collision
+        ANS::UpdateMacro(particlef, rho[t], ux[t], uy[t], irho, iux, iuy);
+        AAD::UpdateMacro(particleg, item, iqx, iqy);                            //  Update macroscopic values
+        ANS::Collision(viscosity, particlef, ux[t], uy[t], irho, iux, iuy);
+        AAD::Collision(diffusivity, particleg, ux[t], uy[t], item, iqx, iqy);   //  Collision
         particlef.iStream();
-        particleg.iStream();                                                //  Stream
+        particleg.iStream();                                                    //  Stream
         for (int j = 0; j < ny; j++) {
             if (j < 0.33*ny) {
                 double uj = -u0*(j - 0.33*ny)*(j + 0.33*ny)/(0.33*ny*0.33*ny);
@@ -124,7 +124,7 @@ int main() {
         }                                                                   //  Boundary condition (inlet)
         ANS::ExternalForceHeatexchange(diffusivity, particlef, particleg, rho[t], ux[t], uy[t], tem[t]);
         ANS::ExternalForceBrinkman(particlef, alpha, alpha, rho[t], ux[t], uy[t]);
-        AAD::ExternalForceHeatexchange(particleg, sem, beta);               //  External force by Brinkman model
+        AAD::ExternalForceHeatexchange(particleg, item, beta);              //  External force by Brinkman model
     }
 
     //--------------------Analyse sensitivity--------------------
@@ -133,7 +133,7 @@ int main() {
         for (int j = 0; j < ny; j++) {
             double gamma = pow(i - 0.5*nx, 2.0) + pow(j, 2.0) < pow(0.15*nx, 2.0) ? 0.1 : 1.0;
             int ij = particlef.GetIndex(i, j);
-            sensitivity[ij] = 3.0*(vx[ij]*ux[tmax][ij] + vy[ij]*uy[tmax][ij])*(-alpha0*q*(q + 1.0)/pow(q + gamma, 2.0)) - (1.0 - tem[tmax][ij])*(1.0 + sem[ij])*(-beta0*q*(q + 1.0)/pow(q + gamma, 2.0));
+            sensitivity[ij] = 3.0*(iux[ij]*ux[tmax][ij] + iuy[ij]*uy[tmax][ij])*(-alpha0*q*(q + 1.0)/pow(q + gamma, 2.0)) - (1.0 - tem[tmax][ij])*(1.0 + item[ij])*(-beta0*q*(q + 1.0)/pow(q + gamma, 2.0));
             if (sensitivitymax < fabs(sensitivity[ij])) {
                 sensitivitymax = fabs(sensitivity[ij]);
             }
@@ -144,7 +144,7 @@ int main() {
     }
 
     //--------------------Export result--------------------
-    VTKExport file("result/adjointadvection_beta1e-1.vtk", nx, ny);
+    VTKExport file("result/adjointadvection_Pr6_beta1e-1_.vtk", nx, ny);
     file.AddPointScaler("p", [&](int _i, int _j, int _k) { return rho[tmax][particlef.GetIndex(_i, _j)]/3.0; });
     file.AddPointVector("u", 
         [&](int _i, int _j, int _k) { return ux[tmax][particlef.GetIndex(_i, _j)]; },
@@ -158,16 +158,16 @@ int main() {
         [](int _i, int _j, int _k) { return 0.0; }
     );
     file.AddPointScaler("dfds", [&](int _i, int _j, int _k) {   return sensitivity[particlef.GetIndex(_i, _j)];  });
-    file.AddPointScaler("qho", [&](int _i, int _j, int _k) { return qho[particlef.GetIndex(_i, _j)]; });
-    file.AddPointVector("v", 
-        [&](int _i, int _j, int _k) { return vx[particlef.GetIndex(_i, _j)]; },
-        [&](int _i, int _j, int _k) { return vy[particlef.GetIndex(_i, _j)]; },
+    file.AddPointScaler("ip", [&](int _i, int _j, int _k) { return irho[particlef.GetIndex(_i, _j)]; });
+    file.AddPointVector("iu", 
+        [&](int _i, int _j, int _k) { return iux[particlef.GetIndex(_i, _j)]; },
+        [&](int _i, int _j, int _k) { return iuy[particlef.GetIndex(_i, _j)]; },
         [](int _i, int _j, int _k) { return 0.0; }
     );
-    file.AddPointScaler("S", [&](int _i, int _j, int _k) { return sem[particleg.GetIndex(_i, _j)]; });
-    file.AddPointVector("r", 
-        [&](int _i, int _j, int _k) { return rx[particleg.GetIndex(_i, _j)]; },
-        [&](int _i, int _j, int _k) { return ry[particleg.GetIndex(_i, _j)]; },
+    file.AddPointScaler("iT", [&](int _i, int _j, int _k) { return item[particleg.GetIndex(_i, _j)]; });
+    file.AddPointVector("iq", 
+        [&](int _i, int _j, int _k) { return iqx[particleg.GetIndex(_i, _j)]; },
+        [&](int _i, int _j, int _k) { return iqy[particleg.GetIndex(_i, _j)]; },
         [](int _i, int _j, int _k) { return 0.0; }
     );
     
@@ -176,7 +176,7 @@ int main() {
         delete[] rho[t];    delete[] ux[t]; delete[] uy[t]; delete[] tem[t];    delete[] qx[t]; delete[] qy[t];
     }
     delete[] rho;   delete[] ux;    delete[] uy;    delete[] tem;   delete[] qx;    delete[] qy;
-    delete[] qho;   delete[] vx;    delete[] vy;    delete[] sem;   delete[] rx;    delete[] ry;
+    delete[] irho;  delete[] iux;   delete[] iuy;   delete[] item;  delete[] iqx;   delete[] iqy;
     delete[] sensitivity;
 
     return 0;

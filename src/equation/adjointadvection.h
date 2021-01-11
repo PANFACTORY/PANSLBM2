@@ -87,7 +87,7 @@ namespace PANSLBM2 {
         //  Adjoint advection 2D    :   External force
         //*********************************************************************
         template<class T, template<class>class P>
-        void ExternalForceHeatexchange(P<T>& _particle, T* _Ttilde, T* _beta) {
+        void ExternalForceHeatexchange(P<T>& _particle, T* _beta) {
             assert(P<T>::nd == 2);
             for (int i = 0; i < _particle.np; i++) {
                 T Ttilde = T();

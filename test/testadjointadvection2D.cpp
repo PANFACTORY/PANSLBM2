@@ -15,17 +15,17 @@ int main() {
     //--------------------Setting parameters--------------------
     int nt = 30000, nx = 100, ny = 50, tmax = nt - 1;
     double viscosity = 0.1, diffusivity = 0.1/6.0; 
-    double u0 = 0.0218, rho0 = 1.0, q0 = 0.0, tem0 = 0.0, epsdu = 1.0e-6, epsdq = 1.0e-6;    
-    double q = 0.1, alpha0 = 1e0, beta0 = 0.1, *alpha = new double[nx*ny], *beta = new double[nx*ny];    //  Inverse permeation
+    double u0 = 0.0218, rho0 = 1.0, q0 = 0.0, tem0 = 0.0, epsdu = 1.0e-8, epsdq = 1.0e-8;    
+    double q = 0.1, alpha0 = 1e0, beta0 = 0.1, *alpha = new double[nx*ny], *beta = new double[nx*ny];   //  Inverse permeation
     double **rho = new double*[nt], **ux = new double*[nt], **uy = new double*[nt];
-    double **tem = new double*[nt], **qx = new double*[nt], **qy = new double*[nt];         //  State variable
+    double **tem = new double*[nt], **qx = new double*[nt], **qy = new double*[nt];                     //  State variable
     for (int t = 0; t < nt; t++) {
         rho[t] = new double[nx*ny]; ux[t] = new double[nx*ny];  uy[t] = new double[nx*ny];
         tem[t] = new double[nx*ny]; qx[t] = new double[nx*ny];  qy[t] = new double[nx*ny];
     }
     double *irho = new double[nx*ny], *iux = new double[nx*ny], *iuy = new double[nx*ny];
-    double *item = new double[nx*ny], *iqx = new double[nx*ny], *iqy = new double[nx*ny];   //  Adjoint variable
-    double *sensitivity = new double[nx*ny];                                                //  Sensitivity
+    double *item = new double[nx*ny], *iqx = new double[nx*ny], *iqy = new double[nx*ny];               //  Adjoint variable
+    double *sensitivity = new double[nx*ny];                                                            //  Sensitivity
 
     D2Q9<double> particlef(nx, ny);
     D2Q9<double> particleg(nx, ny);
@@ -45,14 +45,15 @@ int main() {
         particlef.SetBoundary(i, ny - 1, BARRIER);
         particleg.SetBoundary(i, 0, MIRROR);
         particleg.SetBoundary(i, ny - 1, OTHER);
-    }                                                   //  Set boundary condition
+    }                                                                           //  Set boundary condition
 
     //--------------------Set design variable--------------------
     for (int i = 0; i < nx; i++) {
         for (int j = 0; j < ny; j++) {
-            double gamma = pow(i - 0.5*nx, 2.0) + pow(j, 2.0) < pow(0.15*nx, 2.0) ? 0.1 : 1.0;
-            alpha[particlef.GetIndex(i, j)] = alpha0*q*(1.0 - gamma)/(gamma + q);
-            beta[particleg.GetIndex(i, j)] = beta0*q*(1.0 - gamma)/(gamma + q);;
+            double gammaa = pow(i - 0.5*nx, 2.0) + pow(j, 2.0) < pow(0.15*nx, 2.0) ? 0.1 : 1.0;
+            double gammab = pow(i - 0.5*nx, 2.0) + pow(j, 2.0) < pow(0.15*nx, 2.0) ? 0.1 : 1.0;
+            alpha[particlef.GetIndex(i, j)] = alpha0*q*(1.0 - gammaa)/(gammaa + q);
+            beta[particleg.GetIndex(i, j)] = beta0*q*(1.0 - gammab)/(gammab + q);;
         }
     }
 
@@ -82,7 +83,6 @@ int main() {
             }
         }
         for (int i = 0; i < nx; i++) {
-            particleg.SetFlux(i, 0, 0.0, 0.0, q0);
             particleg.SetFlux(i, ny - 1, 0.0, 0.0, q0);
         }                                                                       //  Boundary condition (inlet)
         NS::ExternalForceBrinkman(particlef, alpha, alpha);
@@ -119,21 +119,21 @@ int main() {
             particleg.SetiFlux(nx - 1, j, 0.0, 0.0);
         }
         for (int i = 0; i < nx; i++) {
-            particleg.SetiFlux(i, 0, 0.0, 0.0);
             particleg.SetiFlux(i, ny - 1, 0.0, 0.0);
-        }                                                                   //  Boundary condition (inlet)
+        }                                                                       //  Boundary condition (inlet)
         ANS::ExternalForceHeatexchange(diffusivity, particlef, particleg, rho[t], ux[t], uy[t], tem[t]);
         ANS::ExternalForceBrinkman(particlef, alpha, alpha, rho[t], ux[t], uy[t]);
-        AAD::ExternalForceHeatexchange(particleg, item, beta);              //  External force by Brinkman model
+        AAD::ExternalForceHeatexchange(particleg, beta);                        //  External force by Brinkman model
     }
 
     //--------------------Analyse sensitivity--------------------
     double sensitivitymax = 0.0;
     for (int i = 0; i < nx; i++) {
         for (int j = 0; j < ny; j++) {
-            double gamma = pow(i - 0.5*nx, 2.0) + pow(j, 2.0) < pow(0.15*nx, 2.0) ? 0.1 : 1.0;
+            double gammaa = pow(i - 0.5*nx, 2.0) + pow(j, 2.0) < pow(0.15*nx, 2.0) ? 0.1 : 1.0;
+            double gammab = pow(i - 0.5*nx, 2.0) + pow(j, 2.0) < pow(0.15*nx, 2.0) ? 0.1 : 1.0;
             int ij = particlef.GetIndex(i, j);
-            sensitivity[ij] = 3.0*(iux[ij]*ux[tmax][ij] + iuy[ij]*uy[tmax][ij])*(-alpha0*q*(q + 1.0)/pow(q + gamma, 2.0)) - (1.0 - tem[tmax][ij])*(1.0 + item[ij])*(-beta0*q*(q + 1.0)/pow(q + gamma, 2.0));
+            sensitivity[ij] = 3.0*(iux[ij]*ux[tmax][ij] + iuy[ij]*uy[tmax][ij])*(-alpha0*q*(q + 1.0)/pow(q + gammaa, 2.0)) - (1.0 - tem[tmax][ij])*(1.0 + item[ij])*(-beta0*q*(q + 1.0)/pow(q + gammab, 2.0));
             if (sensitivitymax < fabs(sensitivity[ij])) {
                 sensitivitymax = fabs(sensitivity[ij]);
             }
@@ -144,7 +144,7 @@ int main() {
     }
 
     //--------------------Export result--------------------
-    VTKExport file("result/adjointadvection_Pr6_beta1e-1_.vtk", nx, ny);
+    VTKExport file("result/adjointadvection_Pr6_beta1e-1.vtk", nx, ny);
     file.AddPointScaler("p", [&](int _i, int _j, int _k) { return rho[tmax][particlef.GetIndex(_i, _j)]/3.0; });
     file.AddPointVector("u", 
         [&](int _i, int _j, int _k) { return ux[tmax][particlef.GetIndex(_i, _j)]; },
@@ -170,6 +170,8 @@ int main() {
         [&](int _i, int _j, int _k) { return iqy[particleg.GetIndex(_i, _j)]; },
         [](int _i, int _j, int _k) { return 0.0; }
     );
+    file.AddPointScaler("boundaryf", [&](int _i, int _j, int _k) { return particlef.GetBoundary(_i, _j); });
+    file.AddPointScaler("boundaryg", [&](int _i, int _j, int _k) { return particleg.GetBoundary(_i, _j); });
     
     delete[] alpha; delete[] beta;
     for (int t = 0; t < nt; t++) {

@@ -22,7 +22,7 @@ namespace PANSLBM2 {
                     tmpT += _particle.ft[j][i];
                 }
                 for (int j = 0; j < P<T>::nc; j++) {
-                    _particle.ft[j][i] += _particle.dx*P<T>::ei[j]*_beta[i]*(1.0 - tmpT);
+                    _particle.ft[j][i] += _particle.dx*P<T>::ei[j]*_beta[i]*(1.0 - tmpT)/(1.0 + _particle.dx*_beta[i]);
                 }
             }
         }
@@ -95,7 +95,7 @@ namespace PANSLBM2 {
                     Ttilde += P<T>::ei[j]*_particle.ft[j][i];
                 }
                 for (int j = 0; j < P<T>::nc; j++) {
-                    _particle.ft[j][i] -= _beta[i]*(1.0 + _particle.dx*Ttilde);
+                    _particle.ft[j][i] -= _beta[i]*(1.0 + _particle.dx*Ttilde)/(1.0 + _particle.dx*_beta[i]);
                 }
             }
         }

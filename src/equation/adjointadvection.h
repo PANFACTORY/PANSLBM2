@@ -32,18 +32,13 @@ namespace PANSLBM2 {
         //*********************************************************************
         //  Adjoint navier-stokes 2D    :   External force with heat exchange
         //*********************************************************************
-        template<class T, template<class>class P, template<class>class Q>
-        void ExternalForceHeatexchange(T _diffusivity, P<T>& _particlef, Q<T>& _particleg, T* _rho, T* _ux, T* _uy, T* _T) {
-            assert(P<T>::nd == 2 && Q<T>::nd == 2 && _particlef.nx == _particleg.nx && _particlef.ny == _particleg.ny);
-            T omega = 1.0/(3.0*_diffusivity*_particleg.dt/(_particleg.dx*_particleg.dx) + 0.5);
+        template<class T, template<class>class P>
+        void ExternalForceHeatexchange(T _diffusivity, P<T>& _particlef, T* _rho, T* _ux, T* _uy, T* _T, T* _qtildex, T* _qtildey) {
+            assert(P<T>::nd == 2);
+            T omega = 1.0/(3.0*_diffusivity*_particlef.dt/(_particlef.dx*_particlef.dx) + 0.5);
             for (int i = 0; i < _particlef.np; i++) {
-                T qtildex = T(), qtildey = T();
                 for (int j = 0; j < P<T>::nc; j++) {
-                    qtildex += P<T>::ei[j]*P<T>::cx[j]*_particleg.ft[j][i];
-                    qtildey += P<T>::ei[j]*P<T>::cy[j]*_particleg.ft[j][i];
-                }
-                for (int j = 0; j < P<T>::nc; j++) {
-                    _particlef.ft[j][i] += 3.0*_T[i]*omega*((P<T>::cx[j] - _ux[i])*qtildex + (P<T>::cy[j] - _uy[i])*qtildey)/_rho[i];
+                    _particlef.ft[j][i] += 3.0*_T[i]*omega*((P<T>::cx[j] - _ux[i])*_qtildex[i] + (P<T>::cy[j] - _uy[i])*_qtildey[i])/_rho[i];
                 }
             }
         }

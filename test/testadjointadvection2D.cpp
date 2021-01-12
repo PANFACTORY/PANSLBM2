@@ -122,7 +122,7 @@ int main() {
         for (int i = 0; i < nx; i++) {
             particleg.SetiFlux(i, ny - 1, 0.0, 0.0);
         }                                                                       //  Boundary condition (inlet)
-        ANS::ExternalForceHeatexchange(diffusivity, particlef, particleg, rho[t], ux[t], uy[t], tem[t]);
+        ANS::ExternalForceHeatexchange(diffusivity, particlef, rho[t], ux[t], uy[t], tem[t], iqx, iqy);
         ANS::ExternalForceBrinkman(particlef, alpha, alpha, rho[t], ux[t], uy[t]);
         AAD::ExternalForceHeatexchange(particleg, beta);                        //  External force by Brinkman model
     }

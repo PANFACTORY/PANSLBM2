@@ -437,27 +437,27 @@ public:
         if (_i == 0) {
             T rho0 = -(4.0*this->ft[1][ij] + this->ft[5][ij] + this->ft[8][ij])/3.0;
             T flux0 = _temperature/(3.0*(1.0 - 3.0*_ux)*_rho)*(4.0*_g.ft[1][ij] + _g.ft[5][ij] + _g.ft[8][ij]) + _uy*_temperature/(2.0*(1.0 - 3.0*_ux)*_rho)*(_g.ft[5][ij] - _g.ft[8][ij]);
-            this->ft[3][ij] = this->ft[1][ij] + rho0 + flux0;
-            this->ft[6][ij] = this->ft[8][ij] + rho0 + flux0;
-            this->ft[7][ij] = this->ft[5][ij] + rho0 + flux0;
+            this->ft[3][ij] = this->ft[1][ij] + rho0 - flux0;
+            this->ft[6][ij] = this->ft[8][ij] + rho0 - flux0;
+            this->ft[7][ij] = this->ft[5][ij] + rho0 - flux0;
         } else if (_i == this->nx - 1) {
             T rho0 = -(4.0*this->ft[3][ij] + this->ft[6][ij] + this->ft[7][ij])/3.0;
             T flux0 = _temperature/(3.0*(1.0 + 3.0*_ux)*_rho)*(4.0*_g.ft[3][ij] + _g.ft[6][ij] + _g.ft[7][ij]) + _uy*_temperature/(2.0*(1.0 + 3.0*_ux)*_rho)*(_g.ft[6][ij] - _g.ft[7][ij]);
-            this->ft[1][ij] = this->ft[3][ij] + rho0 + flux0;
-            this->ft[5][ij] = this->ft[7][ij] + rho0 + flux0;
-            this->ft[8][ij] = this->ft[6][ij] + rho0 + flux0;
+            this->ft[1][ij] = this->ft[3][ij] + rho0 - flux0;
+            this->ft[5][ij] = this->ft[7][ij] + rho0 - flux0;
+            this->ft[8][ij] = this->ft[6][ij] + rho0 - flux0;
         } else if (_j == 0) {
             T rho0 = -(4.0*this->ft[2][ij] + this->ft[5][ij] + this->ft[6][ij])/3.0;
             T flux0 = _temperature/(3.0*(1.0 - 3.0*_uy)*_rho)*(4.0*_g.ft[2][ij] + _g.ft[5][ij] + _g.ft[6][ij]) + _ux*_temperature/(2.0*(1.0 - 3.0*_uy)*_rho)*(_g.ft[5][ij] - _g.ft[6][ij]);
-            this->ft[4][ij] = this->ft[2][ij] + rho0 + flux0;
-            this->ft[7][ij] = this->ft[5][ij] + rho0 + flux0;
-            this->ft[8][ij] = this->ft[6][ij] + rho0 + flux0;
+            this->ft[4][ij] = this->ft[2][ij] + rho0 - flux0;
+            this->ft[7][ij] = this->ft[5][ij] + rho0 - flux0;
+            this->ft[8][ij] = this->ft[6][ij] + rho0 - flux0;
         } else if (_j == this->ny - 1) {
             T rho0 = -(4.0*this->ft[4][ij] + this->ft[7][ij] + this->ft[8][ij])/3.0;
             T flux0 = _temperature/(3.0*(1.0 + 3.0*_uy)*_rho)*(4.0*_g.ft[4][ij] + _g.ft[7][ij] + _g.ft[8][ij]) + _ux*_temperature/(2.0*(1.0 + 3.0*_uy)*_rho)*(_g.ft[8][ij] - _g.ft[7][ij]);
-            this->ft[2][ij] = this->ft[4][ij] + rho0 + flux0;
-            this->ft[5][ij] = this->ft[7][ij] + rho0 + flux0;
-            this->ft[6][ij] = this->ft[8][ij] + rho0 + flux0;
+            this->ft[2][ij] = this->ft[4][ij] + rho0 - flux0;
+            this->ft[5][ij] = this->ft[7][ij] + rho0 - flux0;
+            this->ft[6][ij] = this->ft[8][ij] + rho0 - flux0;
         } else {
             //  境界に沿っていないことを警告する
         }

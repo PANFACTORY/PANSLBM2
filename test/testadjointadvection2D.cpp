@@ -112,11 +112,12 @@ int main() {
                 particlef.SetiU(0, j, uj, 0.0);
                 particleg.SetiTemperature(0, j);
                 int ij = particlef.GetIndex(nx - 1, j);
-                particlef.SetiRhoFlux(particleg, nx - 1, j, rho[t][ij], ux[t][ij], uy[t][ij], tem[t][ij]);
+                particlef.SetiRhoFlux(particleg, nx - 1, j, rho0, ux[t][ij], uy[t][ij], tem[t][ij]);
+                particleg.SetiFlux(nx - 1, j, ux[t][ij], uy[t][ij]);
             } else {
                 particleg.SetiFlux(0, j, 0.0, 0.0);
+                particleg.SetiFlux(nx - 1, j, 0.0, 0.0);
             }
-            particleg.SetiFlux(nx - 1, j, 0.0, 0.0);
         }
         for (int i = 0; i < nx; i++) {
             particleg.SetiFlux(i, ny - 1, 0.0, 0.0);
@@ -144,7 +145,7 @@ int main() {
     }
 
     //--------------------Export result--------------------
-    VTKExport file("result/adjointadvection_Pr6_beta1e-1.vtk", nx, ny);
+    VTKExport file("result/adjointadvection_Pr6_beta1e-1_.vtk", nx, ny);
     file.AddPointScaler("p", [&](int _i, int _j, int _k) { return rho[tmax][particlef.GetIndex(_i, _j)]/3.0; });
     file.AddPointVector("u", 
         [&](int _i, int _j, int _k) { return ux[tmax][particlef.GetIndex(_i, _j)]; },

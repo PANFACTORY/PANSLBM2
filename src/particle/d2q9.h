@@ -33,6 +33,8 @@ public:
         void SetFlux(int _i, int _j, T _ux, T _uy, T _q);
         void SetiRho(int _i, int _j);                                   //  Set boundary condition for Adjoint of NavierStokes  
         void SetiU(int _i, int _j, T _ux, T _uy);
+        void SetiRhoIn(int _i, int _j);                                 //  Set boundary condition for Adjoint of NavierStokes incompressible model 
+        void SetiUIn(int _i, int _j);
 
         void Stream();
         void iStream();
@@ -394,6 +396,56 @@ public:
             this->ft[2][ij] = this->ft[4][ij] + rho0;
             this->ft[5][ij] = this->ft[7][ij] + rho0;
             this->ft[6][ij] = this->ft[8][ij] + rho0;
+        } else {
+            //  境界に沿っていないことを警告する
+        }
+    }
+
+
+    template<class T>
+    void D2Q9<T>::SetiRhoIn(int _i, int _j) {
+        int ij = this->ny*_i + _j;
+        if (_i == 0) {
+            this->ft[3][ij] = this->ft[1][ij] - (4.0*this->ft[1][ij] + this->ft[5][ij] + this->ft[8][ij])/3.0;
+            this->ft[6][ij] = this->ft[8][ij] - (4.0*this->ft[1][ij] + this->ft[5][ij] + this->ft[8][ij])/3.0;
+            this->ft[7][ij] = this->ft[5][ij] - (4.0*this->ft[1][ij] + this->ft[5][ij] + this->ft[8][ij])/3.0;
+        } else if (_i == this->nx - 1) {
+            this->ft[1][ij] = this->ft[3][ij] - (4.0*this->ft[3][ij] + this->ft[6][ij] + this->ft[7][ij])/3.0;
+            this->ft[5][ij] = this->ft[7][ij] - (4.0*this->ft[3][ij] + this->ft[6][ij] + this->ft[7][ij])/3.0;
+            this->ft[8][ij] = this->ft[6][ij] - (4.0*this->ft[3][ij] + this->ft[6][ij] + this->ft[7][ij])/3.0;
+        } else if (_j == 0) {
+            this->ft[4][ij] = this->ft[2][ij] - (4.0*this->ft[2][ij] + this->ft[5][ij] + this->ft[6][ij])/3.0;
+            this->ft[7][ij] = this->ft[5][ij] - (4.0*this->ft[2][ij] + this->ft[5][ij] + this->ft[6][ij])/3.0;
+            this->ft[8][ij] = this->ft[6][ij] - (4.0*this->ft[2][ij] + this->ft[5][ij] + this->ft[6][ij])/3.0;
+        } else if (_j == this->ny - 1) {
+            this->ft[2][ij] = this->ft[4][ij] - (4.0*this->ft[4][ij] + this->ft[7][ij] + this->ft[8][ij])/3.0;
+            this->ft[5][ij] = this->ft[7][ij] - (4.0*this->ft[4][ij] + this->ft[7][ij] + this->ft[8][ij])/3.0;
+            this->ft[6][ij] = this->ft[8][ij] - (4.0*this->ft[4][ij] + this->ft[7][ij] + this->ft[8][ij])/3.0;
+        } else {
+            //  境界に沿っていないことを警告する
+        }
+    }
+
+
+    template<class T>
+    void D2Q9<T>::SetiUIn(int _i, int _j, T _ux, T _uy) {
+        int ij = this->ny*_i + _j;
+        if (_i == 0) {
+            this->ft[3][ij] = this->ft[1][ij] - 2.0/3.0;
+            this->ft[6][ij] = this->ft[8][ij] - 2.0/3.0;
+            this->ft[7][ij] = this->ft[5][ij] - 2.0/3.0;
+        } else if (_i == this->nx - 1) {          
+            this->ft[1][ij] = this->ft[3][ij] - 2.0/3.0;
+            this->ft[5][ij] = this->ft[7][ij] - 2.0/3.0;
+            this->ft[8][ij] = this->ft[6][ij] - 2.0/3.0;
+        } else if (_j == 0) {
+            this->ft[4][ij] = this->ft[2][ij] - 2.0/3.0;
+            this->ft[7][ij] = this->ft[5][ij] - 2.0/3.0;
+            this->ft[8][ij] = this->ft[6][ij] - 2.0/3.0;
+        } else if (_j == this->ny - 1) {
+            this->ft[2][ij] = this->ft[4][ij] - 2.0/3.0;
+            this->ft[5][ij] = this->ft[7][ij] - 2.0/3.0;
+            this->ft[6][ij] = this->ft[8][ij] - 2.0/3.0;
         } else {
             //  境界に沿っていないことを警告する
         }

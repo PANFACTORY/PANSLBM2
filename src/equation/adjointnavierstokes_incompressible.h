@@ -45,7 +45,7 @@ namespace PANSLBM2 {
         }
     }
 
-    namespace ANS {
+    namespace ANSin {
         //*********************************************************************
         //  Adjoint Navier-Stokes 2D    :   Update macroscopic values, rho*, u*, v*
         //*********************************************************************

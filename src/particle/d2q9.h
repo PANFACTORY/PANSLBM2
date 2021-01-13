@@ -428,7 +428,7 @@ public:
 
 
     template<class T>
-    void D2Q9<T>::SetiUIn(int _i, int _j, T _ux, T _uy) {
+    void D2Q9<T>::SetiUIn(int _i, int _j) {
         int ij = this->ny*_i + _j;
         if (_i == 0) {
             this->ft[3][ij] = this->ft[1][ij] - 2.0/3.0;

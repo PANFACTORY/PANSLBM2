@@ -197,7 +197,7 @@ public:
             this->ft[5][ij] = this->ft[7][ij] - 0.5*(this->ft[1][ij] - this->ft[3][ij]) + _rho*_u/2.0 + _rho*uy0/6.0;
             this->ft[6][ij] = this->ft[8][ij] + 0.5*(this->ft[1][ij] - this->ft[3][ij]) - _rho*_u/2.0 + _rho*uy0/6.0;
         } else if (_j == this->ny - 1) {
-            T uy0 = -1.0 - (this->ft[0][ij] + this->ft[1][ij] + this->ft[3][ij] + 2.0*(this->ft[2][ij] + this->ft[5][ij] + this->ft[6][ij]))/_rho;
+            T uy0 = -1.0 + (this->ft[0][ij] + this->ft[1][ij] + this->ft[3][ij] + 2.0*(this->ft[2][ij] + this->ft[5][ij] + this->ft[6][ij]))/_rho;
             this->ft[4][ij] = this->ft[2][ij] - 2.0*_rho*uy0/3.0;
             this->ft[7][ij] = this->ft[5][ij] + 0.5*(this->ft[1][ij] - this->ft[3][ij]) - _rho*_u/2.0 - _rho*uy0/6.0;
             this->ft[8][ij] = this->ft[6][ij] - 0.5*(this->ft[1][ij] - this->ft[3][ij]) + _rho*_u/2.0 - _rho*uy0/6.0;

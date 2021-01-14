@@ -99,8 +99,10 @@ namespace PANSLBM2 {
                     T ciu = P<T>::cx[j]*_ux[i] + P<T>::cy[j]*_uy[i]; 
                     T uu = _ux[i]*_ux[i] + _uy[i]*_uy[i];
                     _q[i] += _particle.ft[j][i]*P<T>::ei[j]*(1.0 + 3.0*ciu + 4.5*ciu*ciu - 1.5*uu);
-                    _vx[i] += _particle.ft[j][i]*P<T>::ei[j]*(P<T>::cx[j] + 3.0*ciu*P<T>::cx[j] - _ux[i]);
-                    _vy[i] += _particle.ft[j][i]*P<T>::ei[j]*(P<T>::cy[j] + 3.0*ciu*P<T>::cy[j] - _uy[i]);
+                    //_vx[i] += _particle.ft[j][i]*P<T>::ei[j]*(P<T>::cx[j] + 3.0*ciu*P<T>::cx[j] - _ux[i]);
+                    //_vy[i] += _particle.ft[j][i]*P<T>::ei[j]*(P<T>::cy[j] + 3.0*ciu*P<T>::cy[j] - _uy[i]);
+                    _vx[i] += _particle.ft[j][i]*P<T>::ei[j]*P<T>::cx[j];
+                    _vy[i] += _particle.ft[j][i]*P<T>::ei[j]*P<T>::cy[j];
                 }
             }
         }

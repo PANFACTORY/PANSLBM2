@@ -104,8 +104,9 @@ int main() {
     std::cout << objective_base << std::endl;
 
     //--------------------FDM loop--------------------
-    for (int k = 0; k < nx*ny; k++) {
-        std::cout << k << "\t";
+    for (int l = 0; l < nx; l++) {
+        std::cout << l << "\t";
+        int k = particlef.GetIndex(l, 5);
         
         //--------------------Set design variable--------------------
         for (int i = 0; i < nx; i++) {
@@ -133,7 +134,7 @@ int main() {
     }
 
     //--------------------Export result--------------------
-    VTKExport file("result/FDMadjointadvection_.vtk", nx, ny);
+    VTKExport file("result/FDMadjointadvectionY5.vtk", nx, ny);
     file.AddPointScaler("dfds", [&](int _i, int _j, int _k) {   return sensitivity[particlef.GetIndex(_i, _j)];  });
     
     delete[] alpha; delete[] beta;

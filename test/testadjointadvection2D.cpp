@@ -143,7 +143,7 @@ int main() {
     }
 
     //--------------------Export result--------------------
-    VTKExport file("result/adjointadvection_Pr6_beta1e-1_.vtk", nx, ny);
+    VTKExport file("result/adjointadvection_Pr6_beta1e-1.vtk", nx, ny);
     file.AddPointScaler("p", [&](int _i, int _j, int _k) { return rho[tmax][particlef.GetIndex(_i, _j)]/3.0; });
     file.AddPointVector("u", 
         [&](int _i, int _j, int _k) { return ux[tmax][particlef.GetIndex(_i, _j)]; },

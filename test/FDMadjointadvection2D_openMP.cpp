@@ -17,7 +17,7 @@ int main() {
     int nt = 30000, nx = 100, ny = 50, tmax = nt - 1;
     double viscosity = 0.1, diffusivity = 0.1/6.0; 
     double u0 = 0.0218, rho0 = 1.0, q0 = 0.0, tem0 = 0.0, epsdu = 1.0e-8, epsdq = 1.0e-8;    
-    double q = 0.1, alpha0 = 100.0/(double)nx, beta0 = 0.1/(double)nx, dgamma = -1.0e-5;
+    double q = 0.1, alpha0 = 200.0/(double)nx, beta0 = 0.1/(double)nx, dgamma = -1.0e-5;
     double *sensitivity = new double[nx*ny];                                                    //  Sensitivity
     for (int i = 0; i < nx*ny; i++) {
         sensitivity[i] = 0.0;
@@ -118,11 +118,10 @@ int main() {
         int id = omp_get_thread_num();
         int con = omp_get_num_threads();
         
-        int begin = nx/con*id + std::min(nx%con, id);
-        int end = nx/con*(id + 1) + std::min(nx%con, id + 1);
-        for (int l = begin; l < end; l++) {
-            std::cout << l << "\t";
-            int k = ny*l + 25;
+        int begin = (nx*ny)/con*id + std::min((nx*ny)%con, id);
+        int end = (nx*ny)/con*(id + 1) + std::min((nx*ny)%con, id + 1);
+        for (int k = begin; k < end; k++) {
+            std::cout << k << "\t";
 
             for (int i = 0; i < nx; i++) {
                 for (int j = 0; j < ny; j++) {
@@ -154,7 +153,7 @@ int main() {
     }
 
     //--------------------Export result--------------------
-    VTKExport file("result/FDMadjointadvectionY25.vtk", nx, ny);
+    VTKExport file("result/FDMadjointadvection_AL200_BE01.vtk", nx, ny);
     file.AddPointScaler("dfds", [&](int _i, int _j, int _k) {   return sensitivity[ny*_i + _j];  });
     
     delete[] sensitivity;

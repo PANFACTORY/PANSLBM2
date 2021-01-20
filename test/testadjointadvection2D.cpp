@@ -60,19 +60,28 @@ int main() {
     for (int i = 0; i < nx*ny; i++) {
         NS::InitialCondition(i, particlef, 1.0, 0.0, 0.0);
         AD::InitialCondition(i, particleg, 1.0, 0.0, 0.0);
-    }                                                                           //  Set initial condition
-    for (int t = 0; t < nt; t++) {
-        NS::UpdateMacro(particlef, rho[t], ux[t], uy[t]);
-        AD::UpdateMacro(particleg, tem[t], qx[t], qy[t], ux[t], uy[t]);         //  Update macroscopic values
-        NS::Collision(viscosity, particlef, rho[t], ux[t], uy[t]);
-        AD::Collision(diffusivity, particleg, tem[t], ux[t], uy[t]);            //  Collision
-        particlef.Stream();
-        particleg.Stream();                                                     //  Stream
+    }                                                                                           //  Set initial condition
+    NS::UpdateMacro(particlef, rho[0], ux[0], uy[0]);
+    AD::UpdateMacro(particleg, tem[0], qx[0], qy[0], ux[0], uy[0]);                             //  Update macroscopic values
+    for (int t = 0; t < nt - 1; t++) {
+        //  Navier-Stokes
+        NS::Collision(viscosity, particlef, rho[t], ux[t], uy[t]);                              //  Collision
+        particlef.Stream();                                                                     //  Stream
         for (int j = 0; j < ny; j++) {
             if (j < 0.33*ny) {
                 double uj = -u0*(j - 0.33*ny)*(j + 0.33*ny)/(0.33*ny*0.33*ny);
                 particlef.SetU(0, j, uj, 0.0);
-                particlef.SetRho(nx - 1, j, rho0, 0.0);
+                particlef.SetRho(nx - 1, j, rho0, 0.0);   
+            }
+        }                                                                                       //  Boundary condition (inlet)
+        NS::ExternalForceBrinkman(particlef, alpha, alpha);                                     //  External force term
+        NS::UpdateMacro(particlef, rho[t + 1], ux[t + 1], uy[t + 1]);                           //  Update macroscopic values
+        
+        //  Advection
+        AD::Collision(diffusivity, particleg, tem[t], ux[t], uy[t]);                            //  Collision
+        particleg.Stream();                                                                     //  Stream
+        for (int j = 0; j < ny; j++) {
+            if (j < 0.33*ny) {
                 particleg.SetTemperature(0, j, tem0);
                 int ij = particlef.GetIndex(nx - 1, j);
                 particleg.SetFlux(nx - 1, j, ux[t][ij], uy[t][ij], q0);
@@ -83,12 +92,14 @@ int main() {
         }
         for (int i = 0; i < nx; i++) {
             particleg.SetFlux(i, ny - 1, 0.0, 0.0, q0);
-        }                                                                       //  Boundary condition (inlet)
-        NS::ExternalForceBrinkman(particlef, alpha, alpha);
-        AD::ExternalForceHeatgeneration(particleg, beta);                       //  External force term
-        if (t > 0 && NS::CheckConvergence(particlef, epsdu, ux[t], uy[t], ux[t - 1], uy[t - 1]) && NS::CheckConvergence(particleg, epsdq, qx[t], qy[t], qx[t - 1], qy[t - 1])) {
+        }                                                                                       //  Boundary condition (inlet)
+        AD::ExternalForceHeatgeneration(particleg, beta);                                       //  External force term
+        AD::UpdateMacro(particleg, tem[t + 1], qx[t + 1], qy[t + 1], ux[t + 1], uy[t + 1]);     //  Update macroscopic values
+        
+        //  Check convergence
+        if (t > 0 && NS::CheckConvergence(particlef, epsdu, ux[t + 1], uy[t + 1], ux[t], uy[t]) && NS::CheckConvergence(particleg, epsdq, qx[t + 1], qy[t + 1], qx[t], qy[t])) {
             std::cout << "\tt = " << t << "\t";
-            tmax = t;
+            tmax = t + 1;
             break;
         }
     }
@@ -97,21 +108,17 @@ int main() {
     for (int i = 0; i < nx*ny; i++) {
         NS::InitialCondition(i, particlef, 0.0, 0.0, 0.0);
         AD::InitialCondition(i, particleg, 0.0, 0.0, 0.0);
-    }                                                                           //  Set initial condition
+    }                                                                                           //  Set initial condition
+    AAD::UpdateMacro(particleg, item, iqx, iqy);
+    ANS::UpdateMacro(particlef, rho[tmax], ux[tmax], uy[tmax], irho, iux, iuy);                 //  Update macroscopic values
     for (int t = tmax; t >= 0; t--) {
-        ANS::UpdateMacro(particlef, rho[t], ux[t], uy[t], irho, iux, iuy);
-        AAD::UpdateMacro(particleg, item, iqx, iqy);                            //  Update macroscopic values
-        ANS::Collision(viscosity, particlef, ux[t], uy[t], irho, iux, iuy);
-        AAD::Collision(diffusivity, particleg, ux[t], uy[t], item, iqx, iqy);   //  Collision
-        particlef.iStream();
-        particleg.iStream();                                                    //  Stream
+        //  Adjoint advection
+        AAD::Collision(diffusivity, particleg, ux[t], uy[t], item, iqx, iqy);                   //  Collision
+        particleg.iStream();                                                                    //  Stream
         for (int j = 0; j < ny; j++) {
             if (j < 0.33*ny) {
-                double uj = -u0*(j - 0.33*ny)*(j + 0.33*ny)/(0.33*ny*0.33*ny);
-                particlef.SetiU(0, j, uj, 0.0);
                 particleg.SetiTemperature(0, j);
-                int ij = particlef.GetIndex(nx - 1, j);
-                particlef.SetiRhoFlux(particleg, nx - 1, j, rho0, ux[t][ij], uy[t][ij], tem[t][ij]);
+                int ij = particleg.GetIndex(nx - 1, j);
                 particleg.SetiFlux(nx - 1, j, ux[t][ij], uy[t][ij]);
             } else {
                 particleg.SetiFlux(0, j, 0.0, 0.0);
@@ -120,10 +127,25 @@ int main() {
         }
         for (int i = 0; i < nx; i++) {
             particleg.SetiFlux(i, ny - 1, 0.0, 0.0);
-        }                                                                       //  Boundary condition (inlet)
+        }                                                                                       //  Boundary condition (inlet)
+        AAD::ExternalForceHeatexchange(particleg, beta);                                        //  External force by Brinkman model
+        AAD::UpdateMacro(particleg, item, iqx, iqy);                                            //  Update macroscopic values
+        
+        //  Adjoint Navier-Stokes
+        ANS::Collision(viscosity, particlef, ux[t], uy[t], irho, iux, iuy);                     //  Collision
+        particlef.iStream();                                                                    //  Stream
         ANS::ExternalForceHeatexchange(diffusivity, particlef, rho[t], ux[t], uy[t], tem[t], iqx, iqy);
-        ANS::ExternalForceBrinkman(particlef, alpha, alpha, rho[t], ux[t], uy[t]);
-        AAD::ExternalForceHeatexchange(particleg, beta);                        //  External force by Brinkman model
+        for (int j = 0; j < ny; j++) {
+            if (j < 0.33*ny) {
+                double uj = -u0*(j - 0.33*ny)*(j + 0.33*ny)/(0.33*ny*0.33*ny);
+                particlef.SetiU(0, j, uj, 0.0);
+                int ij = particlef.GetIndex(nx - 1, j);
+                particlef.SetiRhoFlux(particleg, nx - 1, j, rho0, ux[t][ij], uy[t][ij], tem[t][ij]);
+                //particlef.SetiU(nx - 1, j, ux[t][ij], uy[t][ij]);
+            }
+        }                                                                                       //  Boundary condition (inlet)
+        ANS::ExternalForceBrinkman(particlef, alpha, alpha, rho[t], ux[t], uy[t]);              //  External force by Brinkman model
+        ANS::UpdateMacro(particlef, rho[t], ux[t], uy[t], irho, iux, iuy);                      //  Update macroscopic values 
     }
 
     //--------------------Analyse sensitivity--------------------
@@ -143,7 +165,7 @@ int main() {
     }
 
     //--------------------Export result--------------------
-    VTKExport file("result/adjointadvection_Pr6_beta1e-1.vtk", nx, ny);
+    VTKExport file("result/adjointadvection_Pr6_beta1e-1_f.vtk", nx, ny);
     file.AddPointScaler("p", [&](int _i, int _j, int _k) { return rho[tmax][particlef.GetIndex(_i, _j)]/3.0; });
     file.AddPointVector("u", 
         [&](int _i, int _j, int _k) { return ux[tmax][particlef.GetIndex(_i, _j)]; },

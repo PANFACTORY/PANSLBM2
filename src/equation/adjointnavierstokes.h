@@ -33,6 +33,17 @@ namespace PANSLBM2 {
         }
 
         //*********************************************************************
+        //  Navier-Stokes 2D    :   External force with Brinkman model
+        //*********************************************************************
+        template<class T, template<class>class P>
+        void ExternalForceBrinkman(P<T>& _particle, T *_rho, T* _ux, T* _uy, T *_alphax, T *_alphay) {
+            for (int i = 0; i < _particle.np; i++) {
+                _ux[i] /= 1.0 + _particle.dx*_alphax[i]/_rho[i];
+                _uy[i] /= 1.0 + _particle.dx*_alphay[i]/_rho[i];
+            }
+        }
+
+        //*********************************************************************
         //  Navier-Stokes 2D    :   Check convergence
         //*********************************************************************
         template<class T, template<class>class P>
@@ -88,7 +99,7 @@ namespace PANSLBM2 {
         //*********************************************************************
         //  Adjoint Navier-Stokes 2D    :   External force with Brinkman model
         //*********************************************************************
-        template<class T, template<class>class P>
+        /*template<class T, template<class>class P>
         void ExternalForceBrinkman(P<T>& _particle, T* _alphax, T* _alphay, T* _rho, T* _ux, T* _uy) {
             assert(P<T>::nd == 2);
             for (int i = 0; i < _particle.np; i++) {
@@ -100,6 +111,17 @@ namespace PANSLBM2 {
                 for (int j = 0; j < P<T>::nc; j++) {
                     _particle.ft[j][i] -= 3.0*(_alphax[i]*mx*(P<T>::cx[j] - _ux[i])/(_rho[i] + _particle.dx*_alphax[i]) + _alphay[i]*my*(P<T>::cy[j] - _uy[i])/(_rho[i] + _particle.dx*_alphay[i]));
                 }
+            }
+        }*/
+
+        //*********************************************************************
+        //  Adjoint Navier-Stokes 2D    :   External force with Brinkman model
+        //*********************************************************************
+        template<class T, template<class>class P>
+        void ExternalForceBrinkman(P<T>& _particle, T* _rho, T* _iux, T* _iuy, T* _alphax, T* _alphay) {
+            for (int i = 0; i < _particle.np; i++) {
+                _iux[i] /= 1.0 + _particle.dx*_alphax[i]/_rho[i];
+                _iuy[i] /= 1.0 + _particle.dx*_alphay[i]/_rho[i];
             }
         }
 

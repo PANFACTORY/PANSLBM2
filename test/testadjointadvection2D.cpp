@@ -50,7 +50,7 @@ int main() {
     //--------------------Set design variable--------------------
     for (int i = 0; i < nx; i++) {
         for (int j = 0; j < ny; j++) {
-            double gamma = pow(i - 0.5*nx, 2.0) + pow(j, 2.0) < pow(0.15*nx, 2.0) ? 0.1 : 1.0;
+            double gamma = pow(i - 0.5*nx, 2.0) + pow(j, 2.0) < pow(0.15*nx, 2.0) ? 0.1 : 1.0;//((i == 0 || i == nx - 1) && j < 0.33*ny ? 1.0 : 0.9);
             alpha[particlef.GetIndex(i, j)] = alpha0*q*(1.0 - gamma)/(gamma + q);
             beta[particleg.GetIndex(i, j)] = beta0*q*(1.0 - gamma)/(gamma + q);;
         }
@@ -74,8 +74,8 @@ int main() {
                 particlef.SetRho(nx - 1, j, rho0, 0.0);   
             }
         }                                                                                       //  Boundary condition (inlet)
-        NS::ExternalForceBrinkman(particlef, alpha, alpha);                                     //  External force term
         NS::UpdateMacro(particlef, rho[t + 1], ux[t + 1], uy[t + 1]);                           //  Update macroscopic values
+        NS::ExternalForceBrinkman(particlef, rho[t + 1], ux[t + 1], uy[t + 1], alpha, alpha);   //  External force term
         
         //  Advection
         AD::Collision(diffusivity, particleg, tem[t], ux[t], uy[t]);                            //  Collision
@@ -93,8 +93,8 @@ int main() {
         for (int i = 0; i < nx; i++) {
             particleg.SetFlux(i, ny - 1, 0.0, 0.0, q0);
         }                                                                                       //  Boundary condition (inlet)
-        AD::ExternalForceHeatgeneration(particleg, beta);                                       //  External force term
         AD::UpdateMacro(particleg, tem[t + 1], qx[t + 1], qy[t + 1], ux[t + 1], uy[t + 1]);     //  Update macroscopic values
+        AD::ExternalForceHeatgeneration(particleg, tem[t + 1], beta);                           //  External force term
         
         //  Check convergence
         if (t > 0 && NS::CheckConvergence(particlef, epsdu, ux[t + 1], uy[t + 1], ux[t], uy[t]) && NS::CheckConvergence(particleg, epsdq, qx[t + 1], qy[t + 1], qx[t], qy[t])) {
@@ -128,8 +128,8 @@ int main() {
         for (int i = 0; i < nx; i++) {
             particleg.SetiFlux(i, ny - 1, 0.0, 0.0);
         }                                                                                       //  Boundary condition (inlet)
-        AAD::ExternalForceHeatexchange(particleg, beta);                                        //  External force by Brinkman model
         AAD::UpdateMacro(particleg, item, iqx, iqy);                                            //  Update macroscopic values
+        AAD::ExternalForceHeatexchange(particleg, item, beta);                                  //  External force by Brinkman model
         
         //  Adjoint Navier-Stokes
         ANS::Collision(viscosity, particlef, ux[t], uy[t], irho, iux, iuy);                     //  Collision
@@ -144,15 +144,15 @@ int main() {
                 //particlef.SetiU(nx - 1, j, ux[t][ij], uy[t][ij]);
             }
         }                                                                                       //  Boundary condition (inlet)
-        ANS::ExternalForceBrinkman(particlef, alpha, alpha, rho[t], ux[t], uy[t]);              //  External force by Brinkman model
         ANS::UpdateMacro(particlef, rho[t], ux[t], uy[t], irho, iux, iuy);                      //  Update macroscopic values 
+        ANS::ExternalForceBrinkman(particlef, rho[t], iux, iuy, alpha, alpha);                  //  External force by Brinkman model
     }
 
     //--------------------Analyse sensitivity--------------------
     double sensitivitymax = 0.0;
     for (int i = 0; i < nx; i++) {
         for (int j = 0; j < ny; j++) {
-            double gamma = pow(i - 0.5*nx, 2.0) + pow(j, 2.0) < pow(0.15*nx, 2.0) ? 0.1 : 1.0;
+            double gamma = pow(i - 0.5*nx, 2.0) + pow(j, 2.0) < pow(0.15*nx, 2.0) ? 0.1 : 1.0;//((i == 0 || i == nx - 1) && j < 0.33*ny ? 1.0 : 0.9);
             int ij = particlef.GetIndex(i, j);
             sensitivity[ij] = 3.0*(iux[ij]*ux[tmax][ij] + iuy[ij]*uy[tmax][ij])*(-alpha0*q*(q + 1.0)/pow(q + gamma, 2.0)) - (1.0 - tem[tmax][ij])*(1.0 + item[ij])*(-beta0*q*(q + 1.0)/pow(q + gamma, 2.0));
             if (sensitivitymax < fabs(sensitivity[ij])) {
@@ -165,7 +165,7 @@ int main() {
     }
 
     //--------------------Export result--------------------
-    VTKExport file("result/adjointadvection_Pr6_beta1e-1_f.vtk", nx, ny);
+    VTKExport file("result/adjointadvection_Pr6_beta1e-1_g.vtk", nx, ny);
     file.AddPointScaler("p", [&](int _i, int _j, int _k) { return rho[tmax][particlef.GetIndex(_i, _j)]/3.0; });
     file.AddPointVector("u", 
         [&](int _i, int _j, int _k) { return ux[tmax][particlef.GetIndex(_i, _j)]; },

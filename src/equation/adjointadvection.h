@@ -26,6 +26,16 @@ namespace PANSLBM2 {
                 }
             }
         }
+
+        //*********************************************************************
+        //  Advection   :   External force with heat generation
+        //*********************************************************************
+        template<class T, template<class>class P>
+        void ExternalForceHeatgeneration(P<T>& _particle, T* _tem, T* _beta) {
+            for (int i = 0; i < _particle.np; i++) {
+                _tem[i] = (_tem[i] + _particle.dx*_beta[i])/(1.0 + _particle.dx*_beta[i]);
+            }
+        }
     }
 
     namespace ANS {
@@ -92,6 +102,16 @@ namespace PANSLBM2 {
                 for (int j = 0; j < P<T>::nc; j++) {
                     _particle.ft[j][i] -= _beta[i]*(1.0 + _particle.dx*Ttilde)/(1.0 + _particle.dx*_beta[i]);
                 }
+            }
+        }
+
+        //*********************************************************************
+        //  Adjoint advection 2D    :   External force
+        //*********************************************************************
+        template<class T, template<class>class P>
+        void ExternalForceHeatexchange(P<T>& _particle, T* _item, T* _beta) {
+            for (int i = 0; i < _particle.np; i++) {
+                _item[i] = (_item[i] - _beta[i])/(1.0 + _particle.dx*_beta[i]);
             }
         }
     }

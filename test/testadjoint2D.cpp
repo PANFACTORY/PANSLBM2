@@ -11,9 +11,9 @@ using namespace PANSLBM2;
 
 int main() {
     //--------------------Setting parameters--------------------
-    int nt = 9500, nx = 200, ny = 100, tmax = nt - 1;
-    double nu = 0.1, u0 = 0.0109, rho0 = 1.0, epsdu = 1.0e-8;    
-    double q = 0.1, alpha0 = 1e0, *alpha = new double[nx*ny];                               //  Inverse permeation
+    int nt = 10000, nx = 200, ny = 100, tmax = nt - 1;
+    double nu = 0.1, u0 = 0.0109, rho0 = 1.0, epsdu = 1.0e-15;    
+    double q = 0.1, alpha0 = 50.0/(double)nx, *alpha = new double[nx*ny];                  //  Inverse permeation
     double **rho = new double*[nt], **ux = new double*[nt], **uy = new double*[nt];         //  State variable
     for (int t = 0; t < nt; t++) {
         rho[t] = new double[nx*ny]; ux[t] = new double[nx*ny];  uy[t] = new double[nx*ny];
@@ -42,7 +42,7 @@ int main() {
     //--------------------Set design variable--------------------
     for (int i = 0; i < nx; i++) {
         for (int j = 0; j < ny; j++) {
-            double gamma = pow(i - 0.5*nx, 2.0) + pow(j, 2.0) < pow(0.15*nx, 2.0) ? 0.1 : 1.0/*((i == 0 || i == nx - 1) && j < 0.33*ny ? 1.0 : 0.9)*/;
+            double gamma = pow(i - 0.5*nx, 2.0) + pow(j, 2.0) < pow(0.15*nx, 2.0) ? 0.1 : ((i == 0 || i == nx - 1) && j < 0.33*ny ? 1.0 : 0.9);
             alpha[particle.GetIndex(i, j)] = alpha0*q*(1.0 - gamma)/(gamma + q);
         }
     }
@@ -84,15 +84,19 @@ int main() {
                 double uj = -u0*(j - 0.33*ny)*(j + 0.33*ny)/(0.33*ny*0.33*ny);
                 particle.SetiUPressureDrop(0, j, uj, 0.0);
                 particle.SetiRho(nx - 1, j);
+                //int ij = particle.GetIndex(nx - 1, j);
+                //particle.SetiUPressureDrop(nx - 1, j, ux[t][ij], 0.0, -1.0);
             }
         }                                                                           //  Boundary condition (inlet)
         ANS::UpdateMacro(particle, rho[t - 1], ux[t - 1], uy[t - 1], irho, iux, iuy);           //  Update macroscopic values
         ANS::ExternalForceBrinkman(particle, rho[t - 1], iux, iuy, alpha, alpha);   //  External force by Brinkman model
     }
+
+    //--------------------Get sensitivity--------------------
     double sensitivitymax = 0.0;
     for (int i = 0; i < nx; i++) {
         for (int j = 0; j < ny; j++) {
-            double gamma = pow(i - 0.5*nx, 2.0) + pow(j, 2.0) < pow(0.15*nx, 2.0) ? 0.1 : 1.0/*((i == 0 || i == nx - 1) && j < 0.33*ny ? 1.0 : 0.9)*/;
+            double gamma = pow(i - 0.5*nx, 2.0) + pow(j, 2.0) < pow(0.15*nx, 2.0) ? 0.1 : ((i == 0 || i == nx - 1) && j < 0.33*ny ? 1.0 : 0.9);
             int ij = particle.GetIndex(i, j);
             sensitivity[ij] = 3.0*(iux[ij]*ux[tmax][ij] + iuy[ij]*uy[tmax][ij])*(-alpha0*q*(q + 1.0)/pow(q + gamma, 2.0));
             if (sensitivitymax < fabs(sensitivity[ij])) {
@@ -105,7 +109,7 @@ int main() {
     }
 
     //--------------------Export result--------------------
-    VTKExport file("result/adjoint_updateu.vtk", nx, ny);
+    VTKExport file("result/adjoint_updateu_AL50.vtk", nx, ny);
     file.AddPointScaler("p", [&](int _i, int _j, int _k) { return rho[tmax][particle.GetIndex(_i, _j)]/3.0; });
     file.AddPointVector("u", 
         [&](int _i, int _j, int _k) { return ux[tmax][particle.GetIndex(_i, _j)]; },
@@ -119,6 +123,7 @@ int main() {
         [&](int _i, int _j, int _k) { return iuy[particle.GetIndex(_i, _j)]; },
         [](int _i, int _j, int _k) { return 0.0; }
     );
+    file.AddPointScaler("alpha", [&](int _i, int _j, int _k) { return alpha[particle.GetIndex(_i, _j)]; });
     
     delete[] alpha;
     for (int t = 0; t < nt; t++) {

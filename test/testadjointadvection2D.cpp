@@ -16,7 +16,7 @@ int main() {
     int nt = 30000, nx = 100, ny = 50, tmax = nt - 1;
     double viscosity = 0.1, diffusivity = 0.1/6.0; 
     double u0 = 0.0218, rho0 = 1.0, q0 = 0.0, tem0 = 0.0, epsdu = 1.0e-8, epsdq = 1.0e-8;    
-    double q = 0.1, alpha0 = 100.0/(double)nx, beta0 = 0.1/(double)nx, *alpha = new double[nx*ny], *beta = new double[nx*ny];   //  Inverse permeation
+    double q = 0.1, alpha0 = 50.0/(double)nx, beta0 = 0.1/(double)nx, *alpha = new double[nx*ny], *beta = new double[nx*ny];   //  Inverse permeation
     double **rho = new double*[nt], **ux = new double*[nt], **uy = new double*[nt];
     double **tem = new double*[nt], **qx = new double*[nt], **qy = new double*[nt];                     //  State variable
     for (int t = 0; t < nt; t++) {
@@ -138,10 +138,10 @@ int main() {
         for (int j = 0; j < ny; j++) {
             if (j < 0.33*ny) {
                 double uj = -u0*(j - 0.33*ny)*(j + 0.33*ny)/(0.33*ny*0.33*ny);
-                particlef.SetiU(0, j, uj, 0.0);
+                particlef.SetiUPressureDrop(0, j, uj, 0.0);
                 int ij = particlef.GetIndex(nx - 1, j);
                 particlef.SetiRhoFlux(particleg, nx - 1, j, rho0, ux[t][ij], uy[t][ij], tem[t][ij]);
-                //particlef.SetiU(nx - 1, j, ux[t][ij], uy[t][ij]);
+                //particlef.SetiUPressureDrop(nx - 1, j, ux[t][ij], uy[t][ij], -1.0);
             }
         }                                                                                       //  Boundary condition (inlet)
         ANS::UpdateMacro(particlef, rho[t], ux[t], uy[t], irho, iux, iuy);                      //  Update macroscopic values 
@@ -165,7 +165,7 @@ int main() {
     }
 
     //--------------------Export result--------------------
-    VTKExport file("result/adjointadvection_Pr6_beta1e-1_g.vtk", nx, ny);
+    VTKExport file("result/adjointadvection_Pr6_beta1e-1_h.vtk", nx, ny);
     file.AddPointScaler("p", [&](int _i, int _j, int _k) { return rho[tmax][particlef.GetIndex(_i, _j)]/3.0; });
     file.AddPointVector("u", 
         [&](int _i, int _j, int _k) { return ux[tmax][particlef.GetIndex(_i, _j)]; },

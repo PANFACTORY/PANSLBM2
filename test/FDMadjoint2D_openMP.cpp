@@ -67,7 +67,7 @@ int main() {
         double objective = 0.0;
         for (int j = 0; j < ny; j++) {
             if (j < 0.33*ny) {
-                objective += (_rho[particlef.GetIndex(nx - 1, j)] - _rho[particlef.GetIndex(0, j)]);
+                objective += (_rho[particlef.GetIndex(0, j)] - _rho[particlef.GetIndex(nx - 1, j)]);
             }
         }
         return objective/3.0; 
@@ -78,7 +78,7 @@ int main() {
     double *rhon = new double[nx*ny], *uxn = new double[nx*ny], *uyn = new double[nx*ny];   //  State variable
     for (int i = 0; i < nx; i++) {
         for (int j = 0; j < ny; j++) {
-            gamman[ny*i + j] = pow(i - 0.5*nx, 2.0) + pow(j, 2.0) < pow(0.15*nx, 2.0) ? 0.1 : ((i == 0 || i == nx - 1) && j < 0.33*ny ? 1.0 : 0.9);
+            gamman[ny*i + j] = pow(i - 0.5*nx, 2.0) + pow(j, 2.0) < pow(0.15*nx, 2.0) ? 0.1 : 0.9;//((i == 0 || i == nx - 1) && j < 0.33*ny ? 1.0 : 0.9);
         }
     }
     double objective_base = getObjective(alphan, gamman, rhon, uxn, uyn);
@@ -103,7 +103,7 @@ int main() {
 
             for (int i = 0; i < nx; i++) {
                 for (int j = 0; j < ny; j++) {
-                    gamma[ny*i + j] = pow(i - 0.5*nx, 2.0) + pow(j, 2.0) < pow(0.15*nx, 2.0) ? 0.1 : ((i == 0 || i == nx - 1) && j < 0.33*ny ? 1.0 : 0.9);
+                    gamma[ny*i + j] = pow(i - 0.5*nx, 2.0) + pow(j, 2.0) < pow(0.15*nx, 2.0) ? 0.1 : 0.9;//((i == 0 || i == nx - 1) && j < 0.33*ny ? 1.0 : 0.9);
                 }
             }
             gamma[k] += dgamma;

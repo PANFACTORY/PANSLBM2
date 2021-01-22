@@ -13,7 +13,7 @@ int main() {
     //--------------------Setting parameters--------------------
     int nt = 10000, nx = 200, ny = 100, tmax = nt - 1;
     double nu = 0.1, u0 = 0.0109, rho0 = 1.0, epsdu = 1.0e-15;    
-    double q = 0.1, alpha0 = 50.0/(double)nx, *alpha = new double[nx*ny];                       //  Inverse permeation
+    double q = 0.01, alpha0 = 50.0/(double)nx, *alpha = new double[nx*ny];                      //  Inverse permeation
     double **rho = new double*[nt], **ux = new double*[nt], **uy = new double*[nt];             //  State variable
     for (int t = 0; t < nt; t++) {
         rho[t] = new double[nx*ny]; ux[t] = new double[nx*ny];  uy[t] = new double[nx*ny];
@@ -60,7 +60,6 @@ int main() {
                 double uj = -u0*(j - 0.33*ny)*(j + 0.33*ny)/(0.33*ny*0.33*ny);
                 particle.SetU(0, j, uj, 0.0);
                 particle.SetRho(nx - 1, j, rho0, 0.0);
-                //particle.SetU(nx - 1, j, uj, 0.0);
             }
         }                                                                                       //  Boundary condition (inlet)
         NS::UpdateMacro(particle, rho[t + 1], ux[t + 1], uy[t + 1]);                            //  Update macroscopic values
@@ -85,7 +84,8 @@ int main() {
                 double uj = -u0*(j - 0.33*ny)*(j + 0.33*ny)/(0.33*ny*0.33*ny);
                 particle.SetiUPressureDrop(0, j, uj, 0.0);
                 particle.SetiRho(nx - 1, j);
-                //particle.SetiUPressureDrop(nx - 1, j, uj, 0.0, -1.0);
+                //int ij = particle.GetIndex(nx - 1, j);
+                //particle.SetiUPressureDrop(nx - 1, j, ux[t][ij], uy[t][ij], -1.0);
                 //particle.SetiU(nx - 1, j, ux[t][ij], uy[t][ij]);
             }
         }                                                                                       //  Boundary condition (inlet)
@@ -110,7 +110,7 @@ int main() {
     }
 
     //--------------------Export result--------------------
-    VTKExport file("result/adjoint_updateu_AL50_.vtk", nx, ny);
+    VTKExport file("result/adjoint_updateu_AL50_q001.vtk", nx, ny);
     file.AddPointScaler("p", [&](int _i, int _j, int _k) { return rho[tmax][particle.GetIndex(_i, _j)]/3.0; });
     file.AddPointVector("u", 
         [&](int _i, int _j, int _k) { return ux[tmax][particle.GetIndex(_i, _j)]; },

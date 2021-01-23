@@ -86,7 +86,6 @@ int main() {
                 particle.SetiRho(nx - 1, j);
                 //int ij = particle.GetIndex(nx - 1, j);
                 //particle.SetiUPressureDrop(nx - 1, j, ux[t][ij], uy[t][ij], -1.0);
-                //particle.SetiU(nx - 1, j, ux[t][ij], uy[t][ij]);
             }
         }                                                                                       //  Boundary condition (inlet)
         ANS::UpdateMacro(particle, rho[t - 1], ux[t - 1], uy[t - 1], irho, iux, iuy);           //  Update macroscopic values
@@ -110,7 +109,7 @@ int main() {
     }
 
     //--------------------Export result--------------------
-    VTKExport file("result/adjoint_updateu_AL50_q001_outp.vtk", nx, ny);
+    VTKExport file("result/adjoint_AL50_q1e-2_outp.vtk", nx, ny);
     file.AddPointScaler("p", [&](int _i, int _j, int _k) { return rho[tmax][particle.GetIndex(_i, _j)]/3.0; });
     file.AddPointVector("u", 
         [&](int _i, int _j, int _k) { return ux[tmax][particle.GetIndex(_i, _j)]; },

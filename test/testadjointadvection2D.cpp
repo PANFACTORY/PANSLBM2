@@ -50,7 +50,7 @@ int main() {
     //--------------------Set design variable--------------------
     for (int i = 0; i < nx; i++) {
         for (int j = 0; j < ny; j++) {
-            double gamma = pow(i - 0.5*nx, 2.0) + pow(j, 2.0) < pow(0.15*nx, 2.0) ? 0.1 : 0.9;//((i == 0 || i == nx - 1) && j < 0.33*ny ? 1.0 : 0.9);
+            double gamma = pow(i - 0.5*nx, 2.0) + pow(j, 2.0) < pow(0.15*nx, 2.0) ? 0.1 : 0.9;
             alpha[particlef.GetIndex(i, j)] = alpha0*q*(1.0 - gamma)/(gamma + q);
             beta[particleg.GetIndex(i, j)] = beta0*q*(1.0 - gamma)/(gamma + q);;
         }
@@ -140,8 +140,8 @@ int main() {
                 double uj = -u0*(j - 0.33*ny)*(j + 0.33*ny)/(0.33*ny*0.33*ny);
                 particlef.SetiU(0, j, uj, 0.0);
                 int ij = particlef.GetIndex(nx - 1, j);
-                //particlef.SetiRhoFlux(particleg, nx - 1, j, rho0, ux[t][ij], uy[t][ij], tem[t][ij]);
-                particlef.SetiUPressureDrop(nx - 1, j, ux[t][ij], uy[t][ij], -1.0);
+                particlef.SetiRhoFlux(particleg, nx - 1, j, rho0, ux[t][ij], uy[t][ij], tem[t][ij]);
+                //particlef.SetiUPressureDrop(nx - 1, j, ux[t][ij], uy[t][ij], -1.0);
             }
         }                                                                                       //  Boundary condition (inlet)
         ANS::UpdateMacro(particlef, rho[t], ux[t], uy[t], irho, iux, iuy);                      //  Update macroscopic values 
@@ -152,7 +152,7 @@ int main() {
     double sensitivitymax = 0.0;
     for (int i = 0; i < nx; i++) {
         for (int j = 0; j < ny; j++) {
-            double gamma = pow(i - 0.5*nx, 2.0) + pow(j, 2.0) < pow(0.15*nx, 2.0) ? 0.1 : 0.9;//((i == 0 || i == nx - 1) && j < 0.33*ny ? 1.0 : 0.9);
+            double gamma = pow(i - 0.5*nx, 2.0) + pow(j, 2.0) < pow(0.15*nx, 2.0) ? 0.1 : 0.9;
             int ij = particlef.GetIndex(i, j);
             sensitivity[ij] = 3.0*(iux[ij]*ux[tmax][ij] + iuy[ij]*uy[tmax][ij])*(-alpha0*q*(q + 1.0)/pow(q + gamma, 2.0)) - (1.0 - tem[tmax][ij])*(1.0 + item[ij])*(-beta0*q*(q + 1.0)/pow(q + gamma, 2.0));
             if (sensitivitymax < fabs(sensitivity[ij])) {

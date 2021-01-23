@@ -110,7 +110,7 @@ int main() {
     }
 
     //--------------------Export result--------------------
-    VTKExport file("result/adjoint_updateu_AL50_q001.vtk", nx, ny);
+    VTKExport file("result/adjoint_updateu_AL50_q001_outp.vtk", nx, ny);
     file.AddPointScaler("p", [&](int _i, int _j, int _k) { return rho[tmax][particle.GetIndex(_i, _j)]/3.0; });
     file.AddPointVector("u", 
         [&](int _i, int _j, int _k) { return ux[tmax][particle.GetIndex(_i, _j)]; },

@@ -141,7 +141,10 @@ int main() {
                 particlef.SetiU(0, j, uj, 0.0);
                 int ij = particlef.GetIndex(nx - 1, j);
                 particlef.SetiRhoFlux(particleg, nx - 1, j, rho0, ux[t][ij], uy[t][ij], tem[t][ij]);
-                //particlef.SetiUPressureDrop(nx - 1, j, ux[t][ij], uy[t][ij], -1.0);
+                //particlef.SetiUFlux(particleg, nx - 1, j, rho0, ux[t][ij], uy[t][ij], tem[t][ij]);
+                //particlef.SetiUFlux(particleg, nx - 1, j, rho0, uj, 0.0, tem[t][ij]);
+                //particlef.SetiU(nx - 1, j, ux[t][ij], uy[t][ij]);
+                //particlef.SetiRho(nx - 1, j);
             }
         }                                                                                       //  Boundary condition (inlet)
         ANS::UpdateMacro(particlef, rho[t], ux[t], uy[t], irho, iux, iuy);                      //  Update macroscopic values 
@@ -165,7 +168,7 @@ int main() {
     }
 
     //--------------------Export result--------------------
-    VTKExport file("result/adjointadvection_Pr6_beta1e-1_i.vtk", nx, ny);
+    VTKExport file("result/adjointadvection_AL50_BE1e-1_q1e-2_outrhoflux_20000steps.vtk", nx, ny);
     file.AddPointScaler("p", [&](int _i, int _j, int _k) { return rho[tmax][particlef.GetIndex(_i, _j)]/3.0; });
     file.AddPointVector("u", 
         [&](int _i, int _j, int _k) { return ux[tmax][particlef.GetIndex(_i, _j)]; },
@@ -193,6 +196,8 @@ int main() {
     );
     file.AddPointScaler("boundaryf", [&](int _i, int _j, int _k) { return particlef.GetBoundary(_i, _j); });
     file.AddPointScaler("boundaryg", [&](int _i, int _j, int _k) { return particleg.GetBoundary(_i, _j); });
+    file.AddPointScaler("alpha", [&](int _i, int _j, int _k) { return alpha[particlef.GetIndex(_i, _j)]; });
+    file.AddPointScaler("beta", [&](int _i, int _j, int _k) { return beta[particleg.GetIndex(_i, _j)]; });
     
     delete[] alpha; delete[] beta;
     for (int t = 0; t < nt; t++) {

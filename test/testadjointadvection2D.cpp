@@ -15,7 +15,7 @@ int main() {
     //--------------------Setting parameters--------------------
     int nt = 30000, nx = 100, ny = 50, tmax = nt - 1;
     double viscosity = 0.1, diffusivity = 0.1/6.0; 
-    double u0 = 0.0218, rho0 = 1.0, q0 = 0.0, tem0 = 0.0, epsdu = 1.0e-8, epsdq = 1.0e-8;    
+    double u0 = 0.0218, rho0 = 1.0, q0 = 0.0, tem0 = 0.0, epsdu = 1.0e-4, epsdq = 1.0e-4;    
     double q = 0.01, alpha0 = 50.0/(double)nx, beta0 = 0.1/(double)nx, *alpha = new double[nx*ny], *beta = new double[nx*ny];   //  Inverse permeation
     double **rho = new double*[nt], **ux = new double*[nt], **uy = new double*[nt];
     double **tem = new double*[nt], **qx = new double*[nt], **qy = new double*[nt];                     //  State variable
@@ -149,6 +149,35 @@ int main() {
         }                                                                                       //  Boundary condition (inlet)
         ANS::UpdateMacro(particlef, rho[t], ux[t], uy[t], irho, iux, iuy);                      //  Update macroscopic values 
         ANS::ExternalForceBrinkman(particlef, rho[t], iux, iuy, alpha, alpha);                  //  External force by Brinkman model
+
+        if (t%300 == 0) {
+            VTKExport file("result/adjointadvection_AL50_BE1e-1_q1e-2_outrhoflux_log" + std::to_string(t/300) + ".vtk", nx, ny);
+            file.AddPointScaler("p", [&](int _i, int _j, int _k) { return rho[t][particlef.GetIndex(_i, _j)]/3.0; });
+            file.AddPointVector("u", 
+                [&](int _i, int _j, int _k) { return ux[t][particlef.GetIndex(_i, _j)]; },
+                [&](int _i, int _j, int _k) { return uy[t][particlef.GetIndex(_i, _j)]; },
+                [](int _i, int _j, int _k) { return 0.0; }
+            );
+            file.AddPointScaler("T", [&](int _i, int _j, int _k) { return tem[t][particleg.GetIndex(_i, _j)]; });
+            file.AddPointVector("q", 
+                [&](int _i, int _j, int _k) { return qx[t][particleg.GetIndex(_i, _j)]; },
+                [&](int _i, int _j, int _k) { return qy[t][particleg.GetIndex(_i, _j)]; },
+                [](int _i, int _j, int _k) { return 0.0; }
+            );
+            //file.AddPointScaler("dfds", [&](int _i, int _j, int _k) {   return sensitivity[particlef.GetIndex(_i, _j)];  });
+            file.AddPointScaler("ip", [&](int _i, int _j, int _k) { return irho[particlef.GetIndex(_i, _j)]; });
+            file.AddPointVector("iu", 
+                [&](int _i, int _j, int _k) { return iux[particlef.GetIndex(_i, _j)]; },
+                [&](int _i, int _j, int _k) { return iuy[particlef.GetIndex(_i, _j)]; },
+                [](int _i, int _j, int _k) { return 0.0; }
+            );
+            file.AddPointScaler("iT", [&](int _i, int _j, int _k) { return item[particleg.GetIndex(_i, _j)]; });
+            file.AddPointVector("iq", 
+                [&](int _i, int _j, int _k) { return iqx[particleg.GetIndex(_i, _j)]; },
+                [&](int _i, int _j, int _k) { return iqy[particleg.GetIndex(_i, _j)]; },
+                [](int _i, int _j, int _k) { return 0.0; }
+            );
+        }
     }
 
     //--------------------Analyse sensitivity--------------------
@@ -168,7 +197,7 @@ int main() {
     }
 
     //--------------------Export result--------------------
-    VTKExport file("result/adjointadvection_AL50_BE1e-1_q1e-2_outrhoflux_20000steps.vtk", nx, ny);
+    VTKExport file("result/adjointadvection_AL50_BE1e-1_q1e-2_outrhoflux.vtk", nx, ny);
     file.AddPointScaler("p", [&](int _i, int _j, int _k) { return rho[tmax][particlef.GetIndex(_i, _j)]/3.0; });
     file.AddPointVector("u", 
         [&](int _i, int _j, int _k) { return ux[tmax][particlef.GetIndex(_i, _j)]; },

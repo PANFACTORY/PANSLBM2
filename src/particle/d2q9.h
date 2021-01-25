@@ -412,7 +412,7 @@ public:
             this->ft[6][ij] = rho0;
             this->ft[7][ij] = rho0;
         } else if (_i == this->nx - 1) {          
-            T rho0 = (1.0 - 3.0*_ux)/(6.0*(1.0 + 3.0*_ux))*(4.0*this->ft[3][ij] + this->ft[6][ij] + this->ft[7][ij]) + _uy/(2.0*(1.0 + 3.0*_ux))*(this->ft[6][ij] - this->ft[7][ij]);
+            T rho0 = -(1.0 - 3.0*_ux)/(6.0*(1.0 + 3.0*_ux))*(4.0*this->ft[3][ij] + this->ft[6][ij] + this->ft[7][ij]) - _uy/(2.0*(1.0 + 3.0*_ux))*(this->ft[6][ij] - this->ft[7][ij]);
             this->ft[1][ij] = rho0;
             this->ft[5][ij] = rho0;
             this->ft[8][ij] = rho0;
@@ -422,7 +422,7 @@ public:
             this->ft[7][ij] = rho0;
             this->ft[8][ij] = rho0;
         } else if (_j == this->ny - 1) {
-            T rho0 = (1.0 - 3.0*_uy)/(6.0*(1.0 + 3.0*_uy))*(4.0*this->ft[4][ij] + this->ft[7][ij] + this->ft[8][ij]) + _ux/(2.0*(1.0 + 3.0*_uy))*(this->ft[8][ij] - this->ft[7][ij]);
+            T rho0 = -(1.0 - 3.0*_uy)/(6.0*(1.0 + 3.0*_uy))*(4.0*this->ft[4][ij] + this->ft[7][ij] + this->ft[8][ij]) - _ux/(2.0*(1.0 + 3.0*_uy))*(this->ft[8][ij] - this->ft[7][ij]);
             this->ft[2][ij] = rho0;
             this->ft[5][ij] = rho0;
             this->ft[6][ij] = rho0;

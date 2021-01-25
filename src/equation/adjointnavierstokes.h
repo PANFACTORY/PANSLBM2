@@ -63,20 +63,22 @@ namespace PANSLBM2 {
         //  Adjoint Navier-Stokes 2D    :   Update macroscopic values, rho*, u*, v*
         //*********************************************************************
         template<class T, template<class>class P>
-        void UpdateMacro(P<T>& _particle, T* _rho, T* _ux, T* _uy, T* _q, T* _vx, T* _vy) {
+        void UpdateMacro(P<T>& _particle, T* _rho, T* _ux, T* _uy, T* _q, T* _vx, T* _vy, T* _mx, T* _my) {
             assert(P<T>::nd == 2);
             for (int i = 0; i < _particle.np; i++) {
                 _q[i] = T();
                 _vx[i] = T();
                 _vy[i] = T();
+                _mx[i] = T();
+                _my[i] = T();
                 for (int j = 0; j < P<T>::nc; j++) {
                     T ciu = P<T>::cx[j]*_ux[i] + P<T>::cy[j]*_uy[i]; 
                     T uu = _ux[i]*_ux[i] + _uy[i]*_uy[i];
                     _q[i] += _particle.ft[j][i]*P<T>::ei[j]*(1.0 + 3.0*ciu + 4.5*ciu*ciu - 1.5*uu);
-                    //_vx[i] += _particle.ft[j][i]*P<T>::ei[j]*(P<T>::cx[j] + 3.0*ciu*P<T>::cx[j] - _ux[i]);
-                    //_vy[i] += _particle.ft[j][i]*P<T>::ei[j]*(P<T>::cy[j] + 3.0*ciu*P<T>::cy[j] - _uy[i]);
-                    _vx[i] += _particle.ft[j][i]*P<T>::ei[j]*P<T>::cx[j];
-                    _vy[i] += _particle.ft[j][i]*P<T>::ei[j]*P<T>::cy[j];
+                    _vx[i] += _particle.ft[j][i]*P<T>::ei[j]*(P<T>::cx[j] + 3.0*ciu*P<T>::cx[j] - _ux[i]);
+                    _vy[i] += _particle.ft[j][i]*P<T>::ei[j]*(P<T>::cy[j] + 3.0*ciu*P<T>::cy[j] - _uy[i]);
+                    _mx[i] += _particle.ft[j][i]*P<T>::ei[j]*P<T>::cx[j];
+                    _my[i] += _particle.ft[j][i]*P<T>::ei[j]*P<T>::cy[j];
                 }
             }
         }
@@ -118,10 +120,12 @@ namespace PANSLBM2 {
         //  Adjoint Navier-Stokes 2D    :   External force with Brinkman model
         //*********************************************************************
         template<class T, template<class>class P>
-        void ExternalForceBrinkman(P<T>& _particle, T* _rho, T* _iux, T* _iuy, T* _alphax, T* _alphay) {
+        void ExternalForceBrinkman(P<T>& _particle, T* _rho, T* _vx, T* _vy, T* _mx, T* _my, T* _alphax, T* _alphay) {
             for (int i = 0; i < _particle.np; i++) {
-                _iux[i] /= 1.0 + _particle.dx*_alphax[i]/_rho[i];
-                _iuy[i] /= 1.0 + _particle.dx*_alphay[i]/_rho[i];
+                _mx[i] /= 1.0 + _particle.dx*_alphax[i]/_rho[i];
+                _my[i] /= 1.0 + _particle.dx*_alphay[i]/_rho[i];
+                _vx[i] -= _particle.dx*_alphax[i]*_mx[i]/_rho[i];
+                _vy[i] -= _particle.dx*_alphay[i]*_my[i]/_rho[i];
             }
         }
 

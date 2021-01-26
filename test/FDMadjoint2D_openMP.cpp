@@ -15,8 +15,8 @@ int main() {
     int nt = 10000, nx = 200, ny = 100, tmax = nt - 1;
     double viscosity = 0.1; 
     double u0 = 0.0109, rho0 = 1.0, q0 = 0.0, epsdu = 1.0e-8;    
-    double q = 0.1, alpha0 = 50.0/(double)nx, dgamma = -1.0e-5;
-    double *sensitivity = new double[nx*ny];                                                    //  Sensitivity
+    double q = 0.01, alpha0 = 50.0/(double)nx, dgamma = 1.0e-5;
+    double *sensitivity = new double[nx*ny];
     for (int i = 0; i < nx*ny; i++) {
         sensitivity[i] = 0.0;
     }
@@ -73,19 +73,6 @@ int main() {
         return objective/3.0; 
     };
 
-    //--------------------Get objective of neutral--------------------
-    double *alphan = new double[nx*ny], *gamman = new double[nx*ny];                        //  Inverse permeation
-    double *rhon = new double[nx*ny], *uxn = new double[nx*ny], *uyn = new double[nx*ny];   //  State variable
-    for (int i = 0; i < nx; i++) {
-        for (int j = 0; j < ny; j++) {
-            gamman[ny*i + j] = pow(i - 0.5*nx, 2.0) + pow(j, 2.0) < pow(0.15*nx, 2.0) ? 0.1 : 0.9;//((i == 0 || i == nx - 1) && j < 0.33*ny ? 1.0 : 0.9);
-        }
-    }
-    double objective_base = getObjective(alphan, gamman, rhon, uxn, uyn);
-    std::cout << objective_base << std::endl;
-    delete[] alphan;    delete[] gamman;
-    delete[] rhon;      delete[] uxn;   delete[] uyn;
-
     //--------------------FDM loop--------------------
     std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
     #pragma omp parallel
@@ -103,13 +90,17 @@ int main() {
 
             for (int i = 0; i < nx; i++) {
                 for (int j = 0; j < ny; j++) {
-                    gamma[ny*i + j] = pow(i - 0.5*nx, 2.0) + pow(j, 2.0) < pow(0.15*nx, 2.0) ? 0.1 : 0.9;//((i == 0 || i == nx - 1) && j < 0.33*ny ? 1.0 : 0.9);
+                    gamma[ny*i + j] = pow(i - 0.5*nx, 2.0) + pow(j, 2.0) < pow(0.15*nx, 2.0) ? 0.1 : 0.9;
                 }
             }
+            
             gamma[k] += dgamma;
+            double objectivep = getObjective(alpha, gamma, rho, ux, uy);
 
-            double objective = getObjective(alpha, gamma, rho, ux, uy);
-            sensitivity[k] = (objective - objective_base)/dgamma;
+            gamma[k] -= 2.0*dgamma;
+            double objectivem = getObjective(alpha, gamma, rho, ux, uy);
+
+            sensitivity[k] = (objectivep - objectivem)/(2.0*dgamma);
         }
 
         delete[] alpha; delete[] gamma;
@@ -130,7 +121,7 @@ int main() {
     }
 
     //--------------------Export result--------------------
-    VTKExport file("result/FDMadjoint_AL50.vtk", nx, ny);
+    VTKExport file("result/FDMadjoint_AL50_q1e-2.vtk", nx, ny);
     file.AddPointScaler("dfds", [&](int _i, int _j, int _k) {   return sensitivity[ny*_i + _j];  });
     
     delete[] sensitivity;

@@ -120,7 +120,7 @@ int main() {
             gamma[k] -= 2.0*dgamma;
             double objectivem = getObjective(alpha, beta, gamma, rho, ux, uy, tem, qx, qy);
 
-            sensitivity[k] = (objectivp - objectivem)/(2.0*dgamma);
+            sensitivity[k] = (objectivep - objectivem)/(2.0*dgamma);
         }
 
         delete[] alpha; delete[] beta;  delete[] gamma;

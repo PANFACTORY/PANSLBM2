@@ -17,7 +17,7 @@ int main() {
     int nt = 30000, nx = 100, ny = 50, tmax = nt - 1;
     double viscosity = 0.1, diffusivity = 0.1/6.0; 
     double u0 = 0.0218, rho0 = 1.0, q0 = 0.0, tem0 = 0.0, epsdu = 1.0e-8, epsdq = 1.0e-8;    
-    double q = 0.1, alpha0 = 200.0/(double)nx, beta0 = 0.1/(double)nx, dgamma = -1.0e-5;
+    double q = 0.01, alpha0 = 50.0/(double)nx, beta0 = 0.1/(double)nx, dgamma = 1.0e-5;
     double *sensitivity = new double[nx*ny];                                                    //  Sensitivity
     for (int i = 0; i < nx*ny; i++) {
         sensitivity[i] = 0.0;
@@ -92,21 +92,6 @@ int main() {
         return objective; 
     };
 
-    //--------------------Get objective of neutral--------------------
-    double *alphan = new double[nx*ny], *betan = new double[nx*ny], *gamman = new double[nx*ny];    //  Inverse permeation
-    double *rhon = new double[nx*ny], *uxn = new double[nx*ny], *uyn = new double[nx*ny];
-    double *temn = new double[nx*ny], *qxn = new double[nx*ny], *qyn = new double[nx*ny];           //  State variable
-    for (int i = 0; i < nx; i++) {
-        for (int j = 0; j < ny; j++) {
-            gamman[ny*i + j] = pow(i - 0.5*nx, 2.0) + pow(j, 2.0) < pow(0.15*nx, 2.0) ? 0.1 : 1.0;
-        }
-    }
-    double objective_base = getObjective(alphan, betan, gamman, rhon, uxn, uyn, temn, qxn, qyn);
-    std::cout << objective_base << std::endl;
-    delete[] alphan;    delete[] betan; delete[] gamman;
-    delete[] rhon;      delete[] uxn;   delete[] uyn;
-    delete[] temn;      delete[] qxn;   delete[] qyn;
-
     //--------------------FDM loop--------------------
     std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
     #pragma omp parallel
@@ -125,13 +110,17 @@ int main() {
 
             for (int i = 0; i < nx; i++) {
                 for (int j = 0; j < ny; j++) {
-                    gamma[ny*i + j] = pow(i - 0.5*nx, 2.0) + pow(j, 2.0) < pow(0.15*nx, 2.0) ? 0.1 : 1.0;
+                    gamma[ny*i + j] = pow(i - 0.5*nx, 2.0) + pow(j, 2.0) < pow(0.15*nx, 2.0) ? 0.1 : 0.9;
                 }
             }
-            gamma[k] += dgamma;
 
-            double objective = getObjective(alpha, beta, gamma, rho, ux, uy, tem, qx, qy);
-            sensitivity[k] = (objective - objective_base)/dgamma;
+            gamma[k] += dgamma;
+            double objectivep = getObjective(alpha, beta, gamma, rho, ux, uy, tem, qx, qy);
+
+            gamma[k] -= 2.0*dgamma;
+            double objectivem = getObjective(alpha, beta, gamma, rho, ux, uy, tem, qx, qy);
+
+            sensitivity[k] = (objectivp - objectivem)/(2.0*dgamma);
         }
 
         delete[] alpha; delete[] beta;  delete[] gamma;
@@ -153,7 +142,7 @@ int main() {
     }
 
     //--------------------Export result--------------------
-    VTKExport file("result/FDMadjointadvection_AL200_BE01.vtk", nx, ny);
+    VTKExport file("result/FDMadjointadvection_AL50_BE1e-1_q1e-2_cd.vtk", nx, ny);
     file.AddPointScaler("dfds", [&](int _i, int _j, int _k) {   return sensitivity[ny*_i + _j];  });
     
     delete[] sensitivity;

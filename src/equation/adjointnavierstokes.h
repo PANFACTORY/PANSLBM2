@@ -99,7 +99,7 @@ namespace PANSLBM2 {
         void InitialCondition(int _i, P<T>& _particle, T _ux, T _uy, T _ip, T _iux, T _iuy) {
             assert(P<T>::nd == 2 && 0 <= _i && _i < _particle.np);
             for (int j = 0; j < P<T>::nc; j++) {
-                _particle.ft[j][_i] = _ip[_i] + 3.0*(_iux[_i]*(P<T>::cx[j] - _ux[_i]) + _iuy[_i]*(P<T>::cy[j] - _uy[_i]));
+                _particle.ft[j][_i] = _ip + 3.0*(_iux*(P<T>::cx[j] - _ux) + _iuy*(P<T>::cy[j] - _uy));
             }
         }
     }  

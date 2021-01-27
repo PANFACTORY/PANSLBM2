@@ -74,7 +74,7 @@ int main() {
 
     //--------------------Invert analyze--------------------
     for (int i = 0; i < nx*ny; i++) {
-        NS::InitialCondition(i, particle, 0.0, 0.0, 0.0);
+        ANS::InitialCondition(i, particle, 0.0, 0.0, 0.0, 0.0, 0.0);
     }                                                                                   //  Set initial condition
     ANS::UpdateMacro(particle, rhot, uxt, uyt, irho, iux, iuy, imx, imy);               //  Update macroscopic values
     for (int t = tmax; t >= 0; t--) {

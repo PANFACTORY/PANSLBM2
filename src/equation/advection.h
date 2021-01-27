@@ -5,32 +5,17 @@
 //  Copyright   :   (C)2020 TanabeYuta
 //*****************************************************************************
 
-
 #pragma once
 #include <cassert>
-
 
 namespace PANSLBM2 {
     namespace AD {
         //*********************************************************************
-        //  Advection   :   Update macroscopic values, T
-        //*********************************************************************
-        template<class T, template<class>class P>
-        void UpdateMacro(P<T>& _particle, T* _temperature) {
-            for (int i = 0; i < _particle.np; i++) {
-                _temperature[i] = T();
-                for (int j = 0; j < P<T>::nc; j++) {
-                    _temperature[i] += _particle.ft[j][i];
-                }
-            }
-        }
-
-
-        //*********************************************************************
-        //  Advection   :   Update macroscopic values, T and flux
+        //  Advection 2D    :   Update macroscopic values, T and flux
         //*********************************************************************
         template<class T, template<class>class P>
         void UpdateMacro(P<T>& _particle, T* _temperature, T* _qx, T* _qy, T* _ux, T* _uy) {
+            assert(P<T>::nd == 2);
             for (int i = 0; i < _particle.np; i++) {
                 _temperature[i] = T();
                 _qx[i] = T();
@@ -45,6 +30,28 @@ namespace PANSLBM2 {
             }
         }
 
+        //*********************************************************************
+        //  Advection 3D    :   Update macroscopic values, T and flux
+        //*********************************************************************
+        template<class T, template<class>class P>
+        void UpdateMacro(P<T>& _particle, T* _temperature, T* _qx, T* _qy, T* _qz, T* _ux, T* _uy, T* _uz) {
+            assert(P<T>::nd == 3);
+            for (int i = 0; i < _particle.np; i++) {
+                _temperature[i] = T();
+                _qx[i] = T();
+                _qy[i] = T();
+                _qz[i] = T();
+                for (int j = 0; j < P<T>::nc; j++) {
+                    _temperature[i] += _particle.ft[j][i];
+                    _qx[i] += P<T>::cx[j]*_particle.ft[j][i];
+                    _qy[i] += P<T>::cy[j]*_particle.ft[j][i];
+                    _qz[i] += P<T>::cz[j]*_particle.ft[j][i];
+                }
+                _qx[i] -= _temperature[i]*_ux[i];
+                _qy[i] -= _temperature[i]*_uy[i];
+                _qz[i] -= _temperature[i]*_uz[i];
+            }
+        }
 
         //*********************************************************************
         //  Advection 2D    :   Collision term

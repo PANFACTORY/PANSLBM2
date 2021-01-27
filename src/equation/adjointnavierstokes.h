@@ -91,5 +91,16 @@ namespace PANSLBM2 {
                 _iuy[i] -= _particle.dx*_alphay[i]*_imy[i]/_rho[i];
             }
         }
+
+        //*********************************************************************
+        //  Navier-Stokes 2D    :   Initial condition
+        //*********************************************************************
+        template<class T, template<class>class P>
+        void InitialCondition(int _i, P<T>& _particle, T _ux, T _uy, T _ip, T _iux, T _iuy) {
+            assert(P<T>::nd == 2 && 0 <= _i && _i < _particle.np);
+            for (int j = 0; j < P<T>::nc; j++) {
+                _particle.ft[j][_i] = _ip[_i] + 3.0*(_iux[_i]*(P<T>::cx[j] - _ux[_i]) + _iuy[_i]*(P<T>::cy[j] - _uy[_i]));
+            }
+        }
     }  
 }

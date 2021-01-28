@@ -58,7 +58,7 @@ namespace PANSLBM2 {
         //*********************************************************************
         //  Adjoint elastic 2D  :   Initial condition
         //*********************************************************************
-        template<class T, template<class>class T>
+        template<class T, template<class>class P>
         void InitialCondition(int _i, P<T>& _p, T _irho, T _imx, T _imy, T _isxx, T _isxy, T _isyx, T _isyy) {
             assert(P<T>::nd == 2 && 0 <= _i && _i < _p.np);
             for (int j = 0; j < P<T>::nc; j++) {

@@ -10,8 +10,8 @@ using namespace PANSLBM2;
 
 int main() {
     //--------------------Setting parameters--------------------
-    int nt = 100000, nx = 80, ny = 60, tmax = nt - 1;
-    double elasticy = 0.1, rho0 = 0.1, stress0 = -1.0;
+    int nt = 10000, nx = 80, ny = 60, tmax = nt - 1;
+    double elasticy = 0.1, rho0 = 10000.0, stress0 = -1.0;
     double rho[nx*ny], ux[nx*ny], uy[nx*ny], rx[nx*ny] = { 0.0 }, ry[nx*ny] = { 0.0 }, sxx[nx*ny], sxy[nx*ny], syx[nx*ny], syy[nx*ny];   //  State variable
     double irho[nx*ny], imx[nx*ny], imy[nx*ny], isxx[nx*ny], isxy[nx*ny], isyx[nx*ny], isyy[nx*ny];                 //  Adjoint variable
     double gamma[nx*ny], sensitivity[nx*ny] = { 0.0 };                                                              //  Desugn variable and Sensitivity
@@ -46,11 +46,15 @@ int main() {
         particle.Stream();                                                              //  Stream
         for (int i = 0; i < nx; i++) {
             particle.SetStress(i, 0, 0.0, 0.0);
-            particle.SetStress(i, ny - 1, 0.0, stress0);
+            particle.SetStress(i, ny - 1, 0.0, 0.0);
         }
         for (int j = 0; j < ny; j++) {
             particle.SetRS(0, j);
-            particle.SetStress(nx - 1, j, 0.0, 0.0);
+            if (fabs(j - 0.5*ny) < 5) {
+                particle.SetStress(nx - 1, j, 0.0, stress0);
+            } else {
+                particle.SetStress(nx - 1, j, 0.0, 0.0);
+            }
         }                                                                               //  Boundary condition
         EL::UpdateMacro(particle, rho, ux, uy, sxx, sxy, syx, syy);                     //  Update macroscopic values
         for (int i = 0; i < nx*ny; i++) {
@@ -60,7 +64,7 @@ int main() {
     }
 
     //--------------------Invert analyze--------------------
-    /*for (int i = 0; i < nx*ny; i++) {
+    for (int i = 0; i < nx*ny; i++) {
         AEL::InitialCondition(i, particle, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
     }                                                                                   //  Set initial condition
     AEL::UpdateMacro(particle, irho, imx, imy, isxx, isxy, isyx, isyy);                 //  Update macroscopic values
@@ -68,12 +72,16 @@ int main() {
         AEL::Collision(elasticy, particle, irho, imx, imy, isxx, isxy, isyx, isyy);     //  Collision
         particle.iStream();                                                             //  Stream
         for (int i = 0; i < nx; i++) {
-            particle.SetStress(i, 0, 0.0, 0.0);
-            particle.SetStress(i, ny - 1, 0.0, stress0);
+            particle.SetiStress(i, 0, rho0, 0.0, 0.0);
+            particle.SetiStress(i, ny - 1, rho0, 0.0, 0.0);
         }
         for (int j = 0; j < ny; j++) {
-            particle.SetRS(0, j);
-            particle.SetStress(nx - 1, j, 0.0, 0.0);
+            particle.SetiRS(0, j);
+            if (fabs(j - 0.5*ny) < 5) {
+                particle.SetiStress(nx - 1, j, rho0, 0.0, stress0);
+            } else {
+                particle.SetiStress(nx - 1, j, rho0, 0.0, 0.0);
+            }
         }                                                                               //  Boundary condition                                                                          //  Boundary condition (inlet)
         AEL::UpdateMacro(particle, irho, imx, imy, isxx, isxy, isyx, isyy);             //  Update macroscopic values
     }
@@ -88,7 +96,7 @@ int main() {
     }
     for (int i = 0; i < nx*ny; i++) {  
         sensitivity[i] /= sensitivitymax;
-    }*/
+    }
 
     //--------------------Export result--------------------
     VTKExport file("result/adjointelastic.vtk", nx, ny);
@@ -108,6 +116,22 @@ int main() {
         [](int _i, int _j, int _k) { return 0.0; },
         [&](int _i, int _j, int _k) { return syx[particle.GetIndex(_i, _j)]; },
         [&](int _i, int _j, int _k) { return syy[particle.GetIndex(_i, _j)]; },
+        [](int _i, int _j, int _k) { return 0.0; },
+        [](int _i, int _j, int _k) { return 0.0; },
+        [](int _i, int _j, int _k) { return 0.0; },
+        [](int _i, int _j, int _k) { return 0.0; }
+    );
+    file.AddPointVector("iu", 
+        [&](int _i, int _j, int _k) { return imx[particle.GetIndex(_i, _j)]; },
+        [&](int _i, int _j, int _k) { return imy[particle.GetIndex(_i, _j)]; },
+        [](int _i, int _j, int _k) { return 0.0; }
+    );
+    file.AddPointTensor("is", 
+        [&](int _i, int _j, int _k) { return isxx[particle.GetIndex(_i, _j)]; },
+        [&](int _i, int _j, int _k) { return isxy[particle.GetIndex(_i, _j)]; },
+        [](int _i, int _j, int _k) { return 0.0; },
+        [&](int _i, int _j, int _k) { return isyx[particle.GetIndex(_i, _j)]; },
+        [&](int _i, int _j, int _k) { return isyy[particle.GetIndex(_i, _j)]; },
         [](int _i, int _j, int _k) { return 0.0; },
         [](int _i, int _j, int _k) { return 0.0; },
         [](int _i, int _j, int _k) { return 0.0; },

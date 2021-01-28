@@ -43,7 +43,7 @@ namespace PANSLBM2 {
         void Collision(T _elasticy, P<T>& _p, T* _rho, T* _ux, T* _uy, T* _sxx, T* _sxy, T* _syx, T* _syy) {
             assert(P<T>::nd == 2);
 //  要修正：緩和時間はelasticyの関数になるはずだがその具体的形が不明のため
-            T omega = 1.0/0.8;
+            T omega = 1.0/(3.0*_elasticy*_p.dt/(_p.dx*_p.dx) + 0.5);
             for (int i = 0; i < _p.np; i++) {
                 for (int j = 0; j < P<T>::nc; j++) {
                     T cu = P<T>::cx[j]*_ux[i] + P<T>::cy[j]*_uy[i];

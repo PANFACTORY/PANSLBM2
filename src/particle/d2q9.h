@@ -38,7 +38,7 @@ public:
         void SetiFlux(int _i, int _j, T _ux, T _uy);
         void SetiRhoFlux(const D2Q9<T>& _g, int _i, int _j, T _rho, T _ux, T _uy, T _temperature);
         void SetiRS(int _i, int _j);                                    //  Set boundary condition for Adjoint of Elastic
-        void SetiStress(int _i, int _j);
+        void SetiStress(int _i, int _j, T _rho, T _tx, T _ty);
 
         void Stream();
         void iStream();
@@ -544,24 +544,24 @@ public:
 
 
     template<class T>
-    void D2Q9<T>::SetiStress(int _i, int _j) {
+    void D2Q9<T>::SetiStress(int _i, int _j, T _rho, T _tx, T _ty) {
         int ij = this->ny*_i + _j;
         if (_i == 0) {
-            this->ft[3][ij] = -(this->ft[1][ij] + this->ft[5][ij] + this->ft[8][ij])/3.0;
-            this->ft[6][ij] = -(4.0*this->ft[1][ij] + this->ft[5][ij] - 2.0*this->ft[8][ij])/3.0;
-            this->ft[7][ij] = -(4.0*this->ft[1][ij] - 2.0*this->ft[5][ij] + this->ft[8][ij])/3.0;
+            this->ft[3][ij] = -(this->ft[1][ij] + this->ft[5][ij] + this->ft[8][ij])/3.0 + 2.0*_tx/_rho;
+            this->ft[6][ij] = -(4.0*this->ft[1][ij] + this->ft[5][ij] - 2.0*this->ft[8][ij])/3.0 + 2.0*(_tx - _ty)/_rho;
+            this->ft[7][ij] = -(4.0*this->ft[1][ij] - 2.0*this->ft[5][ij] + this->ft[8][ij])/3.0 + 2.0*(_tx + _ty)/_rho;
         } else if (_i == this->nx - 1) {
-            this->ft[1][ij] = -(this->ft[3][ij] + this->ft[6][ij] + this->ft[7][ij])/3.0;
-            this->ft[5][ij] = -(4.0*this->ft[3][ij] - this->ft[6][ij] + 2.0*this->ft[7][ij])/3.0;
-            this->ft[8][ij] = -(4.0*this->ft[3][ij] + 2.0*this->ft[6][ij] - this->ft[7][ij])/3.0;
+            this->ft[1][ij] = -(this->ft[3][ij] + this->ft[6][ij] + this->ft[7][ij])/3.0 - 2.0*_tx/_rho;
+            this->ft[5][ij] = -(4.0*this->ft[3][ij] - this->ft[6][ij] + 2.0*this->ft[7][ij])/3.0 - 2.0*(_tx + _ty)/_rho;
+            this->ft[8][ij] = -(4.0*this->ft[3][ij] + 2.0*this->ft[6][ij] - this->ft[7][ij])/3.0 - 2.0*(_tx - _ty)/_rho;
         } else if (_j == 0) {
-            this->ft[4][ij] = -(this->ft[2][ij] + this->ft[5][ij] + this->ft[6][ij])/3.0;
-            this->ft[7][ij] = -(4.0*this->ft[2][ij] + this->ft[5][ij] - 2.0*this->ft[6][ij])/3.0;
-            this->ft[8][ij] = -(4.0*this->ft[2][ij] - 2.0*this->ft[5][ij] + this->ft[6][ij])/3.0;
+            this->ft[4][ij] = -(this->ft[2][ij] + this->ft[5][ij] + this->ft[6][ij])/3.0 + 2.0*_ty/_rho;
+            this->ft[7][ij] = -(4.0*this->ft[2][ij] + this->ft[5][ij] - 2.0*this->ft[6][ij])/3.0 + 2.0*(_ty + _tx)/_rho;
+            this->ft[8][ij] = -(4.0*this->ft[2][ij] - 2.0*this->ft[5][ij] + this->ft[6][ij])/3.0 + 2.0*(_ty - _tx)/_rho;
         } else if (_j == this->ny - 1) {
-            this->ft[2][ij] = -(this->ft[4][ij] + this->ft[7][ij] + this->ft[8][ij])/3.0;
-            this->ft[5][ij] = -(4.0*this->ft[4][ij] - this->ft[7][ij] + 2.0*this->ft[8][ij])/3.0;
-            this->ft[6][ij] = -(4.0*this->ft[4][ij] + 2.0*this->ft[7][ij] - this->ft[8][ij])/3.0;
+            this->ft[2][ij] = -(this->ft[4][ij] + this->ft[7][ij] + this->ft[8][ij])/3.0 - 2.0*_ty/_rho;
+            this->ft[5][ij] = -(4.0*this->ft[4][ij] - this->ft[7][ij] + 2.0*this->ft[8][ij])/3.0 - 2.0*(_ty + _tx)/_rho;
+            this->ft[6][ij] = -(4.0*this->ft[4][ij] + 2.0*this->ft[7][ij] - this->ft[8][ij])/3.0 - 2.0*(_ty - _tx)/_rho;
         } else {
             //  境界に沿っていないことを警告する
         }

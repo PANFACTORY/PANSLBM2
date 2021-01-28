@@ -14,6 +14,8 @@ public:
         void AddPointScaler(std::string _label, F _value);
         template<class F0, class F1, class F2>
         void AddPointVector(std::string _label, F0 _value0, F1 _value1, F2 _value2);
+        template<class F00, class F01, class F02, class F10, class F11, class F12, class F20, class F21, class F22>
+        void AddPointTensor(std::string _label, F00 _v00, F01 _v01, F02 _v02, F10 _v10, F11 _v11, F12 _v12, F20 _v20, F21 _v21, F22 _v22);
 
 private:
         std::ofstream fout;
@@ -77,6 +79,27 @@ private:
             for (int j = 0; j < this->ny; j++) {
                 for (int i = 0; i < this->nx; i++) {
                     this->fout << _value0(i, j, k) << "\t" << _value1(i, j, k) << "\t" << _value2(i, j, k) << std::endl;
+                }
+            }
+        }
+    }
+
+    template<class F00, class F01, class F02, class F10, class F11, class F12, class F20, class F21, class F22>
+    void VTKExport::AddPointTensor(std::string _label, F00 _v00, F01 _v01, F02 _v02, F10 _v10, F11 _v11, F12 _v12, F20 _v20, F21 _v21, F22 _v22) {
+        //  Add point data header
+        if (!this->isaddpointdata) {
+            this->fout << "POINT_DATA\t" << this->nx*this->ny*this->nz << std::endl;
+            this->isaddpointdata = true;
+        }
+
+        //  Add point data value
+        this->fout << "TENSORS\t" << _label << "\tfloat" << std::endl;
+        for (int k = 0; k < this->nz; k++) {
+            for (int j = 0; j < this->ny; j++) {
+                for (int i = 0; i < this->nx; i++) {
+                    this->fout << _v00(i, j, k) << "\t" << _v01(i, j, k) << "\t" << _v02(i, j, k) << std::endl;
+                    this->fout << _v10(i, j, k) << "\t" << _v11(i, j, k) << "\t" << _v12(i, j, k) << std::endl;
+                    this->fout << _v20(i, j, k) << "\t" << _v21(i, j, k) << "\t" << _v22(i, j, k) << std::endl << std::endl;
                 }
             }
         }

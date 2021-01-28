@@ -93,7 +93,7 @@ namespace PANSLBM2 {
         }
 
         //*********************************************************************
-        //  Navier-Stokes 2D    :   Initial condition
+        //  Adjoint Navier-Stokes 2D    :   Initial condition
         //*********************************************************************
         template<class T, template<class>class P>
         void InitialCondition(int _i, P<T>& _particle, T _ux, T _uy, T _ip, T _iux, T _iuy) {

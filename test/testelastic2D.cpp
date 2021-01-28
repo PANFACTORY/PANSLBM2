@@ -65,7 +65,17 @@ int main() {
                 [&](int _i, int _j, int _k) { return ry[particle.GetIndex(_i, _j)]; },
                 [](int _i, int _j, int _k) { return 0.0; }
             );
-            file.AddPointScaler("boundary", [&](int _i, int _j, int _k) { return particle.GetBoundary(_i, _j); });
+            file.AddPointTensor("s", 
+                [&](int _i, int _j, int _k) { return sxx[particle.GetIndex(_i, _j)]; },
+                [&](int _i, int _j, int _k) { return sxy[particle.GetIndex(_i, _j)]; },
+                [](int _i, int _j, int _k) { return 0.0; },
+                [&](int _i, int _j, int _k) { return syx[particle.GetIndex(_i, _j)]; },
+                [&](int _i, int _j, int _k) { return syy[particle.GetIndex(_i, _j)]; },
+                [](int _i, int _j, int _k) { return 0.0; },
+                [](int _i, int _j, int _k) { return 0.0; },
+                [](int _i, int _j, int _k) { return 0.0; },
+                [](int _i, int _j, int _k) { return 0.0; }
+            );
         }                                                                   //  Export result per 1000 steps 
     }
 

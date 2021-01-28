@@ -9,7 +9,7 @@
 #include <cassert>
 
 namespace PANSLBM2 {
-    namespace ES {
+    namespace EL {
         //*********************************************************************
         //  Elastic 2D  :   Update macroscopic values
         //*********************************************************************

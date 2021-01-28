@@ -16,7 +16,7 @@ int main() {
     int nt = 30000, nx = 100, ny = 50, tmax = nt - 1;
     double viscosity = 0.1, diffusivity = 0.1/6.0; 
     double u0 = 0.0218, rho0 = 1.0, q0 = 0.0, tem0 = 0.0, epsdu = 1.0e-8, epsdq = 1.0e-8;    
-    double q = 0.1, alpha0 = 50.0/(double)nx, beta0 = 0.1/(double)nx, *alpha = new double[nx*ny], *beta = new double[nx*ny];                       //  Inverse permeation
+    double q = 0.01, alpha0 = 50.0/(double)nx, beta0 = 0.1/(double)nx, *alpha = new double[nx*ny], *beta = new double[nx*ny];                       //  Inverse permeation
     double *rhot = new double[nx*ny], *uxt = new double[nx*ny], *uyt = new double[nx*ny], *uxtm1 = new double[nx*ny], *uytm1 = new double[nx*ny];
     double *temt = new double[nx*ny], *qxt = new double[nx*ny], *qyt = new double[nx*ny], *qxtm1 = new double[nx*ny], *qytm1 = new double[nx*ny];   //  State variable
     double *irho = new double[nx*ny], *iux = new double[nx*ny], *iuy = new double[nx*ny], *imx = new double[nx*ny], *imy = new double[nx*ny];
@@ -108,8 +108,8 @@ int main() {
 
     //--------------------Invert analyze--------------------
     for (int i = 0; i < nx*ny; i++) {
-        NS::InitialCondition(i, particlef, 0.0, 0.0, 0.0);
-        AD::InitialCondition(i, particleg, 0.0, 0.0, 0.0);
+        ANS::InitialCondition(i, particlef, 0.0, 0.0, 0.0, 0.0, 0.0);
+        AAD::InitialCondition(i, particleg, 0.0, 0.0, 0.0, 0.0, 0.0);
     }                                                                                   //  Set initial condition
     AAD::UpdateMacro(particleg, item, iqx, iqy);
     ANS::UpdateMacro(particlef, rhot, uxt, uyt, irho, iux, iuy, imx, imy);              //  Update macroscopic values
@@ -166,7 +166,7 @@ int main() {
     }
 
     //--------------------Export result--------------------
-    VTKExport file("result/adjointadvection_AL50_BE1e-1_q1e-1_outrhoflux_static.vtk", nx, ny);
+    VTKExport file("result/adjointadvection_AL50_BE1e-1_q1e-2.vtk", nx, ny);
     file.AddPointScaler("p", [&](int _i, int _j, int _k) { return rhot[particlef.GetIndex(_i, _j)]/3.0; });
     file.AddPointVector("u", 
         [&](int _i, int _j, int _k) { return uxt[particlef.GetIndex(_i, _j)]; },

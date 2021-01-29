@@ -65,7 +65,7 @@ namespace PANSLBM2 {
                 T imc = _imx*P<T>::cx[j] + _imy*P<T>::cy[j];
                 T cisc = P<T>::cx[j]*_isxx*P<T>::cx[j] + P<T>::cx[j]*_isxy*P<T>::cy[j] + P<T>::cy[j]*_isyx*P<T>::cx[j] + P<T>::cy[j]*_isyy*P<T>::cy[j];
                 T irhocc = _irho*(P<T>::cx[j]*P<T>::cx[j] + P<T>::cy[j]*P<T>::cy[j]);
-                _p.ft[j][_i] = 3.0*imc + 4.5*cisc + irhocc;
+                _p.ft[j][_i] = 3.0*imc + 4.5*cisc -1.5*irhocc;
             }
         }
     }

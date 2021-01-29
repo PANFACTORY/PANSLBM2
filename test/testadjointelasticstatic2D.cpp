@@ -11,7 +11,7 @@ using namespace PANSLBM2;
 int main() {
     //--------------------Setting parameters--------------------
     int nt = 10000, nx = 80, ny = 60, tmax = nt - 1;
-    double elasticy = 0.1, rho0 = 10000.0, stress0 = -1.0;
+    double elasticy = 0.1, rho0 = 10000.0, stress0 = 1.0;
     double rho[nx*ny], ux[nx*ny], uy[nx*ny], rx[nx*ny] = { 0.0 }, ry[nx*ny] = { 0.0 }, sxx[nx*ny], sxy[nx*ny], syx[nx*ny], syy[nx*ny];   //  State variable
     double irho[nx*ny], imx[nx*ny], imy[nx*ny], isxx[nx*ny], isxy[nx*ny], isyx[nx*ny], isyy[nx*ny];                 //  Adjoint variable
     double gamma[nx*ny], sensitivity[nx*ny] = { 0.0 };                                                              //  Desugn variable and Sensitivity

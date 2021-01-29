@@ -89,7 +89,7 @@ int main() {
     //--------------------Get sensitivity--------------------
     double sensitivitymax = 0.0;
     for (int i = 0; i < nx*ny; i++) {
-        sensitivity[i] = 0.0;
+        sensitivity[i] = 13.5*(sxx[i]*isxx[i] + sxy[i]*isxy[i] + syx[i]*isyx[i] + syy[i]*isyy[i]) - 4.5*irho[i]*(sxx[i] + syy[i]);
         if (sensitivitymax < fabs(sensitivity[i])) {
             sensitivitymax = fabs(sensitivity[i]);
         }
@@ -121,6 +121,7 @@ int main() {
         [](int _i, int _j, int _k) { return 0.0; },
         [](int _i, int _j, int _k) { return 0.0; }
     );
+    file.AddPointScaler("irho", [&](int _i, int _j, int _k) { return irho[particle.GetIndex(_i, _j)]; });
     file.AddPointVector("iu", 
         [&](int _i, int _j, int _k) { return imx[particle.GetIndex(_i, _j)]; },
         [&](int _i, int _j, int _k) { return imy[particle.GetIndex(_i, _j)]; },
@@ -137,6 +138,7 @@ int main() {
         [](int _i, int _j, int _k) { return 0.0; },
         [](int _i, int _j, int _k) { return 0.0; }
     );
+    file.AddPointScaler("sensitivity", [&](int _i, int _j, int _k) { return sensitivity[particle.GetIndex(_i, _j)]; });
 
     return 0;
 }

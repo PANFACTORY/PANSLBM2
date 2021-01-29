@@ -32,7 +32,7 @@ int main() {
     //--------------------Set design variable--------------------
     for (int i = 0; i < nx; i++) {
         for (int j = 0; j < ny; j++) {
-            double s = pow(i - 0.5*nx, 2.0) + pow(j - 0.5*ny, 2.0) < pow(0.15*nx, 2.0) ? 0.1 : 0.9;
+            double s = 1.0;
             gamma[particle.GetIndex(i, j)] = pow(s, 3.0);
         }
     }
@@ -92,7 +92,7 @@ int main() {
     double sensitivitymax = 0.0;
     for (int i = 0; i < nx; i++) {
         for (int j = 0; j < ny; j++) {
-            double s = pow(i - 0.5*nx, 2.0) + pow(j - 0.5*ny, 2.0) < pow(0.15*nx, 2.0) ? 0.1 : 0.9;
+            double s = 1.0;
             int ij = particle.GetIndex(i, j);
             sensitivity[ij] = (4.5*(sxx[ij]*isxx[ij] + sxy[ij]*isxy[ij] + syx[ij]*isyx[ij] + syy[ij]*isyy[ij]) - 1.5*irho[ij]*(sxx[ij] + syy[ij]))*(3.0*pow(s, 2.0));
             if (sensitivitymax < fabs(sensitivity[ij])) {

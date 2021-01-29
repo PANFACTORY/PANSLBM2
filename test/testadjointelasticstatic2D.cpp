@@ -32,18 +32,19 @@ int main() {
     //--------------------Set design variable--------------------
     for (int i = 0; i < nx; i++) {
         for (int j = 0; j < ny; j++) {
-            gamma[particle.GetIndex(i, j)] = pow(i - 0.5*nx, 2.0) + pow(j, 2.0) < pow(0.15*nx, 2.0) ? 0.1 : 0.9;
+            double s = pow(i - 0.5*nx, 2.0) + pow(j, 2.0) < pow(0.15*nx, 2.0) ? 0.1 : 0.9;
+            gamma[particle.GetIndex(i, j)] = pow(s, 3.0);
         }
     }
 
     //--------------------Direct analyze--------------------
     for (int i = 0; i < nx*ny; i++) {
         EL::InitialCondition(i, particle, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
-    }                                                                                   //  Set initial condition
-    EL::UpdateMacro(particle, rho, ux, uy, sxx, sxy, syx, syy);                         //  Update macroscopic values
+    }                                                                                       //  Set initial condition
+    EL::UpdateMacro(particle, rho, ux, uy, sxx, sxy, syx, syy);                             //  Update macroscopic values
     for (int t = 0; t < nt - 1; t++) {
-        EL::Collision(elasticy, particle, rho, ux, uy, sxx, sxy, syx, syy);             //  Collision
-        particle.Stream();                                                              //  Stream
+        EL::Collision(elasticy, particle, rho, ux, uy, sxx, sxy, syx, syy);                 //  Collision
+        particle.Stream();                                                                  //  Stream
         for (int i = 0; i < nx; i++) {
             particle.SetStress(i, 0, 0.0, 0.0);
             particle.SetStress(i, ny - 1, 0.0, 0.0);
@@ -55,8 +56,8 @@ int main() {
             } else {
                 particle.SetStress(nx - 1, j, 0.0, 0.0);
             }
-        }                                                                               //  Boundary condition
-        EL::UpdateMacro(particle, rho, ux, uy, sxx, sxy, syx, syy);                     //  Update macroscopic values
+        }                                                                                   //  Boundary condition
+        EL::UpdateMacro(particle, rho, ux, uy, sxx, sxy, syx, syy);                         //  Update macroscopic values
         for (int i = 0; i < nx*ny; i++) {
             rx[i] += ux[i];
             ry[i] += uy[i];
@@ -65,12 +66,12 @@ int main() {
 
     //--------------------Invert analyze--------------------
     for (int i = 0; i < nx*ny; i++) {
-        AEL::InitialCondition(i, particle, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
-    }                                                                                   //  Set initial condition
-    AEL::UpdateMacro(particle, irho, imx, imy, isxx, isxy, isyx, isyy);                 //  Update macroscopic values
+        AEL::InitialCondition(i, particle, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, gamma[i]);
+    }                                                                                       //  Set initial condition
+    AEL::UpdateMacro(particle, irho, imx, imy, isxx, isxy, isyx, isyy);                     //  Update macroscopic values
     for (int t = tmax; t >= 0; t--) {
-        AEL::Collision(elasticy, particle, irho, imx, imy, isxx, isxy, isyx, isyy);     //  Collision
-        particle.iStream();                                                             //  Stream
+        AEL::Collision(elasticy, particle, irho, imx, imy, isxx, isxy, isyx, isyy, gamma);  //  Collision
+        particle.iStream();                                                                 //  Stream
         for (int i = 0; i < nx; i++) {
             particle.SetiStress(i, 0, rho0, 0.0, 0.0);
             particle.SetiStress(i, ny - 1, rho0, 0.0, 0.0);
@@ -82,16 +83,20 @@ int main() {
             } else {
                 particle.SetiStress(nx - 1, j, rho0, 0.0, 0.0);
             }
-        }                                                                               //  Boundary condition                                                                          //  Boundary condition (inlet)
-        AEL::UpdateMacro(particle, irho, imx, imy, isxx, isxy, isyx, isyy);             //  Update macroscopic values
+        }                                                                                   //  Boundary condition                                                                          //  Boundary condition (inlet)
+        AEL::UpdateMacro(particle, irho, imx, imy, isxx, isxy, isyx, isyy);                 //  Update macroscopic values
     }
 
     //--------------------Get sensitivity--------------------
     double sensitivitymax = 0.0;
-    for (int i = 0; i < nx*ny; i++) {
-        sensitivity[i] = 13.5*(sxx[i]*isxx[i] + sxy[i]*isxy[i] + syx[i]*isyx[i] + syy[i]*isyy[i]) - 4.5*irho[i]*(sxx[i] + syy[i]);
-        if (sensitivitymax < fabs(sensitivity[i])) {
-            sensitivitymax = fabs(sensitivity[i]);
+    for (int i = 0; i < nx; i++) {
+        for (int j = 0; j < ny; j++) {
+            double s = pow(i - 0.5*nx, 2.0) + pow(j, 2.0) < pow(0.15*nx, 2.0) ? 0.1 : 0.9;
+            int ij = particle.GetIndex(i, j);
+            sensitivity[ij] = (13.5*(sxx[ij]*isxx[ij] + sxy[ij]*isxy[ij] + syx[ij]*isyx[ij] + syy[ij]*isyy[ij]) - 4.5*irho[ij]*(sxx[ij] + syy[ij]))*(3.0*pow(s, 2.0));
+            if (sensitivitymax < fabs(sensitivity[ij])) {
+                sensitivitymax = fabs(sensitivity[ij]);
+            }
         }
     }
     for (int i = 0; i < nx*ny; i++) {  

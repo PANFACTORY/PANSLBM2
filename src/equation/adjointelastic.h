@@ -14,13 +14,13 @@ namespace PANSLBM2 {
         //  Elastic 2D  :   Expand macroscopic values
         //*********************************************************************
         template<class T, template<class>class P>
-        void ExpandMacro(P<T>& _p, T* _sxx, T* _sxy, T* _syx, T* _syy, T* _beta) {
+        void ExpandMacro(P<T>& _p, T* _sxx, T* _sxy, T* _syx, T* _syy, T* _gamma) {
             assert(P<T>::nd == 2);
             for (int i = 0; i < _p.np; i++) {
-                _sxx[i] *= _beta[i];
-                _sxy[i] *= _beta[i];
-                _syx[i] *= _beta[i];
-                _syy[i] *= _beta[i];
+                _sxx[i] *= _gamma[i];
+                _sxy[i] *= _gamma[i];
+                _syx[i] *= _gamma[i];
+                _syy[i] *= _gamma[i];
             }
         }
     }
@@ -81,7 +81,7 @@ namespace PANSLBM2 {
                 T imc = _imx*P<T>::cx[j] + _imy*P<T>::cy[j];
                 T cisc = P<T>::cx[j]*_isxx*P<T>::cx[j] + P<T>::cx[j]*_isxy*P<T>::cy[j] + P<T>::cy[j]*_isyx*P<T>::cx[j] + P<T>::cy[j]*_isyy*P<T>::cy[j];
                 T irhocc = _irho*(P<T>::cx[j]*P<T>::cx[j] + P<T>::cy[j]*P<T>::cy[j]);
-                _p.ft[j][_i] = 3.0*imc + 4.5*_gamma*cisc -1.5*_gamma[i]*irhocc;
+                _p.ft[j][_i] = 3.0*imc + 4.5*_gamma*cisc -1.5*_gamma*irhocc;
             }
         }
     }

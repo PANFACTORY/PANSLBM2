@@ -30,11 +30,8 @@ int main() {
     }                                                                                   //  Set boundary condition
 
     //--------------------Set design variable--------------------
-    for (int i = 0; i < nx; i++) {
-        for (int j = 0; j < ny; j++) {
-            double s = 1.0;
-            gamma[particle.GetIndex(i, j)] = pow(s, 3.0);
-        }
+    for (int i = 0; i < nx*ny; i++) {
+        gamma[i] = 0.9999;
     }
 
     //--------------------Direct analyze--------------------
@@ -90,14 +87,10 @@ int main() {
 
     //--------------------Get sensitivity--------------------
     double sensitivitymax = 0.0;
-    for (int i = 0; i < nx; i++) {
-        for (int j = 0; j < ny; j++) {
-            double s = 1.0;
-            int ij = particle.GetIndex(i, j);
-            sensitivity[ij] = (4.5*(sxx[ij]*isxx[ij] + sxy[ij]*isxy[ij] + syx[ij]*isyx[ij] + syy[ij]*isyy[ij]) - 1.5*irho[ij]*(sxx[ij] + syy[ij]))*(3.0*pow(s, 2.0));
-            if (sensitivitymax < fabs(sensitivity[ij])) {
-                sensitivitymax = fabs(sensitivity[ij]);
-            }
+    for (int i = 0; i < nx*ny; i++) {
+        sensitivity[i] = (4.5*(sxx[i]*isxx[i] + sxy[i]*isxy[i] + syx[i]*isyx[i] + syy[i]*isyy[i]) - 1.5*irho[i]*(sxx[i] + syy[i]));
+        if (sensitivitymax < fabs(sensitivity[i])) {
+            sensitivitymax = fabs(sensitivity[i]);
         }
     }
     for (int i = 0; i < nx*ny; i++) {  

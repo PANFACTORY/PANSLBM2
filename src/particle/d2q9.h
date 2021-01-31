@@ -182,8 +182,76 @@ public:
 
     template<class T>
     void D2Q9<T>::SetRho(int _i, int _j, T _rho, T _u) {
-        int ij = this->ny*_i + _j;
-        if (_i == 0) {
+        int ij = this->GetIndex(_i, _j);
+        if (_i == 0 && _j == 0) {
+            int ijr = this->GetIndex(_i + 1, _j);
+            T uxr = this->ft[1][ijr] - this->ft[3][ijr] + this->ft[5][ijr] - this->ft[6][ijr] - this->ft[7][ijr] + this->ft[8][ijr]; 
+            T uyr = this->ft[2][ijr] - this->ft[4][ijr] + this->ft[5][ijr] + this->ft[6][ijr] - this->ft[7][ijr] - this->ft[8][ijr]; 
+            int iju = this->GetIndex(_i, _j + 1);
+            T uxu = this->ft[1][iju] - this->ft[3][iju] + this->ft[5][iju] - this->ft[6][iju] - this->ft[7][iju] + this->ft[8][iju]; 
+            T uyu = this->ft[2][iju] - this->ft[4][iju] + this->ft[5][iju] + this->ft[6][iju] - this->ft[7][iju] - this->ft[8][iju]; 
+            int ijru = this->GetIndex(_i + 1, _j + 1);
+            T uxru = this->ft[1][ijru] - this->ft[3][ijru] + this->ft[5][ijru] - this->ft[6][ijru] - this->ft[7][ijru] + this->ft[8][ijru]; 
+            T uyru = this->ft[2][ijru] - this->ft[4][ijru] + this->ft[5][ijru] + this->ft[6][ijru] - this->ft[7][ijru] - this->ft[8][ijru]; 
+            T ux0 = (uxr + uxu + uxru)/3.0;
+            T uy0 = (uyr + uyu + uyru)/3.0;
+            this->ft[1][ij] = this->ft[3][ij] + 2.0*_rho*ux0/3.0;
+            this->ft[2][ij] = this->ft[4][ij] + 2.0*_rho*uy0/3.0;
+            this->ft[5][ij] = this->ft[7][ij] + _rho*ux0/6.0 + _rho*uy0/6.0;
+            this->ft[6][ij] = (_rho - this->ft[0][ij] - this->ft[1][ij] - this->ft[2][ij] - this->ft[3][ij] - this->ft[4][ij] - this->ft[5][ij] - this->ft[7][ij])/2.0 - _rho*ux0/12.0 + _rho*uy0/12.0;
+            this->ft[8][ij] = (_rho - this->ft[0][ij] - this->ft[1][ij] - this->ft[2][ij] - this->ft[3][ij] - this->ft[4][ij] - this->ft[5][ij] - this->ft[7][ij])/2.0 + _rho*ux0/12.0 - _rho*uy0/12.0;
+        } else if (_i == 0 && _j == this->ny - 1) {
+            int ijr = this->GetIndex(_i + 1, _j);
+            T uxr = this->ft[1][ijr] - this->ft[3][ijr] + this->ft[5][ijr] - this->ft[6][ijr] - this->ft[7][ijr] + this->ft[8][ijr]; 
+            T uyr = this->ft[2][ijr] - this->ft[4][ijr] + this->ft[5][ijr] + this->ft[6][ijr] - this->ft[7][ijr] - this->ft[8][ijr]; 
+            int ijd = this->GetIndex(_i, _j - 1);
+            T uxd = this->ft[1][ijd] - this->ft[3][ijd] + this->ft[5][ijd] - this->ft[6][ijd] - this->ft[7][ijd] + this->ft[8][ijd]; 
+            T uyd = this->ft[2][ijd] - this->ft[4][ijd] + this->ft[5][ijd] + this->ft[6][ijd] - this->ft[7][ijd] - this->ft[8][ijd]; 
+            int ijrd = this->GetIndex(_i + 1, _j - 1);
+            T uxrd = this->ft[1][ijrd] - this->ft[3][ijrd] + this->ft[5][ijrd] - this->ft[6][ijrd] - this->ft[7][ijrd] + this->ft[8][ijrd]; 
+            T uyrd = this->ft[2][ijrd] - this->ft[4][ijrd] + this->ft[5][ijrd] + this->ft[6][ijrd] - this->ft[7][ijrd] - this->ft[8][ijrd]; 
+            T ux0 = (uxr + uxd + uxrd)/3.0;
+            T uy0 = (uyr + uyd + uyrd)/3.0;
+            this->ft[1][ij] = this->ft[3][ij] + 2.0*_rho*ux0/3.0;
+            this->ft[4][ij] = this->ft[2][ij] - 2.0*_rho*uy0/3.0;
+            this->ft[8][ij] = this->ft[6][ij] + _rho*ux0/6.0 - _rho*uy0/6.0;
+            this->ft[5][ij] = (_rho - this->ft[0][ij] - this->ft[1][ij] - this->ft[2][ij] - this->ft[3][ij] - this->ft[4][ij] - this->ft[6][ij] - this->ft[8][ij])/2.0 + _rho*ux0/12.0 + _rho*uy0/12.0;
+            this->ft[7][ij] = (_rho - this->ft[0][ij] - this->ft[1][ij] - this->ft[2][ij] - this->ft[3][ij] - this->ft[4][ij] - this->ft[6][ij] - this->ft[8][ij])/2.0 - _rho*ux0/12.0 - _rho*uy0/12.0;
+        } else if (_i == this->nx - 1 && _j == 0) {
+            int ijl = this->GetIndex(_i - 1, _j);
+            T uxl = this->ft[1][ijl] - this->ft[3][ijl] + this->ft[5][ijl] - this->ft[6][ijl] - this->ft[7][ijl] + this->ft[8][ijl]; 
+            T uyl = this->ft[2][ijl] - this->ft[4][ijl] + this->ft[5][ijl] + this->ft[6][ijl] - this->ft[7][ijl] - this->ft[8][ijl]; 
+            int iju = this->GetIndex(_i, _j + 1);
+            T uxu = this->ft[1][iju] - this->ft[3][iju] + this->ft[5][iju] - this->ft[6][iju] - this->ft[7][iju] + this->ft[8][iju]; 
+            T uyu = this->ft[2][iju] - this->ft[4][iju] + this->ft[5][iju] + this->ft[6][iju] - this->ft[7][iju] - this->ft[8][iju]; 
+            int ijlu = this->GetIndex(_i - 1, _j + 1);
+            T uxlu = this->ft[1][ijlu] - this->ft[3][ijlu] + this->ft[5][ijlu] - this->ft[6][ijlu] - this->ft[7][ijlu] + this->ft[8][ijlu]; 
+            T uylu = this->ft[2][ijlu] - this->ft[4][ijlu] + this->ft[5][ijlu] + this->ft[6][ijlu] - this->ft[7][ijlu] - this->ft[8][ijlu]; 
+            T ux0 = (uxl + uxu + uxlu)/3.0;
+            T uy0 = (uyl + uyu + uylu)/3.0;
+            this->ft[3][ij] = this->ft[1][ij] - 2.0*_rho*ux0/3.0;
+            this->ft[2][ij] = this->ft[4][ij] + 2.0*_rho*uy0/3.0;
+            this->ft[6][ij] = this->ft[7][ij] - _rho*ux0/6.0 + _rho*uy0/6.0;
+            this->ft[5][ij] = (_rho - this->ft[0][ij] - this->ft[1][ij] - this->ft[2][ij] - this->ft[3][ij] - this->ft[4][ij] - this->ft[6][ij] - this->ft[8][ij])/2.0 + _rho*ux0/12.0 + _rho*uy0/12.0;
+            this->ft[7][ij] = (_rho - this->ft[0][ij] - this->ft[1][ij] - this->ft[2][ij] - this->ft[3][ij] - this->ft[4][ij] - this->ft[6][ij] - this->ft[8][ij])/2.0 - _rho*ux0/12.0 - _rho*uy0/12.0;
+        } else if (_i == this->nx - 1 && _j == this->ny - 1) {
+            int ijl = this->GetIndex(_i - 1, _j);
+            T uxl = this->ft[1][ijl] - this->ft[3][ijl] + this->ft[5][ijl] - this->ft[6][ijl] - this->ft[7][ijl] + this->ft[8][ijl]; 
+            T uyl = this->ft[2][ijl] - this->ft[4][ijl] + this->ft[5][ijl] + this->ft[6][ijl] - this->ft[7][ijl] - this->ft[8][ijl]; 
+            int ijd = this->GetIndex(_i, _j - 1);
+            T uxd = this->ft[1][ijd] - this->ft[3][ijd] + this->ft[5][ijd] - this->ft[6][ijd] - this->ft[7][ijd] + this->ft[8][ijd]; 
+            T uyd = this->ft[2][ijd] - this->ft[4][ijd] + this->ft[5][ijd] + this->ft[6][ijd] - this->ft[7][ijd] - this->ft[8][ijd]; 
+            int ijld = this->GetIndex(_i - 1, _j - 1);
+            T uxld = this->ft[1][ijld] - this->ft[3][ijld] + this->ft[5][ijld] - this->ft[6][ijld] - this->ft[7][ijld] + this->ft[8][ijld]; 
+            T uyld = this->ft[2][ijld] - this->ft[4][ijld] + this->ft[5][ijld] + this->ft[6][ijld] - this->ft[7][ijld] - this->ft[8][ijld]; 
+            T ux0 = (uxl + uxd + uxld)/3.0;
+            T uy0 = (uyl + uyd + uyld)/3.0;
+            this->ft[3][ij] = this->ft[1][ij] - 2.0*_rho*ux0/3.0;
+            this->ft[4][ij] = this->ft[2][ij] - 2.0*_rho*uy0/3.0;
+            this->ft[7][ij] = this->ft[5][ij] - _rho*ux0/6.0 - _rho*uy0/6.0;
+            this->ft[6][ij] = (_rho - this->ft[0][ij] - this->ft[1][ij] - this->ft[2][ij] - this->ft[3][ij] - this->ft[4][ij] - this->ft[5][ij] - this->ft[7][ij])/2.0 - _rho*ux0/12.0 + _rho*uy0/12.0;
+            this->ft[8][ij] = (_rho - this->ft[0][ij] - this->ft[1][ij] - this->ft[2][ij] - this->ft[3][ij] - this->ft[4][ij] - this->ft[5][ij] - this->ft[7][ij])/2.0 + _rho*ux0/12.0 - _rho*uy0/12.0;
+        } else if (_i == 0) {
             T ux0 = 1.0 - (this->ft[0][ij] + this->ft[2][ij] + this->ft[4][ij] + 2.0*(this->ft[3][ij] + this->ft[6][ij] + this->ft[7][ij]))/_rho;
             this->ft[1][ij] = this->ft[3][ij] + 2.0*_rho*ux0/3.0;
             this->ft[5][ij] = this->ft[7][ij] - 0.5*(this->ft[2][ij] - this->ft[4][ij]) + _rho*ux0/6.0 + _rho*_u/2.0;

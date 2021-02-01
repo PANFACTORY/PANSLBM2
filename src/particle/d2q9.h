@@ -7,6 +7,7 @@
 
 
 #pragma once
+#include <cmath>
 #include <cassert>
 
 
@@ -417,14 +418,42 @@ public:
     
     template<class T>
     void D2Q9<T>::SetFlux(int _i, int _j, T _ux, T _uy, T _q) {
-        int ij = this->ny*_i + _j;
-        if (_i == 0) {
+        int ij = this->GetIndex(_i, _j);
+        if (_i == 0 && _j == 0) {
+            T temperature0 = 18.0*(sqrt(2.0)*_q + this->ft[3][ij] + this->ft[4][ij] + 2.0*this->ft[7][ij])/(5.0 - 9.0*_ux - 9.0*_uy);
+            this->ft[1][ij] = temperature0*(1.0 + 3.0*_ux)/9.0;
+            this->ft[2][ij] = temperature0*(1.0 + 3.0*_uy)/9.0;
+            this->ft[5][ij] = temperature0*(1.0 + 3.0*_ux + 3.0*_uy)/36.0;
+            this->ft[6][ij] = temperature0*(1.0 - 3.0*_ux + 3.0*_uy)/36.0;
+            this->ft[8][ij] = temperature0*(1.0 + 3.0*_ux - 3.0*_uy)/36.0;
+        } else if (_i == 0 && _j == this->ny - 1) {
+            T temperature0 = 18.0*(sqrt(2.0)*_q + this->ft[2][ij] + this->ft[3][ij] + 2.0*this->ft[6][ij])/(5.0 - 9.0*_ux + 9.0*_uy);
+            this->ft[1][ij] = temperature0*(1.0 + 3.0*_ux)/9.0;
+            this->ft[4][ij] = temperature0*(1.0 - 3.0*_uy)/9.0;
+            this->ft[5][ij] = temperature0*(1.0 + 3.0*_ux + 3.0*_uy)/36.0;
+            this->ft[7][ij] = temperature0*(1.0 - 3.0*_ux - 3.0*_uy)/36.0;
+            this->ft[8][ij] = temperature0*(1.0 + 3.0*_ux - 3.0*_uy)/36.0;
+        } else if (_i == this->nx - 1 && _j == 0) {
+            T temperature0 = 18.0*(sqrt(2.0)*_q + this->ft[1][ij] + this->ft[4][ij] + 2.0*this->ft[8][ij])/(5.0 + 9.0*_ux - 9.0*_uy);
+            this->ft[2][ij] = temperature0*(1.0 + 3.0*_uy)/9.0;
+            this->ft[3][ij] = temperature0*(1.0 - 3.0*_ux)/9.0;
+            this->ft[5][ij] = temperature0*(1.0 + 3.0*_ux + 3.0*_uy)/36.0;
+            this->ft[6][ij] = temperature0*(1.0 - 3.0*_ux + 3.0*_uy)/36.0;
+            this->ft[7][ij] = temperature0*(1.0 - 3.0*_ux - 3.0*_uy)/36.0;
+        } else if (_i == this->nx - 1 && _j == this->ny - 1) {
+            T temperature0 = 18.0*(sqrt(2.0)*_q + this->ft[1][ij] + this->ft[2][ij] + 2.0*this->ft[5][ij])/(5.0 + 9.0*_ux + 9.0*_uy);
+            this->ft[3][ij] = temperature0*(1.0 - 3.0*_ux)/9.0;
+            this->ft[4][ij] = temperature0*(1.0 - 3.0*_uy)/9.0;
+            this->ft[6][ij] = temperature0*(1.0 - 3.0*_ux + 3.0*_uy)/36.0;
+            this->ft[7][ij] = temperature0*(1.0 - 3.0*_ux - 3.0*_uy)/36.0;
+            this->ft[8][ij] = temperature0*(1.0 + 3.0*_ux - 3.0*_uy)/36.0;
+        } else if (_i == 0) {
             T temperature0 = 6.0*(_q + this->ft[3][ij] + this->ft[6][ij] + this->ft[7][ij])/(1.0 - 3.0*_ux);
             this->ft[1][ij] = temperature0*(1.0 + 3.0*_ux)/9.0;
             this->ft[5][ij] = temperature0*(1.0 + 3.0*_ux + 3.0*_uy)/36.0;
             this->ft[8][ij] = temperature0*(1.0 + 3.0*_ux - 3.0*_uy)/36.0;
         } else if (_i == this->nx - 1) {
-            T temperature0 = 6.0*(-_q + this->ft[1][ij] + this->ft[5][ij] + this->ft[8][ij])/(1.0 + 3.0*_ux);
+            T temperature0 = 6.0*(_q + this->ft[1][ij] + this->ft[5][ij] + this->ft[8][ij])/(1.0 + 3.0*_ux);
             this->ft[3][ij] = temperature0*(1.0 - 3.0*_ux)/9.0;
             this->ft[6][ij] = temperature0*(1.0 - 3.0*_ux + 3.0*_uy)/36.0;
             this->ft[7][ij] = temperature0*(1.0 - 3.0*_ux - 3.0*_uy)/36.0;
@@ -434,7 +463,7 @@ public:
             this->ft[5][ij] = temperature0*(1.0 + 3.0*_ux + 3.0*_uy)/36.0;
             this->ft[6][ij] = temperature0*(1.0 - 3.0*_ux + 3.0*_uy)/36.0;
         } else if (_j == this->ny - 1) {
-            T temperature0 = 6.0*(-_q + this->ft[2][ij] + this->ft[5][ij] + this->ft[6][ij])/(1.0 + 3.0*_uy);
+            T temperature0 = 6.0*(_q + this->ft[2][ij] + this->ft[5][ij] + this->ft[6][ij])/(1.0 + 3.0*_uy);
             this->ft[4][ij] = temperature0*(1.0 - 3.0*_uy)/9.0;
             this->ft[7][ij] = temperature0*(1.0 - 3.0*_ux - 3.0*_uy)/36.0;
             this->ft[8][ij] = temperature0*(1.0 + 3.0*_ux - 3.0*_uy)/36.0;

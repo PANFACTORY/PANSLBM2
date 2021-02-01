@@ -44,8 +44,8 @@ int main() {
         particlef.Stream();
         particleg.Stream();                             //  Stream
         for (int i = 0; i < nx; i++) {
-            particleg.SetTemperature(i, 0, Th);
-            particleg.SetTemperature(i, ny - 1, Tl);
+            particleg.SetTemperature(i, 0, ux[particlef.GetIndex(i, 0)], ux[particlef.GetIndex(i, 0)], Th);
+            particleg.SetTemperature(i, ny - 1, ux[particlef.GetIndex(i, ny - 1)], ux[particlef.GetIndex(i, ny - 1)], Tl);
         }                                               //  Boundary condition (Fix temperature)
         NS::ExternalForceNaturalConvection(0.0, 1.6e-5, 0.5*(Th + Tl), particlef, particleg);   //  External force with natural convection
         NS::UpdateMacro(particlef, rho, ux, uy);

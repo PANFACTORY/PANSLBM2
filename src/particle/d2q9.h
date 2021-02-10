@@ -29,16 +29,14 @@ public:
         void SetU(int _i, int _j, T _ux, T _uy);
         void SetTemperature(int _i, int _j, T _temperature);            //  Set boundary condition for Advection
         void SetFlux(int _i, int _j, T _ux, T _uy, T _q);
-        void SetRS(int _i, int _j);                                     //  Set boundary condition for Elastic
-        void SetStress(int _i, int _j, T _tx, T _ty);
+        void SetStress(int _i, int _j, T _tx, T _ty);                   //  Set boundary condition for Elastic
         void SetiRho(int _i, int _j);                                   //  Set boundary condition for Adjoint of NavierStokes
         void SetiU(int _i, int _j, T _ux, T _uy);  
         void SetiUPressureDrop(int _i, int _j, T _ux, T _uy, T _eps = 1);
         void SetiTemperature(int _i, int _j);                           //  Set boundary condition for Adjoint of Advection
         void SetiFlux(int _i, int _j, T _ux, T _uy);
-        void SetiRhoFlux(const D2Q9<T>& _g, int _i, int _j, T _rho, T _ux, T _uy, T _temperature);
-        void SetiRS(int _i, int _j);                                    //  Set boundary condition for Adjoint of Elastic
-        void SetiStress(int _i, int _j, T _rho, T _tx, T _ty);
+        void SetiRhoFlux(const D2Q9<T>& _g, int _i, int _j, T _rho, T _ux, T _uy, T _temperature); 
+        void SetiStress(int _i, int _j, T _rho, T _tx, T _ty);          //  Set boundary condition for Adjoint of Elastic
 
         void Stream();
         void iStream();
@@ -299,31 +297,6 @@ public:
 
 
     template<class T>
-    void D2Q9<T>::SetRS(int _i, int _j) {
-        int ij = this->ny*_i + _j;
-        if (_i == 0) {
-            this->ft[1][ij] = this->ft[3][ij];
-            this->ft[5][ij] = this->ft[7][ij] - 0.5*(this->ft[2][ij] - this->ft[4][ij]);
-            this->ft[8][ij] = this->ft[6][ij] + 0.5*(this->ft[2][ij] - this->ft[4][ij]);
-        } else if (_i == this->nx - 1) {
-            this->ft[3][ij] = this->ft[1][ij];
-            this->ft[6][ij] = this->ft[8][ij] - 0.5*(this->ft[2][ij] - this->ft[4][ij]);
-            this->ft[7][ij] = this->ft[5][ij] + 0.5*(this->ft[2][ij] - this->ft[4][ij]);
-        } else if (_j == 0) {
-            this->ft[2][ij] = this->ft[4][ij];
-            this->ft[5][ij] = this->ft[7][ij] - 0.5*(this->ft[1][ij] - this->ft[3][ij]);
-            this->ft[6][ij] = this->ft[8][ij] + 0.5*(this->ft[1][ij] - this->ft[3][ij]);
-        } else if (_j == this->ny - 1) {
-            this->ft[4][ij] = this->ft[2][ij];
-            this->ft[7][ij] = this->ft[5][ij] + 0.5*(this->ft[1][ij] - this->ft[3][ij]);
-            this->ft[8][ij] = this->ft[6][ij] - 0.5*(this->ft[1][ij] - this->ft[3][ij]);
-        } else {
-            //  境界に沿っていないことを警告する
-        }
-    }
-
-
-    template<class T>
     void D2Q9<T>::SetStress(int _i, int _j, T _tx, T _ty) {
         int ij = this->ny*_i + _j;
         if (_i == 0) {
@@ -512,31 +485,6 @@ public:
             this->ft[2][ij] = this->ft[4][ij] + rho0 - flux0;
             this->ft[5][ij] = this->ft[7][ij] + rho0 - flux0;
             this->ft[6][ij] = this->ft[8][ij] + rho0 - flux0;
-        } else {
-            //  境界に沿っていないことを警告する
-        }
-    }
-
-
-    template<class T>
-    void D2Q9<T>::SetiRS(int _i, int _j) {
-        int ij = this->ny*_i + _j;
-        if (_i == 0) {
-            this->ft[3][ij] = this->ft[1][ij];
-            this->ft[6][ij] = this->ft[8][ij];
-            this->ft[7][ij] = this->ft[5][ij];
-        } else if (_i == this->nx - 1) {
-            this->ft[1][ij] = this->ft[3][ij];
-            this->ft[5][ij] = this->ft[7][ij];
-            this->ft[8][ij] = this->ft[6][ij];
-        } else if (_j == 0) {
-            this->ft[4][ij] = this->ft[2][ij];
-            this->ft[7][ij] = this->ft[5][ij];
-            this->ft[8][ij] = this->ft[6][ij];
-        } else if (_j == this->ny - 1) {
-            this->ft[2][ij] = this->ft[4][ij];
-            this->ft[5][ij] = this->ft[7][ij];
-            this->ft[6][ij] = this->ft[8][ij];
         } else {
             //  境界に沿っていないことを警告する
         }

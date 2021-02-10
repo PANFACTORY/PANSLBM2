@@ -21,7 +21,7 @@ int main() {
 
     D2Q9<double> particle(nx, ny);
     for (int j = 0; j < ny; j++) {
-        particle.SetBoundary(0, j, OTHER);
+        particle.SetBoundary(0, j, BARRIER);
         particle.SetBoundary(nx - 1, j, OTHER);
     }
     for (int i = 0; i < nx; i++) {
@@ -48,7 +48,6 @@ int main() {
             particle.SetStress(i, ny - 1, 0.0, 0.0);
         }
         for (int j = 0; j < ny; j++) {
-            particle.SetRS(0, j);
             if (fabs(j - 0.5*ny) < 5) {
                 particle.SetStress(nx - 1, j, 0.0, stress0);
             } else {
@@ -75,7 +74,6 @@ int main() {
             particle.SetiStress(i, ny - 1, rho0, 0.0, 0.0);
         }
         for (int j = 0; j < ny; j++) {
-            particle.SetiRS(0, j);
             if (fabs(j - 0.5*ny) < 5) {
                 particle.SetiStress(nx - 1, j, rho0, 0.0, stress0);
             } else {

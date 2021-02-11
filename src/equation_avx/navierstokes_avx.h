@@ -1,5 +1,5 @@
 //*****************************************************************************
-//  Title       :   src/equation/navierstokes_avx.h
+//  Title       :   src/equation_avx/navierstokes_avx.h
 //  Author      :   Tanabe Yuta
 //  Date        :   2021/01/24
 //  Copyright   :   (C)2021 TanabeYuta

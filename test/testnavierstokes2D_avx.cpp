@@ -2,7 +2,7 @@
 #include <chrono>
 
 #include "../src/particle/d2q9.h"
-#include "../src/equation/navierstokes_avx.h"
+#include "../src/equation_avx/navierstokes_avx.h"
 #include "vtkexport.h"
 
 using namespace PANSLBM2;

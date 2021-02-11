@@ -3,12 +3,12 @@
 using namespace PANSLBM2;
 
 int main() {
-    VTKImport model("result/ns/ns99.vtk");
+    VTKImport model("result/elastic/elastic99.vtk");
     
-    double ux[10000], uy[10000];
-    model.GetPointVector("u", ux, uy);
+    double sxx[10000], sxy[10000], syy[10000];
+    model.GetPointTensor("s", sxx, sxy, sxy, syy);
 
     for (int i = 0; i < 10000; i++) {
-        std::cout << ux[i] << "\t" << uy[i] << std::endl;
+        std::cout << sxx[i] << "\t" << sxy[i] << "\t" << syy[i] << std::endl;
     }
 }

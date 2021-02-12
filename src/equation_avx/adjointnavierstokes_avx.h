@@ -124,10 +124,30 @@ namespace PANSLBM2 {
         template<class T, template<class>class P>
         void Collision(T _viscosity, P<T>& _particle, T* _ux, T* _uy, T* _ip, T* _iux, T* _iuy) {
             assert(P<T>::nd == 2);
-            T omega = 1.0/(3.0*_viscosity*_particle.dt/(_particle.dx*_particle.dx) + 0.5);
-            for (int i = 0; i < _particle.np; i++) {
+            const int packsize = 32/sizeof(double), ne = (_particle.np/packsize)*packsize;
+
+            double omega = 1.0/(3.0*_viscosity*_particle.dt/(_particle.dx*_particle.dx) + 0.5), iomega = 1.0 - omega, a = 3.0;
+            __m256d __omega = _mm256_broadcast_sd((const double*)&omega), __iomega = _mm256_broadcast_sd((const double*)&iomega), __a = _mm256_broadcast_sd((const double*)&a);
+
+            __m256d __cx[P<double>::nc], __cy[P<double>::nc];
+            for (int j = 0; j < P<double>::nc; j++) {
+                double cxd = P<double>::cx[j], cyd = P<double>::cy[j]; 
+                __cx[j] = _mm256_broadcast_sd((const double*)&cxd);
+                __cy[j] = _mm256_broadcast_sd((const double*)&cyd);
+            }
+            
+            for (int i = 0; i < ne; i += packsize) {
+                __m256d __ux = _mm256_loadu_pd(&_ux[i]), __uy = _mm256_loadu_pd(&_uy[i]), __ip = _mm256_loadu_pd(&_ip[i]), __iux = _mm256_loadu_pd(&_iux[i]), __iuy = _mm256_loadu_pd(&_iuy[i]);
                 for (int j = 0; j < P<T>::nc; j++) {
-                    T feq = _ip[i] + 3.0*(_iux[i]*(P<T>::cx[j] - _ux[i]) + _iuy[i]*(P<T>::cy[j] - _uy[i]));
+                    __m256d __ft = _mm256_loadu_pd(&_particle.ft[j][i]);
+                    __m256d __feq = _mm256_add_pd(__ip, _mm256_mul_pd(__a, _mm256_add_pd(_mm256_mul_pd(__iux, _mm256_suv_pd(__cx[j], __ux)), _mm256_mul_pd(__iuy, _mm256_suv_pd(__cy[j], __uy))))); 
+                    _mm256_storeu_pd(&_particle.ftp1[j][i], _mm256_add_pd(_mm256_mul_pd(__iomega, __ft), _mm256_mul_pd(__omega, __feq)));
+                }
+            }
+
+            for (int i = ne; i < _particle.np; i++) {
+                for (int j = 0; j < P<T>::nc; j++) {
+                    double feq = _ip[i] + 3.0*(_iux[i]*(P<T>::cx[j] - _ux[i]) + _iuy[i]*(P<T>::cy[j] - _uy[i]));
                     _particle.ftp1[j][i] = (1.0 - omega)*_particle.ft[j][i] + omega*feq;
                 }
             }
@@ -139,7 +159,22 @@ namespace PANSLBM2 {
         template<class T, template<class>class P>
         void ExternalForceBrinkman(P<T>& _particle, T* _rho, T* _iux, T* _iuy, T* _imx, T* _imy, T* _alphax, T* _alphay) {
             assert(P<T>::nd == 2);
-            for (int i = 0; i < _particle.np; i++) {
+            const int packsize = 32/sizeof(double), ne = (_particle.np/packsize)*packsize;
+
+            double one = 1.0;
+            __mm256d __one = _mm256_broadcast_sd((const double)&one), __dx = _mm256_broadcast_sd((const double)&_particle.dx);
+
+            for (int i = 0; i < ne; i += packsize) {
+                __m256d __rho = _mm256_loadu_pd(&_rho[i]), __iux = _mm256_loadu_pd(&_iux[i]), __iuy = _mm256_loadu_pd(&_iuy[i]), __imx = _mm256_loadu_pd(&_imx[i]), __imy = _mm256_loadu_pd(&_imy[i]), __alphax = _mm256_loadu_pd(&_alphax[i]), __alphay = _mm256_loadu_pd(&_alphay[i]);
+                __imx = _mm256_div_pd(__imx, _mm256_add_pd(__one, _m256_div_pd(_m256_mul_pd(__dx, __alphax), __rho)));
+                __imy = _mm256_div_pd(__imy, _mm256_add_pd(__one, _m256_div_pd(_m256_mul_pd(__dx, __alphay), __rho)));
+                _mm256_storeu_pd(&_imx[i], __imx);
+                _mm256_storeu_pd(&_imy[i], __imy);
+                _mm256_storeu_pd(&_iux[i], _mm256_suv_pd(__iux, _mm256_div_pd(_mm256_mul_pd(__dx, _mm256_mul_pd(__alphax, __imx)), __rho)));
+                _mm256_storeu_pd(&_iuy[i], _mm256_suv_pd(__iuy, _mm256_div_pd(_mm256_mul_pd(__dx, _mm256_mul_pd(__alphay, __imy)), __rho)));
+            }
+
+            for (int i = ne; i < _particle.np; i++) {
                 _imx[i] /= 1.0 + _particle.dx*_alphax[i]/_rho[i];
                 _imy[i] /= 1.0 + _particle.dx*_alphay[i]/_rho[i];
                 _iux[i] -= _particle.dx*_alphax[i]*_imx[i]/_rho[i];

@@ -20,11 +20,11 @@ namespace PANSLBM2 {
         //*********************************************************************
         template<template<class>class P>
         void ExternalForceBrinkman(P<double>& _particle, double *_rho, double *_ux, double *_uy, double *_alphax, double *_alphay) {
-            assert(P<T>::nd == 2);
+            assert(P<double>::nd == 2);
             const int packsize = 32/sizeof(double), ne = (_particle.np/packsize)*packsize;
 
             double one = 1.0;
-            __mm256d __one = _mm256_broadcast_sd((const double)&one), __dx = _mm256_broadcast_sd((const double)&_particle.dx);
+            __m256d __one = _mm256_broadcast_sd((const double*)&one), __dx = _mm256_broadcast_sd((const double*)&_particle.dx);
             for (int i = 0; i < ne; i += packsize) {
                 __m256d __ux = _mm256_loadu_pd(&_ux[i]), __uy = _mm256_loadu_pd(&_uy[i]), __rho = _mm256_loadu_pd(&_rho[i]), __alphax = _mm256_loadu_pd(&_alphax[i]), __alphay = _mm256_loadu_pd(&_alphay[i]);
                 _mm256_storeu_pd(&_ux[i], _mm256_div_pd(__ux, _mm256_add_pd(__one, _mm256_div_pd(_mm256_mul_pd(__dx, __alphax), __rho))));
@@ -42,14 +42,14 @@ namespace PANSLBM2 {
         //*********************************************************************
         template<template<class>class P>
         bool CheckConvergence(P<double>& _particle, double _eps, double *_uxt, double *_uyt, double *_uxtm1, double *_uytm1) {
-            assert(P<T>::nd == 2);
+            assert(P<double>::nd == 2);
             const int packsize = 32/sizeof(double), ne = (_particle.np/packsize)*packsize;
 
             __m256d __unorm = { 0 }, __dunorm = { 0 };
             for (int i = 0; i < ne; i += packsize) {
-                __mm256d __uxt = _mm256_loadu_pd(&_uxt[i]), __uyt = _mm256_loadu_pd(&_uyt[i]), __uxtm1 = _mm256_loadu_pd(&_uxtm1[i]), __uytm1 = _mm256_loadu_pd(&_uytm1[i]);
+                __m256d __uxt = _mm256_loadu_pd(&_uxt[i]), __uyt = _mm256_loadu_pd(&_uyt[i]), __uxtm1 = _mm256_loadu_pd(&_uxtm1[i]), __uytm1 = _mm256_loadu_pd(&_uytm1[i]);
                 __unorm = _mm256_add_pd(__unorm, _mm256_add_pd(_mm256_mul_pd(__uxt, __uxt), _mm256_mul_pd(__uyt, __uyt)));
-                __mm256d __uxtmuxtm1 = _mm256_sub_pd(__uxt, __uxtm1), __uytmuytm1 = _mm256_sub_pd(__uyt, __uytm1); 
+                __m256d __uxtmuxtm1 = _mm256_sub_pd(__uxt, __uxtm1), __uytmuytm1 = _mm256_sub_pd(__uyt, __uytm1); 
                 __dunorm = _mm256_add_pd(__dunorm, _mm256_add_pd(_mm256_mul_pd(__uxtmuxtm1, __uxtmuxtm1), _mm256_mul_pd(__uytmuytm1, __uytmuytm1)));
             }
 
@@ -70,9 +70,9 @@ namespace PANSLBM2 {
         //*********************************************************************
         //  Adjoint Navier-Stokes 2D    :   Update macroscopic values, rho*, u*, v*
         //*********************************************************************
-        template<class T, template<class>class P>
-        void UpdateMacro(P<T>& _particle, T* _rho, T* _ux, T* _uy, T* _ip, T* _iux, T* _iuy, T* _imx, T* _imy) {
-            assert(P<T>::nd == 2);
+        template<template<class>class P>
+        void UpdateMacro(P<double>& _particle, double *_rho, double *_ux, double *_uy, double *_ip, double *_iux, double *_iuy, double *_imx, double *_imy) {
+            assert(P<double>::nd == 2);
             const int packsize = 32/sizeof(double), ne = (_particle.np/packsize)*packsize;
 
             double a = 1.0, b = 3.0, c = 4.5, d = 1.5;
@@ -87,33 +87,39 @@ namespace PANSLBM2 {
             }
 
             for (int i = 0; i < ne; i += packsize) {
-                __m256d __rho = { 0 }, __ux = { 0 }, __uy = { 0 }, __ip = { 0 }, __iux = { 0 }, __iuy = { 0 }, __imx = { 0 }, __imy = { 0 };
+                __m256d __ux = _mm256_loadu_pd(&_ux[i]), __uy = _mm256_loadu_pd(&_uy[i]), __ip = { 0 }, __iux = { 0 }, __iuy = { 0 }, __imx = { 0 }, __imy = { 0 };
                 __m256d __uu = _mm256_add_pd(_mm256_mul_pd(__ux, __ux), _mm256_mul_pd(__uy, __uy));
 
                 for (int j = 0; j < P<double>::nc; j++) {
                     __m256d __ft = _mm256_loadu_pd(&_particle.ft[j][i]), __ciu = _mm256_add_pd(_mm256_mul_pd(__cx[j], __ux), _mm256_mul_pd(__cy[j], __uy));
-                    __ip = _mm256_add_pd(__ip, _mm256_mul_pd(__ft, _mm256_mul_pd(__ei[j], _mm256_add_pd(__a, _mm256_add_pd(_mm256_mul_pd(__b, __ciu), _mm256_suv_pd(_mm256_mul_pd(__c, _mm256_mul_pd(__ciu, __ciu)), _mm256_mul_pd(__d, __uu)))))));
-                    __iux = _mm256_add_pd(__iux, _mm256_mul_pd(__ft, _mm256_mul_pd(__ei[j], _mm256_add_pd(__cx[j], _mm256_suv_pd(_mm256_mul_pd(b, _mm256_mul_pd(__ciu, __cx[j])), __ux)))));
-                    __iuy = _mm256_add_pd(__iuy, _mm256_mul_pd(__ft, _mm256_mul_pd(__ei[j], _mm256_add_pd(__cy[j], _mm256_suv_pd(_mm256_mul_pd(b, _mm256_mul_pd(__ciu, __cy[j])), __uy)))));
+                    __ip = _mm256_add_pd(__ip, _mm256_mul_pd(__ft, _mm256_mul_pd(__ei[j], _mm256_add_pd(__a, _mm256_add_pd(_mm256_mul_pd(__b, __ciu), _mm256_sub_pd(_mm256_mul_pd(__c, _mm256_mul_pd(__ciu, __ciu)), _mm256_mul_pd(__d, __uu)))))));
+                    __iux = _mm256_add_pd(__iux, _mm256_mul_pd(__ft, _mm256_mul_pd(__ei[j], _mm256_add_pd(__cx[j], _mm256_sub_pd(_mm256_mul_pd(__b, _mm256_mul_pd(__ciu, __cx[j])), __ux)))));
+                    __iuy = _mm256_add_pd(__iuy, _mm256_mul_pd(__ft, _mm256_mul_pd(__ei[j], _mm256_add_pd(__cy[j], _mm256_sub_pd(_mm256_mul_pd(__b, _mm256_mul_pd(__ciu, __cy[j])), __uy)))));
                     __imx = _mm256_add_pd(__imx, _mm256_mul_pd(__ft, _mm256_mul_pd(__ei[j], __cx[j])));
                     __imy = _mm256_add_pd(__imy, _mm256_mul_pd(__ft, _mm256_mul_pd(__ei[j], __cy[j])));
                 }
+
+                _mm256_storeu_pd(&_ip[i], __ip);
+                _mm256_storeu_pd(&_iux[i], __iux);
+                _mm256_storeu_pd(&_iuy[i], __iuy);
+                _mm256_storeu_pd(&_imx[i], __imx);
+                _mm256_storeu_pd(&_imy[i], __imy);
             }
 
             for (int i = ne; i < _particle.np; i++) {
-                _ip[i] = T();
-                _iux[i] = T();
-                _iuy[i] = T();
-                _imx[i] = T();
-                _imy[i] = T();
-                for (int j = 0; j < P<T>::nc; j++) {
-                    T ciu = P<T>::cx[j]*_ux[i] + P<T>::cy[j]*_uy[i]; 
-                    T uu = _ux[i]*_ux[i] + _uy[i]*_uy[i];
-                    _ip[i] += _particle.ft[j][i]*P<T>::ei[j]*(1.0 + 3.0*ciu + 4.5*ciu*ciu - 1.5*uu);
-                    _iux[i] += _particle.ft[j][i]*P<T>::ei[j]*(P<T>::cx[j] + 3.0*ciu*P<T>::cx[j] - _ux[i]);
-                    _iuy[i] += _particle.ft[j][i]*P<T>::ei[j]*(P<T>::cy[j] + 3.0*ciu*P<T>::cy[j] - _uy[i]);
-                    _imx[i] += _particle.ft[j][i]*P<T>::ei[j]*P<T>::cx[j];
-                    _imy[i] += _particle.ft[j][i]*P<T>::ei[j]*P<T>::cy[j];
+                _ip[i] = 0.0;
+                _iux[i] = 0.0;
+                _iuy[i] = 0.0;
+                _imx[i] = 0.0;
+                _imy[i] = 0.0;
+                for (int j = 0; j < P<double>::nc; j++) {
+                    double ciu = P<double>::cx[j]*_ux[i] + P<double>::cy[j]*_uy[i]; 
+                    double uu = _ux[i]*_ux[i] + _uy[i]*_uy[i];
+                    _ip[i] += _particle.ft[j][i]*P<double>::ei[j]*(1.0 + 3.0*ciu + 4.5*ciu*ciu - 1.5*uu);
+                    _iux[i] += _particle.ft[j][i]*P<double>::ei[j]*(P<double>::cx[j] + 3.0*ciu*P<double>::cx[j] - _ux[i]);
+                    _iuy[i] += _particle.ft[j][i]*P<double>::ei[j]*(P<double>::cy[j] + 3.0*ciu*P<double>::cy[j] - _uy[i]);
+                    _imx[i] += _particle.ft[j][i]*P<double>::ei[j]*P<double>::cx[j];
+                    _imy[i] += _particle.ft[j][i]*P<double>::ei[j]*P<double>::cy[j];
                 }
             }
         }
@@ -121,9 +127,9 @@ namespace PANSLBM2 {
         //*********************************************************************
         //  Adjoint Navier-Stokes 2D    :   Collision term
         //*********************************************************************
-        template<class T, template<class>class P>
-        void Collision(T _viscosity, P<T>& _particle, T* _ux, T* _uy, T* _ip, T* _iux, T* _iuy) {
-            assert(P<T>::nd == 2);
+        template<template<class>class P>
+        void Collision(double _viscosity, P<double>& _particle, double *_ux, double *_uy, double *_ip, double *_iux, double *_iuy) {
+            assert(P<double>::nd == 2);
             const int packsize = 32/sizeof(double), ne = (_particle.np/packsize)*packsize;
 
             double omega = 1.0/(3.0*_viscosity*_particle.dt/(_particle.dx*_particle.dx) + 0.5), iomega = 1.0 - omega, a = 3.0;
@@ -138,16 +144,16 @@ namespace PANSLBM2 {
             
             for (int i = 0; i < ne; i += packsize) {
                 __m256d __ux = _mm256_loadu_pd(&_ux[i]), __uy = _mm256_loadu_pd(&_uy[i]), __ip = _mm256_loadu_pd(&_ip[i]), __iux = _mm256_loadu_pd(&_iux[i]), __iuy = _mm256_loadu_pd(&_iuy[i]);
-                for (int j = 0; j < P<T>::nc; j++) {
+                for (int j = 0; j < P<double>::nc; j++) {
                     __m256d __ft = _mm256_loadu_pd(&_particle.ft[j][i]);
-                    __m256d __feq = _mm256_add_pd(__ip, _mm256_mul_pd(__a, _mm256_add_pd(_mm256_mul_pd(__iux, _mm256_suv_pd(__cx[j], __ux)), _mm256_mul_pd(__iuy, _mm256_suv_pd(__cy[j], __uy))))); 
+                    __m256d __feq = _mm256_add_pd(__ip, _mm256_mul_pd(__a, _mm256_add_pd(_mm256_mul_pd(__iux, _mm256_sub_pd(__cx[j], __ux)), _mm256_mul_pd(__iuy, _mm256_sub_pd(__cy[j], __uy))))); 
                     _mm256_storeu_pd(&_particle.ftp1[j][i], _mm256_add_pd(_mm256_mul_pd(__iomega, __ft), _mm256_mul_pd(__omega, __feq)));
                 }
             }
 
             for (int i = ne; i < _particle.np; i++) {
-                for (int j = 0; j < P<T>::nc; j++) {
-                    double feq = _ip[i] + 3.0*(_iux[i]*(P<T>::cx[j] - _ux[i]) + _iuy[i]*(P<T>::cy[j] - _uy[i]));
+                for (int j = 0; j < P<double>::nc; j++) {
+                    double feq = _ip[i] + 3.0*(_iux[i]*(P<double>::cx[j] - _ux[i]) + _iuy[i]*(P<double>::cy[j] - _uy[i]));
                     _particle.ftp1[j][i] = (1.0 - omega)*_particle.ft[j][i] + omega*feq;
                 }
             }
@@ -156,22 +162,22 @@ namespace PANSLBM2 {
         //*********************************************************************
         //  Adjoint Navier-Stokes 2D    :   External force with Brinkman model
         //*********************************************************************
-        template<class T, template<class>class P>
-        void ExternalForceBrinkman(P<T>& _particle, T* _rho, T* _iux, T* _iuy, T* _imx, T* _imy, T* _alphax, T* _alphay) {
-            assert(P<T>::nd == 2);
+        template<template<class>class P>
+        void ExternalForceBrinkman(P<double>& _particle, double *_rho, double *_iux, double *_iuy, double *_imx, double *_imy, double *_alphax, double *_alphay) {
+            assert(P<double>::nd == 2);
             const int packsize = 32/sizeof(double), ne = (_particle.np/packsize)*packsize;
 
             double one = 1.0;
-            __mm256d __one = _mm256_broadcast_sd((const double)&one), __dx = _mm256_broadcast_sd((const double)&_particle.dx);
+            __m256d __one = _mm256_broadcast_sd((const double*)&one), __dx = _mm256_broadcast_sd((const double*)&_particle.dx);
 
             for (int i = 0; i < ne; i += packsize) {
                 __m256d __rho = _mm256_loadu_pd(&_rho[i]), __iux = _mm256_loadu_pd(&_iux[i]), __iuy = _mm256_loadu_pd(&_iuy[i]), __imx = _mm256_loadu_pd(&_imx[i]), __imy = _mm256_loadu_pd(&_imy[i]), __alphax = _mm256_loadu_pd(&_alphax[i]), __alphay = _mm256_loadu_pd(&_alphay[i]);
-                __imx = _mm256_div_pd(__imx, _mm256_add_pd(__one, _m256_div_pd(_m256_mul_pd(__dx, __alphax), __rho)));
-                __imy = _mm256_div_pd(__imy, _mm256_add_pd(__one, _m256_div_pd(_m256_mul_pd(__dx, __alphay), __rho)));
+                __imx = _mm256_div_pd(__imx, _mm256_add_pd(__one, _mm256_div_pd(_mm256_mul_pd(__dx, __alphax), __rho)));
+                __imy = _mm256_div_pd(__imy, _mm256_add_pd(__one, _mm256_div_pd(_mm256_mul_pd(__dx, __alphay), __rho)));
                 _mm256_storeu_pd(&_imx[i], __imx);
                 _mm256_storeu_pd(&_imy[i], __imy);
-                _mm256_storeu_pd(&_iux[i], _mm256_suv_pd(__iux, _mm256_div_pd(_mm256_mul_pd(__dx, _mm256_mul_pd(__alphax, __imx)), __rho)));
-                _mm256_storeu_pd(&_iuy[i], _mm256_suv_pd(__iuy, _mm256_div_pd(_mm256_mul_pd(__dx, _mm256_mul_pd(__alphay, __imy)), __rho)));
+                _mm256_storeu_pd(&_iux[i], _mm256_sub_pd(__iux, _mm256_div_pd(_mm256_mul_pd(__dx, _mm256_mul_pd(__alphax, __imx)), __rho)));
+                _mm256_storeu_pd(&_iuy[i], _mm256_sub_pd(__iuy, _mm256_div_pd(_mm256_mul_pd(__dx, _mm256_mul_pd(__alphay, __imy)), __rho)));
             }
 
             for (int i = ne; i < _particle.np; i++) {

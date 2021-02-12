@@ -24,7 +24,7 @@ public:
         ~VTKImport() {}
 
         template<class T>
-        void GetPointScaler(std::string _label, T *_p);
+        void GetPointScalar(std::string _label, T *_p);
         template<class T>
         void GetPointVector(std::string _label, T *_px, T *_py);
         template<class T>
@@ -53,6 +53,7 @@ private:
                     if (tmp == _type) {
                         this->fin >> tmp;
                         if (tmp == _label) {
+                            std::cout << "Find out \"" << _label << "\"" << std::endl;
                             _f();
                         }
                     } else if (tmp == "CELL_DATA") {
@@ -66,9 +67,9 @@ private:
     }
 
     template<class T>
-    void VTKImport::GetPointScaler(std::string _label, T *_p) {
+    void VTKImport::GetPointScalar(std::string _label, T *_p) {
         std::string tmp;
-        this->GetPointBase(_label, "SCALERS", [&]() {
+        this->GetPointBase(_label, "SCALARS", [&]() {
             this->fin >> tmp >> tmp >> tmp;
             for (int i = 0; i < this->np; i++) {
                 this->fin >> _p[i];

@@ -156,7 +156,7 @@ public:
     template<class T>
     void D2Q9<T>::SetBarrier(int _i, int _j, bool _isbarrier) {
         for (int i = 0; i < D2Q9<T>::nc; i++) {
-            this->barrier[i][this->ny*(_i + D2Q9<T>::cx[i]) + (_j + D2Q9<T>::cy[i])] = _isbarrier;
+            this->barrier[i][this->GetIndex(_i + D2Q9<T>::cx[i], _j + D2Q9<T>::cy[i])] = _isbarrier;
         }
     }
 
@@ -475,7 +475,7 @@ public:
 
     template<class T>
     void D2Q9<T>::SetStress(int _i, int _j, T _tx, T _ty) {
-        int ij = this->ny*_i + _j;
+        int ij = this->GetIndex(_i, _j);
         if (_i == 0) {
             this->ft[1][ij] = this->ft[3][ij] - 4.0*(this->ft[3][ij] + this->ft[6][ij] + this->ft[7][ij])/3.0 + 2.0*_tx/3.0;
             this->ft[5][ij] = this->ft[6][ij] - (this->ft[3][ij] + this->ft[6][ij] + this->ft[7][ij])/3.0 + (_tx + 3.0*_ty)/6.0;
@@ -500,7 +500,7 @@ public:
 
     template<class T>
     void D2Q9<T>::SetiRho(int _i, int _j) {
-        int ij = this->ny*_i + _j;
+        int ij = this->GetIndex(_i, _j);
         if (_i == 0) {
             this->ft[3][ij] = this->ft[1][ij] - (4.0*this->ft[1][ij] + this->ft[5][ij] + this->ft[8][ij])/3.0;
             this->ft[6][ij] = this->ft[8][ij] - (4.0*this->ft[1][ij] + this->ft[5][ij] + this->ft[8][ij])/3.0;
@@ -525,7 +525,7 @@ public:
 
     template<class T>
     void D2Q9<T>::SetiU(int _i, int _j, T _ux, T _uy) {
-        int ij = this->ny*_i + _j;
+        int ij = this->GetIndex(_i, _j);
         if (_i == 0) {
             T rho0 = (_ux*(4.0*this->ft[1][ij] + this->ft[5][ij] + this->ft[8][ij]) + 3.0*_uy*(this->ft[5][ij] - this->ft[8][ij]))/(3.0*(1.0 - _ux));
             this->ft[3][ij] = this->ft[1][ij] + rho0;
@@ -554,7 +554,7 @@ public:
 
     template<class T>
     void D2Q9<T>::SetiUPressureDrop(int _i, int _j, T _ux, T _uy, T _eps) {
-        int ij = this->ny*_i + _j;
+        int ij = this->GetIndex(_i, _j);
         if (_i == 0) {
             T rho0 = (-2.0*_eps + _ux*(4.0*this->ft[1][ij] + this->ft[5][ij] + this->ft[8][ij]) + 3.0*_uy*(this->ft[5][ij] - this->ft[8][ij]))/(3.0*(1.0 - _ux));
             this->ft[3][ij] = this->ft[1][ij] + rho0;
@@ -612,7 +612,7 @@ public:
 
     template<class T>
     void D2Q9<T>::SetiFlux(int _i, int _j, T _ux, T _uy) {
-        int ij = this->ny*_i + _j;
+        int ij = this->GetIndex(_i, _j);
         if (_i == 0) {
             T rho0 = (1.0 + 3.0*_ux)/(6.0*(1.0 - 3.0*_ux))*(4.0*this->ft[1][ij] + this->ft[5][ij] + this->ft[8][ij]) + _uy/(2.0*(1.0 - 3.0*_ux))*(this->ft[5][ij] - this->ft[8][ij]);
             this->ft[3][ij] = rho0;
@@ -641,7 +641,7 @@ public:
 
     template<class T>
     void D2Q9<T>::SetiRhoFlux(const D2Q9<T>& _g, int _i, int _j, T _rho, T _ux, T _uy, T _temperature) {
-        int ij = this->ny*_i + _j;
+        int ij = this->GetIndex(_i, _j);
         if (_i == 0) {
             T rho0 = -(4.0*this->ft[1][ij] + this->ft[5][ij] + this->ft[8][ij])/3.0;
             T flux0 = _temperature/(3.0*(1.0 - 3.0*_ux)*_rho)*(4.0*_g.ft[1][ij] + _g.ft[5][ij] + _g.ft[8][ij]) + _uy*_temperature/(2.0*(1.0 - 3.0*_ux)*_rho)*(_g.ft[5][ij] - _g.ft[8][ij]);
@@ -674,7 +674,7 @@ public:
 
     template<class T>
     void D2Q9<T>::SetiStress(int _i, int _j, T _rho, T _tx, T _ty) {
-        int ij = this->ny*_i + _j;
+        int ij = this->GetIndex(_i, _j);
         if (_i == 0) {
             this->ft[3][ij] = this->ft[1][ij] - (4.0*this->ft[1][ij] + this->ft[5][ij] + this->ft[8][ij])/3.0 + 2.0*_tx/_rho;
             this->ft[6][ij] = this->ft[5][ij] - (4.0*this->ft[1][ij] + this->ft[5][ij] + this->ft[8][ij])/3.0 + 2.0*(_tx - _ty)/_rho;
@@ -705,7 +705,7 @@ public:
                 for (int k = 0; k < D2Q9<T>::nc; k++) {
                     int ip1 = i - D2Q9<T>::cx[k] == -1 ? this->nx - 1 : (i - D2Q9<T>::cx[k] == this->nx ? 0 : i - D2Q9<T>::cx[k]);
                     int jp1 = j - D2Q9<T>::cy[k] == -1 ? this->ny - 1 : (j - D2Q9<T>::cy[k] == this->ny ? 0 : j - D2Q9<T>::cy[k]);
-                    this->ft[k][this->ny*i + j] = this->ftp1[k][this->ny*ip1 + jp1];
+                    this->ft[k][this->GetIndex(i, j)] = this->ftp1[k][this->GetIndex(ip1, jp1)];
                 }
             }
         }
@@ -742,64 +742,64 @@ public:
         for (int j = 0; j < this->ny; j++) {
             //.....xmin.....
             if (this->btxmin[j] == OUTLET) {
-                this->ft[1][j] = this->ft[1][this->ny + j];
-                this->ft[5][j] = this->ft[5][this->ny + j];
-                this->ft[8][j] = this->ft[8][this->ny + j];
+                this->ft[1][this->GetIndex(0, j)] = this->ft[1][this->GetIndex(1, j)];
+                this->ft[5][this->GetIndex(0, j)] = this->ft[5][this->GetIndex(1, j)];
+                this->ft[8][this->GetIndex(0, j)] = this->ft[8][this->GetIndex(1, j)];
             } else if (this->btxmin[j] == BARRIER) {
-                this->ft[1][j] = this->ftp1[3][j];
-                this->ft[5][j] = this->ftp1[7][j];
-                this->ft[8][j] = this->ftp1[6][j];
+                this->ft[1][this->GetIndex(0, j)] = this->ftp1[3][this->GetIndex(0, j)];
+                this->ft[5][this->GetIndex(0, j)] = this->ftp1[7][this->GetIndex(0, j)];
+                this->ft[8][this->GetIndex(0, j)] = this->ftp1[6][this->GetIndex(0, j)];
             } else if (this->btxmin[j] == MIRROR) {
-                this->ft[1][j] = this->ftp1[3][j];
-                this->ft[5][j] = this->ftp1[6][j];
-                this->ft[8][j] = this->ftp1[7][j];
+                this->ft[1][this->GetIndex(0, j)] = this->ftp1[3][this->GetIndex(0, j)];
+                this->ft[5][this->GetIndex(0, j)] = this->ftp1[6][this->GetIndex(0, j)];
+                this->ft[8][this->GetIndex(0, j)] = this->ftp1[7][this->GetIndex(0, j)];
             }
 
             //.....xmax.....
             if (this->btxmax[j] == OUTLET) {
-                this->ft[3][this->ny*(this->nx - 1) + j] = this->ft[3][this->ny*(this->nx - 2) + j];
-                this->ft[6][this->ny*(this->nx - 1) + j] = this->ft[6][this->ny*(this->nx - 2) + j];
-                this->ft[7][this->ny*(this->nx - 1) + j] = this->ft[7][this->ny*(this->nx - 2) + j];
+                this->ft[3][this->GetIndex(this->nx - 1, j)] = this->ft[3][this->GetIndex(this->nx - 2, j)];
+                this->ft[6][this->GetIndex(this->nx - 1, j)] = this->ft[6][this->GetIndex(this->nx - 2, j)];
+                this->ft[7][this->GetIndex(this->nx - 1, j)] = this->ft[7][this->GetIndex(this->nx - 2, j)];
             } else if (this->btxmax[j] == BARRIER) {
-                this->ft[3][this->ny*(this->nx - 1) + j] = this->ftp1[1][this->ny*(this->nx - 1) + j];
-                this->ft[6][this->ny*(this->nx - 1) + j] = this->ftp1[8][this->ny*(this->nx - 1) + j];
-                this->ft[7][this->ny*(this->nx - 1) + j] = this->ftp1[5][this->ny*(this->nx - 1) + j];
+                this->ft[3][this->GetIndex(this->nx - 1, j)] = this->ftp1[1][this->GetIndex(this->nx - 1, j)];
+                this->ft[6][this->GetIndex(this->nx - 1, j)] = this->ftp1[8][this->GetIndex(this->nx - 1, j)];
+                this->ft[7][this->GetIndex(this->nx - 1, j)] = this->ftp1[5][this->GetIndex(this->nx - 1, j)];
             } else if (this->btxmax[j] == MIRROR) {
-                this->ft[3][this->ny*(this->nx - 1) + j] = this->ftp1[1][this->ny*(this->nx - 1) + j];
-                this->ft[6][this->ny*(this->nx - 1) + j] = this->ftp1[5][this->ny*(this->nx - 1) + j];
-                this->ft[7][this->ny*(this->nx - 1) + j] = this->ftp1[8][this->ny*(this->nx - 1) + j];
+                this->ft[3][this->GetIndex(this->nx - 1, j)] = this->ftp1[1][this->GetIndex(this->nx - 1, j)];
+                this->ft[6][this->GetIndex(this->nx - 1, j)] = this->ftp1[5][this->GetIndex(this->nx - 1, j)];
+                this->ft[7][this->GetIndex(this->nx - 1, j)] = this->ftp1[8][this->GetIndex(this->nx - 1, j)];
             }
         }
 
         for (int i = 0; i < this->nx; i++) {
             //.....ymin.....
             if (this->btymin[i] == OUTLET) {
-                this->ft[2][this->ny*i] = this->ft[2][this->ny*i + 1];
-                this->ft[5][this->ny*i] = this->ft[5][this->ny*i + 1];
-                this->ft[6][this->ny*i] = this->ft[6][this->ny*i + 1];
+                this->ft[2][this->GetIndex(i, 0)] = this->ft[2][this->GetIndex(i, 1)];
+                this->ft[5][this->GetIndex(i, 0)] = this->ft[5][this->GetIndex(i, 1)];
+                this->ft[6][this->GetIndex(i, 0)] = this->ft[6][this->GetIndex(i, 1)];
             } else if (this->btymin[i] == BARRIER) {
-                this->ft[2][this->ny*i] = this->ftp1[4][this->ny*i];
-                this->ft[5][this->ny*i] = this->ftp1[7][this->ny*i];
-                this->ft[6][this->ny*i] = this->ftp1[8][this->ny*i];
+                this->ft[2][this->GetIndex(i, 0)] = this->ftp1[4][this->GetIndex(i, 0)];
+                this->ft[5][this->GetIndex(i, 0)] = this->ftp1[7][this->GetIndex(i, 0)];
+                this->ft[6][this->GetIndex(i, 0)] = this->ftp1[8][this->GetIndex(i, 0)];
             } else if (this->btymin[i] == MIRROR) {
-                this->ft[2][this->ny*i] = this->ftp1[4][this->ny*i];
-                this->ft[5][this->ny*i] = this->ftp1[8][this->ny*i];
-                this->ft[6][this->ny*i] = this->ftp1[7][this->ny*i];
+                this->ft[2][this->GetIndex(i, 0)] = this->ftp1[4][this->GetIndex(i, 0)];
+                this->ft[5][this->GetIndex(i, 0)] = this->ftp1[8][this->GetIndex(i, 0)];
+                this->ft[6][this->GetIndex(i, 0)] = this->ftp1[7][this->GetIndex(i, 0)];
             }
 
             //.....ymax.....
             if (this->btymax[i] == OUTLET) {
-                this->ft[4][this->ny*(i + 1) - 1] = this->ft[4][this->ny*(i + 1) - 2];
-                this->ft[7][this->ny*(i + 1) - 1] = this->ft[7][this->ny*(i + 1) - 2];
-                this->ft[8][this->ny*(i + 1) - 1] = this->ft[8][this->ny*(i + 1) - 2];
+                this->ft[4][this->GetIndex(i, this->ny - 1)] = this->ft[4][this->GetIndex(i, this->ny - 2)];
+                this->ft[7][this->GetIndex(i, this->ny - 1)] = this->ft[7][this->GetIndex(i, this->ny - 2)];
+                this->ft[8][this->GetIndex(i, this->ny - 1)] = this->ft[8][this->GetIndex(i, this->ny - 2)];
             } else if (this->btymax[i] == BARRIER) {
-                this->ft[4][this->ny*(i + 1) - 1] = this->ftp1[2][this->ny*(i + 1) - 1];
-                this->ft[7][this->ny*(i + 1) - 1] = this->ftp1[5][this->ny*(i + 1) - 1];
-                this->ft[8][this->ny*(i + 1) - 1] = this->ftp1[6][this->ny*(i + 1) - 1];
+                this->ft[4][this->GetIndex(i, this->ny - 1)] = this->ftp1[2][this->GetIndex(i, this->ny - 1)];
+                this->ft[7][this->GetIndex(i, this->ny - 1)] = this->ftp1[5][this->GetIndex(i, this->ny - 1)];
+                this->ft[8][this->GetIndex(i, this->ny - 1)] = this->ftp1[6][this->GetIndex(i, this->ny - 1)];
             } else if (this->btymax[i] == MIRROR) {
-                this->ft[4][this->ny*(i + 1) - 1] = this->ftp1[2][this->ny*(i + 1) - 1];
-                this->ft[7][this->ny*(i + 1) - 1] = this->ftp1[6][this->ny*(i + 1) - 1];
-                this->ft[8][this->ny*(i + 1) - 1] = this->ftp1[5][this->ny*(i + 1) - 1];
+                this->ft[4][this->GetIndex(i, this->ny - 1)] = this->ftp1[2][this->GetIndex(i, this->ny - 1)];
+                this->ft[7][this->GetIndex(i, this->ny - 1)] = this->ftp1[6][this->GetIndex(i, this->ny - 1)];
+                this->ft[8][this->GetIndex(i, this->ny - 1)] = this->ftp1[5][this->GetIndex(i, this->ny - 1)];
             }
         }
     }
@@ -813,7 +813,7 @@ public:
                 for (int k = 0; k < D2Q9<T>::nc; k++) {
                     int ip1 = i + D2Q9<T>::cx[k] == -1 ? this->nx - 1 : (i + D2Q9<T>::cx[k] == this->nx ? 0 : i + D2Q9<T>::cx[k]);
                     int jp1 = j + D2Q9<T>::cy[k] == -1 ? this->ny - 1 : (j + D2Q9<T>::cy[k] == this->ny ? 0 : j + D2Q9<T>::cy[k]);
-                    this->ft[k][this->ny*i + j] = this->ftp1[k][this->ny*ip1 + jp1];
+                    this->ft[k][this->GetIndex(i, j)] = this->ftp1[k][this->GetIndex(ip1, jp1)];
                 }
             }
         }
@@ -849,69 +849,65 @@ public:
         //----------boundary (Bouns-Back, Outlet and Mirror)----------
         for (int j = 0; j < this->ny; j++) {
             //.....xmin.....
-//  要修正
             if (this->btxmin[j] == OUTLET) {
-                this->ft[3][j] = this->ft[3][this->ny + j];
-                this->ft[6][j] = this->ft[6][this->ny + j];
-                this->ft[7][j] = this->ft[7][this->ny + j];
+                this->ft[3][this->GetIndex(0, j)] = this->ft[3][this->GetIndex(1, j)];
+                this->ft[6][this->GetIndex(0, j)] = this->ft[6][this->GetIndex(1, j)];
+                this->ft[7][this->GetIndex(0, j)] = this->ft[7][this->GetIndex(1, j)];
             } else if (this->btxmin[j] == BARRIER) {
-                this->ft[3][j] = this->ftp1[1][j];
-                this->ft[6][j] = this->ftp1[8][j];
-                this->ft[7][j] = this->ftp1[5][j];
+                this->ft[3][this->GetIndex(0, j)] = this->ftp1[1][this->GetIndex(0, j)];
+                this->ft[6][this->GetIndex(0, j)] = this->ftp1[8][this->GetIndex(0, j)];
+                this->ft[7][this->GetIndex(0, j)] = this->ftp1[5][this->GetIndex(0, j)];
             } else if (this->btxmin[j] == MIRROR) {
-                this->ft[3][j] = this->ftp1[1][j];
-                this->ft[6][j] = this->ftp1[5][j];
-                this->ft[7][j] = this->ftp1[8][j];
+                this->ft[3][this->GetIndex(0, j)] = this->ftp1[1][this->GetIndex(0, j)];
+                this->ft[6][this->GetIndex(0, j)] = this->ftp1[5][this->GetIndex(0, j)];
+                this->ft[7][this->GetIndex(0, j)] = this->ftp1[8][this->GetIndex(0, j)];
             }
 
             //.....xmax.....
-//  要修正
             if (this->btxmax[j] == OUTLET) {
-                this->ft[1][this->ny*(this->nx - 1) + j] = this->ft[1][this->ny*(this->nx - 2) + j];
-                this->ft[5][this->ny*(this->nx - 1) + j] = this->ft[5][this->ny*(this->nx - 2) + j];
-                this->ft[8][this->ny*(this->nx - 1) + j] = this->ft[8][this->ny*(this->nx - 2) + j];
+                this->ft[1][this->GetIndex(this->nx - 1, j)] = this->ft[1][this->GetIndex(this->nx - 2, j)];
+                this->ft[5][this->GetIndex(this->nx - 1, j)] = this->ft[5][this->GetIndex(this->nx - 2, j)];
+                this->ft[8][this->GetIndex(this->nx - 1, j)] = this->ft[8][this->GetIndex(this->nx - 2, j)];
             } else if (this->btxmax[j] == BARRIER) {
-                this->ft[1][this->ny*(this->nx - 1) + j] = this->ftp1[3][this->ny*(this->nx - 1) + j];
-                this->ft[5][this->ny*(this->nx - 1) + j] = this->ftp1[7][this->ny*(this->nx - 1) + j];
-                this->ft[8][this->ny*(this->nx - 1) + j] = this->ftp1[6][this->ny*(this->nx - 1) + j];
+                this->ft[1][this->GetIndex(this->nx - 1, j)] = this->ftp1[3][this->GetIndex(this->nx - 1, j)];
+                this->ft[5][this->GetIndex(this->nx - 1, j)] = this->ftp1[7][this->GetIndex(this->nx - 1, j)];
+                this->ft[8][this->GetIndex(this->nx - 1, j)] = this->ftp1[6][this->GetIndex(this->nx - 1, j)];
             } else if (this->btxmax[j] == MIRROR) {
-                this->ft[1][this->ny*(this->nx - 1) + j] = this->ftp1[3][this->ny*(this->nx - 1) + j];
-                this->ft[5][this->ny*(this->nx - 1) + j] = this->ftp1[6][this->ny*(this->nx - 1) + j];
-                this->ft[8][this->ny*(this->nx - 1) + j] = this->ftp1[7][this->ny*(this->nx - 1) + j];
+                this->ft[1][this->GetIndex(this->nx - 1, j)] = this->ftp1[3][this->GetIndex(this->nx - 1, j)];
+                this->ft[5][this->GetIndex(this->nx - 1, j)] = this->ftp1[6][this->GetIndex(this->nx - 1, j)];
+                this->ft[8][this->GetIndex(this->nx - 1, j)] = this->ftp1[7][this->GetIndex(this->nx - 1, j)];
             }
         }
 
         for (int i = 0; i < this->nx; i++) {
             //.....ymin.....
-//  要修正
             if (this->btymin[i] == OUTLET) {
-                this->ft[4][this->ny*i] = this->ft[4][this->ny*i + 1];
-                this->ft[7][this->ny*i] = this->ft[7][this->ny*i + 1];
-                this->ft[8][this->ny*i] = this->ft[8][this->ny*i + 1];
+                this->ft[4][this->GetIndex(i, 0)] = this->ft[4][this->GetIndex(i, 1)];
+                this->ft[7][this->GetIndex(i, 0)] = this->ft[7][this->GetIndex(i, 1)];
+                this->ft[8][this->GetIndex(i, 0)] = this->ft[8][this->GetIndex(i, 1)];
             } else if (this->btymin[i] == BARRIER) {
-                this->ft[4][this->ny*i] = this->ftp1[2][this->ny*i];
-                this->ft[7][this->ny*i] = this->ftp1[5][this->ny*i];
-                this->ft[8][this->ny*i] = this->ftp1[6][this->ny*i];
+                this->ft[4][this->GetIndex(i, 0)] = this->ftp1[2][this->GetIndex(i, 0)];
+                this->ft[7][this->GetIndex(i, 0)] = this->ftp1[5][this->GetIndex(i, 0)];
+                this->ft[8][this->GetIndex(i, 0)] = this->ftp1[6][this->GetIndex(i, 0)];
             } else if (this->btymin[i] == MIRROR) {
-                this->ft[4][this->ny*i] = this->ftp1[2][this->ny*i];
-                this->ft[7][this->ny*i] = this->ftp1[6][this->ny*i];
-                this->ft[8][this->ny*i] = this->ftp1[5][this->ny*i];
+                this->ft[4][this->GetIndex(i, 0)] = this->ftp1[2][this->GetIndex(i, 0)];
+                this->ft[7][this->GetIndex(i, 0)] = this->ftp1[6][this->GetIndex(i, 0)];
+                this->ft[8][this->GetIndex(i, 0)] = this->ftp1[5][this->GetIndex(i, 0)];
             }
 
             //.....ymax.....
-//  要修正
             if (this->btymax[i] == OUTLET) {
-                this->ft[2][this->ny*(i + 1) - 1] = this->ft[2][this->ny*(i + 1) - 2];
-                this->ft[5][this->ny*(i + 1) - 1] = this->ft[5][this->ny*(i + 1) - 2];
-                this->ft[6][this->ny*(i + 1) - 1] = this->ft[6][this->ny*(i + 1) - 2];
+                this->ft[2][this->GetIndex(i, this->ny - 1)] = this->ft[2][this->GetIndex(i, this->ny - 2)];
+                this->ft[5][this->GetIndex(i, this->ny - 1)] = this->ft[5][this->GetIndex(i, this->ny - 2)];
+                this->ft[6][this->GetIndex(i, this->ny - 1)] = this->ft[6][this->GetIndex(i, this->ny - 2)];
             } else if (this->btymax[i] == BARRIER) {
-                this->ft[2][this->ny*(i + 1) - 1] = this->ftp1[4][this->ny*(i + 1) - 1];
-                this->ft[5][this->ny*(i + 1) - 1] = this->ftp1[7][this->ny*(i + 1) - 1];
-                this->ft[6][this->ny*(i + 1) - 1] = this->ftp1[8][this->ny*(i + 1) - 1];
+                this->ft[2][this->GetIndex(i, this->ny - 1)] = this->ftp1[4][this->GetIndex(i, this->ny - 1)];
+                this->ft[5][this->GetIndex(i, this->ny - 1)] = this->ftp1[7][this->GetIndex(i, this->ny - 1)];
+                this->ft[6][this->GetIndex(i, this->ny - 1)] = this->ftp1[8][this->GetIndex(i, this->ny - 1)];
             } else if (this->btymax[i] == MIRROR) {
-                this->ft[2][this->ny*(i + 1) - 1] = this->ftp1[4][this->ny*(i + 1) - 1];
-                this->ft[5][this->ny*(i + 1) - 1] = this->ftp1[8][this->ny*(i + 1) - 1];
-                this->ft[6][this->ny*(i + 1) - 1] = this->ftp1[7][this->ny*(i + 1) - 1];
+                this->ft[2][this->GetIndex(i, this->ny - 1)] = this->ftp1[4][this->GetIndex(i, this->ny - 1)];
+                this->ft[5][this->GetIndex(i, this->ny - 1)] = this->ftp1[8][this->GetIndex(i, this->ny - 1)];
+                this->ft[6][this->GetIndex(i, this->ny - 1)] = this->ftp1[7][this->GetIndex(i, this->ny - 1)];
             }
         }
     }
@@ -920,7 +916,7 @@ public:
     template<class T>
     bool D2Q9<T>::GetBarrier(int _i, int _j) const {
         assert(0 <= _i && _i < this->nx && 0 <= _j && _j < this->ny);
-        return this->barrier[0][this->ny*_i + _j];
+        return this->barrier[0][this->GetIndex(_i, _j)];
     }
 
 
@@ -936,7 +932,7 @@ public:
         } else if (_j == this->ny - 1) {
             return this->btymax[_i];
         } else {
-            if (this->barrier[0][this->ny*_i + _j]) {
+            if (this->barrier[0][this->GetIndex(_i, _j)]) {
                 return BARRIER;
             } else {
                 return OTHER;
@@ -948,6 +944,6 @@ public:
     template<class T>
     int D2Q9<T>::GetIndex(int _i, int _j) const {
         assert(0 <= _i && _i < this->nx && 0 <= _j && _j < this->ny);
-        return this->ny*_i + _j;
+        return _i + this->nx*_j;
     }
 }

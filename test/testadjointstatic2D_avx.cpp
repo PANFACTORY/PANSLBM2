@@ -12,7 +12,7 @@ using namespace PANSLBM2;
 int main() {
     //--------------------Setting parameters--------------------
     int nt = 10000, nx = 200, ny = 100, tmax = nt - 1;
-    double nu = 0.1, u0 = 0.0109, rho0 = 1.0, epsdu = 1.0e-15;    
+    double nu = 0.1, u0 = 0.0109, rho0 = 1.0, epsdu = 1.0e-4;    
     double q = 0.01, alpha0 = 50.0/(double)nx, *alpha = new double[nx*ny];              //  Inverse permeation
     double *rhot = new double[nx*ny], *uxt = new double[nx*ny], *uyt = new double[nx*ny], *uxtm1 = new double[nx*ny], *uytm1 = new double[nx*ny];   //  State variable
     double *irho = new double[nx*ny], *iux = new double[nx*ny], *iuy = new double[nx*ny], *imx = new double[nx*ny], *imy = new double[nx*ny];       //  Adjoint variable
@@ -43,6 +43,8 @@ int main() {
             alpha[particle.GetIndex(i, j)] = alpha0*q*(1.0 - gamma)/(gamma + q);
         }
     }
+
+    std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
 
     //--------------------Direct analyze--------------------
     for (int i = 0; i < nx*ny; i++) {
@@ -106,6 +108,9 @@ int main() {
     for (int i = 0; i < nx*ny; i++) {  
         sensitivity[i] /= sensitivitymax;
     }
+
+    std::chrono::system_clock::time_point end = std::chrono::system_clock::now();
+    std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count() << std::endl;
 
     //--------------------Export result--------------------
     VTKExport file("result/adjoint_AL50_q1e-2_avx.vtk", nx, ny);

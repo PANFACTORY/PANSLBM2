@@ -23,7 +23,7 @@ namespace PANSLBM2 {
             const int packsize = 32/sizeof(double), ne = (_particle.np/packsize)*packsize;
             
             double a = 1.0;
-            __m256d __a = _mm256_broadcast_sd((const double*)&a), __dx = _mm256_broadcast_sd((const double*)&_particlef.dx);
+            __m256d __a = _mm256_broadcast_sd((const double*)&a), __dx = _mm256_broadcast_sd((const double*)&_particle.dx);
             for (int i = 0; i < ne; i += packsize) {
                 __m256d __tem = _mm256_loadu_pd(&_tem[i]), __beta = _mm256_loadu_pd(&_beta[i]);
                 _mm256_storeu_pd(&_tem[i], _mm256_div_pd(_mm256_add_pd(__tem, _mm256_mul_pd(__dx, __beta)), _mm256_add_pd(__a, _mm256_mul_pd(__dx, __beta))));
@@ -59,7 +59,7 @@ namespace PANSLBM2 {
                 __m256d __rho = _mm256_loadu_pd(&_rho[i]), __ux = _mm256_loadu_pd(&_ux[i]), __uy = _mm256_loadu_pd(&_uy[i]), __tem = _mm256_loadu_pd(&_tem[i]), __iqx = _mm256_loadu_pd(&_iqx[i]), __iqy = _mm256_loadu_pd(&_iqy[i]); 
 
                 for (int j = 0; j < P<double>::nc; j++) {
-                    __mm256d __ft = _mm256_loadu_pd(&_particlef.ft[j][i]);
+                    __m256d __ft = _mm256_loadu_pd(&_particlef.ft[j][i]);
                     _mm256_storeu_pd(&_particlef.ft[j][i], _mm256_add_pd(__ft, _mm256_mul_pd(__a, _mm256_mul_pd(__tem, _mm256_mul_pd(__omega, _mm256_div_pd(_mm256_add_pd(_mm256_mul_pd(_mm256_sub_pd(__cx[j], __ux), __iqx), _mm256_mul_pd(_mm256_sub_pd(__cy[j], __uy), __iqy)), __rho))))));
                 }
             }
@@ -126,12 +126,12 @@ namespace PANSLBM2 {
 
             const int packsize = 32/sizeof(double), ne = (_particle.np/packsize)*packsize;
 
-            double omega = 1.0/(3.0*_diffusivity*_particlef.dt/(_particlef.dx*_particlef.dx) + 0.5), iomega = 1.0 - omega, a = 3.0;
+            double omega = 1.0/(3.0*_diffusivity*_particle.dt/(_particle.dx*_particle.dx) + 0.5), iomega = 1.0 - omega, a = 3.0;
             __m256d __omega = _mm256_broadcast_sd((const double*)&omega), __iomega = _mm256_broadcast_sd((const double*)&iomega), __a = _mm256_broadcast_sd((const double*)&a);
 
             for (int i = 0; i < ne; i += packsize) {
                 __m256d __ux = _mm256_loadu_pd(&_ux[i]), __uy = _mm256_loadu_pd(&_uy[i]), __item = _mm256_loadu_pd(&_item[i]), __iqx = _mm256_loadu_pd(&_iqx[i]), __iqy = _mm256_loadu_pd(&_iqy[i]);
-                __m256d __feq = _m256_add_pd(__item, _mm256_mul_pd(__a, _mm256_add_pd(_mm256_mul_pd(__ux, __iqx), _mm256_mul_pd(__uy, __iqy)))); 
+                __m256d __feq = _mm256_add_pd(__item, _mm256_mul_pd(__a, _mm256_add_pd(_mm256_mul_pd(__ux, __iqx), _mm256_mul_pd(__uy, __iqy)))); 
                 
                 for (int j = 0; j < P<double>::nc; j++) {
                     __m256d __ft = _mm256_loadu_pd(&_particle.ft[j][i]);
@@ -140,7 +140,7 @@ namespace PANSLBM2 {
             }
 
             for (int i = ne; i < _particle.np; i++) {
-                T feq = _item[i] + 3.0*(_ux[i]*_iqx[i] + _uy[i]*_iqy[i]);
+                double feq = _item[i] + 3.0*(_ux[i]*_iqx[i] + _uy[i]*_iqy[i]);
                 for (int j = 0; j < P<double>::nc; j++) {
                     _particle.ftp1[j][i] = (1.0 - omega)*_particle.ft[j][i] + omega*feq;
                 }
@@ -155,7 +155,7 @@ namespace PANSLBM2 {
             const int packsize = 32/sizeof(double), ne = (_particle.np/packsize)*packsize;
 
             double a = 1.0;
-            __m256d __a = _mm256_broadcast_sd((const double*)&a), __dx = _mm256_broadcast_sd((const double*)&_particlef.dx);
+            __m256d __a = _mm256_broadcast_sd((const double*)&a), __dx = _mm256_broadcast_sd((const double*)&_particle.dx);
             for (int i = 0; i < ne; i += packsize) {
                 __m256d __item = _mm256_loadu_pd(&_item[i]), __beta = _mm256_loadu_pd(&_beta[i]);
                 _mm256_storeu_pd(&_item[i], _mm256_div_pd(_mm256_sub_pd(__item, __beta), _mm256_add_pd(__a, _mm256_mul_pd(__dx, __beta))));

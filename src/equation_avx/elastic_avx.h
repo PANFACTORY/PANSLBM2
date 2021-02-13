@@ -79,7 +79,7 @@ namespace PANSLBM2 {
 
             const int packsize = 32/sizeof(double), ne = (_p.np/packsize)*packsize;
 
-            double omega = 1.0/(3.0*_diffusivity*_p.dt/(_p.dx*_p.dx) + 0.5), iomega = 1.0 - omega, a = 3.0, b = 4.5, c = 1.5;
+            double omega = 1.0/(3.0*_elasticy*_p.dt/(_p.dx*_p.dx) + 0.5), iomega = 1.0 - omega, a = 3.0, b = 4.5, c = 1.5;
             __m256d __omega = _mm256_broadcast_sd((const double*)&omega), __iomega = _mm256_broadcast_sd((const double*)&iomega), __a = _mm256_broadcast_sd((const double*)&a), __b = _mm256_broadcast_sd((const double*)&b), __c = _mm256_broadcast_sd((const double*)&c);
 
             __m256d __ei[P<double>::nc], __cx[P<double>::nc], __cy[P<double>::nc];
@@ -94,7 +94,7 @@ namespace PANSLBM2 {
                 __m256d __rho = _mm256_loadu_pd(&_rho[i]), __ux = _mm256_loadu_pd(&_ux[i]), __uy = _mm256_loadu_pd(&_uy[i]), __sxx = _mm256_loadu_pd(&_sxx[i]), __sxy = _mm256_loadu_pd(&_sxy[i]), __syx = _mm256_loadu_pd(&_syx[i]), __syy = _mm256_loadu_pd(&_syy[i]);
                 __m256d __trs = _mm256_add_pd(__sxx, __syy);
                 
-                for (int j = 0; j < P<T>::nc; j++) {
+                for (int j = 0; j < P<double>::nc; j++) {
                     __m256d __ft = _mm256_loadu_pd(&_p.ft[j][i]);
                     __m256d __ciu = _mm256_add_pd(_mm256_mul_pd(__cx[j], __ux), _mm256_mul_pd(__cy[j], __uy));
                     __m256d __csc = _mm256_add_pd(_mm256_add_pd(_mm256_mul_pd(_mm256_mul_pd(__cx[j], __cx[j]), __sxx), _mm256_mul_pd(_mm256_mul_pd(__cx[j], __cy[j]), __sxy)), _mm256_add_pd(_mm256_mul_pd(_mm256_mul_pd(__cy[j], __cx[j]), __syx), _mm256_mul_pd(_mm256_mul_pd(__cy[j], __cy[j]), __syy)));
@@ -106,10 +106,10 @@ namespace PANSLBM2 {
 
             for (int i = ne; i < _p.np; i++) {
                 for (int j = 0; j < P<double>::nc; j++) {
-                    T cu = P<double>::cx[j]*_ux[i] + P<double>::cy[j]*_uy[i];
-                    T csc = P<double>::cx[j]*_sxx[i]*P<double>::cx[j] + P<double>::cx[j]*_sxy[i]*P<double>::cy[j] + P<double>::cy[j]*_syx[i]*P<double>::cx[j] + P<double>::cy[j]*_syy[i]*P<double>::cy[j];
-                    T trs = _sxx[i] + _syy[i];
-                    T feq = P<double>::ei[j]*(3.0*_rho[i]*cu - 4.5*csc + 1.5*trs);
+                    double cu = P<double>::cx[j]*_ux[i] + P<double>::cy[j]*_uy[i];
+                    double csc = P<double>::cx[j]*_sxx[i]*P<double>::cx[j] + P<double>::cx[j]*_sxy[i]*P<double>::cy[j] + P<double>::cy[j]*_syx[i]*P<double>::cx[j] + P<double>::cy[j]*_syy[i]*P<double>::cy[j];
+                    double trs = _sxx[i] + _syy[i];
+                    double feq = P<double>::ei[j]*(3.0*_rho[i]*cu - 4.5*csc + 1.5*trs);
                     _p.ftp1[j][i] = (1.0 - omega)*_p.ft[j][i] + omega*feq;
                 }
             }

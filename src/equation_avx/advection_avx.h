@@ -33,7 +33,7 @@ namespace PANSLBM2 {
                 __m256d __tem = { 0 }, __qx = { 0 }, __qy = { 0 }, __ux = _mm256_loadu_pd(&_ux[i]), __uy = _mm256_loadu_pd(&_uy[i]);
 
                 for (int j = 0; j < P<double>::nc; j++) {
-                    __mm256d __ft = _mm256_loadu_pd(&_particle.ft[j][i]);
+                    __m256d __ft = _mm256_loadu_pd(&_particle.ft[j][i]);
                     __tem = _mm256_add_pd(__tem, __ft);
                     __qx = _mm256_add_pd(__qx, _mm256_mul_pd(__cx[j], __ft));
                     __qy = _mm256_add_pd(__qy, _mm256_mul_pd(__cy[j], __ft));
@@ -49,12 +49,12 @@ namespace PANSLBM2 {
                 _qx[i] = 0.0;
                 _qy[i] = 0.0;
                 for (int j = 0; j < P<double>::nc; j++) {
-                    _temperature[i] += _particle.ft[j][i];
+                    _tem[i] += _particle.ft[j][i];
                     _qx[i] += P<double>::cx[j]*_particle.ft[j][i];
                     _qy[i] += P<double>::cy[j]*_particle.ft[j][i];
                 }
-                _qx[i] -= _temperature[i]*_ux[i];
-                _qy[i] -= _temperature[i]*_uy[i];
+                _qx[i] -= _tem[i]*_ux[i];
+                _qy[i] -= _tem[i]*_uy[i];
             }
         }
 
@@ -93,19 +93,19 @@ namespace PANSLBM2 {
             }
 
             for (int i = ne; i < _particle.np; i++) {
-                _temperature[i] = 0.0;
+                _tem[i] = 0.0;
                 _qx[i] = 0.0;
                 _qy[i] = 0.0;
                 _qz[i] = 0.0;
                 for (int j = 0; j < P<double>::nc; j++) {
-                    _temperature[i] += _particle.ft[j][i];
+                    _tem[i] += _particle.ft[j][i];
                     _qx[i] += P<double>::cx[j]*_particle.ft[j][i];
                     _qy[i] += P<double>::cy[j]*_particle.ft[j][i];
                     _qz[i] += P<double>::cz[j]*_particle.ft[j][i];
                 }
-                _qx[i] -= _temperature[i]*_ux[i];
-                _qy[i] -= _temperature[i]*_uy[i];
-                _qz[i] -= _temperature[i]*_uz[i];
+                _qx[i] -= _tem[i]*_ux[i];
+                _qy[i] -= _tem[i]*_uy[i];
+                _qz[i] -= _tem[i]*_uz[i];
             }
         }
 
@@ -135,14 +135,14 @@ namespace PANSLBM2 {
                 for (int j = 0; j < P<double>::nc; j++) {
                     __m256d __ft = _mm256_loadu_pd(&_particle.ft[j][i]);
                     __m256d __ciu = _mm256_add_pd(_mm256_mul_pd(__cx[j], __ux), _mm256_mul_pd(__cy[j], __uy));
-                    __m256d __feq = _mm256_mul_pd(__ei, _mm256_mul_pd(__tem, _mm256_add_pd(__a, _mm256_mul_pd(__b, __ciu))));
+                    __m256d __feq = _mm256_mul_pd(__ei[j], _mm256_mul_pd(__tem, _mm256_add_pd(__a, _mm256_mul_pd(__b, __ciu))));
                     _mm256_storeu_pd(&_particle.ftp1[j][i], _mm256_add_pd(_mm256_mul_pd(__iomega, __ft), _mm256_mul_pd(__omega, __feq)));
                 }
             }
     
             for (int i = ne; i < _particle.np; i++) {
                 for (int j = 0; j < P<double>::nc; j++) {
-                    T ciu = P<double>::cx[j]*_ux[i] + P<double>::cy[j]*_uy[i];
+                    double ciu = P<double>::cx[j]*_ux[i] + P<double>::cy[j]*_uy[i];
                     _particle.ftp1[j][i] = (1.0 - omega)*_particle.ft[j][i] + omega*P<double>::ei[j]*_tem[i]*(1.0 + 3.0*ciu);
                 }
             }
@@ -182,8 +182,8 @@ namespace PANSLBM2 {
 
             for (int i = ne; i < _particle.np; i++) {
                 for (int j = 0; j < P<double>::nc; j++) {
-                    T ciu = P<double>::cx[j]*_ux[i] + P<double>::cy[j]*_uy[i] + P<double>::cz[j]*_uz[i];
-                    _particle.ftp1[j][i] = (1.0 - omega)*_particle.ft[j][i] + omega*P<double>::ei[j]*_temperature[i]*(1.0 + 3.0*ciu);
+                    double ciu = P<double>::cx[j]*_ux[i] + P<double>::cy[j]*_uy[i] + P<double>::cz[j]*_uz[i];
+                    _particle.ftp1[j][i] = (1.0 - omega)*_particle.ft[j][i] + omega*P<double>::ei[j]*_tem[i]*(1.0 + 3.0*ciu);
                 }
             }
         }
@@ -224,7 +224,7 @@ namespace PANSLBM2 {
             const int packsize = 32/sizeof(double), ne = (_particlef.np/packsize)*packsize;
 
             double a = 3.0;
-            __m256d __a = _mm256_broadcast_sd((const double*)&one), __dx = _mm256_broadcast_sd((const double*)&_particlef.dx);
+            __m256d __a = _mm256_broadcast_sd((const double*)&a), __dx = _mm256_broadcast_sd((const double*)&_particlef.dx);
             __m256d __gx = _mm256_broadcast_sd((const double*)&_gx), __gy = _mm256_broadcast_sd((const double*)&_gy), __tem0 = _mm256_broadcast_sd((const double*)&_tem0);
 
             __m256d __ei[P<double>::nc], __cx[P<double>::nc], __cy[P<double>::nc];
@@ -249,12 +249,12 @@ namespace PANSLBM2 {
             }
 
             for (int i = ne; i < _particlef.np; i++) {
-                double temperature = 0.0;
+                double tem = 0.0;
                 for (int j = 0; j < Q<double>::nc; j++) {
-                    temperature += _particleg.ft[j][i];
+                    tem += _particleg.ft[j][i];
                 }
                 for (int j = 0; j < P<double>::nc; j++) {
-                    _particlef.ft[j][i] += 3.0*_particlef.dx*P<double>::ei[j]*(Q<double>::cx[j]*_gx + Q<double>::cy[j]*_gy)*(temperature - _temperature0);
+                    _particlef.ft[j][i] += 3.0*_particlef.dx*P<double>::ei[j]*(Q<double>::cx[j]*_gx + Q<double>::cy[j]*_gy)*(tem - _tem0);
                 }
             }
         }
@@ -269,7 +269,7 @@ namespace PANSLBM2 {
             const int packsize = 32/sizeof(double), ne = (_particlef.np/packsize)*packsize;
 
             double a = 3.0;
-            __m256d __a = _mm256_broadcast_sd((const double*)&one), __dx = _mm256_broadcast_sd((const double*)&_particlef.dx);
+            __m256d __a = _mm256_broadcast_sd((const double*)&a), __dx = _mm256_broadcast_sd((const double*)&_particlef.dx);
             __m256d __gx = _mm256_broadcast_sd((const double*)&_gx), __gy = _mm256_broadcast_sd((const double*)&_gy), __gz = _mm256_broadcast_sd((const double*)&_gz), __tem0 = _mm256_broadcast_sd((const double*)&_tem0);
 
             __m256d __ei[P<double>::nc], __cx[P<double>::nc], __cy[P<double>::nc], __cz[P<double>::nc];
@@ -295,12 +295,12 @@ namespace PANSLBM2 {
             }
             
             for (int i = ne; i < _particlef.np; i++) {
-                double temperature = 0.0;
+                double tem = 0.0;
                 for (int j = 0; j < Q<double>::nc; j++) {
-                    temperature += _particleg.ft[j][i];
+                    tem += _particleg.ft[j][i];
                 }
                 for (int j = 0; j < P<double>::nc; j++) {
-                    _particlef.ft[j][i] += 3.0*_particlef.dx*P<double>::ei[j]*(Q<double>::cx[j]*_gx + Q<double>::cy[j]*_gy + Q<double>::cz[j]*_gz)*(temperature - _temperature0);
+                    _particlef.ft[j][i] += 3.0*_particlef.dx*P<double>::ei[j]*(Q<double>::cx[j]*_gx + Q<double>::cy[j]*_gy + Q<double>::cz[j]*_gz)*(tem - _tem0);
                 }
             }
         }

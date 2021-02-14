@@ -72,8 +72,8 @@ namespace PANSLBM2 {
                 }
 
                 _mm256_storeu_pd(&_irho[i], __irho);
-                _mm256_storeu_pd(&_iux[i], __iux);
-                _mm256_storeu_pd(&_iuy[i], __iuy);
+                _mm256_storeu_pd(&_imx[i], __imx);
+                _mm256_storeu_pd(&_imy[i], __imy);
                 _mm256_storeu_pd(&_isxx[i], __isxx);
                 _mm256_storeu_pd(&_isxy[i], __isxy);
                 _mm256_storeu_pd(&_isyx[i], __isyx);
@@ -136,10 +136,10 @@ namespace PANSLBM2 {
             
             for (int i = ne; i < _p.np; i++) {
                 for (int j = 0; j < P<double>::nc; j++) {
-                    T imc = _imx[i]*P<double>::cx[j] + _imy[i]*P<double>::cy[j];
-                    T cisc = P<double>::cx[j]*_isxx[i]*P<double>::cx[j] + P<double>::cx[j]*_isxy[i]*P<double>::cy[j] + P<double>::cy[j]*_isyx[i]*P<double>::cx[j] + P<double>::cy[j]*_isyy[i]*P<double>::cy[j];
-                    T irhocc = _irho[i]*(P<double>::cx[j]*P<double>::cx[j] + P<double>::cy[j]*P<double>::cy[j]);
-                    T feq = 3.0*imc + 4.5*_gamma[i]*cisc - 1.5*_gamma[i]*irhocc;
+                    double imc = _imx[i]*P<double>::cx[j] + _imy[i]*P<double>::cy[j];
+                    double cisc = P<double>::cx[j]*_isxx[i]*P<double>::cx[j] + P<double>::cx[j]*_isxy[i]*P<double>::cy[j] + P<double>::cy[j]*_isyx[i]*P<double>::cx[j] + P<double>::cy[j]*_isyy[i]*P<double>::cy[j];
+                    double irhocc = _irho[i]*(P<double>::cx[j]*P<double>::cx[j] + P<double>::cy[j]*P<double>::cy[j]);
+                    double feq = 3.0*imc + 4.5*_gamma[i]*cisc - 1.5*_gamma[i]*irhocc;
                     _p.ftp1[j][i] = (1.0 - omega)*_p.ft[j][i] + omega*feq;
                 }
             }

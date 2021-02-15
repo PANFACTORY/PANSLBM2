@@ -15,7 +15,7 @@ namespace PANSLBM2 {
         //  Navier-Stokes 2D    :   External Force with Immersed boundary method
         //*********************************************************************
         template<class T, template<class>class P>
-        void ExternalForceIB(P<T>& _p, T *_ux, T *_uy, T *_uxl, T *_uyl, T *_gxl, T *_gyl, int _nb, T *_bpx, T *_bpy, T *_bux, T *_buy, T *_bgx, T *_bgy, T _eps, T _dv) {
+        void ExternalForceIB(P<T>& _p, T *_ux, T *_uy, T *_uxl, T *_uyl, T *_gxl, T *_gyl, int _nb, T *_bpx, T *_bpy, T *_bux, T *_buy, T *_bgx, T *_bgy, T _dv, int _lmax = 5, T _eps = T(1.0e-5)) {
             assert(P<T>::nd == 2);
 
             auto W = [](T _r) {
@@ -57,7 +57,7 @@ namespace PANSLBM2 {
                 _bgy[k] = -_buy[k]/_p.dx;
             }
 
-            for (int l = 0; l < 5; l++) {
+            for (int l = 0; l < _lmax; l++) {
                 //**********STEP1**********
                 for (int ij = 0; ij < _p.np; ij++) {
                     _gxl[ij] = T();
@@ -106,7 +106,7 @@ namespace PANSLBM2 {
 
                     unorm = unorm < sqrt(pow(_bux[k], 2.0) + pow(_buy[k], 2.0)) ? sqrt(pow(_bux[k], 2.0) + pow(_buy[k], 2.0)) : unorm;
                 }
-
+                
                 //**********STEP4**********
                 if (unorm < _eps) {
                     break;

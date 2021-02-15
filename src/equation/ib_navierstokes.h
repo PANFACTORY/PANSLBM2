@@ -15,7 +15,7 @@ namespace PANSLBM2 {
         //  Navier-Stokes 2D    :   External Force with Immersed boundary method
         //*********************************************************************
         template<class T, template<class>class P>
-        void ExternalForceIB(P<T>& _p, T *_ux, T *_uy, T *_uxl, T *_uyl, T *_gxl, T *_gyl, int _nb, T *_bpx, T *_bpy, T *_bux, T *_buy, T *_bgx, T *_bgy) {
+        void ExternalForceIB(P<T>& _p, T *_ux, T *_uy, T *_uxl, T *_uyl, T *_gxl, T *_gyl, int _nb, T *_bpx, T *_bpy, T *_bux, T *_buy, T *_bgx, T *_bgy, T _eps, T _dv) {
             assert(P<T>::nd == 2);
 
             auto W = [](T _r) {
@@ -71,8 +71,8 @@ namespace PANSLBM2 {
                             for (int j = -1; j <= 2; j++) {
                                 int jj = (int)_bpy[k] + j;
                                 if (0 <= jj && jj < _p.ny) {
-                                    _gxl[_p.GetIndex(ii, jj)] += _bgx[k]*W(ii - _bpx[k])*W(jj - _bpy[k])*dv;
-                                    _gyl[_p.GetIndex(ii, jj)] += _bgy[k]*W(ii - _bpx[k])*W(jj - _bpy[k])*dv;
+                                    _gxl[_p.GetIndex(ii, jj)] += _bgx[k]*W(ii - _bpx[k])*W(jj - _bpy[k])*_dv;
+                                    _gyl[_p.GetIndex(ii, jj)] += _bgy[k]*W(ii - _bpx[k])*W(jj - _bpy[k])*_dv;
                                 }
                             }
                         }
@@ -86,6 +86,7 @@ namespace PANSLBM2 {
                 } 
 
                 //**********STEP3**********
+                T unorm = T();
                 for (int k = 0; k < _nb; k++) {
                     _bux[k] = T();
                     _buy[k] = T();
@@ -102,9 +103,15 @@ namespace PANSLBM2 {
                             }
                         }
                     }
+
+                    unorm = unorm < sqrt(pow(_bux[k], 2.0) + pow(_buy[k], 2.0)) ? sqrt(pow(_bux[k], 2.0) + pow(_buy[k], 2.0)) : unorm;
                 }
 
                 //**********STEP4**********
+                if (unorm < _eps) {
+                    break;
+                }
+
                 for (int k = 0; k < _nb; k++) {
                     _bgx[k] += -_bux[k]*_p.dx;
                     _bgy[k] += -_buy[k]*_p.dx; 

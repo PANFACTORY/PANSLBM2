@@ -15,7 +15,11 @@ namespace PANSLBM2 {
         //  Navier-Stokes 2D    :   External Force with Immersed boundary method
         //*********************************************************************
         template<class T, template<class>class P>
-        void ExternalForceIB(P<T>& _p, T *_ux, T *_uy, T *_uxl, T *_uyl, T *_gxl, T *_gyl, int _nb, T *_bpx, T *_bpy, T *_bux, T *_buy, T *_bgx, T *_bgy, T _dv, int _lmax = 5, T _eps = T(1.0e-5)) {
+        void ExternalForceIB(
+            P<T>& _p, T *_ux, T *_uy, T *_uxl, T *_uyl, T *_gxl, T *_gyl, 
+            int _nb, T *_bpx, T *_bpy, T *_bux, T *_buy, T *_bgx, T *_bgy, T *_bvx, T *_bvy,
+            T _dv, int _lmax = 5, T _eps = T(1.0e-5)
+        ) {
             assert(P<T>::nd == 2);
 
             auto W = [](T _r) {
@@ -53,8 +57,8 @@ namespace PANSLBM2 {
                     }
                 }
                 
-                _bgx[k] = -_bux[k]/_p.dx;
-                _bgy[k] = -_buy[k]/_p.dx;
+                _bgx[k] = (_bvx[k] - _bux[k])/_p.dx;
+                _bgy[k] = (_bvy[k] - _buy[k])/_p.dx;
             }
 
             for (int l = 0; l < _lmax; l++) {
@@ -104,7 +108,7 @@ namespace PANSLBM2 {
                         }
                     }
 
-                    unorm = unorm < sqrt(pow(_bux[k], 2.0) + pow(_buy[k], 2.0)) ? sqrt(pow(_bux[k], 2.0) + pow(_buy[k], 2.0)) : unorm;
+                    unorm = unorm < sqrt(pow(_bvx[k] - _bux[k], 2.0) + pow(_bvy[k] - _buy[k], 2.0)) ? sqrt(pow(_bvx[k] - _bux[k], 2.0) + pow(_bvy[k] - _buy[k], 2.0)) : unorm;
                 }
                 
                 //**********STEP4**********
@@ -113,8 +117,8 @@ namespace PANSLBM2 {
                 }
 
                 for (int k = 0; k < _nb; k++) {
-                    _bgx[k] += -_bux[k]*_p.dx;
-                    _bgy[k] += -_buy[k]*_p.dx; 
+                    _bgx[k] += (_bvx[k] - _bux[k])*_p.dx;
+                    _bgy[k] += (_bvy[k] - _buy[k])*_p.dx; 
                 }
             }
 

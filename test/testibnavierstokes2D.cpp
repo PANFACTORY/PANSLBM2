@@ -12,10 +12,10 @@ using namespace PANSLBM2;
 
 int main() {
     //--------------------Set parameters--------------------
-    int tmax = 10000, nx = 100, ny = 100, nb = 100;
-    double nu = 0.1, u0 = 0.1, dv = 95.0/(double)nb;
+    int tmax = 1000, nx = 100, ny = 100, nb = 100;
+    double nu = 0.1, u0 = 0.1, v0 = 0.01, dv = 95.0/(double)nb;
     double rho[nx*ny], u[nx*ny], v[nx*ny], ul[nx*ny], vl[nx*ny], gx[nx*ny], gy[nx*ny];
-    double bpx[nb], bpy[nb], bux[nb], buy[nb], bgx[nb], bgy[nb];
+    double bpx[nb], bpy[nb], bux[nb], buy[nb], bgx[nb], bgy[nb], bvx[nb], bvy[nb];
     
     D2Q9<double> particle(nx, ny);
     for (int j = 0; j < ny; j++) {
@@ -33,6 +33,8 @@ int main() {
     for (int k = 0; k < nb; k++) {
         bpx[k] = 15.0*cos(2.0*M_PI*k/(double)nb) + (double)nx/2.0;
         bpy[k] = 15.0*sin(2.0*M_PI*k/(double)nb) + (double)ny/2.0;
+        bvx[k] = -v0*sin(2.0*M_PI*k/(double)nb);
+        bvy[k] = v0*cos(2.0*M_PI*k/(double)nb);
     }
     
     std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
@@ -48,12 +50,12 @@ int main() {
         particle.SetU(0, ny - 1, u0, 0.0);
         particle.SetU(nx - 1, ny - 1, u0, 0.0); //  Boundary condition (corner node)
         NS::UpdateMacro(particle, rho, u, v);   //  Update macroscopic values
-        NS::ExternalForceIB(particle, u, v, ul, ul, gx, gy, nb, bpx, bpy, bux, buy, bgx, bgy, dv);
+        NS::ExternalForceIB(particle, u, v, ul, ul, gx, gy, nb, bpx, bpy, bux, buy, bgx, bgy, bvx, bvy, dv);
         NS::UpdateMacro(particle, rho, u, v);   //  Update macroscopic values
 
-        if (t%100 == 0) {
-            std::cout << t/100 << std::endl;
-            VTKExport file("result/ibns" + std::to_string(t/100) + ".vtk", nx, ny);
+        if (t%10 == 0) {
+            std::cout << t/10 << std::endl;
+            VTKExport file("result/ibns" + std::to_string(t/10) + ".vtk", nx, ny);
             file.AddPointScaler("rho", [&](int _i, int _j, int _k) { return rho[particle.GetIndex(_i, _j)]; });
             file.AddPointVector("u", 
                 [&](int _i, int _j, int _k) { return u[particle.GetIndex(_i, _j)]; },

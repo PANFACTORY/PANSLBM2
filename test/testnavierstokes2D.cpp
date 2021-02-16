@@ -9,7 +9,7 @@ using namespace PANSLBM2;
 
 int main() {
     //--------------------Set parameters--------------------
-    int tmax = 100000, nx = 200, ny = 200;
+    int tmax = 100000, nx = 100, ny = 100;
     double nu = 0.1, u0 = 0.1;
     double rho[nx*ny], u[nx*ny], v[nx*ny];
     
@@ -38,11 +38,12 @@ int main() {
         }                                       //  Boundary condition (inlet)
         particle.SetU(0, ny - 1, u0, 0.0);
         particle.SetU(nx - 1, ny - 1, u0, 0.0); //  Boundary condition (corner node)
+        //particle.SmoothCorner();
         NS::UpdateMacro(particle, rho, u, v);   //  Update macroscopic values
         
         if (t%1000 == 0) {
             std::cout << t/1000 << std::endl;
-            VTKExport file("result/ns" + std::to_string(t/1000) + ".vtk", nx, ny);
+            VTKExport file("result/_ns" + std::to_string(t/1000) + ".vtk", nx, ny);
             file.AddPointScaler("rho", [&](int _i, int _j, int _k) { return rho[particle.GetIndex(_i, _j)]; });
             file.AddPointVector("u", 
                 [&](int _i, int _j, int _k) { return u[particle.GetIndex(_i, _j)]; },

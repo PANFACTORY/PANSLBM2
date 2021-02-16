@@ -41,6 +41,7 @@ public:
 
         void Stream();
         void iStream();
+        void SmoothCorner();
         
         bool GetBarrier(int _i, int _j) const;
         BOUNDARYTYPE GetBoundary(int _i, int _j) const;
@@ -909,6 +910,17 @@ public:
                 this->ft[5][this->GetIndex(i, this->ny - 1)] = this->ftp1[8][this->GetIndex(i, this->ny - 1)];
                 this->ft[6][this->GetIndex(i, this->ny - 1)] = this->ftp1[7][this->GetIndex(i, this->ny - 1)];
             }
+        }
+    }
+
+
+    template<class T>
+    void D2Q9<T>::SmoothCorner() {
+        for (int j = 0; j < D2Q9<T>::nc; j++) {
+            this->ft[j][this->GetIndex(0, 0)] = 0.5*(this->ft[j][this->GetIndex(1, 0)] + this->ft[j][this->GetIndex(0, 1)]);
+            this->ft[j][this->GetIndex(0, this->ny - 1)] = 0.5*(this->ft[j][this->GetIndex(1, this->ny - 1)] + this->ft[j][this->GetIndex(0, this->ny - 2)]);
+            this->ft[j][this->GetIndex(this->nx - 1, 0)] = 0.5*(this->ft[j][this->GetIndex(this->nx - 2, 0)] + this->ft[j][this->GetIndex(this->nx - 1, 1)]);
+            this->ft[j][this->GetIndex(this->nx - 1, this->ny - 1)] = 0.5*(this->ft[j][this->GetIndex(this->nx - 2, this->ny - 1)] + this->ft[j][this->GetIndex(this->nx - 1, this->ny - 2)]);
         }
     }
 

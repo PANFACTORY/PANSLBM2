@@ -34,9 +34,9 @@ namespace PANSLBM2 {
             };
 
             //**********STEP0**********
-            for (int k = 0; k < _nb; k++) {
-                _bux[k] = T();
-                _buy[k] = T();
+            for (int n = 0; n < _nb; n++) {
+                _bux[n] = T();
+                _buy[n] = T();
 
                 /*
                 -1 +0 +1 +2
@@ -45,20 +45,20 @@ namespace PANSLBM2 {
                 (int)_bpx
                 */
                 for (int i = -1; i <= 2; i++) {
-                    int ii = (int)_bpx[k] + i;
+                    int ii = (int)_bpx[n] + i;
                     if (0 <= ii && ii < _p.nx) {
                         for (int j = -1; j <= 2; j++) {
-                            int jj = (int)_bpy[k] + j;
+                            int jj = (int)_bpy[n] + j;
                             if (0 <= jj && jj < _p.ny) {
-                                _bux[k] += _ux[_p.GetIndex(ii, jj)]*W(ii - _bpx[k])*W(jj - _bpy[k]);
-                                _buy[k] += _uy[_p.GetIndex(ii, jj)]*W(ii - _bpx[k])*W(jj - _bpy[k]);
+                                _bux[n] += _ux[_p.GetIndex(ii, jj)]*W(ii - _bpx[n])*W(jj - _bpy[n]);
+                                _buy[n] += _uy[_p.GetIndex(ii, jj)]*W(ii - _bpx[n])*W(jj - _bpy[n]);
                             }
                         }
                     }
                 }
                 
-                _bgx[k] = (_bvx[k] - _bux[k])/_p.dx;
-                _bgy[k] = (_bvy[k] - _buy[k])/_p.dx;
+                _bgx[n] = (_bvx[n] - _bux[n])/_p.dx;
+                _bgy[n] = (_bvy[n] - _buy[n])/_p.dx;
             }
 
             for (int l = 0; l < _lmax; l++) {
@@ -68,15 +68,15 @@ namespace PANSLBM2 {
                     _gyl[ij] = T();
                 } 
 
-                for (int k = 0; k < _nb; k++) {
+                for (int n = 0; n < _nb; n++) {
                     for (int i = -1; i <= 2; i++) {
-                        int ii = (int)_bpx[k] + i;
+                        int ii = (int)_bpx[n] + i;
                         if (0 <= ii && ii < _p.nx) {
                             for (int j = -1; j <= 2; j++) {
-                                int jj = (int)_bpy[k] + j;
+                                int jj = (int)_bpy[n] + j;
                                 if (0 <= jj && jj < _p.ny) {
-                                    _gxl[_p.GetIndex(ii, jj)] += _bgx[k]*W(ii - _bpx[k])*W(jj - _bpy[k])*_dv;
-                                    _gyl[_p.GetIndex(ii, jj)] += _bgy[k]*W(ii - _bpx[k])*W(jj - _bpy[k])*_dv;
+                                    _gxl[_p.GetIndex(ii, jj)] += _bgx[n]*W(ii - _bpx[n])*W(jj - _bpy[n])*_dv;
+                                    _gyl[_p.GetIndex(ii, jj)] += _bgy[n]*W(ii - _bpx[n])*W(jj - _bpy[n])*_dv;
                                 }
                             }
                         }
@@ -91,24 +91,24 @@ namespace PANSLBM2 {
 
                 //**********STEP3**********
                 T unorm = T();
-                for (int k = 0; k < _nb; k++) {
-                    _bux[k] = T();
-                    _buy[k] = T();
+                for (int n = 0; n < _nb; n++) {
+                    _bux[n] = T();
+                    _buy[n] = T();
 
                     for (int i = -1; i <= 2; i++) {
-                        int ii = (int)_bpx[k] + i;
+                        int ii = (int)_bpx[n] + i;
                         if (0 <= ii && ii < _p.nx) {
                             for (int j = -1; j <= 2; j++) {
-                                int jj = (int)_bpy[k] + j;
+                                int jj = (int)_bpy[n] + j;
                                 if (0 <= jj && jj < _p.ny) {
-                                    _bux[k] += _uxl[_p.GetIndex(ii, jj)]*W(ii - _bpx[k])*W(jj - _bpy[k]);
-                                    _buy[k] += _uyl[_p.GetIndex(ii, jj)]*W(ii - _bpx[k])*W(jj - _bpy[k]);
+                                    _bux[n] += _uxl[_p.GetIndex(ii, jj)]*W(ii - _bpx[n])*W(jj - _bpy[n]);
+                                    _buy[n] += _uyl[_p.GetIndex(ii, jj)]*W(ii - _bpx[n])*W(jj - _bpy[n]);
                                 }
                             }
                         }
                     }
 
-                    unorm = unorm < sqrt(pow(_bvx[k] - _bux[k], 2.0) + pow(_bvy[k] - _buy[k], 2.0)) ? sqrt(pow(_bvx[k] - _bux[k], 2.0) + pow(_bvy[k] - _buy[k], 2.0)) : unorm;
+                    unorm = unorm < sqrt(pow(_bvx[n] - _bux[n], 2.0) + pow(_bvy[n] - _buy[n], 2.0)) ? sqrt(pow(_bvx[n] - _bux[n], 2.0) + pow(_bvy[n] - _buy[n], 2.0)) : unorm;
                 }
                 
                 //**********STEP4**********
@@ -116,9 +116,9 @@ namespace PANSLBM2 {
                     break;
                 }
 
-                for (int k = 0; k < _nb; k++) {
-                    _bgx[k] += (_bvx[k] - _bux[k])*_p.dx;
-                    _bgy[k] += (_bvy[k] - _buy[k])*_p.dx; 
+                for (int n = 0; n < _nb; n++) {
+                    _bgx[n] += (_bvx[n] - _bux[n])*_p.dx;
+                    _bgy[n] += (_bvy[n] - _buy[n])*_p.dx; 
                 }
             }
 

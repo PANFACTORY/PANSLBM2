@@ -12,7 +12,7 @@ using namespace PANSLBM2;
 int main() {
     //--------------------Set parameters--------------------
     int tmax = 100000, nx = 30, ny = 30, nz = 30;
-    double nu = 0.1, u0 = 0.1, theta = 30.0;
+    double nu = 0.1, u0 = 0.1, theta = 90.0;
     double *rho = new double[nx*ny*nz], *u = new double[nx*ny*nz], *v = new double[nx*ny*nz], *w = new double[nx*ny*nz];
     
     D3Q15<double> particle(nx, ny, nz);
@@ -50,10 +50,11 @@ int main() {
                 particle.SetU(i, j, nz - 1, u0*cos(theta*M_PI/180.0), u0*sin(theta*M_PI/180.0), 0.0);
             } 
         }                                           //  Boundary condition (inlet)
+        particle.SmoothCorner();                    //  Smooth corner nodes
       
         if (t%1000 == 0) {
             std::cout << t/1000 << std::endl;
-            VTKExport file("result/ns3D" + std::to_string(t/1000) + ".vtk", nx, ny, nz);
+            VTKExport file("result/_ns3D_90_" + std::to_string(t/1000) + ".vtk", nx, ny, nz);
             file.AddPointScaler("rho", [&](int _i, int _j, int _k) { return rho[particle.GetIndex(_i, _j, _k)]; });
             file.AddPointVector("u", 
                 [&](int _i, int _j, int _k) { return u[particle.GetIndex(_i, _j, _k)]; },

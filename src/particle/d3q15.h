@@ -940,7 +940,7 @@ public:
                 this->ft[j][this->GetIndex(this->nx - 1, this->ny - 1, i)] = 0.5*(this->ft[j][this->GetIndex(this->nx - 2, this->ny - 1, i)] + this->ft[j][this->GetIndex(this->nx - 1, this->ny - 2, i)]);
             }
 
-            this->ft[j][this->GetIndex(0, 0, 0)] = (this->ft[j][this->GetIndex(1, 0, 0)] + this->ft[j][this->GetIndex(0, 1, 0) + this->ft[j][this->GetIndex(0, 0, 1)])/3.0;
+            this->ft[j][this->GetIndex(0, 0, 0)] = (this->ft[j][this->GetIndex(1, 0, 0)] + this->ft[j][this->GetIndex(0, 1, 0)] + this->ft[j][this->GetIndex(0, 0, 1)])/3.0;
             this->ft[j][this->GetIndex(0, 0, this->nz - 1)] = (this->ft[j][this->GetIndex(1, 0, this->nz - 1)] + this->ft[j][this->GetIndex(0, 1, this->nz - 1)] + this->ft[j][this->GetIndex(0, 0, this->nz - 2)])/3.0;
             this->ft[j][this->GetIndex(0, this->ny - 1, 0)] = (this->ft[j][this->GetIndex(1, this->ny - 1, 0)] + this->ft[j][this->GetIndex(0, this->ny - 2, 0)] + this->ft[j][this->GetIndex(0, this->ny - 1, 1)])/3.0;
             this->ft[j][this->GetIndex(0, this->ny - 1, this->nz - 1)] = (this->ft[j][this->GetIndex(1, this->ny - 1, this->nz - 1)] + this->ft[j][this->GetIndex(0, this->ny - 2, this->nz - 1)] + this->ft[j][this->GetIndex(0, this->ny - 1, this->nz - 2)])/3.0;

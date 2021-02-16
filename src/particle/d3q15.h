@@ -33,6 +33,7 @@ public:
 
         void Stream();
         void iStream();
+        void SmoothCorner();
         
         bool GetBarrier(int _i, int _j, int _k) const;
         BOUNDARYTYPE GetBoundary(int _i, int _j, int _k) const;
@@ -911,6 +912,42 @@ public:
                     this->ft[14][ijmax] = this->ftp1[11][ijmax];
                 }
             }
+        }
+    }
+
+
+    template<class T>
+    void D3Q15<T>::SmoothCorner() {
+        for (int j = 0; j < D3Q15<T>::nc; j++) {
+            for (int i = 0; i < this->nx; i++) {
+                this->ft[j][this->GetIndex(i, 0, 0)] = 0.5*(this->ft[j][this->GetIndex(i, 1, 0)] + this->ft[j][this->GetIndex(i, 0, 1)]);
+                this->ft[j][this->GetIndex(i, 0, this->nz - 1)] = 0.5*(this->ft[j][this->GetIndex(i, 1, this->nz - 1)] + this->ft[j][this->GetIndex(i, 0, this->nz - 2)]);
+                this->ft[j][this->GetIndex(i, this->ny - 1, 0)] = 0.5*(this->ft[j][this->GetIndex(i, this->ny - 2, 0)] + this->ft[j][this->GetIndex(i, this->ny - 1, 1)]);
+                this->ft[j][this->GetIndex(i, this->ny - 1, this->nz - 1)] = 0.5*(this->ft[j][this->GetIndex(i, this->ny - 2, this->nz - 1)] + this->ft[j][this->GetIndex(i, this->ny - 1, this->nz - 2)]);
+            }
+
+            for (int i = 0; i < this->ny; i++) {
+                this->ft[j][this->GetIndex(0, i, 0)] = 0.5*(this->ft[j][this->GetIndex(0, i, 1)] + this->ft[j][this->GetIndex(1, i, 0)]);
+                this->ft[j][this->GetIndex(this->nx - 1, i, 0)] = 0.5*(this->ft[j][this->GetIndex(this->nx - 1, i, 1)] + this->ft[j][this->GetIndex(this->nx - 2, i, 0)]);
+                this->ft[j][this->GetIndex(0, i, this->nz - 1)] = 0.5*(this->ft[j][this->GetIndex(0, i, this->nz - 2)] + this->ft[j][this->GetIndex(1, i, this->nz - 1)]);
+                this->ft[j][this->GetIndex(this->nx - 1, i, this->nz - 1)] = 0.5*(this->ft[j][this->GetIndex(this->nx - 1, i, this->nz - 2)] + this->ft[j][this->GetIndex(this->nx - 2, i, this->nz - 1)]);
+            }
+
+            for (int i = 0; i < this->nz; i++) {
+                this->ft[j][this->GetIndex(0, 0, i)] = 0.5*(this->ft[j][this->GetIndex(1, 0, i)] + this->ft[j][this->GetIndex(0, 1, i)]);
+                this->ft[j][this->GetIndex(0, this->ny - 1, i)] = 0.5*(this->ft[j][this->GetIndex(1, this->ny - 1, i)] + this->ft[j][this->GetIndex(0, this->ny - 2, i)]);
+                this->ft[j][this->GetIndex(this->nx - 1, 0, i)] = 0.5*(this->ft[j][this->GetIndex(this->nx - 2, 0, i)] + this->ft[j][this->GetIndex(this->nx - 1, 1, i)]);
+                this->ft[j][this->GetIndex(this->nx - 1, this->ny - 1, i)] = 0.5*(this->ft[j][this->GetIndex(this->nx - 2, this->ny - 1, i)] + this->ft[j][this->GetIndex(this->nx - 1, this->ny - 2, i)]);
+            }
+
+            this->ft[j][this->GetIndex(0, 0, 0)] = (this->ft[j][this->GetIndex(1, 0, 0)] + this->ft[j][this->GetIndex(0, 1, 0) + this->ft[j][this->GetIndex(0, 0, 1)])/3.0;
+            this->ft[j][this->GetIndex(0, 0, this->nz - 1)] = (this->ft[j][this->GetIndex(1, 0, this->nz - 1)] + this->ft[j][this->GetIndex(0, 1, this->nz - 1)] + this->ft[j][this->GetIndex(0, 0, this->nz - 2)])/3.0;
+            this->ft[j][this->GetIndex(0, this->ny - 1, 0)] = (this->ft[j][this->GetIndex(1, this->ny - 1, 0)] + this->ft[j][this->GetIndex(0, this->ny - 2, 0)] + this->ft[j][this->GetIndex(0, this->ny - 1, 1)])/3.0;
+            this->ft[j][this->GetIndex(0, this->ny - 1, this->nz - 1)] = (this->ft[j][this->GetIndex(1, this->ny - 1, this->nz - 1)] + this->ft[j][this->GetIndex(0, this->ny - 2, this->nz - 1)] + this->ft[j][this->GetIndex(0, this->ny - 1, this->nz - 2)])/3.0;
+            this->ft[j][this->GetIndex(this->nx - 1, 0, 0)] = (this->ft[j][this->GetIndex(this->nx - 2, 0, 0)] + this->ft[j][this->GetIndex(this->nx - 1, 1, 0)] + this->ft[j][this->GetIndex(this->nx - 1, 0, 1)])/3.0;
+            this->ft[j][this->GetIndex(this->nx - 1, 0, this->nz - 1)] = (this->ft[j][this->GetIndex(this->nx - 2, 0, this->nz - 1)] + this->ft[j][this->GetIndex(this->nx - 1, 1, this->nz - 1)] + this->ft[j][this->GetIndex(this->nx - 1, 0, this->nz - 2)])/3.0;
+            this->ft[j][this->GetIndex(this->nx - 1, this->ny - 1, 0)] = (this->ft[j][this->GetIndex(this->nx - 2, this->ny - 1, 0)] + this->ft[j][this->GetIndex(this->nx - 1, this->ny - 2, 0)] + this->ft[j][this->GetIndex(this->nx - 1, this->ny - 1, 1)])/3.0;
+            this->ft[j][this->GetIndex(this->nx - 1, this->ny - 1, this->nz - 1)] = (this->ft[j][this->GetIndex(this->nx - 2, this->ny - 1, this->nz - 1)] + this->ft[j][this->GetIndex(this->nx - 1, this->ny - 2, this->nz - 1)] + this->ft[j][this->GetIndex(this->nx - 1, this->ny - 1, this->nz - 2)])/3.0;
         }
     }
 

@@ -22,10 +22,10 @@ int main() {
     D2Q9<double> particlef(nx, ny);
     D2Q9<double> particleg(nx, ny);
     for (int j = 0; j < ny; j++) {
-        particlef.SetBoundary(0, j, MIRROR);
-        particlef.SetBoundary(nx - 1, j, MIRROR);
-        particleg.SetBoundary(0, j, MIRROR);
-        particleg.SetBoundary(nx - 1, j, MIRROR);
+        particlef.SetBoundary(0, j, PERIODIC);
+        particlef.SetBoundary(nx - 1, j, PERIODIC);
+        particleg.SetBoundary(0, j, PERIODIC);
+        particleg.SetBoundary(nx - 1, j, PERIODIC);
     }
     for (int i = 0; i < nx; i++) {
         particlef.SetBoundary(i, 0, MIRROR);

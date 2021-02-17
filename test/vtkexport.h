@@ -130,7 +130,6 @@ public:
 
         template<class T>
         void AddPoint(int _n, T *_x, T *_y = nullptr, T *_z = nullptr);
-        template<class T>
 
 private:
         std::ofstream fout;

@@ -714,28 +714,28 @@ public:
         //----------Bouns-Back (inner boundary)----------
         for (int i = 0; i < this->np; i++) {
             if (this->barrier[1][i]) {    
-                this->ft[1][i] = this->ftp1[3][i];  
+                this->ft[1][i] = this->ft[3][i];  
             }
             if (this->barrier[2][i]) {    
-                this->ft[2][i] = this->ftp1[4][i];  
+                this->ft[2][i] = this->ft[4][i];  
             }
             if (this->barrier[3][i]) {    
-                this->ft[3][i] = this->ftp1[1][i];  
+                this->ft[3][i] = this->ft[1][i];  
             }
             if (this->barrier[4][i]) {    
-                this->ft[4][i] = this->ftp1[2][i];  
+                this->ft[4][i] = this->ft[2][i];  
             }
             if (this->barrier[5][i]) {    
-                this->ft[5][i] = this->ftp1[7][i];  
+                this->ft[5][i] = this->ft[7][i];  
             }
             if (this->barrier[6][i]) {    
-                this->ft[6][i] = this->ftp1[8][i];  
+                this->ft[6][i] = this->ft[8][i];  
             }
             if (this->barrier[7][i]) {    
-                this->ft[7][i] = this->ftp1[5][i];  
+                this->ft[7][i] = this->ft[5][i];  
             }
             if (this->barrier[8][i]) {    
-                this->ft[8][i] = this->ftp1[6][i];  
+                this->ft[8][i] = this->ft[6][i];  
             }
         }
 
@@ -747,13 +747,13 @@ public:
                 this->ft[5][this->GetIndex(0, j)] = this->ft[5][this->GetIndex(1, j)];
                 this->ft[8][this->GetIndex(0, j)] = this->ft[8][this->GetIndex(1, j)];
             } else if (this->btxmin[j] == BARRIER) {
-                this->ft[1][this->GetIndex(0, j)] = this->ftp1[3][this->GetIndex(0, j)];
-                this->ft[5][this->GetIndex(0, j)] = this->ftp1[7][this->GetIndex(0, j)];
-                this->ft[8][this->GetIndex(0, j)] = this->ftp1[6][this->GetIndex(0, j)];
+                this->ft[1][this->GetIndex(0, j)] = this->ft[3][this->GetIndex(0, j)];
+                this->ft[5][this->GetIndex(0, j)] = this->ft[7][this->GetIndex(0, j)];
+                this->ft[8][this->GetIndex(0, j)] = this->ft[6][this->GetIndex(0, j)];
             } else if (this->btxmin[j] == MIRROR) {
-                this->ft[1][this->GetIndex(0, j)] = this->ftp1[3][this->GetIndex(0, j)];
-                this->ft[5][this->GetIndex(0, j)] = this->ftp1[6][this->GetIndex(0, j)];
-                this->ft[8][this->GetIndex(0, j)] = this->ftp1[7][this->GetIndex(0, j)];
+                this->ft[1][this->GetIndex(0, j)] = this->ft[3][this->GetIndex(0, j)];
+                this->ft[5][this->GetIndex(0, j)] = this->ft[6][this->GetIndex(0, j)];
+                this->ft[8][this->GetIndex(0, j)] = this->ft[7][this->GetIndex(0, j)];
             }
 
             //.....xmax.....
@@ -762,13 +762,13 @@ public:
                 this->ft[6][this->GetIndex(this->nx - 1, j)] = this->ft[6][this->GetIndex(this->nx - 2, j)];
                 this->ft[7][this->GetIndex(this->nx - 1, j)] = this->ft[7][this->GetIndex(this->nx - 2, j)];
             } else if (this->btxmax[j] == BARRIER) {
-                this->ft[3][this->GetIndex(this->nx - 1, j)] = this->ftp1[1][this->GetIndex(this->nx - 1, j)];
-                this->ft[6][this->GetIndex(this->nx - 1, j)] = this->ftp1[8][this->GetIndex(this->nx - 1, j)];
-                this->ft[7][this->GetIndex(this->nx - 1, j)] = this->ftp1[5][this->GetIndex(this->nx - 1, j)];
+                this->ft[3][this->GetIndex(this->nx - 1, j)] = this->ft[1][this->GetIndex(this->nx - 1, j)];
+                this->ft[6][this->GetIndex(this->nx - 1, j)] = this->ft[8][this->GetIndex(this->nx - 1, j)];
+                this->ft[7][this->GetIndex(this->nx - 1, j)] = this->ft[5][this->GetIndex(this->nx - 1, j)];
             } else if (this->btxmax[j] == MIRROR) {
-                this->ft[3][this->GetIndex(this->nx - 1, j)] = this->ftp1[1][this->GetIndex(this->nx - 1, j)];
-                this->ft[6][this->GetIndex(this->nx - 1, j)] = this->ftp1[5][this->GetIndex(this->nx - 1, j)];
-                this->ft[7][this->GetIndex(this->nx - 1, j)] = this->ftp1[8][this->GetIndex(this->nx - 1, j)];
+                this->ft[3][this->GetIndex(this->nx - 1, j)] = this->ft[1][this->GetIndex(this->nx - 1, j)];
+                this->ft[6][this->GetIndex(this->nx - 1, j)] = this->ft[5][this->GetIndex(this->nx - 1, j)];
+                this->ft[7][this->GetIndex(this->nx - 1, j)] = this->ft[8][this->GetIndex(this->nx - 1, j)];
             }
         }
 
@@ -779,13 +779,13 @@ public:
                 this->ft[5][this->GetIndex(i, 0)] = this->ft[5][this->GetIndex(i, 1)];
                 this->ft[6][this->GetIndex(i, 0)] = this->ft[6][this->GetIndex(i, 1)];
             } else if (this->btymin[i] == BARRIER) {
-                this->ft[2][this->GetIndex(i, 0)] = this->ftp1[4][this->GetIndex(i, 0)];
-                this->ft[5][this->GetIndex(i, 0)] = this->ftp1[7][this->GetIndex(i, 0)];
-                this->ft[6][this->GetIndex(i, 0)] = this->ftp1[8][this->GetIndex(i, 0)];
+                this->ft[2][this->GetIndex(i, 0)] = this->ft[4][this->GetIndex(i, 0)];
+                this->ft[5][this->GetIndex(i, 0)] = this->ft[7][this->GetIndex(i, 0)];
+                this->ft[6][this->GetIndex(i, 0)] = this->ft[8][this->GetIndex(i, 0)];
             } else if (this->btymin[i] == MIRROR) {
-                this->ft[2][this->GetIndex(i, 0)] = this->ftp1[4][this->GetIndex(i, 0)];
-                this->ft[5][this->GetIndex(i, 0)] = this->ftp1[8][this->GetIndex(i, 0)];
-                this->ft[6][this->GetIndex(i, 0)] = this->ftp1[7][this->GetIndex(i, 0)];
+                this->ft[2][this->GetIndex(i, 0)] = this->ft[4][this->GetIndex(i, 0)];
+                this->ft[5][this->GetIndex(i, 0)] = this->ft[8][this->GetIndex(i, 0)];
+                this->ft[6][this->GetIndex(i, 0)] = this->ft[7][this->GetIndex(i, 0)];
             }
 
             //.....ymax.....
@@ -794,13 +794,13 @@ public:
                 this->ft[7][this->GetIndex(i, this->ny - 1)] = this->ft[7][this->GetIndex(i, this->ny - 2)];
                 this->ft[8][this->GetIndex(i, this->ny - 1)] = this->ft[8][this->GetIndex(i, this->ny - 2)];
             } else if (this->btymax[i] == BARRIER) {
-                this->ft[4][this->GetIndex(i, this->ny - 1)] = this->ftp1[2][this->GetIndex(i, this->ny - 1)];
-                this->ft[7][this->GetIndex(i, this->ny - 1)] = this->ftp1[5][this->GetIndex(i, this->ny - 1)];
-                this->ft[8][this->GetIndex(i, this->ny - 1)] = this->ftp1[6][this->GetIndex(i, this->ny - 1)];
+                this->ft[4][this->GetIndex(i, this->ny - 1)] = this->ft[2][this->GetIndex(i, this->ny - 1)];
+                this->ft[7][this->GetIndex(i, this->ny - 1)] = this->ft[5][this->GetIndex(i, this->ny - 1)];
+                this->ft[8][this->GetIndex(i, this->ny - 1)] = this->ft[6][this->GetIndex(i, this->ny - 1)];
             } else if (this->btymax[i] == MIRROR) {
-                this->ft[4][this->GetIndex(i, this->ny - 1)] = this->ftp1[2][this->GetIndex(i, this->ny - 1)];
-                this->ft[7][this->GetIndex(i, this->ny - 1)] = this->ftp1[6][this->GetIndex(i, this->ny - 1)];
-                this->ft[8][this->GetIndex(i, this->ny - 1)] = this->ftp1[5][this->GetIndex(i, this->ny - 1)];
+                this->ft[4][this->GetIndex(i, this->ny - 1)] = this->ft[2][this->GetIndex(i, this->ny - 1)];
+                this->ft[7][this->GetIndex(i, this->ny - 1)] = this->ft[6][this->GetIndex(i, this->ny - 1)];
+                this->ft[8][this->GetIndex(i, this->ny - 1)] = this->ft[5][this->GetIndex(i, this->ny - 1)];
             }
         }
     }
@@ -822,28 +822,28 @@ public:
         //----------Bouns-Back (inner boundary)----------
         for (int i = 0; i < this->np; i++) {
             if (this->barrier[1][i]) {    
-                this->ft[3][i] = this->ftp1[1][i];  
+                this->ft[3][i] = this->ft[1][i];  
             }
             if (this->barrier[2][i]) {    
-                this->ft[4][i] = this->ftp1[2][i];  
+                this->ft[4][i] = this->ft[2][i];  
             }
             if (this->barrier[3][i]) {    
-                this->ft[1][i] = this->ftp1[3][i];  
+                this->ft[1][i] = this->ft[3][i];  
             }
             if (this->barrier[4][i]) {    
-                this->ft[2][i] = this->ftp1[4][i];  
+                this->ft[2][i] = this->ft[4][i];  
             }
             if (this->barrier[5][i]) {    
-                this->ft[7][i] = this->ftp1[5][i];  
+                this->ft[7][i] = this->ft[5][i];  
             }
             if (this->barrier[6][i]) {    
-                this->ft[8][i] = this->ftp1[6][i];  
+                this->ft[8][i] = this->ft[6][i];  
             }
             if (this->barrier[7][i]) {    
-                this->ft[5][i] = this->ftp1[7][i];  
+                this->ft[5][i] = this->ft[7][i];  
             }
             if (this->barrier[8][i]) {    
-                this->ft[6][i] = this->ftp1[8][i];  
+                this->ft[6][i] = this->ft[8][i];  
             }
         }
 
@@ -855,13 +855,13 @@ public:
                 this->ft[6][this->GetIndex(0, j)] = this->ft[6][this->GetIndex(1, j)];
                 this->ft[7][this->GetIndex(0, j)] = this->ft[7][this->GetIndex(1, j)];
             } else if (this->btxmin[j] == BARRIER) {
-                this->ft[3][this->GetIndex(0, j)] = this->ftp1[1][this->GetIndex(0, j)];
-                this->ft[6][this->GetIndex(0, j)] = this->ftp1[8][this->GetIndex(0, j)];
-                this->ft[7][this->GetIndex(0, j)] = this->ftp1[5][this->GetIndex(0, j)];
+                this->ft[3][this->GetIndex(0, j)] = this->ft[1][this->GetIndex(0, j)];
+                this->ft[6][this->GetIndex(0, j)] = this->ft[8][this->GetIndex(0, j)];
+                this->ft[7][this->GetIndex(0, j)] = this->ft[5][this->GetIndex(0, j)];
             } else if (this->btxmin[j] == MIRROR) {
-                this->ft[3][this->GetIndex(0, j)] = this->ftp1[1][this->GetIndex(0, j)];
-                this->ft[6][this->GetIndex(0, j)] = this->ftp1[5][this->GetIndex(0, j)];
-                this->ft[7][this->GetIndex(0, j)] = this->ftp1[8][this->GetIndex(0, j)];
+                this->ft[3][this->GetIndex(0, j)] = this->ft[1][this->GetIndex(0, j)];
+                this->ft[6][this->GetIndex(0, j)] = this->ft[5][this->GetIndex(0, j)];
+                this->ft[7][this->GetIndex(0, j)] = this->ft[8][this->GetIndex(0, j)];
             }
 
             //.....xmax.....
@@ -870,13 +870,13 @@ public:
                 this->ft[5][this->GetIndex(this->nx - 1, j)] = this->ft[5][this->GetIndex(this->nx - 2, j)];
                 this->ft[8][this->GetIndex(this->nx - 1, j)] = this->ft[8][this->GetIndex(this->nx - 2, j)];
             } else if (this->btxmax[j] == BARRIER) {
-                this->ft[1][this->GetIndex(this->nx - 1, j)] = this->ftp1[3][this->GetIndex(this->nx - 1, j)];
-                this->ft[5][this->GetIndex(this->nx - 1, j)] = this->ftp1[7][this->GetIndex(this->nx - 1, j)];
-                this->ft[8][this->GetIndex(this->nx - 1, j)] = this->ftp1[6][this->GetIndex(this->nx - 1, j)];
+                this->ft[1][this->GetIndex(this->nx - 1, j)] = this->ft[3][this->GetIndex(this->nx - 1, j)];
+                this->ft[5][this->GetIndex(this->nx - 1, j)] = this->ft[7][this->GetIndex(this->nx - 1, j)];
+                this->ft[8][this->GetIndex(this->nx - 1, j)] = this->ft[6][this->GetIndex(this->nx - 1, j)];
             } else if (this->btxmax[j] == MIRROR) {
-                this->ft[1][this->GetIndex(this->nx - 1, j)] = this->ftp1[3][this->GetIndex(this->nx - 1, j)];
-                this->ft[5][this->GetIndex(this->nx - 1, j)] = this->ftp1[6][this->GetIndex(this->nx - 1, j)];
-                this->ft[8][this->GetIndex(this->nx - 1, j)] = this->ftp1[7][this->GetIndex(this->nx - 1, j)];
+                this->ft[1][this->GetIndex(this->nx - 1, j)] = this->ft[3][this->GetIndex(this->nx - 1, j)];
+                this->ft[5][this->GetIndex(this->nx - 1, j)] = this->ft[6][this->GetIndex(this->nx - 1, j)];
+                this->ft[8][this->GetIndex(this->nx - 1, j)] = this->ft[7][this->GetIndex(this->nx - 1, j)];
             }
         }
 
@@ -887,13 +887,13 @@ public:
                 this->ft[7][this->GetIndex(i, 0)] = this->ft[7][this->GetIndex(i, 1)];
                 this->ft[8][this->GetIndex(i, 0)] = this->ft[8][this->GetIndex(i, 1)];
             } else if (this->btymin[i] == BARRIER) {
-                this->ft[4][this->GetIndex(i, 0)] = this->ftp1[2][this->GetIndex(i, 0)];
-                this->ft[7][this->GetIndex(i, 0)] = this->ftp1[5][this->GetIndex(i, 0)];
-                this->ft[8][this->GetIndex(i, 0)] = this->ftp1[6][this->GetIndex(i, 0)];
+                this->ft[4][this->GetIndex(i, 0)] = this->ft[2][this->GetIndex(i, 0)];
+                this->ft[7][this->GetIndex(i, 0)] = this->ft[5][this->GetIndex(i, 0)];
+                this->ft[8][this->GetIndex(i, 0)] = this->ft[6][this->GetIndex(i, 0)];
             } else if (this->btymin[i] == MIRROR) {
-                this->ft[4][this->GetIndex(i, 0)] = this->ftp1[2][this->GetIndex(i, 0)];
-                this->ft[7][this->GetIndex(i, 0)] = this->ftp1[6][this->GetIndex(i, 0)];
-                this->ft[8][this->GetIndex(i, 0)] = this->ftp1[5][this->GetIndex(i, 0)];
+                this->ft[4][this->GetIndex(i, 0)] = this->ft[2][this->GetIndex(i, 0)];
+                this->ft[7][this->GetIndex(i, 0)] = this->ft[6][this->GetIndex(i, 0)];
+                this->ft[8][this->GetIndex(i, 0)] = this->ft[5][this->GetIndex(i, 0)];
             }
 
             //.....ymax.....
@@ -902,13 +902,13 @@ public:
                 this->ft[5][this->GetIndex(i, this->ny - 1)] = this->ft[5][this->GetIndex(i, this->ny - 2)];
                 this->ft[6][this->GetIndex(i, this->ny - 1)] = this->ft[6][this->GetIndex(i, this->ny - 2)];
             } else if (this->btymax[i] == BARRIER) {
-                this->ft[2][this->GetIndex(i, this->ny - 1)] = this->ftp1[4][this->GetIndex(i, this->ny - 1)];
-                this->ft[5][this->GetIndex(i, this->ny - 1)] = this->ftp1[7][this->GetIndex(i, this->ny - 1)];
-                this->ft[6][this->GetIndex(i, this->ny - 1)] = this->ftp1[8][this->GetIndex(i, this->ny - 1)];
+                this->ft[2][this->GetIndex(i, this->ny - 1)] = this->ft[4][this->GetIndex(i, this->ny - 1)];
+                this->ft[5][this->GetIndex(i, this->ny - 1)] = this->ft[7][this->GetIndex(i, this->ny - 1)];
+                this->ft[6][this->GetIndex(i, this->ny - 1)] = this->ft[8][this->GetIndex(i, this->ny - 1)];
             } else if (this->btymax[i] == MIRROR) {
-                this->ft[2][this->GetIndex(i, this->ny - 1)] = this->ftp1[4][this->GetIndex(i, this->ny - 1)];
-                this->ft[5][this->GetIndex(i, this->ny - 1)] = this->ftp1[8][this->GetIndex(i, this->ny - 1)];
-                this->ft[6][this->GetIndex(i, this->ny - 1)] = this->ftp1[7][this->GetIndex(i, this->ny - 1)];
+                this->ft[2][this->GetIndex(i, this->ny - 1)] = this->ft[4][this->GetIndex(i, this->ny - 1)];
+                this->ft[5][this->GetIndex(i, this->ny - 1)] = this->ft[8][this->GetIndex(i, this->ny - 1)];
+                this->ft[6][this->GetIndex(i, this->ny - 1)] = this->ft[7][this->GetIndex(i, this->ny - 1)];
             }
         }
     }

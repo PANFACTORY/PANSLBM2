@@ -28,6 +28,7 @@ public:
         void SetBoundary(int _i, int _j, BOUNDARYTYPE _boundarytype);
         void SetRho(int _i, int _j, T _rho, T _u);                          //  Set boundary condition for NavierStokes  
         void SetU(int _i, int _j, T _ux, T _uy);
+        void SetDP(int _i0, int _j0, int _i1, int _j1, T _dp);
         void SetTemperature(int _i, int _j, T _ux, T _uy, T _temperature);  //  Set boundary condition for Advection
         void SetFlux(int _i, int _j, T _ux, T _uy, T _q);
         void SetStress(int _i, int _j, T _tx, T _ty);                       //  Set boundary condition for Elastic
@@ -354,6 +355,67 @@ public:
             this->ft[4][ij] = this->ft[2][ij] - 2.0*rho0*_uy/3.0;
             this->ft[7][ij] = this->ft[5][ij] + 0.5*(this->ft[1][ij] - this->ft[3][ij]) - rho0*_ux/2.0 - rho0*_uy/6.0;
             this->ft[8][ij] = this->ft[6][ij] - 0.5*(this->ft[1][ij] - this->ft[3][ij]) + rho0*_ux/2.0 - rho0*_uy/6.0;
+        } else {
+            //  境界に沿っていないことを警告する
+        }
+    }
+
+
+    template<class T>
+    void D2Q9<T>::SetDP(int _iin, int _jin, int _iout, int _jout, T _dp) {
+        int ijin = this->GetIndex(_iin, _jin), ijout = this->GetIndex(_iout, _jout);
+        
+        T c = T();
+        if (_iin == 0 || _iin == this->nx - 1) {
+            c += this->ft[0][ijin] + this->ft[2][ijin] + this->ft[4][ijin];
+        } else if (_jin == 0 || _jin == this->ny - 1) {
+            c += this->ft[0][ijin] + this->ft[1][ijin] + this->ft[3][ijin];
+        }   //  Inlet
+        if (_iout == 0 || _iout == this->nx - 1) {
+            c -= this->ft[0][ijout] + this->ft[2][ijout] + this->ft[4][ijout];
+        } else if (_jout == 0 || _jout == this->ny - 1) {
+            c -= this->ft[0][ijout] + this->ft[1][ijout] + this->ft[3][ijout];
+        }   //  Outlet
+        c = _dp - c/3.0;
+
+        //  Inlet
+        if (_iin == 0) {
+            this->ft[1][ijin] = this->ftp1[1][ijout] + c;
+            this->ft[5][ijin] = this->ftp1[5][ijout] + c/4.0;
+            this->ft[8][ijin] = this->ftp1[8][ijout] + c/4.0;
+        } else if (_iin == this->nx - 1) {
+            this->ft[3][ijin] = this->ftp1[3][ijout] + c;
+            this->ft[6][ijin] = this->ftp1[6][ijout] + c/4.0;
+            this->ft[7][ijin] = this->ftp1[7][ijout] + c/4.0;
+        } else if (_jin == 0) {
+            this->ft[2][ijin] = this->ftp1[2][ijout] + c;
+            this->ft[5][ijin] = this->ftp1[5][ijout] + c/4.0;
+            this->ft[6][ijin] = this->ftp1[6][ijout] + c/4.0;
+        } else if (_jin == this->ny - 1) {
+            this->ft[4][ijin] = this->ftp1[4][ijout] + c;
+            this->ft[7][ijin] = this->ftp1[7][ijout] + c/4.0;
+            this->ft[8][ijin] = this->ftp1[8][ijout] + c/4.0;
+        } else {
+            //  境界に沿っていないことを警告する
+        }
+
+        //  Outlet
+        if (_iout == 0) {
+            this->ft[1][ijout] = this->ftp1[1][ijin] - c;
+            this->ft[5][ijout] = this->ftp1[5][ijin] - c/4.0;
+            this->ft[8][ijout] = this->ftp1[8][ijin] - c/4.0;
+        } else if (_iout == this->nx - 1) {
+            this->ft[3][ijout] = this->ftp1[3][ijin] - c;
+            this->ft[6][ijout] = this->ftp1[6][ijin] - c/4.0;
+            this->ft[7][ijout] = this->ftp1[7][ijin] - c/4.0;
+        } else if (_jout == 0) {
+            this->ft[2][ijout] = this->ftp1[2][ijin] - c;
+            this->ft[5][ijout] = this->ftp1[5][ijin] - c/4.0;
+            this->ft[6][ijout] = this->ftp1[6][ijin] - c/4.0;
+        } else if (_jout == this->ny - 1) {
+            this->ft[4][ijout] = this->ftp1[4][ijin] - c;
+            this->ft[7][ijout] = this->ftp1[7][ijin] - c/4.0;
+            this->ft[8][ijout] = this->ftp1[8][ijin] - c/4.0;
         } else {
             //  境界に沿っていないことを警告する
         }

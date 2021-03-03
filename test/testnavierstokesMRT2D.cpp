@@ -9,8 +9,8 @@ using namespace PANSLBM2;
 
 int main() {
     //--------------------Set parameters--------------------
-    int tmax = 100000, nx = 50, ny = 50;
-    double nu = 0.005, u0 = 0.1;
+    int tmax = 100000, nx = 100, ny = 100;
+    double nu = 0.005, u0 = 0.05;
     double rho[nx*ny], u[nx*ny], v[nx*ny];
     
     D2Q9<double> particle(nx, ny);
@@ -32,8 +32,9 @@ int main() {
     for (int t = 0; t < tmax; t++) {
         NS::UpdateMacro(particle, rho, u, v);       //  Update macroscopic values
         //NS::CollisionMRT(1.19, 1.4, 1.2, 1.2, 1.0/(3.0*nu + 0.5), 1.0/(3.0*nu + 0.5), particle, rho, u, v);     //  Collision
-        NS::CollisionMRT(1.0, 1.0, 1.0, 1.0, 1.0/(3.0*nu + 0.5), 1.0/(3.0*nu + 0.5), particle, rho, u, v);     //  Collision
+        //NS::CollisionMRT(1.0, 1.0, 1.0, 1.0, 1.0/(3.0*nu + 0.5), 1.0/(3.0*nu + 0.5), particle, rho, u, v);     //  Collision
         //NS::Collision(nu, particle, rho, u, v);     //  Collision
+        NS::CollisionTRT(nu, 0.25, particle, rho, u, v);     //  Collision
         particle.Stream();                          //  Stream
         for (int i = 0; i < nx; i++) {
             particle.SetU(i, ny - 1, u0, 0.0);
@@ -42,7 +43,7 @@ int main() {
         
         if (t%1000 == 0) {
             std::cout << t/1000 << std::endl;
-            VTKExport file("result/SRTns2_" + std::to_string(t/1000) + ".vtk", nx, ny);
+            VTKExport file("result/TRT_" + std::to_string(t/1000) + ".vtk", nx, ny);
             file.AddPointScaler("rho", [&](int _i, int _j, int _k) { return rho[particle.GetIndex(_i, _j)]; });
             file.AddPointVector("u", 
                 [&](int _i, int _j, int _k) { return u[particle.GetIndex(_i, _j)]; },

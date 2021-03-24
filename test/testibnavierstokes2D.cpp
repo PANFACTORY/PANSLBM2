@@ -13,7 +13,7 @@ using namespace PANSLBM2;
 int main() {
     //--------------------Set parameters--------------------
     int tmax = 30000, nx = 100, ny = 100, nk = 20;
-    double nu = 0.1, v0 = 0.0, K = 0.0, epsu = 1.0e-6, radius = 30.0, Remax = 100.0, Remin = 0.1;
+    double nu = 0.05, v0 = 0.0, K = 0.0, epsu = 1.0e-6, radius = 15.0, Remax = 100.0, Remin = 0.1;
     double L = 2.0*radius, dpmax = pow(nu*Remax/L, 2.0), dpmin = pow(nu*Remin/L, 2.0), surface = 2.0*M_PI*radius, alpha = 2.0*log(Remin/Remax)/(double)(nk - 1);
     double rho[nx*ny], ux[nx*ny], uy[nx*ny], tmpux[nx*ny] = { 0 }, tmpuy[nx*ny] = { 0 }, uxl[nx*ny], uyl[nx*ny], gx[nx*ny], gy[nx*ny];
     const int nb = (int)surface;
@@ -48,7 +48,8 @@ int main() {
             NS::InitialCondition(i, particle, 1.0, 0.0, 0.0);
         }                                               //  Set initial condition
         NS::UpdateMacro(particle, rho, ux, uy);         //  Update macroscopic values
-        for (int t = 0; t < tmax; t++) {
+        int t = 0;
+        for (; t < tmax; t++) {
             //NS::CollisionMRT(1.19, 1.4, 1.2, 1.2, 1.0/(3.0*nu + 0.5), 1.0/(3.0*nu + 0.5), particle, rho, ux, uy);     //  Collision
             NS::Collision(nu, particle, rho, ux, uy);   //  Collision
             particle.Stream();                          //  Stream
@@ -68,13 +69,12 @@ int main() {
                 tmpuy[i] = uy[i];
             }
             if (t > 0 && sqrt(sumdu/sumu) < epsu) {
-                std::cout << "\tConvergence at t = " << t;
                 break;
             }
         }
 
         std::chrono::system_clock::time_point end = std::chrono::system_clock::now();
-        std::cout << "\tTime cost : " << std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();
+        //std::cout << "\tTime cost : " << std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();
 
         //--------------------Get permeation--------------------
         double sumv = 0.0;
@@ -83,7 +83,7 @@ int main() {
         }
         sumv /= (double)ny;
 
-        std::cout << "\tv mean = " << sumv << "\tdp : " << dp << std::endl;
+        std::cout << "\tVmean : " << sumv << "\tdp : " << dp << "\tt : " << t << std::endl;
 
         //--------------------Export result--------------------
         VTKExport file("result/ibns" + std::to_string(k) + ".vtk", nx, ny);

@@ -9,9 +9,9 @@ using namespace PANSLBM2;
 
 int main() {
     //--------------------Set parameters--------------------
-    int tmax = 100000, nx = 100, ny = 100;
+    int tmax = 100000, nx = 1000, ny = 1000;
     double nu = 0.005, u0 = 0.05;
-    double rho[nx*ny], u[nx*ny], v[nx*ny];
+    double *rho = new double[nx*ny], *u = new double[nx*ny], *v = new double[nx*ny];
     
     D2Q9<double> particle(nx, ny);
     for (int j = 0; j < ny; j++) {
@@ -56,4 +56,6 @@ int main() {
 
     std::chrono::system_clock::time_point end = std::chrono::system_clock::now();
     std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count() << std::endl;
+
+    delete[] rho, u, v;
 }

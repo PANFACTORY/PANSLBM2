@@ -155,34 +155,43 @@ namespace PANSLBM2 {
             T omegap = 1.0/(3.0*_viscosity*_particle.dt/(_particle.dx*_particle.dx) + 0.5);
             T omegam = 1.0/(_lambda/(3.0*_viscosity) + 0.5);
             for (int i = 0; i < _particle.np; i++) {
-                double feq[P<T>::nc];
+                T feq[P<T>::nc];
                 for (int j = 0; j < P<T>::nc; j++) {
                     T ciu = P<T>::cx[j]*_ux[i] + P<T>::cy[j]*_uy[i];
                     T uu = _ux[i]*_ux[i] + _uy[i]*_uy[i];
                     feq[j] = P<T>::ei[j]*_rho[i]*(1.0 + 3.0*ciu + 4.5*ciu*ciu - 1.5*uu);
                 }
-                double dfp[P<T>::nc] = {
-                    _particle.ft[0][i] - feq[0],
-                    0.5*(_particle.ft[1][i] + _particle.ft[3][i]) - 0.5*(feq[1] + feq[3]),
-                    0.5*(_particle.ft[2][i] + _particle.ft[4][i]) - 0.5*(feq[2] + feq[4]),
-                    0.5*(_particle.ft[3][i] + _particle.ft[1][i]) - 0.5*(feq[3] + feq[1]),
-                    0.5*(_particle.ft[4][i] + _particle.ft[2][i]) - 0.5*(feq[4] + feq[2]),
-                    0.5*(_particle.ft[5][i] + _particle.ft[7][i]) - 0.5*(feq[5] + feq[7]),
-                    0.5*(_particle.ft[6][i] + _particle.ft[8][i]) - 0.5*(feq[6] + feq[8]),
-                    0.5*(_particle.ft[7][i] + _particle.ft[5][i]) - 0.5*(feq[7] + feq[5]),
-                    0.5*(_particle.ft[8][i] + _particle.ft[6][i]) - 0.5*(feq[8] + feq[6])
-                };
-                double dfm[P<T>::nc] = {
-                    T(),
-                    0.5*(_particle.ft[1][i] - _particle.ft[3][i]) - 0.5*(feq[1] - feq[3]),
-                    0.5*(_particle.ft[2][i] - _particle.ft[4][i]) - 0.5*(feq[2] - feq[4]),
-                    0.5*(_particle.ft[3][i] - _particle.ft[1][i]) - 0.5*(feq[3] - feq[1]),
-                    0.5*(_particle.ft[4][i] - _particle.ft[2][i]) - 0.5*(feq[4] - feq[2]),
-                    0.5*(_particle.ft[5][i] - _particle.ft[7][i]) - 0.5*(feq[5] - feq[7]),
-                    0.5*(_particle.ft[6][i] - _particle.ft[8][i]) - 0.5*(feq[6] - feq[8]),
-                    0.5*(_particle.ft[7][i] - _particle.ft[5][i]) - 0.5*(feq[7] - feq[5]),
-                    0.5*(_particle.ft[8][i] - _particle.ft[6][i]) - 0.5*(feq[8] - feq[6])
-                };
+                T dfp[P<T>::nc], dfm[P<T>::nc];
+                for (int j = 0; j < P<T>::nc; j++) {
+                    dfp[j] = 0.5*(_particle.ft[j][i] + _particle.ft[P<T>::ic[j]][i]) - 0.5*(feq[j] + feq[P<T>::ic[j]]);
+                    dfm[j] = 0.5*(_particle.ft[j][i] - _particle.ft[P<T>::ic[j]][i]) - 0.5*(feq[j] - feq[P<T>::ic[j]]);
+                }
+                for (int j = 0; j < P<T>::nc; j++) {
+                    _particle.ftp1[j][i] = _particle.ft[j][i] - omegap*dfp[j] - omegam*dfm[j];
+                }
+            }
+        }
+
+        //*********************************************************************
+        //  Navier-Stokes 3D    :   Collision term with two-relaxation-time model
+        //*********************************************************************
+        template<class T, template<class>class P>
+        void CollisionTRT(T _viscosity, T _lambda, P<T>& _particle, T* _rho, T* _ux, T* _uy, T* _uz) {
+            assert(P<T>::nd == 3);
+            T omegap = 1.0/(3.0*_viscosity*_particle.dt/(_particle.dx*_particle.dx) + 0.5);
+            T omegam = 1.0/(_lambda/(3.0*_viscosity) + 0.5);
+            for (int i = 0; i < _particle.np; i++) {
+                T feq[P<T>::nc];
+                for (int j = 0; j < P<T>::nc; j++) {
+                    T ciu = P<T>::cx[j]*_ux[i] + P<T>::cy[j]*_uy[i] + P<T>::cz[j]*_uz[i];
+                    T uu = _ux[i]*_ux[i] + _uy[i]*_uy[i] + _uz[i]*_uz[i];
+                    feq[j] = P<T>::ei[j]*_rho[i]*(1.0 + 3.0*ciu + 4.5*ciu*ciu - 1.5*uu);
+                }
+                T dfp[P<T>::nc], dfm[P<T>::nc];
+                for (int j = 0; j < P<T>::nc; j++) {
+                    dfp[j] = 0.5*(_particle.ft[j][i] + _particle.ft[P<T>::ic[j]][i]) - 0.5*(feq[j] + feq[P<T>::ic[j]]);
+                    dfm[j] = 0.5*(_particle.ft[j][i] - _particle.ft[P<T>::ic[j]][i]) - 0.5*(feq[j] - feq[P<T>::ic[j]]);
+                }
                 for (int j = 0; j < P<T>::nc; j++) {
                     _particle.ftp1[j][i] = _particle.ft[j][i] - omegap*dfp[j] - omegam*dfm[j];
                 }

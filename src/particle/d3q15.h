@@ -39,8 +39,8 @@ public:
         BOUNDARYTYPE GetBoundary(int _i, int _j, int _k) const;
         int GetIndex(int _i, int _j, int _k) const;
         
-        const int nx, ny, nz, np;                                       //  nx&ny&nz : number of points along x&y&z coordinate, np : number of all points
-        static const int nc = 15, nd = 3, cx[nc], cy[nc], cz[nc];       //  nc : number of particles, nd : number of dimensions
+        const int nx, ny, nz, np;                                           //  nx&ny&nz : number of points along x&y&z coordinate, np : number of all points
+        static const int nc = 15, nd = 3, cx[nc], cy[nc], cz[nc], ic[nc];   //  nc : number of particles, nd : number of dimensions, ic : id of inverse population
         static const T ei[nc];
 
         T dx, dt;
@@ -60,6 +60,10 @@ public:
 
     template<class T>
     const int D3Q15<T>::cz[D3Q15<T>::nc] = { 0, 0, 0, 1, 0, 0, -1, 1, 1, 1, -1, -1, -1, -1, 1 };
+
+
+    template<class T>
+    const int D3Q15<T>::ic[D3Q15<T>::nc] = { 0, 4, 5, 6, 1, 2, 3, 11, 12, 13, 14, 7, 8, 9, 10 };
 
 
     template<class T>

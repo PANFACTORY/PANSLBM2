@@ -9,7 +9,7 @@ using namespace PANSLBM2;
 
 int main() {
     //--------------------Set parameters--------------------
-    int tmax = 100000, nx = 1000, ny = 1000;
+    int tmax = 100000, nx = 100, ny = 100;
     double nu = 0.005, u0 = 0.05;
     double *rho = new double[nx*ny], *u = new double[nx*ny], *v = new double[nx*ny];
     

@@ -7,6 +7,7 @@
 
 #pragma once
 #include <cmath>
+#include <cassert>
 
 namespace PANSLBM2 {
     namespace {
@@ -54,7 +55,7 @@ public:
             int jp1 = _j - D2Q9<T>::cy[_c] == -1 ? this->ny - 1 : (_j - D2Q9<T>::cy[_c] == this->ny ? 0 : _j - D2Q9<T>::cy[_c]);
             return this->Index(ip1, jp1);
         }
-        static int IndexF(int _idx, int _c) const {
+        static int IndexF(int _idx, int _c) {
             return D2Q9<T>::nc*_idx + _c;
         }
 
@@ -80,12 +81,12 @@ private:
     template<class F>
     void D2Q9<T>::SetBoundary(int *_bctype, F _func) {
         for (int j = 0; j < this->ny; ++j) {
-            this->bctype[j + this->offsetxmin] = _func(0, j);
-            this->bctype[j + this->offsetxmax] = _func(this->nx - 1, j);
+            _bctype[j + this->offsetxmin] = _func(0, j);
+            _bctype[j + this->offsetxmax] = _func(this->nx - 1, j);
         }
         for (int i = 0; i < this->nx; ++i) {
-            this->bctype[i + this->offsetymin] = _func(i, 0);
-            this->bctype[i + this->offsetymax] = _func(i, this->ny - 1);
+            _bctype[i + this->offsetymin] = _func(i, 0);
+            _bctype[i + this->offsetymax] = _func(i, this->ny - 1);
         }
     }
 
@@ -129,12 +130,12 @@ private:
         for (int i = 0; i < this->nx; ++i) {
             //  On ymin
             if (this->bctype[i + this->offsetymin] == BARRIER) {
-                int idx = this->Index(j, 0);
+                int idx = this->Index(i, 0);
                 this->f[D2Q9<T>::IndexF(idx, 2)] = this->f[D2Q9<T>::IndexF(idx, 4)];
                 this->f[D2Q9<T>::IndexF(idx, 5)] = this->f[D2Q9<T>::IndexF(idx, 7)];
                 this->f[D2Q9<T>::IndexF(idx, 6)] = this->f[D2Q9<T>::IndexF(idx, 8)];
             } else if (this->bctype[i + this->offsetymin] == MIRROR) {
-                int idx = this->Index(j, 0);
+                int idx = this->Index(i, 0);
                 this->f[D2Q9<T>::IndexF(idx, 2)] = this->f[D2Q9<T>::IndexF(idx, 4)];
                 this->f[D2Q9<T>::IndexF(idx, 5)] = this->f[D2Q9<T>::IndexF(idx, 8)];
                 this->f[D2Q9<T>::IndexF(idx, 6)] = this->f[D2Q9<T>::IndexF(idx, 7)];
@@ -142,12 +143,12 @@ private:
 
             //  On ymax
             if (this->bctype[i + this->offsetymax] == BARRIER) {
-                int idx = this->Index(j, this->ny - 1);
+                int idx = this->Index(i, this->ny - 1);
                 this->f[D2Q9<T>::IndexF(idx, 4)] = this->f[D2Q9<T>::IndexF(idx, 2)];
                 this->f[D2Q9<T>::IndexF(idx, 7)] = this->f[D2Q9<T>::IndexF(idx, 5)];
                 this->f[D2Q9<T>::IndexF(idx, 8)] = this->f[D2Q9<T>::IndexF(idx, 6)];
             } else if (this->bctype[i + this->offsetymax] == MIRROR) {
-                int idx = this->Index(j, this->ny - 1);
+                int idx = this->Index(i, this->ny - 1);
                 this->f[D2Q9<T>::IndexF(idx, 4)] = this->f[D2Q9<T>::IndexF(idx, 2)];
                 this->f[D2Q9<T>::IndexF(idx, 7)] = this->f[D2Q9<T>::IndexF(idx, 6)];
                 this->f[D2Q9<T>::IndexF(idx, 8)] = this->f[D2Q9<T>::IndexF(idx, 5)];
@@ -188,12 +189,12 @@ private:
         for (int i = 0; i < this->nx; ++i) {
             //  On ymin
             if (this->bctype[i + this->offsetymin] == BARRIER) {
-                int idx = this->Index(j, 0);
+                int idx = this->Index(i, 0);
                 this->f[D2Q9<T>::IndexF(idx, 4)] = this->f[D2Q9<T>::IndexF(idx, 2)];
                 this->f[D2Q9<T>::IndexF(idx, 7)] = this->f[D2Q9<T>::IndexF(idx, 5)];
                 this->f[D2Q9<T>::IndexF(idx, 8)] = this->f[D2Q9<T>::IndexF(idx, 6)];
             } else if (this->bctype[i + this->offsetymin] == MIRROR) {
-                int idx = this->Index(j, 0);
+                int idx = this->Index(i, 0);
                 this->f[D2Q9<T>::IndexF(idx, 4)] = this->f[D2Q9<T>::IndexF(idx, 2)];
                 this->f[D2Q9<T>::IndexF(idx, 8)] = this->f[D2Q9<T>::IndexF(idx, 5)];
                 this->f[D2Q9<T>::IndexF(idx, 7)] = this->f[D2Q9<T>::IndexF(idx, 6)];
@@ -201,12 +202,12 @@ private:
 
             //  On ymax
             if (this->bctype[i + this->offsetymax] == BARRIER) {
-                int idx = this->Index(j, this->ny - 1);
+                int idx = this->Index(i, this->ny - 1);
                 this->f[D2Q9<T>::IndexF(idx, 2)] = this->f[D2Q9<T>::IndexF(idx, 4)];
                 this->f[D2Q9<T>::IndexF(idx, 5)] = this->f[D2Q9<T>::IndexF(idx, 7)];
                 this->f[D2Q9<T>::IndexF(idx, 6)] = this->f[D2Q9<T>::IndexF(idx, 8)];
             } else if (this->bctype[i + this->offsetymax] == MIRROR) {
-                int idx = this->Index(j, this->ny - 1);
+                int idx = this->Index(i, this->ny - 1);
                 this->f[D2Q9<T>::IndexF(idx, 2)] = this->f[D2Q9<T>::IndexF(idx, 4)];
                 this->f[D2Q9<T>::IndexF(idx, 6)] = this->f[D2Q9<T>::IndexF(idx, 7)];
                 this->f[D2Q9<T>::IndexF(idx, 5)] = this->f[D2Q9<T>::IndexF(idx, 8)];

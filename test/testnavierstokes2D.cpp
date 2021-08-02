@@ -9,48 +9,49 @@ using namespace PANSLBM2;
 
 int main() {
     //--------------------Set parameters--------------------
-    int tmax = 100000, nx = 200, ny = 200;
-    double nu = 0.1, u0 = 0.1;
-    double rho[nx*ny], u[nx*ny], v[nx*ny];
-    
-    D2Q9<double> particle(nx, ny);
-    for (int j = 0; j < ny; j++) {
-        particle.SetBoundary(0, j, BARRIER);
-        particle.SetBoundary(nx - 1, j, BARRIER);
+    int nx = 101, ny = 101, nt = 100000, dt = 1000;
+    double nu = 0.1, u0 = 0.1, Re = u0*(nx - 1)/nu;
+    D2Q9<double> pf(nx, ny);
+    double rho[pf.nxy], ux[pf.nxy], uy[pf.nxy];
+    for (int idx = 0; idx < pf.nxy; ++idx) {
+        rho[idx] = 1.0;
+        ux[idx] = 0.0;
+        uy[idx] = 0.0;
     }
-    for (int i = 0; i < nx; i++) {
-        particle.SetBoundary(i, 0, BARRIER);
-        particle.SetBoundary(i, ny - 1, OTHER);
-    }                                           //  Set boundary condition
-    for (int i = 0; i < nx*ny; i++) {
-        NS::InitialCondition(i, particle, 1.0, 0.0, 0.0);
-    }                                           //  Set initial condition
+
+    pf.SetBoundary([&](int _i, int _j) {    return (_i == 0 || _j == 0 || _i == pf.nx - 1) ? 1 : 0; });
+    int boundaryu[pf.nxy];
+    pf.SetBoundary(boundaryu, [&](int _i, int _j) { return _j == pf.ny - 1 ? 1 : 0;    });
+    double uxbc[pf.nbc], uybc[pf.nbc];
+    for (int idxbc = 0; idxbc < pf.nbc; ++idxbc) {
+        uxbc[idxbc] = u0;
+        uybc[idxbc] = 0.0;
+    }    
     
     std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
 
     //--------------------Direct analyze--------------------
-    NS::UpdateMacro(particle, rho, u, v);       //  Update macroscopic values
-    for (int t = 0; t < tmax; t++) {
-        NS::Collision(nu, particle, rho, u, v); //  Collision
-        particle.Stream();                      //  Stream
-        for (int i = 0; i < nx; i++) {
-            particle.SetU(i, ny - 1, u0, 0.0);
-        }                                       //  Boundary condition (inlet)
-        particle.SetU(0, ny - 1, u0, 0.0);
-        particle.SetU(nx - 1, ny - 1, u0, 0.0); //  Boundary condition (corner node)
-        NS::UpdateMacro(particle, rho, u, v);   //  Update macroscopic values
-        
-        if (t%1000 == 0) {
-            std::cout << t/1000 << std::endl;
-            VTKExport file("result/ns" + std::to_string(t/1000) + ".vtk", nx, ny);
-            file.AddPointScaler("rho", [&](int _i, int _j, int _k) { return rho[particle.GetIndex(_i, _j)]; });
+    NS::InitialCondition(pf, rho, ux, uy);
+    for (int t = 1; t <= nt; ++t) {
+        if (t%dt != 0) {
+            NS::Macro_Collide_Stream(pf, rho, ux, uy, nu);
+        } else {
+            NS::Macro_Collide_Stream(pf, rho, ux, uy, nu, true);
+
+            std::cout << "t = " << t/dt << std::endl;
+            VTKExport file("result/ns" + std::to_string(t/dt) + ".vtk", nx, ny);
+            file.AddPointScaler("rho", [&](int _i, int _j, int _k) { return rho[pf.Index(_i, _j)]; });
             file.AddPointVector("u", 
-                [&](int _i, int _j, int _k) { return u[particle.GetIndex(_i, _j)]; },
-                [&](int _i, int _j, int _k) { return v[particle.GetIndex(_i, _j)]; },
+                [&](int _i, int _j, int _k) { return ux[pf.Index(_i, _j)]; },
+                [&](int _i, int _j, int _k) { return uy[pf.Index(_i, _j)]; },
                 [](int _i, int _j, int _k) { return 0.0; }
             );
-            file.AddPointScaler("boundary", [&](int _i, int _j, int _k) { return particle.GetBoundary(_i, _j); });
-        }                                       //  Export result per 1000 steps 
+        }
+
+        pf.Swap();
+        pf.BoundaryCondition();
+        NS::BoundaryConditionSetU(pf, uxbc, uybc, boundaryu);
+        pf.SmoothCorner();
     }
 
     std::chrono::system_clock::time_point end = std::chrono::system_clock::now();

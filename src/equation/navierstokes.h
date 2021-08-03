@@ -38,6 +38,14 @@ namespace PANSLBM2 {
             return P::ei[_c]*_rho*(1.0 + 3.0*ciu + 4.5*ciu*ciu - 1.5*uu);
         }
 
+        //  Function of applying external force of NS with Brinkman model for 2D
+        template<class T, class P>
+        void ExternalForceBrinkman(T _rho, T _ux, T _uy, T _alpha, T *_f, int _idx) {
+            for (int c = 0; c < P::nc; ++c) {
+                _f[P::IndexF(_idx, c)] -= 3.0*_alpha/(1.0 + _alpha/_rho)*P::ei[c]*(P::cx[c]*_ux + P::cy[c]*_uy);
+            }
+        }
+
         //  Function of Update macro, Collide and Stream of NS for 2D
         template<class T, class P>
         void Macro_Collide_Stream(P& _p, T *_rho, T *_ux, T *_uy, T _viscosity, bool _issave = false) {
@@ -48,6 +56,38 @@ namespace PANSLBM2 {
 
                     //  Update macro
                     T rho, ux, uy;
+                    Macro<T, P>(rho, ux, uy, _p.f, idx);
+
+                    //  Save macro if need
+                    if (_issave) {
+                        _rho[idx] = rho;
+                        _ux[idx] = ux;
+                        _uy[idx] = uy;
+                    }
+
+                    //  Collide and stream
+                    for (int c = 0; c < P::nc; ++c) {
+                        int idxstream = _p.IndexStream(i, j, c);
+                        _p.fnext[P::IndexF(idxstream, c)] = (1.0 - omega)*_p.f[P::IndexF(idx, c)] + omega*Equilibrium<T, P>(rho, ux, uy, c);
+                    }
+                }
+            }
+        }
+
+        //  Function of Update macro, External force(Brinkman model), Collide and Stream of NS for 2D
+        template<class T, class P>
+        void Macro_Brinkman_Collide_Stream(P& _p, T *_rho, T *_ux, T *_uy, T _viscosity, const T *_alpha, bool _issave = false) {
+            T omega = 1.0/(3.0*_viscosity + 0.5);
+            for (int i = 0; i < _p.nx; ++i) {
+                for (int j = 0; j < _p.ny; ++j) {
+                    int idx = _p.Index(i, j);
+
+                    //  Update macro
+                    T rho, ux, uy;
+                    Macro<T, P>(rho, ux, uy, _p.f, idx);
+
+                    //  External force with Brinkman model
+                    ExternalForceBrinkman<T, P>(rho, ux, uy, _alpha[idx], _p.f, idx);
                     Macro<T, P>(rho, ux, uy, _p.f, idx);
 
                     //  Save macro if need

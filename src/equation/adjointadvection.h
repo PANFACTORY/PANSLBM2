@@ -73,7 +73,7 @@ namespace PANSLBM2 {
                     ExternalForceFromAdvection<T, P>(iqx, iqy, _rho, _ux, _uy, _p.f, _tem, omegag, idx);
                     ANS::ExternalForceBrinkman<T, P>(_rho, _ux, _uy, imx, imy, _p.f, _alpha, idx);
                     ANS::Macro<T, P>(ip, iux, iuy, imx, imy, _rho, _ux, _uy, _p.f, idx);
-                    ExternalForceHeatExchange<T, Q>(item, _g, _beta, idx);
+                    ExternalForceHeatExchange<T, Q>(item, _q.f, _beta, idx);
                     Macro<T, Q>(item, iqx, iqy, _q.f, idx);
 
                     //  Save macro if need

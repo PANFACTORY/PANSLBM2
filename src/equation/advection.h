@@ -50,7 +50,7 @@ namespace PANSLBM2 {
         template<class T, class Q>
         void ExternalForceHeatExchange(T _tem, T *_g, const T *_beta, int _idx) {
             for (int c = 0; c < Q::nc; ++c) {
-                _g[Q::IndexF(_idx, c)] += Q::ei[c]*_beta[_idx]*(1.0 - _tem)/(1.0 + _beta[idx]);
+                _g[Q::IndexF(_idx, c)] += Q::ei[c]*_beta[_idx]*(1.0 - _tem)/(1.0 + _beta[_idx]);
             }
         }
 

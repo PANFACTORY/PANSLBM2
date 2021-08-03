@@ -46,6 +46,14 @@ namespace PANSLBM2 {
             }
         }
 
+        //  Function of applying external force of AD with heat exchange for 2D
+        template<class T, class Q>
+        void ExternalForceHeatExchange(T _tem, T *_g, const T *_beta, int _idx) {
+            for (int c = 0; c < Q::nc; ++c) {
+                _g[Q::IndexF(_idx, c)] += Q::ei[c]*_beta[_idx]*(1.0 - _tem)/(1.0 + _beta[idx]);
+            }
+        }
+
         //  Function of Update macro, Collide and Stream of AD with NS for 2D
         template<class T, class P, class Q>
         void Macro_Collide_Stream_NaturalConvection(
@@ -91,6 +99,52 @@ namespace PANSLBM2 {
             }
         }
     
+        //  Function of Update macro, Collide and Stream of Brinkman and heat exchange for 2D
+        template<class T, class P, class Q>
+        void Macro_Brinkman_Collide_Stream_HeatExchange(
+            P& _p, T *_rho, T *_ux, T *_uy, const T *_alpha, T _viscosity,
+            Q& _q, T *_tem, T *_qx, T *_qy, const T *_beta, T _diffusivity, bool _issave = false
+        ) {
+            T omegaf = 1.0/(3.0*_viscosity + 0.5), omegag = 1.0/(3.0*_diffusivity + 0.5);
+            for (int i = 0; i < _p.nx; ++i) {
+                for (int j = 0; j < _p.ny; ++j) {
+                    int idx = _p.Index(i, j);
+
+                    //  Update macro
+                    T rho, ux, uy;
+                    NS::Macro<T, P>(rho, ux, uy, _p.f, idx);
+                    T tem, qx, qy;
+                    Macro<T, Q>(tem, qx, qy, ux, uy, _q.f, omegag, idx);
+
+                    //  External force with Brinkman and heat exchange
+                    NS::ExternalForceBrinkman<T, P>(rho, ux, uy, _alpha[idx], _p.f, idx);
+                    NS::Macro<T, P>(rho, ux, uy, _p.f, idx);
+                    ExternalForceHeatExchange<T, Q>(tem, _q.f, _beta, idx);
+                    Macro<T, Q>(tem, qx, qy, ux, uy, _q.f, omegag, idx);
+
+                    //  Save macro if need
+                    if (_issave) {
+                        _rho[idx] = rho;
+                        _ux[idx] = ux;
+                        _uy[idx] = uy;
+                        _tem[idx] = tem;
+                        _qx[idx] = qx;
+                        _qy[idx] = qy;
+                    }
+
+                    //  Collide and stream
+                    for (int c = 0; c < P::nc; ++c) {
+                        int idxstream = _p.IndexStream(i, j, c);
+                        _p.fnext[P::IndexF(idxstream, c)] = (1.0 - omegaf)*_p.f[P::IndexF(idx, c)] + omegaf*NS::Equilibrium<T, P>(rho, ux, uy, c);
+                    }
+                    for (int c = 0; c < Q::nc; ++c) {
+                        int idxstream = _q.IndexStream(i, j, c);
+                        _q.fnext[Q::IndexF(idxstream, c)] = (1.0 - omegag)*_q.f[Q::IndexF(idx, c)] + omegag*Equilibrium<T, Q>(tem, ux, uy, c);
+                    }
+                }
+            }
+        }
+
         //  Function of setting initial condition of AD for 2D
         template<class T, class Q>
         void InitialCondition(Q& _q, const T *_tem, const T *_ux, const T *_uy) {

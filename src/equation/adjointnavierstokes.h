@@ -11,8 +11,8 @@
 
 namespace PANSLBM2 {
     namespace {
-        const int INLET = 1;
-        const int OUTLET = 2;
+        const int SetiU = 1;
+        const int SetiRho = 2;
     }
 
     namespace ANS {
@@ -29,7 +29,7 @@ namespace PANSLBM2 {
             _imy = T();
             T uu = _ux[_idx]*_ux[_idx] + _uy[_idx]*_uy[_idx];
             for (int c = 0; c < P::nc; ++c) {
-                T ciu = P::cx[c]*_ux[idx] + P::cy[c]*_uy[idx];
+                T ciu = P::cx[c]*_ux[_idx] + P::cy[c]*_uy[_idx];
                 T fei = _f[P::IndexF(_idx, c)]*P::ei[c];
                 _ip += fei*(1.0 + 3.0*ciu + 4.5*ciu*ciu - 1.5*uu);
                 _iux += fei*(P::cx[c] + 3.0*ciu*P::cx[c] - _ux[_idx]);
@@ -52,7 +52,7 @@ namespace PANSLBM2 {
             T _imx, T _imy, T *_f, const T *_alpha, int _idx
         ) {
             for (int c = 0; c < P::nc; ++c) {
-                _f[P::IndexF(_idx, c)] -= 3.0*_alpha[_idx]/(_rho[_idx] + _alpha[_idx])*((cx[c] - _ux[_idx])*_imx + (cy[c] - _uy[_idx])*_imy);
+                _f[P::IndexF(_idx, c)] -= 3.0*_alpha[_idx]/(_rho[_idx] + _alpha[_idx])*((P::cx[c] - _ux[_idx])*_imx + (P::cy[c] - _uy[_idx])*_imy);
             }
         }
 
@@ -87,7 +87,7 @@ namespace PANSLBM2 {
 
                     //  Collide and stream
                     for (int c = 0; c < P::nc; ++c) {
-                        int idxstream = _p.IndexStream(i, j, c);
+                        int idxstream = _p.IndexiStream(i, j, c);
                         _p.fnext[P::IndexF(idxstream, c)] = (1.0 - omega)*_p.f[P::IndexF(idx, c)] + omega*Equilibrium<T, P>(_ux[idx], _uy[idx], ip, iux, iuy, c);
                     }
                 }
@@ -101,7 +101,7 @@ namespace PANSLBM2 {
                 for (int j = 0; j < _p.ny; ++j) {
                     int idx = _p.Index(i, j);
                     for (int c = 0; c < P::nc; ++c) {
-                        _p.f[P::IndexF(idx, c)] = Equiribrium<T, P>(_ux[idx], _uy[idx], _ip[idx], _iux[idx], _iuy[idx], c);
+                        _p.f[P::IndexF(idx, c)] = Equilibrium<T, P>(_ux[idx], _uy[idx], _ip[idx], _iux[idx], _iuy[idx], c);
                     }
                 }
             }
@@ -112,18 +112,18 @@ namespace PANSLBM2 {
         void BoundaryConditionSetiU(P& _p, const T *_uxbc, const T *_uybc, const int *_bctype, T _eps = 1.0) {
             for (int j = 0; j < _p.ny; ++j) {
                 //  On xmin
-                if (_bctype[j + _p.offsetxmin] == INLET) {
+                if (_bctype[j + _p.offsetxmin] == SetiU) {
                     int idx = _p.Index(0, j), idxbc = j + _p.offsetxmin;
-                    T rho0 = (-2.0*_eps + _uxbc[idxbc]*(4.0*_p.f[P::IndexF(idx, 1)] + _p.f[P::IndexF(idx, 5)] + _p.f[P::IndexF(idx, 8)]) + 3.0*_d_uybc[j]*(_p.f[P::IndexF(idx, 5)] - _p.f[P::IndexF(idx, 8)]))/(3.0*(1.0 - _uxbc[idxbc]));
+                    T rho0 = (-2.0*_eps + _uxbc[idxbc]*(4.0*_p.f[P::IndexF(idx, 1)] + _p.f[P::IndexF(idx, 5)] + _p.f[P::IndexF(idx, 8)]) + 3.0*_uybc[idxbc]*(_p.f[P::IndexF(idx, 5)] - _p.f[P::IndexF(idx, 8)]))/(3.0*(1.0 - _uxbc[idxbc]));
                     _p.f[P::IndexF(idx, 3)] = _p.f[P::IndexF(idx, 1)] + rho0;
                     _p.f[P::IndexF(idx, 6)] = _p.f[P::IndexF(idx, 8)] + rho0;
                     _p.f[P::IndexF(idx, 7)] = _p.f[P::IndexF(idx, 5)] + rho0;
                 }
 
                 //  On xmax
-                if (_bctype[j + _p.offsetxmax] == INLET) {
+                if (_bctype[j + _p.offsetxmax] == SetiU) {
                     int idx = _p.Index(_p.nx - 1, j), idxbc = j + _p.offsetxmax;
-                    T rho0 = (-2.0*_eps - _uxbc[idxbc]*(4.0*_p.f[P::IndexF(idx, 3)] + _p.f[P::IndexF(idx, 6)] + _p.f[P::IndexF(idx, 7)]) + 3.0*_d_uybc[j]*(_p.f[P::IndexF(idx, 6)] - _p.f[P::IndexF(idx, 7)]))/(3.0*(1.0 + _uxbc[idxbc]));
+                    T rho0 = (-2.0*_eps - _uxbc[idxbc]*(4.0*_p.f[P::IndexF(idx, 3)] + _p.f[P::IndexF(idx, 6)] + _p.f[P::IndexF(idx, 7)]) + 3.0*_uybc[idxbc]*(_p.f[P::IndexF(idx, 6)] - _p.f[P::IndexF(idx, 7)]))/(3.0*(1.0 + _uxbc[idxbc]));
                     _p.f[P::IndexF(idx, 1)] = _p.f[P::IndexF(idx, 3)] + rho0;
                     _p.f[P::IndexF(idx, 5)] = _p.f[P::IndexF(idx, 7)] + rho0;
                     _p.f[P::IndexF(idx, 8)] = _p.f[P::IndexF(idx, 6)] + rho0;
@@ -132,18 +132,18 @@ namespace PANSLBM2 {
 
             for (int i = 0; i < _p.nx; ++i) {
                 //  On ymin
-                if (_bctype[i + _p.offsetymin] == INLET) {
+                if (_bctype[i + _p.offsetymin] == SetiU) {
                     int idx = _p.Index(i, 0), idxbc = i + _p.offsetymin;
-                    T rho0 = (-2.0*_eps + _uxbc[idxbc]*(4.0*_p.f[P::IndexF(idx, 2)] + _p.f[P::IndexF(idx, 5)] + _p.f[P::IndexF(idx, 6)]) + 3.0*_d_uxbc[i]*(_p.f[P::IndexF(idx, 5)] - _p.f[P::IndexF(idx, 6)]))/(3.0*(1.0 - _uxbc[idxbc]));
+                    T rho0 = (-2.0*_eps + _uxbc[idxbc]*(4.0*_p.f[P::IndexF(idx, 2)] + _p.f[P::IndexF(idx, 5)] + _p.f[P::IndexF(idx, 6)]) + 3.0*_uxbc[idxbc]*(_p.f[P::IndexF(idx, 5)] - _p.f[P::IndexF(idx, 6)]))/(3.0*(1.0 - _uxbc[idxbc]));
                     _p.f[P::IndexF(idx, 4)] = _p.f[P::IndexF(idx, 2)] + rho0;
                     _p.f[P::IndexF(idx, 7)] = _p.f[P::IndexF(idx, 5)] + rho0;
                     _p.f[P::IndexF(idx, 8)] = _p.f[P::IndexF(idx, 6)] + rho0;
                 }
 
                 //  On ymax
-                if (_bctype[i + _p.offsetymax] == INLET) {
+                if (_bctype[i + _p.offsetymax] == SetiU) {
                     int idx = _p.Index(i, _p.ny - 1), idxbc = i + _p.offsetymax;
-                    T rho0 = (-2.0*_eps - _uxbc[idxbc]*(4.0*_p.f[P::IndexF(idx, 4)] + _p.f[P::IndexF(idx, 7)] + _p.f[P::IndexF(idx, 8)]) + 3.0*_d_uxbc[i]*(_p.f[P::IndexF(idx, 8)] - _p.f[P::IndexF(idx, 7)]))/(3.0*(1.0 + _uxbc[idxbc]));
+                    T rho0 = (-2.0*_eps - _uxbc[idxbc]*(4.0*_p.f[P::IndexF(idx, 4)] + _p.f[P::IndexF(idx, 7)] + _p.f[P::IndexF(idx, 8)]) + 3.0*_uxbc[idxbc]*(_p.f[P::IndexF(idx, 8)] - _p.f[P::IndexF(idx, 7)]))/(3.0*(1.0 + _uxbc[idxbc]));
                     _p.f[P::IndexF(idx, 2)] = _p.f[P::IndexF(idx, 4)] + rho0;
                     _p.f[P::IndexF(idx, 5)] = _p.f[P::IndexF(idx, 7)] + rho0;
                     _p.f[P::IndexF(idx, 6)] = _p.f[P::IndexF(idx, 8)] + rho0;
@@ -156,7 +156,7 @@ namespace PANSLBM2 {
         void BoundaryConditionSetiRho(P& _p, const int *_bctype) {
             for (int j = 0; j < _p.ny; ++j) {
                 //  On xmin
-                if (_bctype[j + _p.offsetxmin] == OUTLET) {
+                if (_bctype[j + _p.offsetxmin] == SetiRho) {
                     int idx = _p.Index(0, j), idxbc = j + _p.offsetxmin;
                     T rho0 = (4.0*_p.f[P::IndexF(idx, 1)] + _p.f[P::IndexF(idx, 5)] + _p.f[P::IndexF(idx, 8)])/3.0;
                     _p.f[P::IndexF(idx, 3)] = _p.f[P::IndexF(idx, 1)] - rho0;
@@ -165,7 +165,7 @@ namespace PANSLBM2 {
                 }
 
                 //  On xmax
-                if (_bctype[j + _p.offsetxmax] == OUTLET) {
+                if (_bctype[j + _p.offsetxmax] == SetiRho) {
                     int idx = _p.Index(_p.nx - 1, j), idxbc = j + _p.offsetxmax;
                     T rho0 = (4.0*_p.f[P::IndexF(idx, 3)] + _p.f[P::IndexF(idx, 6)] + _p.f[P::IndexF(idx, 7)])/3.0;
                     _p.f[P::IndexF(idx, 1)] = _p.f[P::IndexF(idx, 3)] - rho0;
@@ -176,7 +176,7 @@ namespace PANSLBM2 {
 
             for (int i = 0; i < _p.nx; ++i) {
                 //  On ymin
-                if (_bctype[i + _p.offsetymin] == OUTLET) {
+                if (_bctype[i + _p.offsetymin] == SetiRho) {
                     int idx = _p.Index(i, 0), idxbc = i + _p.offsetymin;
                     T rho0 = (4.0*_p.f[P::IndexF(idx, 2)] + _p.f[P::IndexF(idx, 5)] + _p.f[P::IndexF(idx, 6)])/3.0;
                     _p.f[P::IndexF(idx, 4)] = _p.f[P::IndexF(idx, 2)] - rho0;
@@ -185,7 +185,7 @@ namespace PANSLBM2 {
                 }
 
                 //  On ymax
-                if (_bctype[i + _p.offsetymax] == OUTLET) {
+                if (_bctype[i + _p.offsetymax] == SetiRho) {
                     int idx = _p.Index(i, _p.ny - 1), idxbc = i + _p.offsetymax;
                     T rho0 = (4.0*_p.f[P::IndexF(idx, 4)] + _p.f[P::IndexF(idx, 7)] + _p.f[P::IndexF(idx, 8)])/3.0;
                     _p.f[P::IndexF(idx, 2)] = _p.f[P::IndexF(idx, 4)] - rho0;

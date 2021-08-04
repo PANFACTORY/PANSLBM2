@@ -128,25 +128,4 @@ namespace PANSLBM2 {
             }
         } 
     }
-
-
-
-
-    namespace EL {
-        //*********************************************************************
-        //  Elastic 2D  :   Expand macroscopic values
-        //*********************************************************************
-        template<class T, template<class>class P>
-        void ExpandMacro(P<T>& _p, T* _sxx, T* _sxy, T* _syx, T* _syy, T* _gamma) {
-            assert(P<T>::nd == 2);
-            for (int i = 0; i < _p.np; i++) {
-                _sxx[i] *= _gamma[i];
-                _sxy[i] *= _gamma[i];
-                _syx[i] *= _gamma[i];
-                _syy[i] *= _gamma[i];
-            }
-        }
-    }
-
-    
 }

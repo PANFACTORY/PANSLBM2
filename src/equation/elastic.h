@@ -34,6 +34,16 @@ namespace PANSLBM2 {
             _ux /= _rho;
             _uy /= _rho;
         }
+
+        //  Function of updating macroscopic values of EL with topology optimization for 2D
+        template<class T, class P>
+        void Macro(T _rho, T &_ux, T &_uy, T &_sxx, T &_sxy, T &_syx, T &_syy, const T *_f, const T *_gamma, int _idx) {
+            Macro<T, P>(_rho, _ux, _uy, _sxx, _sxy, _syx, _syy, _f, _idx);
+            _sxx *= _gamma[idx];
+            _sxy *= _gamma[idx];
+            _syx *= _gamma[idx];
+            _syy *= _gamma[idx];
+        }
     
         //  Function of getting equilibrium of EL for 2D
         template<class T, class P>
@@ -55,6 +65,37 @@ namespace PANSLBM2 {
                     //  Update macro
                     T ux, uy, sxx, sxy, syx, syy;
                     Macro<T, P>(_rho[idx], ux, uy, sxx, sxy, syx, syy, _p.f, idx);
+
+                    //  Save macro if need
+                    if (_issave) {
+                        _ux[idx] = ux;
+                        _uy[idx] = uy;
+                        _sxx[idx] = sxx;
+                        _sxy[idx] = sxy;
+                        _syx[idx] = syx;
+                        _syy[idx] = syy;
+                    }
+
+                    //  Collide and stream
+                    for (int c = 0; c < P::nc; ++c) {
+                        int idxstream = _p.IndexStream(i, j, c);
+                        _p.fnext[P::IndexF(idxstream, c)] = (1.0 - omega)*_p.f[P::IndexF(idx, c)] + omega*Equilibrium<T, P>(_rho[idx], ux, uy, sxx, sxy, syx, syy, c);
+                    }
+                }
+            }
+        }
+
+        //  Function of Update macro, Collide and Stream of EL with topology optimization for 2D
+        template<class T, class P>
+        void MacroExtended_Collide_Stream(P& _p, T *_rho, T *_ux, T *_uy, T *_sxx, T *_sxy, T *_syx, T *_syy, T _tau, const T *_gamma, bool _issave = false) {
+            T omega = 1/_tau;
+            for (int i = 0; i < _p.nx; ++i) {
+                for (int j = 0; j < _p.ny; ++j) {
+                    int idx = _p.Index(i, j);
+
+                    //  Update macro
+                    T ux, uy, sxx, sxy, syx, syy;
+                    Macro<T, P>(_rho[idx], ux, uy, sxx, sxy, syx, syy, _p.f, _gamma, idx);
 
                     //  Save macro if need
                     if (_issave) {

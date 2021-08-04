@@ -155,4 +155,38 @@ private:
             } 
         }
     }
+
+    namespace NS {
+        //  Function of Update macro, External force(Immersed Boundary Method), Collide and Stream of NS for 2D
+        template<class T, class P, class B>
+        void Macro_Collide_Stream_IBM(P& _p, T *_rho, T *_ux, T *_uy, T _viscosity, B& _b, bool _issave = false) {
+            T omega = 1.0/(3.0*_viscosity + 0.5);
+            for (int i = 0; i < _p.nx; ++i) {
+                for (int j = 0; j < _p.ny; ++j) {
+                    int idx = _p.Index(i, j);
+
+                    //  Update macro
+                    T rho, ux, uy;
+                    Macro<T, P>(rho, ux, uy, _p.f, idx);
+
+                    //  External force with Brinkman model
+                    _b.ExternalForceIB(_p.f, idx);
+                    Macro<T, P>(rho, ux, uy, _p.f, idx);
+
+                    //  Save macro if need
+                    if (_issave) {
+                        _rho[idx] = rho;
+                        _ux[idx] = ux;
+                        _uy[idx] = uy;
+                    }
+
+                    //  Collide and stream
+                    for (int c = 0; c < P::nc; ++c) {
+                        int idxstream = _p.IndexStream(i, j, c);
+                        _p.fnext[P::IndexF(idxstream, c)] = (1.0 - omega)*_p.f[P::IndexF(idx, c)] + omega*Equilibrium<T, P>(rho, ux, uy, c);
+                    }
+                }
+            }
+        }
+    }
 }

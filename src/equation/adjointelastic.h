@@ -1,7 +1,7 @@
 //*****************************************************************************
 //  Title       :   src/equation/adjointelastic.h
 //  Author      :   Tanabe Yuta
-//  Date        :   2021/01/28
+//  Date        :   2021/08/03
 //  Copyright   :   (C)2021 TanabeYuta
 //*****************************************************************************
 
@@ -9,6 +9,129 @@
 #include <cassert>
 
 namespace PANSLBM2 {
+    namespace {
+        const int SetiStress = 1;
+    }
+
+    namespace AEL {
+        //  Function of updating macroscopic values of AEL for 2D
+        template<class T, class P>
+        void Macro(T &_irho, T &_imx, T &_imy, T &_isxx, T &_isxy, T &_isyx, T &_isyy, const T *_f, int _idx) {
+            _irho = T();
+            _imx = T();
+            _imy = T();
+            _isxx = T();
+            _isxy = T();
+            _isyx = T();
+            _isyy = T();
+            for (int c = 0; c < P::nc; ++c) {
+                _irho += P::ei[c]*_f[P::IndexF(_idx, c)];
+                _imx += P::ei[c]*P::cx[c]*_f[P::IndexF(_idx, c)];
+                _imy += P::ei[c]*P::cy[c]*_f[P::IndexF(_idx, c)];
+                _isxx += P::ei[c]*P::cx[c]*P::cx[c]*_f[P::IndexF(_idx, c)];
+                _isxy += P::ei[c]*P::cx[c]*P::cy[c]*_f[P::IndexF(_idx, c)];
+                _isyx += P::ei[c]*P::cy[c]*P::cx[c]*_f[P::IndexF(_idx, c)];
+                _isyy += P::ei[c]*P::cy[c]*P::cy[c]*_f[P::IndexF(_idx, c)];
+            }
+        }
+
+        //  Function of getting equilibrium of AEL for 2D
+        template<class T, class P>
+        T Equilibrium(T _irho, T _imx, T _imy, T _isxx, T _isxy, T _isyx, T _isyy, int _c) {
+            T imc = _imx*P::cx[_c] + _imy*P::cy[_c];
+            T cisc = P::cx[_c]*_isxx*P::cx[_c] + P::cx[_c]*_isxy*P::cy[_c] + P::cy[_c]*_isyx[i]*P::cx[_c] + P::cy[_c]*_isyy*P::cy[_c];
+            T irhocc = _irho*(P::cx[_c]*P::cx[_c] + P::cy[_c]*P::cy[_c]);
+            return 3.0*imc + 4.5*_gamma[i]*cisc - 1.5*_gamma[i]*irhocc;
+        }
+
+        //  Function of Update macro, Collide and Stream of AEL for 2D
+        template<class T, class P>
+        void Macro_Collide_Stream(
+            P& _p, T *_irho, T *_imx, T *_imy, T *_isxx, T *_isxy, T *_isyx, T *_isyy, T _tau, bool _issave = false
+        ) {
+            T omega = 1/_tau;
+            for (int i = 0; i < _p.nx; ++i) {
+                for (int j = 0; j < _p.ny; ++j) {
+                    int idx = _p.Index(i, j);
+
+                    //  Update macro
+                    T irho, imx, imy, isxx, isxy, isyx, isyy;
+                    Macro<T, P>(irho, imx, imy, isxx, isxy, isyx, isyy, _p.f, idx);
+
+                    //  Save macro if need
+                    if (_issave) {
+                        _irho[idx] = irho;
+                        _imx[idx] = imx;
+                        _imy[idx] = imy;
+                        _isxx[idx] = isxx;
+                        _isxy[idx] = isxy;
+                        _isyx[idx] = isyx;
+                        _isyy[idx] = isyy;
+                    }
+
+                    //  Collide and stream
+                    for (int c = 0; c < P::nc; ++c) {
+                        int idxstream = _p.IndexStream(i, j, c);
+                        _p.fnext[P::IndexF(idxstream, c)] = (1.0 - omega)*_p.f[P::IndexF(idx, c)] + omega*Equilibrium<T, P>(irho, imx, imy, isxx, isxy, isyx, isyy, c);
+                    }
+                }
+            }
+        }
+
+        //  Function of setting initial condition of AEL for 2D
+        template<class T, class P>
+        void InitialCondition(P& _p, const T *_rho, const T *_ux, const T *_uy, const T *_sxx, const T *_sxy, const T *_syx, const T *_syy) {
+            for (int idx = 0; idx < _p.nxy; ++idx) {
+                for (int c = 0; c < P::nc; ++c) {
+                    _p.f[P::IndexF(idx, c)] = Equilibrium<T, P>(_irho[idx], _imx[idx], _imy[idx], _isxx[idx], _isxy[idx], _isyx[idx], _isyy[idx], c);
+                }
+            }
+        }
+
+        //  Function of setting boundary condition of AEL set iStress for 2D
+        template<class T, class P>
+        void BoundaryConditionSetiStress(P& _p, const T *_txbc, const T *_tybc, const T *_rho, const int *_bctype) {
+            for (int j = 0; j < _p.ny; ++j) {
+                //  On xmin
+                if (_bctype[j + _p.offsetxmin] == SetiStress) {
+                    int idx = _p.Index(0, j), idxbc = j + _p.offsetxmin;
+                    _p.f[P::IndexF(idx, 3)] = _p.f[P::IndexF(idx, 1)] - (4.0*_p.f[P::IndexF(idx, 1)] + _p.f[P::IndexF(idx, 5)] + _p.f[P::IndexF(idx, 8)])/3.0 + 2.0*_txbc[idxbc]/_rho[idx];
+                    _p.f[P::IndexF(idx, 6)] = _p.f[P::IndexF(idx, 5)] - (4.0*_p.f[P::IndexF(idx, 1)] + _p.f[P::IndexF(idx, 5)] + _p.f[P::IndexF(idx, 8)])/3.0 + 2.0*(_txbc[idxbc] - _tybc[idxbc])/_rho[idx];
+                    _p.f[P::IndexF(idx, 7)] = _p.f[P::IndexF(idx, 8)] - (4.0*_p.f[P::IndexF(idx, 1)] + _p.f[P::IndexF(idx, 5)] + _p.f[P::IndexF(idx, 8)])/3.0 + 2.0*(_txbc[idxbc] + _tybc[idxbc])/_rho[idx];
+                }
+
+                //  On xmax
+                if (_bctype[j + _p.offsetxmax] == SetiStress) {
+                    int idx = _p.Index(_p.nx - 1, j), idxbc = j + _p.offsetxmax;
+                    _p.f[P::IndexF(idx, 1)] = _p.f[P::IndexF(idx, 3)] - (4.0*_p.f[P::IndexF(idx, 3)] + _p.f[P::IndexF(idx, 6)] + _p.f[P::IndexF(idx, 7)])/3.0 - 2.0*_txbc[idxbc]/_rho[idx];
+                    _p.f[P::IndexF(idx, 5)] = _p.f[P::IndexF(idx, 6)] - (4.0*_p.f[P::IndexF(idx, 3)] + _p.f[P::IndexF(idx, 6)] + _p.f[P::IndexF(idx, 7)])/3.0 - 2.0*(_txbc[idxbc] + _tybc[idxbc])/_rho[idx];
+                    _p.f[P::IndexF(idx, 8)] = _p.f[P::IndexF(idx, 7)] - (4.0*_p.f[P::IndexF(idx, 3)] + _p.f[P::IndexF(idx, 6)] + _p.f[P::IndexF(idx, 7)])/3.0 - 2.0*(_txbc[idxbc] - _tybc[idxbc])/_rho[idx];
+                }
+            }
+
+            for (int i = 0; i < _p.nx; ++i) {
+                //  On ymin
+                if (_bctype[i + _p.offsetymin] == SetiStress) {
+                    int idx = _p.Index(i, 0), idxbc = i + _p.offsetymin;
+                    _p.f[P::IndexF(idx, 4)] = _p.f[P::IndexF(idx, 2)] - (4.0*_p.f[P::IndexF(idx, 2)] + _p.f[P::IndexF(idx, 5)] + _p.f[P::IndexF(idx, 6)])/3.0 + 2.0*_tybc[idxbc]/_rho[idx];
+                    _p.f[P::IndexF(idx, 7)] = _p.f[P::IndexF(idx, 6)] - (4.0*_p.f[P::IndexF(idx, 2)] + _p.f[P::IndexF(idx, 5)] + _p.f[P::IndexF(idx, 6)])/3.0 + 2.0*(_tybc[idxbc] + _txbc[idxbc])/_rho[idx];
+                    _p.f[P::IndexF(idx, 8)] = _p.f[P::IndexF(idx, 5)] - (4.0*_p.f[P::IndexF(idx, 2)] + _p.f[P::IndexF(idx, 5)] + _p.f[P::IndexF(idx, 6)])/3.0 + 2.0*(_tybc[idxbc] - _txbc[idxbc])/_rho[idx];
+                }
+
+                //  On ymax
+                if (_bctype[i + _p.offsetymax] == SetiStress) {
+                    int idx = _p.Index(i, _p.ny - 1), idxbc = i + _p.offsetymax;
+                    _p.f[P::IndexF(idx, 2)] = _p.f[P::IndexF(idx, 4)] - (4.0*_p.f[P::IndexF(idx, 4)] + _p.f[P::IndexF(idx, 7)] + _p.f[P::IndexF(idx, 8)])/3.0 - 2.0*_tybc[idxbc]/_rho[idx];
+                    _p.f[P::IndexF(idx, 5)] = _p.f[P::IndexF(idx, 8)] - (4.0*_p.f[P::IndexF(idx, 4)] + _p.f[P::IndexF(idx, 7)] + _p.f[P::IndexF(idx, 8)])/3.0 - 2.0*(_tybc[idxbc] + _txbc[idxbc])/_rho[idx];
+                    _p.f[P::IndexF(idx, 6)] = _p.f[P::IndexF(idx, 7)] - (4.0*_p.f[P::IndexF(idx, 4)] + _p.f[P::IndexF(idx, 7)] + _p.f[P::IndexF(idx, 8)])/3.0 - 2.0*(_tybc[idxbc] - _txbc[idxbc])/_rho[idx];
+                }
+            }
+        } 
+    }
+
+
+
+
     namespace EL {
         //*********************************************************************
         //  Elastic 2D  :   Expand macroscopic values
@@ -25,64 +148,5 @@ namespace PANSLBM2 {
         }
     }
 
-    namespace AEL {
-        //*********************************************************************
-        //  Adjoint elastic 2D  :   Update macroscopic values
-        //*********************************************************************
-        template<class T, template<class>class P>
-        void UpdateMacro(P<T>& _p, T* _irho, T* _imx, T* _imy, T* _isxx, T* _isxy, T* _isyx, T* _isyy) {
-            assert(P<T>::nd == 2);
-            for (int i = 0; i < _p.np; i++) {
-                _irho[i] = T();
-                _imx[i] = T();
-                _imy[i] = T();
-                _isxx[i] = T();
-                _isxy[i] = T();
-                _isyx[i] = T();
-                _isyy[i] = T();
-                for (int j = 0; j < P<T>::nc; j++) {
-                    _irho[i] += P<T>::ei[j]*_p.ft[j][i];
-                    _imx[i] += P<T>::ei[j]*P<T>::cx[j]*_p.ft[j][i];
-                    _imy[i] += P<T>::ei[j]*P<T>::cy[j]*_p.ft[j][i];
-                    _isxx[i] += P<T>::ei[j]*P<T>::cx[j]*P<T>::cx[j]*_p.ft[j][i];
-                    _isxy[i] += P<T>::ei[j]*P<T>::cx[j]*P<T>::cy[j]*_p.ft[j][i];
-                    _isyx[i] += P<T>::ei[j]*P<T>::cy[j]*P<T>::cx[j]*_p.ft[j][i];
-                    _isyy[i] += P<T>::ei[j]*P<T>::cy[j]*P<T>::cy[j]*_p.ft[j][i];
-                }
-            }
-        }
-
-        //*********************************************************************
-        //  Adjoint elastic 2D  :   Collision term
-        //*********************************************************************
-        template<class T, template<class>class P>
-        void Collision(T _elasticy, P<T>& _p, T* _irho, T* _imx, T* _imy, T* _isxx, T* _isxy, T* _isyx, T* _isyy, T* _gamma) {
-            assert(P<T>::nd == 2);
-//  要修正：緩和時間はelasticyの関数になるはずだがその具体的形が不明のため
-            T omega = 1.0/(3.0*_elasticy*_p.dt/(_p.dx*_p.dx) + 0.5);
-            for (int i = 0; i < _p.np; i++) {
-                for (int j = 0; j < P<T>::nc; j++) {
-                    T imc = _imx[i]*P<T>::cx[j] + _imy[i]*P<T>::cy[j];
-                    T cisc = P<T>::cx[j]*_isxx[i]*P<T>::cx[j] + P<T>::cx[j]*_isxy[i]*P<T>::cy[j] + P<T>::cy[j]*_isyx[i]*P<T>::cx[j] + P<T>::cy[j]*_isyy[i]*P<T>::cy[j];
-                    T irhocc = _irho[i]*(P<T>::cx[j]*P<T>::cx[j] + P<T>::cy[j]*P<T>::cy[j]);
-                    T feq = 3.0*imc + 4.5*_gamma[i]*cisc - 1.5*_gamma[i]*irhocc;
-                    _p.ftp1[j][i] = (1.0 - omega)*_p.ft[j][i] + omega*feq;
-                }
-            }
-        }
-
-        //*********************************************************************
-        //  Adjoint elastic 2D  :   Initial condition
-        //*********************************************************************
-        template<class T, template<class>class P>
-        void InitialCondition(int _i, P<T>& _p, T _irho, T _imx, T _imy, T _isxx, T _isxy, T _isyx, T _isyy, T _gamma) {
-            assert(P<T>::nd == 2 && 0 <= _i && _i < _p.np);
-            for (int j = 0; j < P<T>::nc; j++) {
-                T imc = _imx*P<T>::cx[j] + _imy*P<T>::cy[j];
-                T cisc = P<T>::cx[j]*_isxx*P<T>::cx[j] + P<T>::cx[j]*_isxy*P<T>::cy[j] + P<T>::cy[j]*_isyx*P<T>::cx[j] + P<T>::cy[j]*_isyy*P<T>::cy[j];
-                T irhocc = _irho*(P<T>::cx[j]*P<T>::cx[j] + P<T>::cy[j]*P<T>::cy[j]);
-                _p.ft[j][_i] = 3.0*imc + 4.5*_gamma*cisc -1.5*_gamma*irhocc;
-            }
-        }
-    }
+    
 }

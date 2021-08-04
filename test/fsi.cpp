@@ -14,15 +14,25 @@ using namespace PANSLBM2;
 int main() {
     //--------------------Set parameters--------------------
     int nx = 301, ny = 151, nt = 10000, dt = 100;
-    double nu = 0.1, v0 = 0.01, radius = 0.3;
-    double L = 2.0*radius*nx, surface = L*M_PI;
+    double nu = 0.1, u0 = 0.01;
     D2Q9<double> pf(nx, ny);
     double rho[nx*ny], ux[nx*ny], uy[nx*ny];
     for (int idx = 0; idx < nx*ny; ++idx) {
         rho[idx] = 1.0;
         ux[idx] = 0.0;  uy[idx] = 0.0;
     }
-    pf.SetBoundary([](int _i, int _j) { return 2;   });
+    pf.SetBoundary([&](int _i, int _j) { return (_j == 0 || _j == pf.ny - 1) ? 2 : 0;  });
+    int boundaryup[pf.nbc];
+    pf.SetBoundary(boundaryup, [&](int _i, int _j) {    return _i == 0 ? 1 : (_i == pf.nx - 1 ? 2 : 0); });
+    double uxbc[pf.nbc], uybc[pf.nbc], rhobc[pf.nbc], usbc[pf.nbc];
+    for (int j = 0; j < pf.ny; ++j) {
+        uxbc[j + pf.offsetxmin] = u0;   uybc[j + pf.offsetxmin] = 0.0;  rhobc[j + pf.offsetxmin] = 1.0; usbc[j + pf.offsetxmin] = 0.0;
+        uxbc[j + pf.offsetxmax] = 0.0;  uybc[j + pf.offsetxmax] = 0.0;  rhobc[j + pf.offsetxmax] = 1.0; usbc[j + pf.offsetxmax] = 0.0;
+    }
+    for (int i = 0; i < pf.nx; ++i) {
+        uxbc[i + pf.offsetymin] = 0.0;  uybc[i + pf.offsetymin] = 0.0;  rhobc[i + pf.offsetymin] = 1.0; usbc[i + pf.offsetymin] = 0.0;
+        uxbc[i + pf.offsetymax] = 0.0;  uybc[i + pf.offsetymax] = 0.0;  rhobc[i + pf.offsetymax] = 1.0; usbc[i + pf.offsetymax] = 0.0;
+    }
 
     int mx = 11, my = 101;
     double rho00 = 1e5, stress0 = 1.0;
@@ -120,6 +130,8 @@ int main() {
         }
         pf.Swap();
         pf.BoundaryCondition();
+        NS::BoundaryConditionSetU(pf, uxbc, uybc, boundaryup);
+        NS::BoundaryConditionSetRho(pf, rhobc, usbc, boundaryup);
         pf.SmoothCorner();   
     }
 

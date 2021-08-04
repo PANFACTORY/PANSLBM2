@@ -39,7 +39,7 @@ namespace PANSLBM2 {
         template<class T, class P>
         T Equilibrium(T _irho, T _imx, T _imy, T _isxx, T _isxy, T _isyx, T _isyy, T _gamma, int _c) {
             T imc = _imx*P::cx[_c] + _imy*P::cy[_c];
-            T cisc = P::cx[_c]*_isxx*P::cx[_c] + P::cx[_c]*_isxy*P::cy[_c] + P::cy[_c]*_isyx[i]*P::cx[_c] + P::cy[_c]*_isyy*P::cy[_c];
+            T cisc = P::cx[_c]*_isxx*P::cx[_c] + P::cx[_c]*_isxy*P::cy[_c] + P::cy[_c]*_isyx*P::cx[_c] + P::cy[_c]*_isyy*P::cy[_c];
             T irhocc = _irho*(P::cx[_c]*P::cx[_c] + P::cy[_c]*P::cy[_c]);
             return 3.0*imc + 4.5*_gamma*cisc - 1.5*_gamma*irhocc;
         }
@@ -71,7 +71,7 @@ namespace PANSLBM2 {
 
                     //  Collide and stream
                     for (int c = 0; c < P::nc; ++c) {
-                        int idxstream = _p.IndexStream(i, j, c);
+                        int idxstream = _p.IndexiStream(i, j, c);
                         _p.fnext[P::IndexF(idxstream, c)] = (1.0 - omega)*_p.f[P::IndexF(idx, c)] + omega*Equilibrium<T, P>(irho, imx, imy, isxx, isxy, isyx, isyy, _gamma[idx], c);
                     }
                 }
@@ -80,7 +80,7 @@ namespace PANSLBM2 {
 
         //  Function of setting initial condition of AEL for 2D
         template<class T, class P>
-        void InitialCondition(P& _p, const T *_rho, const T *_ux, const T *_uy, const T *_sxx, const T *_sxy, const T *_syx, const T *_syy, const T *_gamma) {
+        void InitialCondition(P& _p, const T *_irho, const T *_imx, const T *_imy, const T *_isxx, const T *_isxy, const T *_isyx, const T *_isyy, const T *_gamma) {
             for (int idx = 0; idx < _p.nxy; ++idx) {
                 for (int c = 0; c < P::nc; ++c) {
                     _p.f[P::IndexF(idx, c)] = Equilibrium<T, P>(_irho[idx], _imx[idx], _imy[idx], _isxx[idx], _isxy[idx], _isyx[idx], _isyy[idx], _gamma[idx], c);

@@ -39,10 +39,10 @@ namespace PANSLBM2 {
         template<class T, class P>
         void Macro(T _rho, T &_ux, T &_uy, T &_sxx, T &_sxy, T &_syx, T &_syy, const T *_f, const T *_gamma, int _idx) {
             Macro<T, P>(_rho, _ux, _uy, _sxx, _sxy, _syx, _syy, _f, _idx);
-            _sxx *= _gamma[idx];
-            _sxy *= _gamma[idx];
-            _syx *= _gamma[idx];
-            _syy *= _gamma[idx];
+            _sxx *= _gamma[_idx];
+            _sxy *= _gamma[_idx];
+            _syx *= _gamma[_idx];
+            _syy *= _gamma[_idx];
         }
     
         //  Function of getting equilibrium of EL for 2D

@@ -13,8 +13,8 @@ using namespace PANSLBM2;
 
 int main() {
     //--------------------Set parameters--------------------
-    int nx = 301, ny = 151, nt = 10000, dt = 100;
-    double nu = 0.1, u0 = 0.01;
+    int nx = 301, ny = 151, nt = 100000, dt = 1000;
+    double nu = 0.1, u0 = 0.05;
     D2Q9<double> pf(nx, ny);
     double rho[nx*ny], ux[nx*ny], uy[nx*ny];
     for (int idx = 0; idx < nx*ny; ++idx) {
@@ -35,7 +35,7 @@ int main() {
     }
 
     int mx = 11, my = 101;
-    double rho00 = 1e5, stress0 = 1.0;
+    double rho00 = 1e5;
     D2Q9<double> pg(mx, my);
     double rho0[pg.nxy], vx[pg.nxy], vy[pg.nxy], px[pg.nxy], py[pg.nxy], sxx[pg.nxy], sxy[pg.nxy], syx[pg.nxy], syy[pg.nxy];
     for (int idx = 0; idx < pg.nxy; ++idx) {
@@ -53,9 +53,6 @@ int main() {
     int boundarys[pg.nbc];
     pg.SetBoundary(boundarys, [&](int _i, int _j) { return _j == 0 ? 0: 1;  });
     double txbc[pg.nbc] = { 0 }, tybc[pg.nbc] = { 0 };
-    for (int i = 0; i < pg.nx; ++i) {
-        txbc[i + pg.offsetymax] = stress0;  
-    }
 
     IBNS<double, D2Q9<double> > body(pf, pg.nbc, 1.0);
     
@@ -116,6 +113,14 @@ int main() {
             body.SetBV(i + pg.offsetymax, vx[pg.Index(i, pg.ny - 1)], vy[pg.Index(i, pg.ny - 1)]);
         }
         body.Update(pf, ux, uy);
+        for (int j = 0; j < pg.ny; ++j) {
+            body.GetBG(j + pg.offsetxmin, txbc[j + pg.offsetxmin], tybc[j + pg.offsetxmin]);
+
+            body.GetBG(j + pg.offsetxmax, txbc[j + pg.offsetxmax], tybc[j + pg.offsetxmax]);
+        }
+        for (int i = 0; i < pg.nx; ++i) {
+            body.GetBG(i + pg.offsetymax, txbc[i + pg.offsetymax], tybc[i + pg.offsetymax]);
+        }
 
         //  Fluid
         NS::Macro_Collide_Stream_IBM(pf, rho, ux, uy, nu, body, true);

@@ -38,7 +38,7 @@ public:
         void SetBP(int _n, T _bpx, T _bpy) {    this->bpx[_n] = _bpx;   this->bpy[_n] = _bpy;   }
         void SetBV(int _n, T _bvx, T _bvy) {    this->bvx[_n] = _bvx;   this->bvy[_n] = _bvy;   }
         void GetBU(int _n, T& _bux, T& _buy) {  _bux = this->bux[_n];   _buy = this->buy[_n];   }
-        void GetBG(int _n, T& _bgx, T& _bgy) {  _bgx = this->bgx[_n];   _bgy = this->bgy[_n];   }
+        void GetBG(int _n, T& _bgx, T& _bgy) {  _bgx = -this->bgx[_n];  _bgy = -this->bgy[_n];   }
 
 private:
         const int nx, ny, nxy, nb;

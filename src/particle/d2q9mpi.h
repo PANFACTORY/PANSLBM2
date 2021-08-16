@@ -75,7 +75,7 @@ public:
         void iBoundaryCondition();
         void SmoothCorner();
         
-        void SetNeighborId(int _n0, int _n1, int _n2, int _n3, int _n4, int _n5, int _n6, int _n7);
+        void SetNeighborId(int _leftId, int _rightId, int _bottomId, int _topId, int _leftbottomId, int _lefttopId, int _rightbottomId, int _righttopId);
         void Synchronize();
         
         const int nx, ny, nxy, nbc, offsetxmin, offsetxmax, offsetymin, offsetymax, mpiid;
@@ -275,19 +275,19 @@ private:
     }
 
     template<class T>
-    void D2Q9<T>::SetNeighborId(int _n0, int _n1, int _n2, int _n3, int _n4, int _n5, int _n6, int _n7) {
+    void D2Q9<T>::SetNeighborId(int _leftId, int _rightId, int _bottomId, int _topId, int _leftbottomId, int _lefttopId, int _rightbottomId, int _righttopId) {
         if (this->neighbornum) {
             delete[] this->StatSend, this->StatRecv, this->ReqSend, this->ReqRecv;
         }
         
-        this->neighborid[0] = _n0;
-        this->neighborid[1] = _n1;
-        this->neighborid[2] = _n2;
-        this->neighborid[3] = _n3;
-        this->neighborid[4] = _n4;
-        this->neighborid[5] = _n5;
-        this->neighborid[6] = _n6;
-        this->neighborid[7] = _n7;
+        this->neighborid[0] = _leftId;
+        this->neighborid[1] = _rightId;
+        this->neighborid[2] = _bottomId;
+        this->neighborid[3] = _topId;
+        this->neighborid[4] = _leftbottomId;
+        this->neighborid[5] = _lefttopId;
+        this->neighborid[6] = _rightbottomId;
+        this->neighborid[7] = _righttopId;
 
         this->neighbornum = 0;
         for (int i = 0; i < 8; ++i) {

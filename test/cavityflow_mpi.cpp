@@ -1,5 +1,6 @@
 #include <iostream>
 #include <chrono>
+#include <cassert>
 #include "mpi.h"
 
 #include "../src/particle/d2q9mpi.h"
@@ -13,6 +14,7 @@ int main(int argc, char** argv) {
     MPI_Init(&argc, &argv);
     MPI_Comm_size(MPI_COMM_WORLD, &PeTot);
     MPI_Comm_rank(MPI_COMM_WORLD, &MyRank);
+    assert(PeTot == 2);
 
     //--------------------Set parameters--------------------
     int nx = 51, ny = 101, nt = 100000, dt = 1000;

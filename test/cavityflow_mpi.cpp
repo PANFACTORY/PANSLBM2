@@ -36,7 +36,7 @@ int main(int argc, char** argv) {
     double uxbc[pf.nbc], uybc[pf.nbc];
     if (MyRank == 0) {
         pf.SetBoundary([&](int _i, int _j) {    return (_i == 0 || _j == 0 || _j == pf.ny - 1) ? 1 : 0; });
-        pf.SetBoundary(boundaryu, [&](int _i, int _j) { return _j == pf.ny - 1 ? 1 : 0;    });
+        pf.SetBoundary(boundaryu, [&](int _i, int _j) { return 0;    });
         for (int idxbc = 0; idxbc < pf.nbc; ++idxbc) {
             uxbc[idxbc] = u0;
             uybc[idxbc] = 0.0;
@@ -60,7 +60,9 @@ int main(int argc, char** argv) {
         } else {
             NS::Macro_Collide_Stream(pf, rho, ux, uy, nu, true);
 
-            std::cout << "t = " << t/dt << std::endl;
+            if (MyRank == 0) {
+                std::cout << "t = " << t/dt << std::endl;
+            }
             VTKExport file("result/ns_at" + std::to_string(MyRank) + "_" + std::to_string(t/dt) + ".vtk", nx, ny);
             file.AddPointScaler("rho", [&](int _i, int _j, int _k) { return rho[pf.Index(_i, _j)]; });
             file.AddPointVector("u", 
@@ -78,7 +80,9 @@ int main(int argc, char** argv) {
     }
 
     std::chrono::system_clock::time_point end = std::chrono::system_clock::now();
-    std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count() << std::endl;
-
+    if (MyRank == 0) {
+        std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count() << std::endl;
+    }
+    
     MPI_Finalize();
 }

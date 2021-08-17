@@ -17,13 +17,13 @@ int main(int argc, char** argv) {
     assert(PeTot == 2);
 
     //--------------------Set parameters--------------------
-    int nx = 101, ny = 51, nt = 100000, dt = 1000;
+    int nx = 51, ny = 101, nt = 100000, dt = 1000;
     double nu = 0.1, u0 = 0.1, Re = u0*(nx - 1)/nu;
     D2Q9<double> pf(nx, ny);
     if (MyRank == 0) {
-        pf.SetNeighborId(-1, -1, -1, 1, -1, -1, -1, -1);
+        pf.SetNeighborId(-1, 1, -1, -1, -1, -1, -1, -1);
     } else if (MyRank == 1) {
-        pf.SetNeighborId(-1, -1, 0, -1, -1, -1, -1, -1);
+        pf.SetNeighborId(0, -1, -1, -1, -1, -1, -1, -1);
     }
     double rho[pf.nxy], ux[pf.nxy], uy[pf.nxy];
     for (int idx = 0; idx < pf.nxy; ++idx) {
@@ -35,14 +35,14 @@ int main(int argc, char** argv) {
     int boundaryu[pf.nxy];
     double uxbc[pf.nbc], uybc[pf.nbc];
     if (MyRank == 0) {
-        pf.SetBoundary([&](int _i, int _j) {    return (_i == 0 || _i == pf.nx - 1 || _j == 0) ? 1 : 0; });
-        pf.SetBoundary(boundaryu, [&](int _i, int _j) { return 0;    });
+        pf.SetBoundary([&](int _i, int _j) {    return (_i == 0 || _j == 0) ? 1 : 0; });
+        pf.SetBoundary(boundaryu, [&](int _i, int _j) { return _j == pf.ny - 1 ? 1 : 0;    });
         for (int idxbc = 0; idxbc < pf.nbc; ++idxbc) {
             uxbc[idxbc] = u0;
             uybc[idxbc] = 0.0;
         }   
     } else if (MyRank == 1) {
-        pf.SetBoundary([&](int _i, int _j) {    return (_i == 0 || _i == pf.nx - 1) ? 1 : 0; });
+        pf.SetBoundary([&](int _i, int _j) {    return (_j == 0 || _i == pf.nx - 1) ? 1 : 0; });
         pf.SetBoundary(boundaryu, [&](int _i, int _j) { return _j == pf.ny - 1 ? 1 : 0;    });
         for (int idxbc = 0; idxbc < pf.nbc; ++idxbc) {
             uxbc[idxbc] = u0;

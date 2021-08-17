@@ -337,7 +337,7 @@ private:
         if (this->neighborid[2] != -1) {
             for (int i = 0; i < this->nx; ++i) {
                 idx = this->Index(i, this->ny - 1);
-                idxedge = j + this->offsetymin;
+                idxedge = i + this->offsetymin;
                 this->fsend[D2Q9<T>::IndexF(idxedge, 4)] = this->f[D2Q9<T>::IndexF(idx, 4)];
                 this->fsend[D2Q9<T>::IndexF(idxedge, 7)] = this->f[D2Q9<T>::IndexF(idx, 7)];
                 this->fsend[D2Q9<T>::IndexF(idxedge, 8)] = this->f[D2Q9<T>::IndexF(idx, 8)]; 
@@ -347,7 +347,7 @@ private:
         if (this->neighborid[3] != -1) {
             for (int i = 0; i < this->nx; ++i) {
                 idx = this->Index(i, 0);
-                idxedge = j + this->offsetymax;
+                idxedge = i + this->offsetymax;
                 this->fsend[D2Q9<T>::IndexF(idxedge, 2)] = this->f[D2Q9<T>::IndexF(idx, 2)];
                 this->fsend[D2Q9<T>::IndexF(idxedge, 5)] = this->f[D2Q9<T>::IndexF(idx, 5)];
                 this->fsend[D2Q9<T>::IndexF(idxedge, 6)] = this->f[D2Q9<T>::IndexF(idx, 6)]; 

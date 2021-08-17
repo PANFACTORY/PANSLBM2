@@ -61,7 +61,7 @@ int main(int argc, char** argv) {
             NS::Macro_Collide_Stream(pf, rho, ux, uy, nu, true);
 
             std::cout << "t = " << t/dt << std::endl;
-            VTKExport file("result/ns" + std::to_string(t/dt) + ".vtk", nx, ny);
+            VTKExport file("result/ns_at" + std::to_string(MyRank) + "_" + std::to_string(t/dt) + ".vtk", nx, ny);
             file.AddPointScaler("rho", [&](int _i, int _j, int _k) { return rho[pf.Index(_i, _j)]; });
             file.AddPointVector("u", 
                 [&](int _i, int _j, int _k) { return ux[pf.Index(_i, _j)]; },

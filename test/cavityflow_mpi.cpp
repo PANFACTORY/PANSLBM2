@@ -17,7 +17,7 @@ int main(int argc, char** argv) {
     assert(PeTot == 2);
 
     //--------------------Set parameters--------------------
-    int nx = 101, ny = 51, nt = 100000, dt = 1000;
+    int nx = 101, ny = 51, nt = 100, dt = 1;
     double nu = 0.1, u0 = 0.1, Re = u0*(nx - 1)/nu;
     D2Q9<double> pf(nx, ny);
     double rho[pf.nxy], ux[pf.nxy], uy[pf.nxy];

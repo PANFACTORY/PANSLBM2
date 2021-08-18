@@ -56,10 +56,10 @@ public:
         void SetBoundaryAlongYmax(int *_bctype, F _func);
         template<class F>
         void SetBoundary(int *_bctype, F _func) {
-            this->SetBoundaryAlongXmin(_bctype, [&] (int _j) {   return _func(0, _j);    });
-            this->SetBoundaryAlongXmax(_bctype, [&] (int _j) {   return _func(this->nx - 1, _j); });
-            this->SetBoundaryAlongYmin(_bctype, [&] (int _i) {   return _func(_i, 0);    });
-            this->SetBoundaryAlongYmax(_bctype, [&] (int _i) {   return _func(_i, this->ny - 1); });
+            this->SetBoundaryAlongXmin(_bctype, [&](int _j) {   return _func(0, _j);    });
+            this->SetBoundaryAlongXmax(_bctype, [&](int _j) {   return _func(this->nx - 1, _j); });
+            this->SetBoundaryAlongYmin(_bctype, [&](int _i) {   return _func(_i, 0);    });
+            this->SetBoundaryAlongYmax(_bctype, [&](int _i) {   return _func(_i, this->ny - 1); });
         }
         template<class F>
         void SetBoundaryAlongXmin(F _func) {

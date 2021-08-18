@@ -17,7 +17,7 @@ int main(int argc, char** argv) {
     assert(PeTot == 2);
 
     //--------------------Set parameters--------------------
-    int nx = 51, ny = 101, nt = 100000, dt = 1000;
+    int nx = 101, ny = 51, nt = 100000, dt = 1000;
     double nu = 0.1, u0 = 0.1, Re = u0*(nx - 1)/nu;
     D2Q9<double> pf(nx, ny);
     double rho[pf.nxy], ux[pf.nxy], uy[pf.nxy];
@@ -34,14 +34,14 @@ int main(int argc, char** argv) {
         uybc[idxbc] = 0.0;
     }  
     if (MyRank == 0) {
-        pf.SetNeighborId(-1, 1, -1, -1, -1, -1, -1, -1);
+        pf.SetNeighborId(-1, -1, -1, 1, -1, -1, -1, -1);
         pf.SetBoundaryAlongXmin([&](int _j) {   return 1;   });
-        pf.SetBoundaryAlongYmin([&](int _i) {   return 1;   });
-        pf.SetBoundaryAlongYmax(boundaryu, [&](int _i) {    return 1;   });        
-    } else if (MyRank == 1) {
-        pf.SetNeighborId(0, -1, -1, -1, -1, -1, -1, -1);
         pf.SetBoundaryAlongXmax([&](int _j) {   return 1;   });
-        pf.SetBoundaryAlongYmin([&](int _i) {   return 1;   });
+        pf.SetBoundaryAlongYmin([&](int _i) {   return 1;   });  
+    } else if (MyRank == 1) {
+        pf.SetNeighborId(-1, -1, 0, -1, -1, -1, -1, -1);
+        pf.SetBoundaryAlongXmin([&](int _j) {   return 1;   });
+        pf.SetBoundaryAlongXmax([&](int _j) {   return 1;   });
         pf.SetBoundaryAlongYmax(boundaryu, [&](int _i) {    return 1;   });        
     }
      

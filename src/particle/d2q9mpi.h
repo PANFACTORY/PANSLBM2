@@ -442,7 +442,7 @@ private:
         }
         if (this->neighborid[2] != -1) {
             MPI_Isend(&fsend[D2Q9<T>::IndexF(this->offsetymin, 0)], this->nx*D2Q9<T>::nc, MPI_DOUBLE, this->neighborid[2], 0, MPI_COMM_WORLD, &ReqSend[neib]);
-            MPI_Irecv(&fsend[D2Q9<T>::IndexF(this->offsetymin, 0)], this->nx*D2Q9<T>::nc, MPI_DOUBLE, this->neighborid[2], 0, MPI_COMM_WORLD, &ReqRecv[neib]);
+            MPI_Irecv(&frecv[D2Q9<T>::IndexF(this->offsetymin, 0)], this->nx*D2Q9<T>::nc, MPI_DOUBLE, this->neighborid[2], 0, MPI_COMM_WORLD, &ReqRecv[neib]);
             neib++;
         }
         if (this->neighborid[3] != -1) {

@@ -31,6 +31,9 @@ public:
             this->fsend = new T[(this->nbc + 4)*D2Q9<T>::nc];
             this->frecv = new T[(this->nbc + 4)*D2Q9<T>::nc];
             this->bctype = new int[this->nbc];
+            for (int idx = 0; idx < this->nbc; ++idx) {
+                this->bctype[idx] = 0;
+            }
 
             this->neighbornum = 0;
             this->StatSend = nullptr;

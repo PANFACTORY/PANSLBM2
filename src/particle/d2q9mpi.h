@@ -47,10 +47,39 @@ public:
         }
 
         template<class F>
-        void SetBoundary(int *_bctype, F _func);
+        void SetBoundaryAlongXmin(int *_bctype, F _func);
+        template<class F>
+        void SetBoundaryAlongXmax(int *_bctype, F _func);
+        template<class F>
+        void SetBoundaryAlongYmin(int *_bctype, F _func);
+        template<class F>
+        void SetBoundaryAlongYmax(int *_bctype, F _func);
+        template<class F>
+        void SetBoundary(int *_bctype, F _func) {
+            this->SetBoundaryAlongXmin(_bctype, [&] (int _j) {   return _func(0, _j);    });
+            this->SetBoundaryAlongXmax(_bctype, [&] (int _j) {   return _func(this->nx - 1, _j); });
+            this->SetBoundaryAlongYmin(_bctype, [&] (int _i) {   return _func(_i, 0);    });
+            this->SetBoundaryAlongYmax(_bctype, [&] (int _i) {   return _func(_i, this->ny - 1); });
+        }
+        template<class F>
+        void SetBoundaryAlongXmin(F _func) {
+            this->SetBoundaryAlongXmin(this->bctype, _func);
+        }
+        template<class F>
+        void SetBoundaryAlongXmax(F _func) {
+            this->SetBoundaryAlongXmax(this->bctype, _func);
+        }
+        template<class F>
+        void SetBoundaryAlongYmin(F _func) {
+            this->SetBoundaryAlongYmin(this->bctype, _func);
+        }
+        template<class F>
+        void SetBoundaryAlongYmax(F _func) {
+            this->SetBoundaryAlongYmax(this->bctype, _func);
+        }
         template<class F>
         void SetBoundary(F _func) {
-            D2Q9<T>::SetBoundary(this->bctype, _func);
+            this->SetBoundary(this->bctype, _func);
         }
         
         int Index(int _i, int _j) const {
@@ -99,14 +128,33 @@ private:
 
     template<class T>
     template<class F>
-    void D2Q9<T>::SetBoundary(int *_bctype, F _func) {
+    void D2Q9<T>::SetBoundaryAlongXmin(int *_bctype, F _func) {
         for (int j = 0; j < this->ny; ++j) {
-            _bctype[j + this->offsetxmin] = _func(0, j);
-            _bctype[j + this->offsetxmax] = _func(this->nx - 1, j);
+            _bctype[j + this->offsetxmin] = _func(j);
         }
+    }
+
+    template<class T>
+    template<class F>
+    void D2Q9<T>::SetBoundaryAlongXmax(int *_bctype, F _func) {
+        for (int j = 0; j < this->ny; ++j) {
+            _bctype[j + this->offsetxmax] = _func(j);
+        }
+    }
+
+    template<class T>
+    template<class F>
+    void D2Q9<T>::SetBoundaryAlongYmin(int *_bctype, F _func) {
         for (int i = 0; i < this->nx; ++i) {
-            _bctype[i + this->offsetymin] = _func(i, 0);
-            _bctype[i + this->offsetymax] = _func(i, this->ny - 1);
+            _bctype[i + this->offsetymin] = _func(i);
+        }
+    }
+
+    template<class T>
+    template<class F>
+    void D2Q9<T>::SetBoundaryAlongYmax(int *_bctype, F _func) {
+        for (int i = 0; i < this->nx; ++i) {
+            _bctype[i + this->offsetymax] = _func(i);
         }
     }
 

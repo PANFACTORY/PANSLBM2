@@ -112,7 +112,7 @@ public:
         
         void Synchronize();
         
-        const int nx, ny, nxy, nbc, offsetxmin, offsetxmax, offsetymin, offsetymax, lx, ly, PEid, PEx, PEy, mx, my;
+        const int lx, ly, PEid, mx, my, PEx, PEy, nx, ny, nxy, nbc, offsetxmin, offsetxmax, offsetymin, offsetymax;
         static const int nc = 9, nd = 2, cx[nc], cy[nc];
         static const T ei[nc];
         T *f, *fnext, *fsend, *frecv;

@@ -137,13 +137,25 @@ private:
     template<class T>
     template<class F>
     void D2Q9<T>::SetBoundary(int *_bctype, F _func) {
-        for (int j = 0; j < this->ny; ++j) {
-            _bctype[j + this->offsetxmin] = _func(0 + this->offsetx, j + this->offsety);
-            _bctype[j + this->offsetxmax] = _func((this->nx - 1) + this->offsetx, j + this->offsety);
+        if (this->PEx == 0) {
+            for (int j = 0; j < this->ny; ++j) {
+                _bctype[j + this->offsetxmin] = _func(0 + this->offsetx, j + this->offsety);
+            }
         }
-        for (int i = 0; i < this->nx; ++i) {
-            _bctype[i + this->offsetymin] = _func(i + this->offsetx, 0 + this->offsety);
-            _bctype[i + this->offsetymax] = _func(i + this->offsetx, (this->ny - 1) + this->offsety);
+        if (this->PEx == this->mx - 1) {
+            for (int j = 0; j < this->ny; ++j) {
+                _bctype[j + this->offsetxmax] = _func((this->nx - 1) + this->offsetx, j + this->offsety);
+            }
+        }
+        if (this->PEy == 0) {
+            for (int i = 0; i < this->nx; ++i) {
+                _bctype[i + this->offsetymin] = _func(i + this->offsetx, 0 + this->offsety);
+            }
+        }
+        if (this->PEy == this->my - 1) {
+            for (int i = 0; i < this->nx; ++i) {
+                _bctype[i + this->offsetymax] = _func(i + this->offsetx, (this->ny - 1) + this->offsety);
+            }
         }
     }
 

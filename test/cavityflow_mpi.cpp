@@ -37,7 +37,7 @@ int main(int argc, char** argv) {
     std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
 
     //--------------------Direct analyze--------------------
-    /*NS::InitialCondition(pf, rho, ux, uy);
+    NS::InitialCondition(pf, rho, ux, uy);
     for (int t = 1; t <= nt; ++t) {
         if (t%dt != 0) {
             NS::Macro_Collide_Stream(pf, rho, ux, uy, nu);
@@ -61,7 +61,7 @@ int main(int argc, char** argv) {
         pf.BoundaryCondition();
         NS::BoundaryConditionSetU(pf, uxbc, uybc, boundaryu);
         pf.SmoothCorner();
-    }*/
+    }
 
     std::chrono::system_clock::time_point end = std::chrono::system_clock::now();
     if (MyRank == 0) {

@@ -31,12 +31,6 @@ public:
         {
             assert(0 < _lx && 0 < _ly && 0 <= _PEid && 0 < _mx && 0 < _my);
             
-            if (this->PEid == 0) {
-                std::cout << (this->lx + this->PEx)/this->mx << "\t" << (this->ly + this->PEy)/this->my << std::endl;
-                std::cout << this->PEx << "\t" << this->PEy << std::endl;
-                std::cout << this->nx << "\t" << this->ny << std::endl;
-            }
-
             this->f = new T[this->nxy*D2Q9<T>::nc];
             this->fnext = new T[this->nxy*D2Q9<T>::nc];
             this->fsend = new T[(this->nbc + 4)*D2Q9<T>::nc];

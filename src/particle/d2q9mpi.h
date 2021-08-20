@@ -32,7 +32,7 @@ public:
             assert(0 < _lx && 0 < _ly && 0 <= _PEid && 0 < _mx && 0 < _my);
             
             if (this->PEid == 0) {
-                std::cout << _PEid%_mx << "\t" << _PEid/_mx << std::endl;
+                std::cout << (this->lx + this->PEx)/this->mx << "\t" << (this->ly + this->PEy)/this->my << std::endl;
                 std::cout << this->PEx << "\t" << this->PEy << std::endl;
                 std::cout << this->nx << "\t" << this->ny << std::endl;
             }

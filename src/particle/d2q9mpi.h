@@ -105,8 +105,8 @@ public:
             return D2Q9<T>::nc*_idx + _c;
         }
         int IndexPE(int _i, int _j) const {
-            int i = _i == -1 ? this->mx - 1 : (_i == this->mx - 1 ? 0 : _i);
-            int j = _j == -1 ? this->my - 1 : (_j == this->my - 1 ? 0 : _j);
+            int i = _i == -1 ? this->mx - 1 : (_i == this->mx ? 0 : _i);
+            int j = _j == -1 ? this->my - 1 : (_j == this->my ? 0 : _j);
             return i + this->mx*j;
         }
 

@@ -474,25 +474,25 @@ private:
         }
         //  Copy to f from fcorner at xmin and ymin
         if (this->IndexPE(this->PEx - 1, this->PEy - 1) != this->PEid) {
-            idx = this->Index(this->nx - 1, this->ny - 1);
+            idx = this->Index(0, 0);
             idxcorner = this->nbc + 0;
             this->f[D2Q9<T>::IndexF(idx, 5)] = this->frecv[D2Q9<T>::IndexF(idxcorner, 5)];
         }
         //  Copy to f from fcorner at xmin and ymax
         if (this->IndexPE(this->PEx - 1, this->PEy + 1) != this->PEid) {
-            idx = this->Index(this->nx - 1, 0);
+            idx = this->Index(0, this->nx - 1);
             idxcorner = this->nbc + 1;
             this->f[D2Q9<T>::IndexF(idx, 8)] = this->frecv[D2Q9<T>::IndexF(idxcorner, 8)];
         }
         //  Copy to f from fcorner at xmax and ymin
         if (this->IndexPE(this->PEx + 1, this->PEy - 1) != this->PEid) {
-            idx = this->Index(0, this->ny - 1);
+            idx = this->Index(this->ny - 1, 0);
             idxcorner = this->nbc + 2;
             this->f[D2Q9<T>::IndexF(idx, 6)] = this->frecv[D2Q9<T>::IndexF(idxcorner, 6)];
         }
         //  Copy to f from fcorner at xmax and ymax
         if (this->IndexPE(this->PEx + 1, this->PEy + 1) != this->PEid) {
-            idx = this->Index(0, 0);
+            idx = this->Index(this->nx - 1, this->ny - 1);
             idxcorner = this->nbc + 3;
             this->f[D2Q9<T>::IndexF(idx, 7)] = this->frecv[D2Q9<T>::IndexF(idxcorner, 7)];
         }

@@ -1,6 +1,5 @@
 #include <iostream>
 #include <chrono>
-#include <cassert>
 #include "mpi.h"
 
 #include "../src/particle/d2q9mpi.h"
@@ -14,12 +13,11 @@ int main(int argc, char** argv) {
     MPI_Init(&argc, &argv);
     MPI_Comm_size(MPI_COMM_WORLD, &PeTot);
     MPI_Comm_rank(MPI_COMM_WORLD, &MyRank);
-    assert(PeTot == 2);
 
     //--------------------Set parameters--------------------
-    int nx = 101, ny = 51, nt = 100000, dt = 1000;
-    double nu = 0.1, u0 = 0.1, Re = u0*(nx - 1)/nu;
-    D2Q9<double> pf(nx, ny);
+    int lx = 101, ly = 101, nt = 100000, dt = 1000;
+    double nu = 0.1, u0 = 0.1, Re = u0*(lx - 1)/nu;
+    D2Q9<double> pf(lx, ly, MyRank, 2, 1);
     double rho[pf.nxy], ux[pf.nxy], uy[pf.nxy];
     for (int idx = 0; idx < pf.nxy; ++idx) {
         rho[idx] = 1.0;
@@ -27,22 +25,13 @@ int main(int argc, char** argv) {
         uy[idx] = 0.0;
     }
 
-    int boundaryu[pf.nxy] = { 0 };
+    pf.SetBoundary([&](int _i, int _j) {    return (_i == 0 || _i == pf.lx - 1 || _j == 0) ? 1 : 0; });
+    int boundaryu[pf.nxy];
+    pf.SetBoundary(boundaryu, [&](int _i, int _j) { return _j == pf.ly - 1 ? 1 : 0; });
     double uxbc[pf.nbc] = { 0 }, uybc[pf.nbc] = { 0 };
     for (int idxbc = 0; idxbc < pf.nbc; ++idxbc) {
         uxbc[idxbc] = u0;
         uybc[idxbc] = 0.0;
-    }  
-    if (MyRank == 0) {
-        pf.SetNeighborId(-1, -1, -1, 1, -1, -1, -1, -1);
-        pf.SetBoundaryAlongXmin([&](int _j) {   return 1;   });
-        pf.SetBoundaryAlongXmax([&](int _j) {   return 1;   });
-        pf.SetBoundaryAlongYmin([&](int _i) {   return 1;   });  
-    } else if (MyRank == 1) {
-        pf.SetNeighborId(-1, -1, 0, -1, -1, -1, -1, -1);
-        pf.SetBoundaryAlongXmin([&](int _j) {   return 1;   });
-        pf.SetBoundaryAlongXmax([&](int _j) {   return 1;   });
-        pf.SetBoundaryAlongYmax(boundaryu, [&](int _i) {    return 1;   });        
     }
      
     std::chrono::system_clock::time_point start = std::chrono::system_clock::now();

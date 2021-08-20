@@ -47,7 +47,7 @@ int main(int argc, char** argv) {
             if (MyRank == 0) {
                 std::cout << "t = " << t/dt << std::endl;
             }
-            VTKExport file("result/ns_at" + std::to_string(MyRank) + "_" + std::to_string(t/dt) + ".vtk", nx, ny);
+            VTKExport file("result/ns_at" + std::to_string(MyRank) + "_" + std::to_string(t/dt) + ".vtk", pf.nx, pf.ny);
             file.AddPointScaler("rho", [&](int _i, int _j, int _k) { return rho[pf.Index(_i, _j)]; });
             file.AddPointVector("u", 
                 [&](int _i, int _j, int _k) { return ux[pf.Index(_i, _j)]; },

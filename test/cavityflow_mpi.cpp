@@ -17,7 +17,7 @@ int main(int argc, char** argv) {
     //--------------------Set parameters--------------------
     int lx = 101, ly = 101, nt = 10, dt = 1;
     double nu = 0.1, u0 = 0.1, Re = u0*(lx - 1)/nu;
-    D2Q9<double> pf(lx, ly, MyRank, 2, 2);
+    D2Q9<double> pf(lx, ly, MyRank, 4, 1);
     double rho[pf.nxy], ux[pf.nxy], uy[pf.nxy];
     for (int idx = 0; idx < pf.nxy; ++idx) {
         rho[idx] = 1.0;

@@ -50,16 +50,7 @@ public:
             this->neighbornum += this->IndexPE(this->PEx + 1, this->PEy - 1) != this->PEid ? 1 : 0;
             this->neighbornum += this->IndexPE(this->PEx + 1, this->PEy + 1) != this->PEid ? 1 : 0;
 
-            if (this->PEid == 0) {
-                std::cout << this->IndexPE(this->PEx - 1, this->PEy) << "\t"
-                    << this->IndexPE(this->PEx + 1, this->PEy) << "\t"
-                    << this->IndexPE(this->PEx, this->PEy - 1) << "\t"
-                    << this->IndexPE(this->PEx, this->PEy + 1) << "\t"
-                    << this->IndexPE(this->PEx - 1, this->PEy - 1) << "\t"
-                    << this->IndexPE(this->PEx - 1, this->PEy + 1) << "\t"
-                    << this->IndexPE(this->PEx + 1, this->PEy - 1) << "\t"
-                    << this->IndexPE(this->PEx + 1, this->PEy + 1) << std::endl;
-            }
+            std::cout << this->PEid << "\t" << this->offsetx << "\t" << this->offsety << std::endl;
 
             if (this->neighbornum) {
                 this->StatSend = new MPI_Status[this->neighbornum];

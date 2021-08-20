@@ -20,12 +20,16 @@ namespace PANSLBM2 {
     class D2Q9 {
 public:
         D2Q9() = delete;
-        D2Q9(int _nx, int _ny, int _mpiid = 0) : 
-            nx(_nx), ny(_ny), nxy(_nx*_ny), nbc(2*(_nx + _ny)),
-            offsetxmin(0), offsetxmax(_ny), offsetymin(2*_ny), offsetymax(2*_ny + _nx),
-            mpiid(_mpiid)
+        D2Q9(int _lx, int _ly, int _PEid = 0, int _mx = 1, int _my = 1) :
+            lx(_lx), ly(_ly), PEid(_PEid), mx(_mx), my(_my), 
+            PEx(this->PEid%this->mx), PEy(this->PEid/this->mx),
+            nx((this->lx + this->PEx)/this->mx), ny((this->ly + this->PEy)/this->my),
+            nxy(this->nx*this->ny), nbc(2*(this->nx + this->ny)),
+            offsetxmin(0), offsetxmax(this->ny), offsetymin(2*this->ny), offsetymax(2*this->ny + this->nx),
+            offsetx(this->mx - this->PEx > this->lx%this->mx ? this->PEx*this->nx : this->lx - (this->mx - this->PEx)*this->nx),
+            offsety(this->my - this->PEy > this->ly%this->my ? this->PEy*this->ny : this->ly - (this->my - this->PEy)*this->ny)
         {
-            assert(0 < _nx && 0 < _ny);
+            assert(0 < _lx && 0 < _ly && 0 <= _mpiid && 0 < _mx && 0 < _my);
             this->f = new T[this->nxy*D2Q9<T>::nc];
             this->fnext = new T[this->nxy*D2Q9<T>::nc];
             this->fsend = new T[(this->nbc + 4)*D2Q9<T>::nc];
@@ -36,10 +40,26 @@ public:
             }
 
             this->neighbornum = 0;
-            this->StatSend = nullptr;
-            this->StatRecv = nullptr;
-            this->ReqSend = nullptr;
-            this->ReqRecv = nullptr;
+            this->neighbornum += this->IndexPE(this->PEx - 1, this->PEy) != this->PEid ? 1 : 0;
+            this->neighbornum += this->IndexPE(this->PEx + 1, this->PEy) != this->PEid ? 1 : 0;
+            this->neighbornum += this->IndexPE(this->PEx, this->PEy - 1) != this->PEid ? 1 : 0;
+            this->neighbornum += this->IndexPE(this->PEx, this->PEy + 1) != this->PEid ? 1 : 0;
+            this->neighbornum += this->IndexPE(this->PEx - 1, this->PEy - 1) != this->PEid ? 1 : 0;
+            this->neighbornum += this->IndexPE(this->PEx - 1, this->PEy + 1) != this->PEid ? 1 : 0;
+            this->neighbornum += this->IndexPE(this->PEx + 1, this->PEy - 1) != this->PEid ? 1 : 0;
+            this->neighbornum += this->IndexPE(this->PEx + 1, this->PEy + 1) != this->PEid ? 1 : 0;
+
+            if (this->neighbornum) {
+                this->StatSend = new MPI_Status[this->neighbornum];
+                this->StatRecv = new MPI_Status[this->neighbornum];
+                this->ReqSend = new MPI_Request[this->neighbornum];
+                this->ReqRecv = new MPI_Request[this->neighbornum];
+            } else {
+                this->StatSend = nullptr;
+                this->StatRecv = nullptr;
+                this->ReqSend = nullptr;
+                this->ReqRecv = nullptr;
+            }
         }
         D2Q9(const D2Q9<T>& _p) = delete;
         ~D2Q9() {
@@ -50,36 +70,7 @@ public:
         }
 
         template<class F>
-        void SetBoundaryAlongXmin(int *_bctype, F _func);
-        template<class F>
-        void SetBoundaryAlongXmax(int *_bctype, F _func);
-        template<class F>
-        void SetBoundaryAlongYmin(int *_bctype, F _func);
-        template<class F>
-        void SetBoundaryAlongYmax(int *_bctype, F _func);
-        template<class F>
-        void SetBoundary(int *_bctype, F _func) {
-            this->SetBoundaryAlongXmin(_bctype, [&](int _j) {   return _func(0, _j);    });
-            this->SetBoundaryAlongXmax(_bctype, [&](int _j) {   return _func(this->nx - 1, _j); });
-            this->SetBoundaryAlongYmin(_bctype, [&](int _i) {   return _func(_i, 0);    });
-            this->SetBoundaryAlongYmax(_bctype, [&](int _i) {   return _func(_i, this->ny - 1); });
-        }
-        template<class F>
-        void SetBoundaryAlongXmin(F _func) {
-            this->SetBoundaryAlongXmin(this->bctype, _func);
-        }
-        template<class F>
-        void SetBoundaryAlongXmax(F _func) {
-            this->SetBoundaryAlongXmax(this->bctype, _func);
-        }
-        template<class F>
-        void SetBoundaryAlongYmin(F _func) {
-            this->SetBoundaryAlongYmin(this->bctype, _func);
-        }
-        template<class F>
-        void SetBoundaryAlongYmax(F _func) {
-            this->SetBoundaryAlongYmax(this->bctype, _func);
-        }
+        void SetBoundary(int *_bctype, F _func);
         template<class F>
         void SetBoundary(F _func) {
             this->SetBoundary(this->bctype, _func);
@@ -101,25 +92,27 @@ public:
         static int IndexF(int _idx, int _c) {
             return D2Q9<T>::nc*_idx + _c;
         }
+        int IndexPE(int _i, int _j) const {
+            int i = _i == -1 ? this->mx - 1 : (_i == this->mx - 1 ? 0 : _i);
+            int j = _j == -1 ? this->my - 1 : (_j == this->my - 1 ? 0 : _j);
+            return i + this->mx*j;
+        }
 
         void Swap();
         void BoundaryCondition();
         void iBoundaryCondition();
         void SmoothCorner();
         
-        void SetNeighborId(int _leftId, int _rightId, int _bottomId, int _topId, int _leftbottomId, int _lefttopId, int _rightbottomId, int _righttopId);
         void Synchronize();
         
-        const int nx, ny, nxy, nbc, offsetxmin, offsetxmax, offsetymin, offsetymax, mpiid;
+        const int nx, ny, nxy, nbc, offsetxmin, offsetxmax, offsetymin, offsetymax, lx, ly, PEid, PEx, PEy, mx, my;
         static const int nc = 9, nd = 2, cx[nc], cy[nc];
         static const T ei[nc];
         T *f, *fnext, *fsend, *frecv;
 
 private:
+        const int offsetx, offsety;
         int *bctype;
-        int neighborid[8] = {
-            -1, -1, -1, -1, -1, -1, -1, -1
-        };  //  Left, Right, Bottom, Top, LeftBottom, LeftTop, RightBottom, RightTop
         int neighbornum;
         MPI_Status *StatSend, *StatRecv;
         MPI_Request *ReqSend, *ReqRecv;
@@ -131,33 +124,14 @@ private:
 
     template<class T>
     template<class F>
-    void D2Q9<T>::SetBoundaryAlongXmin(int *_bctype, F _func) {
+    void D2Q9<T>::SetBoundary(int *_bctype, F _func) {
         for (int j = 0; j < this->ny; ++j) {
-            _bctype[j + this->offsetxmin] = _func(j);
+            _bctype[j + this->offsetxmin] = _func(0 + this->offsetx, j + this->offsety);
+            _bctype[j + this->offsetxmax] = _func((this->nx - 1) + this->offsetx, j + this->offsety);
         }
-    }
-
-    template<class T>
-    template<class F>
-    void D2Q9<T>::SetBoundaryAlongXmax(int *_bctype, F _func) {
-        for (int j = 0; j < this->ny; ++j) {
-            _bctype[j + this->offsetxmax] = _func(j);
-        }
-    }
-
-    template<class T>
-    template<class F>
-    void D2Q9<T>::SetBoundaryAlongYmin(int *_bctype, F _func) {
         for (int i = 0; i < this->nx; ++i) {
-            _bctype[i + this->offsetymin] = _func(i);
-        }
-    }
-
-    template<class T>
-    template<class F>
-    void D2Q9<T>::SetBoundaryAlongYmax(int *_bctype, F _func) {
-        for (int i = 0; i < this->nx; ++i) {
-            _bctype[i + this->offsetymax] = _func(i);
+            _bctype[i + this->offsetymin] = _func(i + this->offsetx, 0 + this->offsety);
+            _bctype[i + this->offsetymax] = _func(i + this->offsetx, (this->ny - 1) + this->offsety);
         }
     }
 
@@ -292,7 +266,7 @@ private:
             int idx, idxx, idxy;
 
             //  Corner at xmin, ymin
-            if (this->neighborid[0] == -1 && this->neighborid[2] == -1) {
+            if (this->PEx == 0 && this->PEy == 0) {
                 idx = this->Index(0, 0);
                 idxx = this->Index(1, 0);
                 idxy = this->Index(0, 1);
@@ -300,7 +274,7 @@ private:
             }
             
             //  Corner at xmin, ymax
-            if (this->neighborid[0] == -1 && this->neighborid[3] == -1) {
+            if (this->PEx == 0 && this->PEy == this->my - 1) {
                idx = this->Index(0, this->ny - 1);
                 idxx = this->Index(1, this->ny - 1);
                 idxy = this->Index(0,this->ny - 2);
@@ -308,7 +282,7 @@ private:
             }
             
             //  Corner at xmax, ymin
-            if (this->neighborid[1] == -1 && this->neighborid[2] == -1) {
+            if (this->PEx == this->mx - 1 && this->PEy == 0) {
                 idx = this->Index(this->nx - 1, 0);
                 idxx = this->Index(this->nx - 2, 0);
                 idxy = this->Index(this->nx - 1, 1);
@@ -316,7 +290,7 @@ private:
             }
             
             //  Corner at xmax, ymax
-            if (this->neighborid[1] == -1 && this->neighborid[3] == -1) {
+            if (this->PEx == this->mx - 1 && this->PEy == this->my - 1) {
                 idx = this->Index(this->nx - 1, this->ny - 1);
                 idxx = this->Index(this->nx - 2, this->ny - 1);
                 idxy = this->Index(this->nx - 1, this->ny - 2);
@@ -326,46 +300,11 @@ private:
     }
 
     template<class T>
-    void D2Q9<T>::SetNeighborId(int _leftId, int _rightId, int _bottomId, int _topId, int _leftbottomId, int _lefttopId, int _rightbottomId, int _righttopId) {
-        if (this->neighbornum) {
-            delete[] this->StatSend, this->StatRecv, this->ReqSend, this->ReqRecv;
-        }
-        
-        this->neighborid[0] = _leftId;
-        this->neighborid[1] = _rightId;
-        this->neighborid[2] = _bottomId;
-        this->neighborid[3] = _topId;
-        this->neighborid[4] = _leftbottomId;
-        this->neighborid[5] = _lefttopId;
-        this->neighborid[6] = _rightbottomId;
-        this->neighborid[7] = _righttopId;
-
-        this->neighbornum = 0;
-        for (int i = 0; i < 8; ++i) {
-            if (this->neighborid[i] != -1) {
-                this->neighbornum += 1;
-            }
-        }
-
-        if (this->neighbornum) {
-            this->StatSend = new MPI_Status[this->neighbornum];
-            this->StatRecv = new MPI_Status[this->neighbornum];
-            this->ReqSend = new MPI_Request[this->neighbornum];
-            this->ReqRecv = new MPI_Request[this->neighbornum];
-        } else {
-            this->StatSend = nullptr;
-            this->StatRecv = nullptr;
-            this->ReqSend = nullptr;
-            this->ReqRecv = nullptr;
-        }
-    }
-
-    template<class T>
     void D2Q9<T>::Synchronize() {
         int idx, idxedge, idxcorner, neib = 0;
 
         //  Copy from f to fedge along xmin
-        if (this->neighborid[0] != -1) {
+        if (this->IndexPE(this->PEx - 1, this->PEy) != this->PEid) {
             for (int j = 0; j < this->ny; ++j) {
                 idx = this->Index(this->nx - 1, j);
                 idxedge = j + this->offsetxmin;
@@ -375,7 +314,7 @@ private:
             }
         }
         //  Copy from f to fedge along xmax
-        if (this->neighborid[1] != -1) {
+        if (this->IndexPE(this->PEx + 1, this->PEy) != this->PEid) {
             for (int j = 0; j < this->ny; ++j) {
                 idx = this->Index(0, j);
                 idxedge = j + this->offsetxmax;
@@ -385,7 +324,7 @@ private:
             }
         }
         //  Copy from f to fedge along ymin
-        if (this->neighborid[2] != -1) {
+        if (this->IndexPE(this->PEx, this->PEy - 1) != this->PEid) {
             for (int i = 0; i < this->nx; ++i) {
                 idx = this->Index(i, this->ny - 1);
                 idxedge = i + this->offsetymin;
@@ -395,7 +334,7 @@ private:
             }
         }
         //  Copy from f to fedge along ymax
-        if (this->neighborid[3] != -1) {
+        if (this->IndexPE(this->PEx, this->PEy + 1) != this->PEid) {
             for (int i = 0; i < this->nx; ++i) {
                 idx = this->Index(i, 0);
                 idxedge = i + this->offsetymax;
@@ -405,67 +344,67 @@ private:
             }
         }
         //  Copy from f to fcorner at xmin and ymin
-        if (this->neighborid[4] != -1) {
+        if (this->IndexPE(this->PEx - 1, this->PEy - 1) != this->PEid) {
             idx = this->Index(this->nx - 1, this->ny - 1);
             idxcorner = this->nbc + 0;
             this->fsend[D2Q9<T>::IndexF(idxcorner, 7)] = this->f[D2Q9<T>::IndexF(idx, 7)];
         }
         //  Copy from f to fcorner at xmin and ymax
-        if (this->neighborid[5] != -1) {
+        if (this->IndexPE(this->PEx - 1, this->PEy + 1) != this->PEid) {
             idx = this->Index(this->nx - 1, 0);
             idxcorner = this->nbc + 1;
             this->fsend[D2Q9<T>::IndexF(idxcorner, 6)] = this->f[D2Q9<T>::IndexF(idx, 6)];
         }
         //  Copy from f to fcorner at xmax and ymin
-        if (this->neighborid[6] != -1) {
+        if (this->IndexPE(this->PEx + 1, this->PEy - 1) != this->PEid) {
             idx = this->Index(0, this->ny - 1);
             idxcorner = this->nbc + 2;
             this->fsend[D2Q9<T>::IndexF(idxcorner, 8)] = this->f[D2Q9<T>::IndexF(idx, 8)];
         }
         //  Copy from f to fcorner at xmax and ymax
-        if (this->neighborid[7] != -1) {
+        if (this->IndexPE(this->PEx + 1, this->PEy + 1) != this->PEid) {
             idx = this->Index(0, 0);
             idxcorner = this->nbc + 3;
             this->fsend[D2Q9<T>::IndexF(idxcorner, 5)] = this->f[D2Q9<T>::IndexF(idx, 5)];
         }
         
-        //  Communicate with other PE p164~参照
-        if (this->neighborid[0] != -1) {
+        //  Communicate with other PE
+        if (this->IndexPE(this->PEx - 1, this->PEy) != this->PEid) {
             MPI_Isend(&fsend[D2Q9<T>::IndexF(this->offsetxmin, 0)], this->ny*D2Q9<T>::nc, MPI_DOUBLE, this->neighborid[0], 0, MPI_COMM_WORLD, &ReqSend[neib]);
             MPI_Irecv(&frecv[D2Q9<T>::IndexF(this->offsetxmin, 0)], this->ny*D2Q9<T>::nc, MPI_DOUBLE, this->neighborid[0], 0, MPI_COMM_WORLD, &ReqRecv[neib]);
             neib++;
         }
-        if (this->neighborid[1] != -1) {
+        if (this->IndexPE(this->PEx + 1, this->PEy) != this->PEid) {
             MPI_Isend(&fsend[D2Q9<T>::IndexF(this->offsetxmax, 0)], this->ny*D2Q9<T>::nc, MPI_DOUBLE, this->neighborid[1], 0, MPI_COMM_WORLD, &ReqSend[neib]);
             MPI_Irecv(&frecv[D2Q9<T>::IndexF(this->offsetxmax, 0)], this->ny*D2Q9<T>::nc, MPI_DOUBLE, this->neighborid[1], 0, MPI_COMM_WORLD, &ReqRecv[neib]);
             neib++;
         }
-        if (this->neighborid[2] != -1) {
+        if (this->IndexPE(this->PEx, this->PEy - 1) != this->PEid) {
             MPI_Isend(&fsend[D2Q9<T>::IndexF(this->offsetymin, 0)], this->nx*D2Q9<T>::nc, MPI_DOUBLE, this->neighborid[2], 0, MPI_COMM_WORLD, &ReqSend[neib]);
             MPI_Irecv(&frecv[D2Q9<T>::IndexF(this->offsetymin, 0)], this->nx*D2Q9<T>::nc, MPI_DOUBLE, this->neighborid[2], 0, MPI_COMM_WORLD, &ReqRecv[neib]);
             neib++;
         }
-        if (this->neighborid[3] != -1) {
+        if (this->IndexPE(this->PEx, this->PEy + 1) != this->PEid) {
             MPI_Isend(&fsend[D2Q9<T>::IndexF(this->offsetymax, 0)], this->nx*D2Q9<T>::nc, MPI_DOUBLE, this->neighborid[3], 0, MPI_COMM_WORLD, &ReqSend[neib]);
             MPI_Irecv(&frecv[D2Q9<T>::IndexF(this->offsetymax, 0)], this->nx*D2Q9<T>::nc, MPI_DOUBLE, this->neighborid[3], 0, MPI_COMM_WORLD, &ReqRecv[neib]);
             neib++;
         }
-        if (this->neighborid[4] != -1) {
+        if (this->IndexPE(this->PEx - 1, this->PEy - 1) != this->PEid) {
             MPI_Isend(&fsend[D2Q9<T>::IndexF(this->nbc + 0, 0)], D2Q9<T>::nc, MPI_DOUBLE, this->neighborid[4], 0, MPI_COMM_WORLD, &ReqSend[neib]);
             MPI_Irecv(&frecv[D2Q9<T>::IndexF(this->nbc + 0, 0)], D2Q9<T>::nc, MPI_DOUBLE, this->neighborid[4], 0, MPI_COMM_WORLD, &ReqRecv[neib]);
             neib++;
         }
-        if (this->neighborid[5] != -1) {
+        if (this->IndexPE(this->PEx - 1, this->PEy + 1) != this->PEid) {
             MPI_Isend(&fsend[D2Q9<T>::IndexF(this->nbc + 1, 0)], D2Q9<T>::nc, MPI_DOUBLE, this->neighborid[5], 0, MPI_COMM_WORLD, &ReqSend[neib]);
             MPI_Irecv(&frecv[D2Q9<T>::IndexF(this->nbc + 1, 0)], D2Q9<T>::nc, MPI_DOUBLE, this->neighborid[5], 0, MPI_COMM_WORLD, &ReqRecv[neib]);
             neib++;
         }
-        if (this->neighborid[6] != -1) {
+        if (this->IndexPE(this->PEx + 1, this->PEy - 1) != this->PEid) {
             MPI_Isend(&fsend[D2Q9<T>::IndexF(this->nbc + 2, 0)], D2Q9<T>::nc, MPI_DOUBLE, this->neighborid[6], 0, MPI_COMM_WORLD, &ReqSend[neib]);
             MPI_Irecv(&frecv[D2Q9<T>::IndexF(this->nbc + 2, 0)], D2Q9<T>::nc, MPI_DOUBLE, this->neighborid[6], 0, MPI_COMM_WORLD, &ReqRecv[neib]);
             neib++;
         }
-        if (this->neighborid[7] != -1) {
+        if (this->IndexPE(this->PEx + 1, this->PEy + 1) != this->PEid) {
             MPI_Isend(&fsend[D2Q9<T>::IndexF(this->nbc + 3, 0)], D2Q9<T>::nc, MPI_DOUBLE, this->neighborid[7], 0, MPI_COMM_WORLD, &ReqSend[neib]);
             MPI_Irecv(&frecv[D2Q9<T>::IndexF(this->nbc + 3, 0)], D2Q9<T>::nc, MPI_DOUBLE, this->neighborid[7], 0, MPI_COMM_WORLD, &ReqRecv[neib]);
             neib++;
@@ -474,7 +413,7 @@ private:
         MPI_Waitall(this->neighbornum, this->ReqRecv, this->StatRecv);
 
         //  Copy to f from fedge along xmin
-        if (this->neighborid[0] != -1) {
+        if (this->IndexPE(this->PEx - 1, this->PEy) != this->PEid) {
             for (int j = 0; j < this->ny; ++j) {
                 idx = this->Index(0, j);
                 idxedge = j + this->offsetxmin;
@@ -484,7 +423,7 @@ private:
             }
         }
         //  Copy to f from fedge along xmax
-        if (this->neighborid[1] != -1) {
+        if (this->IndexPE(this->PEx + 1, this->PEy) != this->PEid) {
             for (int j = 0; j < this->ny; ++j) {
                 idx = this->Index(this->nx - 1, j);
                 idxedge = j + this->offsetxmax;
@@ -494,7 +433,7 @@ private:
             }
         }
         //  Copy to f from fedge along ymin
-        if (this->neighborid[2] != -1) {
+        if (this->IndexPE(this->PEx, this->PEy - 1) != this->PEid) {
             for (int i = 0; i < this->nx; ++i) {
                 idx = this->Index(i, 0);
                 idxedge = i + this->offsetymin;
@@ -504,7 +443,7 @@ private:
             }
         }
         //  Copy to f from fedge along ymax
-        if (this->neighborid[3] != -1) {
+        if (this->IndexPE(this->PEx, this->PEy + 1) != this->PEid) {
             for (int i = 0; i < this->nx; ++i) {
                 idx = this->Index(i, this->ny - 1);
                 idxedge = i + this->offsetymax;
@@ -514,25 +453,25 @@ private:
             }
         }
         //  Copy to f from fcorner at xmin and ymin
-        if (this->neighborid[4] != -1) {
+        if (this->IndexPE(this->PEx - 1, this->PEy - 1) != this->PEid) {
             idx = this->Index(this->nx - 1, this->ny - 1);
             idxcorner = this->nbc + 0;
             this->f[D2Q9<T>::IndexF(idx, 5)] = this->frecv[D2Q9<T>::IndexF(idxcorner, 5)];
         }
         //  Copy to f from fcorner at xmin and ymax
-        if (this->neighborid[5] != -1) {
+        if (this->IndexPE(this->PEx - 1, this->PEy + 1) != this->PEid) {
             idx = this->Index(this->nx - 1, 0);
             idxcorner = this->nbc + 1;
             this->f[D2Q9<T>::IndexF(idx, 8)] = this->frecv[D2Q9<T>::IndexF(idxcorner, 8)];
         }
         //  Copy to f from fcorner at xmax and ymin
-        if (this->neighborid[6] != -1) {
+        if (this->IndexPE(this->PEx + 1, this->PEy - 1) != this->PEid) {
             idx = this->Index(0, this->ny - 1);
             idxcorner = this->nbc + 2;
             this->f[D2Q9<T>::IndexF(idx, 6)] = this->frecv[D2Q9<T>::IndexF(idxcorner, 6)];
         }
         //  Copy to f from fcorner at xmax and ymax
-        if (this->neighborid[7] != -1) {
+        if (this->IndexPE(this->PEx + 1, this->PEy + 1) != this->PEid) {
             idx = this->Index(0, 0);
             idxcorner = this->nbc + 3;
             this->f[D2Q9<T>::IndexF(idx, 7)] = this->frecv[D2Q9<T>::IndexF(idxcorner, 7)];

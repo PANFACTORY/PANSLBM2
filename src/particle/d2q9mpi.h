@@ -343,52 +343,52 @@ private:
             //  Left
             MPI_Isend(&fsend[D2Q9<T>::IndexF(this->offsetxmin, 0)], this->ny*D2Q9<T>::nc, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy), 0, MPI_COMM_WORLD, &this->ReqSend[0]);
             MPI_Irecv(&frecv[D2Q9<T>::IndexF(this->offsetxmax, 0)], this->ny*D2Q9<T>::nc, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy), 0, MPI_COMM_WORLD, &this->ReqRecv[0]);
-            MPI_Wait(this->ReqSend, this->StatSend);
-            MPI_Wait(this->ReqRecv, this->StatRecv);
+            MPI_Wait(&this->ReqSend[0], &this->StatSend[0]);
+            MPI_Wait(&this->ReqRecv[0], &this->StatRecv[0]);
 
             //  Right
-            MPI_Isend(&fsend[D2Q9<T>::IndexF(this->offsetxmax, 0)], this->ny*D2Q9<T>::nc, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy), 0, MPI_COMM_WORLD, &this->ReqSend[0]);
-            MPI_Irecv(&frecv[D2Q9<T>::IndexF(this->offsetxmin, 0)], this->ny*D2Q9<T>::nc, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy), 0, MPI_COMM_WORLD, &this->ReqRecv[0]);
-            MPI_Wait(this->ReqSend, this->StatSend);
-            MPI_Wait(this->ReqRecv, this->StatRecv);
+            MPI_Isend(&fsend[D2Q9<T>::IndexF(this->offsetxmax, 0)], this->ny*D2Q9<T>::nc, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy), 0, MPI_COMM_WORLD, &this->ReqSend[1]);
+            MPI_Irecv(&frecv[D2Q9<T>::IndexF(this->offsetxmin, 0)], this->ny*D2Q9<T>::nc, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy), 0, MPI_COMM_WORLD, &this->ReqRecv[1]);
+            MPI_Wait(&this->ReqSend[1], &this->StatSend[1]);
+            MPI_Wait(&this->ReqRecv[1], &this->StatRecv[1]);
         }
         if (this->my != 1) {
             //  Bottom
-            MPI_Isend(&fsend[D2Q9<T>::IndexF(this->offsetymin, 0)], this->nx*D2Q9<T>::nc, MPI_DOUBLE, this->IndexPE(this->PEx, this->PEy - 1), 0, MPI_COMM_WORLD, &this->ReqSend[0]);
-            MPI_Irecv(&frecv[D2Q9<T>::IndexF(this->offsetymax, 0)], this->nx*D2Q9<T>::nc, MPI_DOUBLE, this->IndexPE(this->PEx, this->PEy + 1), 0, MPI_COMM_WORLD, &this->ReqRecv[0]);
-            MPI_Wait(this->ReqSend, this->StatSend);
-            MPI_Wait(this->ReqRecv, this->StatRecv);
+            MPI_Isend(&fsend[D2Q9<T>::IndexF(this->offsetymin, 0)], this->nx*D2Q9<T>::nc, MPI_DOUBLE, this->IndexPE(this->PEx, this->PEy - 1), 0, MPI_COMM_WORLD, &this->ReqSend[2]);
+            MPI_Irecv(&frecv[D2Q9<T>::IndexF(this->offsetymax, 0)], this->nx*D2Q9<T>::nc, MPI_DOUBLE, this->IndexPE(this->PEx, this->PEy + 1), 0, MPI_COMM_WORLD, &this->ReqRecv[2]);
+            MPI_Wait(&this->ReqSend[2], &this->StatSend[2]);
+            MPI_Wait(&this->ReqRecv[2], &this->StatRecv[2]);
 
             //  Top
-            MPI_Isend(&fsend[D2Q9<T>::IndexF(this->offsetymax, 0)], this->nx*D2Q9<T>::nc, MPI_DOUBLE, this->IndexPE(this->PEx, this->PEy + 1), 0, MPI_COMM_WORLD, &this->ReqSend[0]);
-            MPI_Irecv(&frecv[D2Q9<T>::IndexF(this->offsetymin, 0)], this->nx*D2Q9<T>::nc, MPI_DOUBLE, this->IndexPE(this->PEx, this->PEy - 1), 0, MPI_COMM_WORLD, &this->ReqRecv[0]);
-            MPI_Wait(this->ReqSend, this->StatSend);
-            MPI_Wait(this->ReqRecv, this->StatRecv);
+            MPI_Isend(&fsend[D2Q9<T>::IndexF(this->offsetymax, 0)], this->nx*D2Q9<T>::nc, MPI_DOUBLE, this->IndexPE(this->PEx, this->PEy + 1), 0, MPI_COMM_WORLD, &this->ReqSend[3]);
+            MPI_Irecv(&frecv[D2Q9<T>::IndexF(this->offsetymin, 0)], this->nx*D2Q9<T>::nc, MPI_DOUBLE, this->IndexPE(this->PEx, this->PEy - 1), 0, MPI_COMM_WORLD, &this->ReqRecv[3]);
+            MPI_Wait(&this->ReqSend[3], &this->StatSend[3]);
+            MPI_Wait(&this->ReqRecv[3], &this->StatRecv[3]);
         }
         if (this->mx != 1 || this->my != 1) {
             //  Left bottom
-            MPI_Isend(&fsend[D2Q9<T>::IndexF(this->nbc + 0, 0)], D2Q9<T>::nc, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy - 1), 0, MPI_COMM_WORLD, &this->ReqSend[0]);
-            MPI_Irecv(&frecv[D2Q9<T>::IndexF(this->nbc + 3, 0)], D2Q9<T>::nc, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy + 1), 0, MPI_COMM_WORLD, &this->ReqRecv[0]);
-            MPI_Wait(this->ReqSend, this->StatSend);
-            MPI_Wait(this->ReqRecv, this->StatRecv);
+            MPI_Isend(&fsend[D2Q9<T>::IndexF(this->nbc + 0, 0)], D2Q9<T>::nc, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy - 1), 0, MPI_COMM_WORLD, &this->ReqSend[4]);
+            MPI_Irecv(&frecv[D2Q9<T>::IndexF(this->nbc + 3, 0)], D2Q9<T>::nc, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy + 1), 0, MPI_COMM_WORLD, &this->ReqRecv[4]);
+            MPI_Wait(&this->ReqSend[4], &this->StatSend[4]);
+            MPI_Wait(&this->ReqRecv[4], &this->StatRecv[4]);
 
             //  Left top
-            MPI_Isend(&fsend[D2Q9<T>::IndexF(this->nbc + 1, 0)], D2Q9<T>::nc, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy + 1), 0, MPI_COMM_WORLD, &this->ReqSend[0]);
-            MPI_Irecv(&frecv[D2Q9<T>::IndexF(this->nbc + 2, 0)], D2Q9<T>::nc, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy - 1), 0, MPI_COMM_WORLD, &this->ReqRecv[0]);
-            MPI_Wait(this->ReqSend, this->StatSend);
-            MPI_Wait(this->ReqRecv, this->StatRecv);
+            MPI_Isend(&fsend[D2Q9<T>::IndexF(this->nbc + 1, 0)], D2Q9<T>::nc, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy + 1), 0, MPI_COMM_WORLD, &this->ReqSend[5]);
+            MPI_Irecv(&frecv[D2Q9<T>::IndexF(this->nbc + 2, 0)], D2Q9<T>::nc, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy - 1), 0, MPI_COMM_WORLD, &this->ReqRecv[5]);
+            MPI_Wait(&this->ReqSend[5], &this->StatSend[5]);
+            MPI_Wait(&this->ReqRecv[5], &this->StatRecv[5]);
 
             //  Right bottom
-            MPI_Irecv(&frecv[D2Q9<T>::IndexF(this->nbc + 1, 0)], D2Q9<T>::nc, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy + 1), 0, MPI_COMM_WORLD, &this->ReqRecv[0]);
-            MPI_Isend(&fsend[D2Q9<T>::IndexF(this->nbc + 2, 0)], D2Q9<T>::nc, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy - 1), 0, MPI_COMM_WORLD, &this->ReqSend[0]);
-            MPI_Wait(this->ReqSend, this->StatSend);
-            MPI_Wait(this->ReqRecv, this->StatRecv);
+            MPI_Irecv(&frecv[D2Q9<T>::IndexF(this->nbc + 1, 0)], D2Q9<T>::nc, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy + 1), 0, MPI_COMM_WORLD, &this->ReqRecv[6]);
+            MPI_Isend(&fsend[D2Q9<T>::IndexF(this->nbc + 2, 0)], D2Q9<T>::nc, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy - 1), 0, MPI_COMM_WORLD, &this->ReqSend[6]);
+            MPI_Wait(&this->ReqSend[6], &this->StatSend[6]);
+            MPI_Wait(&this->ReqRecv[6], &this->StatRecv[6]);
 
             //  Right top
-            MPI_Irecv(&frecv[D2Q9<T>::IndexF(this->nbc + 0, 0)], D2Q9<T>::nc, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy - 1), 0, MPI_COMM_WORLD, &this->ReqRecv[0]);
-            MPI_Isend(&fsend[D2Q9<T>::IndexF(this->nbc + 3, 0)], D2Q9<T>::nc, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy + 1), 0, MPI_COMM_WORLD, &this->ReqSend[0]);
-            MPI_Wait(this->ReqSend, this->StatSend);
-            MPI_Wait(this->ReqRecv, this->StatRecv);
+            MPI_Irecv(&frecv[D2Q9<T>::IndexF(this->nbc + 0, 0)], D2Q9<T>::nc, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy - 1), 0, MPI_COMM_WORLD, &this->ReqRecv[7]);
+            MPI_Isend(&fsend[D2Q9<T>::IndexF(this->nbc + 3, 0)], D2Q9<T>::nc, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy + 1), 0, MPI_COMM_WORLD, &this->ReqSend[7]);
+            MPI_Wait(&this->ReqSend[7], &this->StatSend[7]);
+            MPI_Wait(&this->ReqRecv[7], &this->StatRecv[7]);
         }
 
         //  Copy to f from frecv along edge or at corner

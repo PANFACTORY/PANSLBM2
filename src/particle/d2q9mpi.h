@@ -399,14 +399,14 @@ private:
             for (int j = 0; j < this->ny; ++j) {
                 //  Edge along xmin
                 idx = this->Index(0, j);
-                idxedge = j + this->offsetxmin;
+                idxedge = j + this->offsetxmax;
                 this->f[D2Q9<T>::IndexF(idx, 1)] = this->frecv[D2Q9<T>::IndexF(idxedge, 1)];
                 this->f[D2Q9<T>::IndexF(idx, 5)] = this->frecv[D2Q9<T>::IndexF(idxedge, 5)];
                 this->f[D2Q9<T>::IndexF(idx, 8)] = this->frecv[D2Q9<T>::IndexF(idxedge, 8)]; 
             
                 //  Edge along xmax
                 idx = this->Index(this->nx - 1, j);
-                idxedge = j + this->offsetxmax;
+                idxedge = j + this->offsetxmin;
                 this->f[D2Q9<T>::IndexF(idx, 3)] = this->frecv[D2Q9<T>::IndexF(idxedge, 3)];
                 this->f[D2Q9<T>::IndexF(idx, 6)] = this->frecv[D2Q9<T>::IndexF(idxedge, 6)];
                 this->f[D2Q9<T>::IndexF(idx, 7)] = this->frecv[D2Q9<T>::IndexF(idxedge, 7)];
@@ -416,14 +416,14 @@ private:
             for (int i = 0; i < this->nx; ++i) {
                 //  Edge along ymin
                 idx = this->Index(i, 0);
-                idxedge = i + this->offsetymin;
+                idxedge = i + this->offsetymax;
                 this->f[D2Q9<T>::IndexF(idx, 2)] = this->frecv[D2Q9<T>::IndexF(idxedge, 2)];
                 this->f[D2Q9<T>::IndexF(idx, 5)] = this->frecv[D2Q9<T>::IndexF(idxedge, 5)];
                 this->f[D2Q9<T>::IndexF(idx, 6)] = this->frecv[D2Q9<T>::IndexF(idxedge, 6)];
             
                 //  Edge along ymax
                 idx = this->Index(i, this->ny - 1);
-                idxedge = i + this->offsetymax;
+                idxedge = i + this->offsetymin;
                 this->f[D2Q9<T>::IndexF(idx, 4)] = this->frecv[D2Q9<T>::IndexF(idxedge, 4)];
                 this->f[D2Q9<T>::IndexF(idx, 7)] = this->frecv[D2Q9<T>::IndexF(idxedge, 7)];
                 this->f[D2Q9<T>::IndexF(idx, 8)] = this->frecv[D2Q9<T>::IndexF(idxedge, 8)];

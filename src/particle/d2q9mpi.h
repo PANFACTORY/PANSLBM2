@@ -40,34 +40,15 @@ public:
                 this->bctype[idx] = 0;
             }
 
-            this->neighbornum = 0;
-            this->neighbornum += this->IndexPE(this->PEx - 1, this->PEy) != this->PEid ? 1 : 0;
-            this->neighbornum += this->IndexPE(this->PEx + 1, this->PEy) != this->PEid ? 1 : 0;
-            this->neighbornum += this->IndexPE(this->PEx, this->PEy - 1) != this->PEid ? 1 : 0;
-            this->neighbornum += this->IndexPE(this->PEx, this->PEy + 1) != this->PEid ? 1 : 0;
-            this->neighbornum += this->IndexPE(this->PEx - 1, this->PEy - 1) != this->PEid ? 1 : 0;
-            this->neighbornum += this->IndexPE(this->PEx - 1, this->PEy + 1) != this->PEid ? 1 : 0;
-            this->neighbornum += this->IndexPE(this->PEx + 1, this->PEy - 1) != this->PEid ? 1 : 0;
-            this->neighbornum += this->IndexPE(this->PEx + 1, this->PEy + 1) != this->PEid ? 1 : 0;
-
-            if (this->neighbornum) {
-                this->StatSend = new MPI_Status[this->neighbornum];
-                this->StatRecv = new MPI_Status[this->neighbornum];
-                this->ReqSend = new MPI_Request[this->neighbornum];
-                this->ReqRecv = new MPI_Request[this->neighbornum];
-            } else {
-                this->StatSend = nullptr;
-                this->StatRecv = nullptr;
-                this->ReqSend = nullptr;
-                this->ReqRecv = nullptr;
-            }
+            this->StatSend = new MPI_Status[8];
+            this->StatRecv = new MPI_Status[8];
+            this->ReqSend = new MPI_Request[8];
+            this->ReqRecv = new MPI_Request[8];
         }
         D2Q9(const D2Q9<T>& _p) = delete;
         ~D2Q9() {
             delete[] this->f, this->fnext, this->fsend, this->frecv, this->bctype;
-            if (this->neighbornum) {
-                delete[] this->StatSend, this->StatRecv, this->ReqSend, this->ReqRecv;
-            }
+            delete[] this->StatSend, this->StatRecv, this->ReqSend, this->ReqRecv;
         }
 
         template<class F>
@@ -114,7 +95,6 @@ public:
 private:
         const int offsetx, offsety;
         int *bctype;
-        int neighbornum;
         MPI_Status *StatSend, *StatRecv;
         MPI_Request *ReqSend, *ReqRecv;
     };

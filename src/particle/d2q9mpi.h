@@ -366,8 +366,8 @@ private:
             }
         }
         if (neib > 0) {
-            MPI_Wait(neib, this->ReqSend, this->StatSend);
-            MPI_Wait(neib, this->ReqRecv, this->StatRecv);
+            MPI_Waitall(neib, this->ReqSend, this->StatSend);
+            MPI_Waitall(neib, this->ReqRecv, this->StatRecv);
         }
         if (this->mx != 1 || this->my != 1) {
             //  Left bottom

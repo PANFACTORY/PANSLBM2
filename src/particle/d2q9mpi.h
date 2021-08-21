@@ -349,7 +349,7 @@ private:
                 MPI_Irecv(&frecv[D2Q9<T>::IndexF(this->offsetxmin, 0)], this->ny*D2Q9<T>::nc, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy), 0, MPI_COMM_WORLD, &this->ReqRecv[neib++]);
             } else {
                 MPI_Isend(&fsend[D2Q9<T>::IndexF(this->offsetxmin, 0)], 2*this->ny*D2Q9<T>::nc, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy), 0, MPI_COMM_WORLD, &this->ReqSend[neib]);
-                MPI_Irecv(&frecv[D2Q9<T>::IndexF(this->offsetxmax, 0)], 2*this->ny*D2Q9<T>::nc, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy), 0, MPI_COMM_WORLD, &this->ReqRecv[neib++]);
+                MPI_Irecv(&frecv[D2Q9<T>::IndexF(this->offsetxmin, 0)], 2*this->ny*D2Q9<T>::nc, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy), 0, MPI_COMM_WORLD, &this->ReqRecv[neib++]);
 
             }
         }
@@ -362,7 +362,7 @@ private:
                 MPI_Irecv(&frecv[D2Q9<T>::IndexF(this->offsetymin, 0)], this->nx*D2Q9<T>::nc, MPI_DOUBLE, this->IndexPE(this->PEx, this->PEy - 1), 0, MPI_COMM_WORLD, &this->ReqRecv[neib++]);
             } else {
                 MPI_Isend(&fsend[D2Q9<T>::IndexF(this->offsetymin, 0)], 2*this->nx*D2Q9<T>::nc, MPI_DOUBLE, this->IndexPE(this->PEx, this->PEy - 1), 0, MPI_COMM_WORLD, &this->ReqSend[neib]);
-                MPI_Irecv(&frecv[D2Q9<T>::IndexF(this->offsetymax, 0)], 2*this->nx*D2Q9<T>::nc, MPI_DOUBLE, this->IndexPE(this->PEx, this->PEy + 1), 0, MPI_COMM_WORLD, &this->ReqRecv[neib++]);
+                MPI_Irecv(&frecv[D2Q9<T>::IndexF(this->offsetymin, 0)], 2*this->nx*D2Q9<T>::nc, MPI_DOUBLE, this->IndexPE(this->PEx, this->PEy + 1), 0, MPI_COMM_WORLD, &this->ReqRecv[neib++]);
             }
         }
         if (neib > 0) {

@@ -301,14 +301,14 @@ private:
             for (int j = 0; j < this->ny; ++j) {
                 //  Edge along xmin  
                 idx = this->Index(this->nx - 1, j);
-                idxedge = j + this->offsetxmin;
+                idxedge = this->mx > 2 ? j + this->offsetxmin : j + this->offsetxmax;
                 this->fsend[D2Q9<T>::IndexF(idxedge, 3)] = this->f[D2Q9<T>::IndexF(idx, 3)];
                 this->fsend[D2Q9<T>::IndexF(idxedge, 6)] = this->f[D2Q9<T>::IndexF(idx, 6)];
                 this->fsend[D2Q9<T>::IndexF(idxedge, 7)] = this->f[D2Q9<T>::IndexF(idx, 7)];
 
                 //  Edge along xmax
                 idx = this->Index(0, j);
-                idxedge = j + this->offsetxmax;
+                idxedge = this->mx > 2 ? j + this->offsetxmax : j + this->offsetxmin;
                 this->fsend[D2Q9<T>::IndexF(idxedge, 1)] = this->f[D2Q9<T>::IndexF(idx, 1)];
                 this->fsend[D2Q9<T>::IndexF(idxedge, 5)] = this->f[D2Q9<T>::IndexF(idx, 5)];
                 this->fsend[D2Q9<T>::IndexF(idxedge, 8)] = this->f[D2Q9<T>::IndexF(idx, 8)]; 
@@ -318,14 +318,14 @@ private:
             for (int i = 0; i < this->nx; ++i) {
                 //  Edge along ymin
                 idx = this->Index(i, this->ny - 1);
-                idxedge = i + this->offsetymin;
+                idxedge = this->my > 2 ? i + this->offsetymin : i + this->offsetymax;
                 this->fsend[D2Q9<T>::IndexF(idxedge, 4)] = this->f[D2Q9<T>::IndexF(idx, 4)];
                 this->fsend[D2Q9<T>::IndexF(idxedge, 7)] = this->f[D2Q9<T>::IndexF(idx, 7)];
                 this->fsend[D2Q9<T>::IndexF(idxedge, 8)] = this->f[D2Q9<T>::IndexF(idx, 8)]; 
 
                 //  Edge along ymax
                 idx = this->Index(i, 0);
-                idxedge = i + this->offsetymax;
+                idxedge = this->my > 2 ? i + this->offsetymax : i + this->offsetymin;
                 this->fsend[D2Q9<T>::IndexF(idxedge, 2)] = this->f[D2Q9<T>::IndexF(idx, 2)];
                 this->fsend[D2Q9<T>::IndexF(idxedge, 5)] = this->f[D2Q9<T>::IndexF(idx, 5)];
                 this->fsend[D2Q9<T>::IndexF(idxedge, 6)] = this->f[D2Q9<T>::IndexF(idx, 6)];

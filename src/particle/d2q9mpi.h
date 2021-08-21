@@ -6,9 +6,11 @@
 //*****************************************************************************
 
 #pragma once
-#include "mpi.h"
 #include <cmath>
 #include <cassert>
+#ifdef _USE_MPI_DEFINES
+    #include "mpi.h"
+#endif
 
 namespace PANSLBM2 {
     namespace {
@@ -40,15 +42,19 @@ public:
                 this->bctype[idx] = 0;
             }
 
+#ifdef _USE_MPI_DEFINES
             this->StatSend = new MPI_Status[8];
             this->StatRecv = new MPI_Status[8];
             this->ReqSend = new MPI_Request[8];
             this->ReqRecv = new MPI_Request[8];
+#endif
         }
         D2Q9(const D2Q9<T>& _p) = delete;
         ~D2Q9() {
             delete[] this->f, this->fnext, this->fsend, this->frecv, this->bctype;
+#ifdef _USE_MPI_DEFINES
             delete[] this->StatSend, this->StatRecv, this->ReqSend, this->ReqRecv;
+#endif
         }
 
         template<class F>
@@ -95,8 +101,10 @@ public:
 private:
         const int offsetx, offsety;
         int *bctype;
+#ifdef _USE_MPI_DEFINES
         MPI_Status *StatSend, *StatRecv;
         MPI_Request *ReqSend, *ReqRecv;
+#endif
     };
 
     template<class T>const int D2Q9<T>::cx[D2Q9<T>::nc] = { 0, 1, 0, -1, 0, 1, -1, -1, 1 };
@@ -294,6 +302,7 @@ private:
 
     template<class T>
     void D2Q9<T>::Synchronize() {
+#ifdef _USE_MPI_DEFINES
         int idx, idxedge;
 
         //  Copy from f to fsend along edge or at corner
@@ -421,5 +430,6 @@ private:
             this->f[D2Q9<T>::IndexF(this->Index(this->nx - 1, 0), 6)] = this->frecv[D2Q9<T>::IndexF(this->nbc + 2, 6)];             //  Corner at xmax and ymin
             this->f[D2Q9<T>::IndexF(this->Index(this->nx - 1, this->ny - 1), 7)] = this->frecv[D2Q9<T>::IndexF(this->nbc + 3, 7)];  //  Corner at xmax and ymax
         }
+#endif
     }
 }

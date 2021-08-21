@@ -351,7 +351,7 @@ private:
                 this->fsend[D2Q9<T>::IndexF(idxedge, 6)] = this->f[D2Q9<T>::IndexF(idx, 6)];
             }
         }
-        if (this->mx != 1 && this->my != 1) {
+        if (this->mx != 1 || this->my != 1) {
             //  Corner at xmin and ymin
             idx = this->Index(this->nx - 1, this->ny - 1);
             idxcorner = this->nbc + 0;
@@ -460,7 +460,7 @@ private:
                 this->f[D2Q9<T>::IndexF(idx, 8)] = this->frecv[D2Q9<T>::IndexF(idxedge, 8)];
             }
         }
-        if (this->mx != 1 && this->my != 1) {
+        if (this->mx != 1 || this->my != 1) {
             //  Corner at xmin and ymin
             idx = this->Index(0, 0);
             idxcorner = this->nbc + 0;

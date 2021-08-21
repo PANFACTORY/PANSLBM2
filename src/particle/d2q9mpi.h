@@ -316,19 +316,17 @@ private:
     void D2Q9<T>::Synchronize() {
         int idx, idxedge, idxcorner, neib = 0, neighborPEid;
 
-        //  Copy from f to fedge along xmin
-        if (this->IndexPE(this->PEx - 1, this->PEy) != this->PEid) {
+        //  Copy from f to fsend along edge or at corner
+        if (this->mx != 1) {
             for (int j = 0; j < this->ny; ++j) {
+                //  Edge along xmin  
                 idx = this->Index(this->nx - 1, j);
                 idxedge = j + this->offsetxmin;
                 this->fsend[D2Q9<T>::IndexF(idxedge, 3)] = this->f[D2Q9<T>::IndexF(idx, 3)];
                 this->fsend[D2Q9<T>::IndexF(idxedge, 6)] = this->f[D2Q9<T>::IndexF(idx, 6)];
-                this->fsend[D2Q9<T>::IndexF(idxedge, 7)] = this->f[D2Q9<T>::IndexF(idx, 7)]; 
-            }
-        }
-        //  Copy from f to fedge along xmax
-        if (this->IndexPE(this->PEx + 1, this->PEy) != this->PEid) {
-            for (int j = 0; j < this->ny; ++j) {
+                this->fsend[D2Q9<T>::IndexF(idxedge, 7)] = this->f[D2Q9<T>::IndexF(idx, 7)];
+
+                //  Edge along xmax
                 idx = this->Index(0, j);
                 idxedge = j + this->offsetxmax;
                 this->fsend[D2Q9<T>::IndexF(idxedge, 1)] = this->f[D2Q9<T>::IndexF(idx, 1)];
@@ -336,46 +334,40 @@ private:
                 this->fsend[D2Q9<T>::IndexF(idxedge, 8)] = this->f[D2Q9<T>::IndexF(idx, 8)]; 
             }
         }
-        //  Copy from f to fedge along ymin
-        if (this->IndexPE(this->PEx, this->PEy - 1) != this->PEid) {
+        if (this->my != 1) {
             for (int i = 0; i < this->nx; ++i) {
+                //  Edge along ymin
                 idx = this->Index(i, this->ny - 1);
                 idxedge = i + this->offsetymin;
                 this->fsend[D2Q9<T>::IndexF(idxedge, 4)] = this->f[D2Q9<T>::IndexF(idx, 4)];
                 this->fsend[D2Q9<T>::IndexF(idxedge, 7)] = this->f[D2Q9<T>::IndexF(idx, 7)];
                 this->fsend[D2Q9<T>::IndexF(idxedge, 8)] = this->f[D2Q9<T>::IndexF(idx, 8)]; 
-            }
-        }
-        //  Copy from f to fedge along ymax
-        if (this->IndexPE(this->PEx, this->PEy + 1) != this->PEid) {
-            for (int i = 0; i < this->nx; ++i) {
+
+                //  Edge along ymax
                 idx = this->Index(i, 0);
                 idxedge = i + this->offsetymax;
                 this->fsend[D2Q9<T>::IndexF(idxedge, 2)] = this->f[D2Q9<T>::IndexF(idx, 2)];
                 this->fsend[D2Q9<T>::IndexF(idxedge, 5)] = this->f[D2Q9<T>::IndexF(idx, 5)];
-                this->fsend[D2Q9<T>::IndexF(idxedge, 6)] = this->f[D2Q9<T>::IndexF(idx, 6)]; 
+                this->fsend[D2Q9<T>::IndexF(idxedge, 6)] = this->f[D2Q9<T>::IndexF(idx, 6)];
             }
         }
-        //  Copy from f to fcorner at xmin and ymin
-        if (this->IndexPE(this->PEx - 1, this->PEy - 1) != this->PEid) {
+        if (this->mx != 1 && this->my != 1) {
+            //  Corner at xmin and ymin
             idx = this->Index(this->nx - 1, this->ny - 1);
             idxcorner = this->nbc + 0;
             this->fsend[D2Q9<T>::IndexF(idxcorner, 7)] = this->f[D2Q9<T>::IndexF(idx, 7)];
-        }
-        //  Copy from f to fcorner at xmin and ymax
-        if (this->IndexPE(this->PEx - 1, this->PEy + 1) != this->PEid) {
+
+            //  Corner at xmin and ymax
             idx = this->Index(this->nx - 1, 0);
             idxcorner = this->nbc + 1;
             this->fsend[D2Q9<T>::IndexF(idxcorner, 6)] = this->f[D2Q9<T>::IndexF(idx, 6)];
-        }
-        //  Copy from f to fcorner at xmax and ymin
-        if (this->IndexPE(this->PEx + 1, this->PEy - 1) != this->PEid) {
+
+            //  Corner at xmax and ymin
             idx = this->Index(0, this->ny - 1);
             idxcorner = this->nbc + 2;
             this->fsend[D2Q9<T>::IndexF(idxcorner, 8)] = this->f[D2Q9<T>::IndexF(idx, 8)];
-        }
-        //  Copy from f to fcorner at xmax and ymax
-        if (this->IndexPE(this->PEx + 1, this->PEy + 1) != this->PEid) {
+        
+            //  Corner at xmax and ymax
             idx = this->Index(0, 0);
             idxcorner = this->nbc + 3;
             this->fsend[D2Q9<T>::IndexF(idxcorner, 5)] = this->f[D2Q9<T>::IndexF(idx, 5)];
@@ -433,19 +425,17 @@ private:
         MPI_Waitall(this->neighbornum, this->ReqSend, this->StatSend);
         MPI_Waitall(this->neighbornum, this->ReqRecv, this->StatRecv);
 
-        //  Copy to f from fedge along xmin
-        if (this->IndexPE(this->PEx - 1, this->PEy) != this->PEid) {
+        //  Copy to f from frecv along edge or at corner
+        if (this->mx != 1) {
             for (int j = 0; j < this->ny; ++j) {
+                //  Edge along xmin
                 idx = this->Index(0, j);
                 idxedge = j + this->offsetxmin;
                 this->f[D2Q9<T>::IndexF(idx, 1)] = this->frecv[D2Q9<T>::IndexF(idxedge, 1)];
                 this->f[D2Q9<T>::IndexF(idx, 5)] = this->frecv[D2Q9<T>::IndexF(idxedge, 5)];
                 this->f[D2Q9<T>::IndexF(idx, 8)] = this->frecv[D2Q9<T>::IndexF(idxedge, 8)]; 
-            }
-        }
-        //  Copy to f from fedge along xmax
-        if (this->IndexPE(this->PEx + 1, this->PEy) != this->PEid) {
-            for (int j = 0; j < this->ny; ++j) {
+            
+                //  Edge along xmax
                 idx = this->Index(this->nx - 1, j);
                 idxedge = j + this->offsetxmax;
                 this->f[D2Q9<T>::IndexF(idx, 3)] = this->frecv[D2Q9<T>::IndexF(idxedge, 3)];
@@ -453,19 +443,16 @@ private:
                 this->f[D2Q9<T>::IndexF(idx, 7)] = this->frecv[D2Q9<T>::IndexF(idxedge, 7)];
             }
         }
-        //  Copy to f from fedge along ymin
-        if (this->IndexPE(this->PEx, this->PEy - 1) != this->PEid) {
+        if (this->my != 1) {
             for (int i = 0; i < this->nx; ++i) {
+                //  Edge along ymin
                 idx = this->Index(i, 0);
                 idxedge = i + this->offsetymin;
                 this->f[D2Q9<T>::IndexF(idx, 2)] = this->frecv[D2Q9<T>::IndexF(idxedge, 2)];
                 this->f[D2Q9<T>::IndexF(idx, 5)] = this->frecv[D2Q9<T>::IndexF(idxedge, 5)];
                 this->f[D2Q9<T>::IndexF(idx, 6)] = this->frecv[D2Q9<T>::IndexF(idxedge, 6)];
-            }
-        }
-        //  Copy to f from fedge along ymax
-        if (this->IndexPE(this->PEx, this->PEy + 1) != this->PEid) {
-            for (int i = 0; i < this->nx; ++i) {
+            
+                //  Edge along ymax
                 idx = this->Index(i, this->ny - 1);
                 idxedge = i + this->offsetymax;
                 this->f[D2Q9<T>::IndexF(idx, 4)] = this->frecv[D2Q9<T>::IndexF(idxedge, 4)];
@@ -473,26 +460,23 @@ private:
                 this->f[D2Q9<T>::IndexF(idx, 8)] = this->frecv[D2Q9<T>::IndexF(idxedge, 8)];
             }
         }
-        //  Copy to f from fcorner at xmin and ymin
-        if (this->IndexPE(this->PEx - 1, this->PEy - 1) != this->PEid) {
+        if (this->mx != 1 && this->my != 1) {
+            //  Corner at xmin and ymin
             idx = this->Index(0, 0);
             idxcorner = this->nbc + 0;
             this->f[D2Q9<T>::IndexF(idx, 5)] = this->frecv[D2Q9<T>::IndexF(idxcorner, 5)];
-        }
-        //  Copy to f from fcorner at xmin and ymax
-        if (this->IndexPE(this->PEx - 1, this->PEy + 1) != this->PEid) {
+        
+            //  Corner at xmin and ymax
             idx = this->Index(0, this->ny - 1);
             idxcorner = this->nbc + 1;
             this->f[D2Q9<T>::IndexF(idx, 8)] = this->frecv[D2Q9<T>::IndexF(idxcorner, 8)];
-        }
-        //  Copy to f from fcorner at xmax and ymin
-        if (this->IndexPE(this->PEx + 1, this->PEy - 1) != this->PEid) {
+        
+            //  Corner at xmax and ymin
             idx = this->Index(this->nx - 1, 0);
             idxcorner = this->nbc + 2;
             this->f[D2Q9<T>::IndexF(idx, 6)] = this->frecv[D2Q9<T>::IndexF(idxcorner, 6)];
-        }
-        //  Copy to f from fcorner at xmax and ymax
-        if (this->IndexPE(this->PEx + 1, this->PEy + 1) != this->PEid) {
+        
+            //  Corner at xmax and ymax
             idx = this->Index(this->nx - 1, this->ny - 1);
             idxcorner = this->nbc + 3;
             this->f[D2Q9<T>::IndexF(idx, 7)] = this->frecv[D2Q9<T>::IndexF(idxcorner, 7)];

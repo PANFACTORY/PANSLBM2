@@ -400,7 +400,7 @@ private:
             MPI_Wait(this->ReqSend, this->StatSend);
             MPI_Wait(this->ReqRecv, this->StatRecv);
         }
-        if (this->mx != 1 && this->my != 1) {
+        if (this->mx != 1 || this->my != 1) {
             //  Left bottom
             MPI_Isend(&fsend[D2Q9<T>::IndexF(this->nbc + 0, 0)], D2Q9<T>::nc, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy - 1), 0, MPI_COMM_WORLD, &this->ReqSend[0]);
             MPI_Irecv(&frecv[D2Q9<T>::IndexF(this->nbc + 3, 0)], D2Q9<T>::nc, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy + 1), 0, MPI_COMM_WORLD, &this->ReqRecv[0]);

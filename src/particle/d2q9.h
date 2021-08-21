@@ -1,13 +1,16 @@
 //*****************************************************************************
-//  Title       :   src/particle/d2q9.h
+//  Title       :   src/particle/d2q9mpi.h
 //  Author      :   Tanabe Yuta
-//  Date        :   2020/10/21
-//  Copyright   :   (C)2020 TanabeYuta
+//  Date        :   2021/8/14
+//  Copyright   :   (C)2021 TanabeYuta
 //*****************************************************************************
 
 #pragma once
 #include <cmath>
 #include <cassert>
+#ifdef _USE_MPI_DEFINES
+    #include "mpi.h"
+#endif
 
 namespace PANSLBM2 {
     namespace {
@@ -19,29 +22,48 @@ namespace PANSLBM2 {
     class D2Q9 {
 public:
         D2Q9() = delete;
-        D2Q9(int _nx, int _ny) : 
-            nx(_nx), ny(_ny), nxy(_nx*_ny), nbc(2*(_nx + _ny)),
-            offsetxmin(0), offsetxmax(_ny), offsetymin(2*_ny), offsetymax(2*_ny + _nx)
+        D2Q9(int _lx, int _ly, int _PEid = 0, int _mx = 1, int _my = 1) :
+            lx(_lx), ly(_ly), PEid(_PEid), mx(_mx), my(_my), 
+            PEx(this->PEid%this->mx), PEy(this->PEid/this->mx),
+            nx((this->lx + this->PEx)/this->mx), ny((this->ly + this->PEy)/this->my),
+            nxy(this->nx*this->ny), nbc(2*(this->nx + this->ny)),
+            offsetxmin(0), offsetxmax(this->ny), offsetymin(2*this->ny), offsetymax(2*this->ny + this->nx),
+            offsetx(this->mx - this->PEx > this->lx%this->mx ? this->PEx*this->nx : this->lx - (this->mx - this->PEx)*this->nx),
+            offsety(this->my - this->PEy > this->ly%this->my ? this->PEy*this->ny : this->ly - (this->my - this->PEy)*this->ny)
         {
-            assert(0 < _nx && 0 < _ny);
+            assert(0 < _lx && 0 < _ly && 0 <= _PEid && 0 < _mx && 0 < _my);
+
             this->f = new T[this->nxy*D2Q9<T>::nc];
             this->fnext = new T[this->nxy*D2Q9<T>::nc];
+            this->fsend = new T[(this->nbc + 4)*D2Q9<T>::nc];
+            this->frecv = new T[(this->nbc + 4)*D2Q9<T>::nc];
             this->bctype = new int[this->nbc];
+            for (int idx = 0; idx < this->nbc; ++idx) {
+                this->bctype[idx] = 0;
+            }
+
+#ifdef _USE_MPI_DEFINES
+            this->StatSend = new MPI_Status[8];
+            this->StatRecv = new MPI_Status[8];
+            this->ReqSend = new MPI_Request[8];
+            this->ReqRecv = new MPI_Request[8];
+#endif
         }
         D2Q9(const D2Q9<T>& _p) = delete;
         ~D2Q9() {
-            delete[] this->f, this->fnext, this->bctype;
+            delete[] this->f, this->fnext, this->fsend, this->frecv, this->bctype;
+#ifdef _USE_MPI_DEFINES
+            delete[] this->StatSend, this->StatRecv, this->ReqSend, this->ReqRecv;
+#endif
         }
 
         template<class F>
         void SetBoundary(int *_bctype, F _func);
         template<class F>
         void SetBoundary(F _func) {
-            D2Q9<T>::SetBoundary(this->bctype, _func);
+            this->SetBoundary(this->bctype, _func);
         }
-        //void SetStress(int _i, int _j, T _tx, T _ty);                       //  Set boundary condition for Elastic
-        //void SetiStress(int _i, int _j, T _rho, T _tx, T _ty);              //  Set boundary condition for Adjoint of Elastic
-
+        
         int Index(int _i, int _j) const {
             return _i + this->nx*_j;
         }
@@ -58,19 +80,31 @@ public:
         static int IndexF(int _idx, int _c) {
             return D2Q9<T>::nc*_idx + _c;
         }
+        int IndexPE(int _i, int _j) const {
+            int i = _i == -1 ? this->mx - 1 : (_i == this->mx ? 0 : _i);
+            int j = _j == -1 ? this->my - 1 : (_j == this->my ? 0 : _j);
+            return i + this->mx*j;
+        }
 
         void Swap();
         void BoundaryCondition();
         void iBoundaryCondition();
         void SmoothCorner();
         
-        const int nx, ny, nxy, nbc, offsetxmin, offsetxmax, offsetymin, offsetymax;
+        void Synchronize();
+        
+        const int lx, ly, PEid, mx, my, PEx, PEy, nx, ny, nxy, nbc, offsetxmin, offsetxmax, offsetymin, offsetymax;
         static const int nc = 9, nd = 2, cx[nc], cy[nc];
         static const T ei[nc];
-        T *f, *fnext;
+        T *f, *fnext, *fsend, *frecv;
 
 private:
+        const int offsetx, offsety;
         int *bctype;
+#ifdef _USE_MPI_DEFINES
+        MPI_Status *StatSend, *StatRecv;
+        MPI_Request *ReqSend, *ReqRecv;
+#endif
     };
 
     template<class T>const int D2Q9<T>::cx[D2Q9<T>::nc] = { 0, 1, 0, -1, 0, 1, -1, -1, 1 };
@@ -80,13 +114,25 @@ private:
     template<class T>
     template<class F>
     void D2Q9<T>::SetBoundary(int *_bctype, F _func) {
-        for (int j = 0; j < this->ny; ++j) {
-            _bctype[j + this->offsetxmin] = _func(0, j);
-            _bctype[j + this->offsetxmax] = _func(this->nx - 1, j);
+        if (this->PEx == 0) {
+            for (int j = 0; j < this->ny; ++j) {
+                _bctype[j + this->offsetxmin] = _func(0 + this->offsetx, j + this->offsety);
+            }
         }
-        for (int i = 0; i < this->nx; ++i) {
-            _bctype[i + this->offsetymin] = _func(i, 0);
-            _bctype[i + this->offsetymax] = _func(i, this->ny - 1);
+        if (this->PEx == this->mx - 1) {
+            for (int j = 0; j < this->ny; ++j) {
+                _bctype[j + this->offsetxmax] = _func((this->nx - 1) + this->offsetx, j + this->offsety);
+            }
+        }
+        if (this->PEy == 0) {
+            for (int i = 0; i < this->nx; ++i) {
+                _bctype[i + this->offsetymin] = _func(i + this->offsetx, 0 + this->offsety);
+            }
+        }
+        if (this->PEy == this->my - 1) {
+            for (int i = 0; i < this->nx; ++i) {
+                _bctype[i + this->offsetymax] = _func(i + this->offsetx, (this->ny - 1) + this->offsety);
+            }
         }
     }
 
@@ -221,78 +267,169 @@ private:
             int idx, idxx, idxy;
 
             //  Corner at xmin, ymin
-            idx = this->Index(0, 0);
-            idxx = this->Index(1, 0);
-            idxy = this->Index(0, 1);
-            this->f[D2Q9<T>::IndexF(idx, c)] = 0.5*(this->f[D2Q9<T>::IndexF(idxx, c)] + this->f[D2Q9<T>::IndexF(idxy, c)]);
-
+            if (this->PEx == 0 && this->PEy == 0) {
+                idx = this->Index(0, 0);
+                idxx = this->Index(1, 0);
+                idxy = this->Index(0, 1);
+                this->f[D2Q9<T>::IndexF(idx, c)] = 0.5*(this->f[D2Q9<T>::IndexF(idxx, c)] + this->f[D2Q9<T>::IndexF(idxy, c)]);
+            }
+            
             //  Corner at xmin, ymax
-            idx = this->Index(0, this->ny - 1);
-            idxx = this->Index(1, this->ny - 1);
-            idxy = this->Index(0,this->ny - 2);
-            this->f[D2Q9<T>::IndexF(idx, c)] = 0.5*(this->f[D2Q9<T>::IndexF(idxx, c)] + this->f[D2Q9<T>::IndexF(idxy, c)]);    
-
+            if (this->PEx == 0 && this->PEy == this->my - 1) {
+               idx = this->Index(0, this->ny - 1);
+                idxx = this->Index(1, this->ny - 1);
+                idxy = this->Index(0,this->ny - 2);
+                this->f[D2Q9<T>::IndexF(idx, c)] = 0.5*(this->f[D2Q9<T>::IndexF(idxx, c)] + this->f[D2Q9<T>::IndexF(idxy, c)]);    
+            }
+            
             //  Corner at xmax, ymin
-            idx = this->Index(this->nx - 1, 0);
-            idxx = this->Index(this->nx - 2, 0);
-            idxy = this->Index(this->nx - 1, 1);
-            this->f[D2Q9<T>::IndexF(idx, c)] = 0.5*(this->f[D2Q9<T>::IndexF(idxx, c)] + this->f[D2Q9<T>::IndexF(idxy, c)]);  
-
+            if (this->PEx == this->mx - 1 && this->PEy == 0) {
+                idx = this->Index(this->nx - 1, 0);
+                idxx = this->Index(this->nx - 2, 0);
+                idxy = this->Index(this->nx - 1, 1);
+                this->f[D2Q9<T>::IndexF(idx, c)] = 0.5*(this->f[D2Q9<T>::IndexF(idxx, c)] + this->f[D2Q9<T>::IndexF(idxy, c)]);  
+            }
+            
             //  Corner at xmax, ymax
-            idx = this->Index(this->nx - 1, this->ny - 1);
-            idxx = this->Index(this->nx - 2, this->ny - 1);
-            idxy = this->Index(this->nx - 1, this->ny - 2);
-            this->f[D2Q9<T>::IndexF(idx, c)] = 0.5*(this->f[D2Q9<T>::IndexF(idxx, c)] + this->f[D2Q9<T>::IndexF(idxy, c)]);  
-        }
-    }
-/*    
-    template<class T>
-    void D2Q9<T>::SetStress(int _i, int _j, T _tx, T _ty) {
-        int ij = this->GetIndex(_i, _j);
-        if (_i == 0) {
-            this->ft[1][ij] = this->ft[3][ij] - 4.0*(this->ft[3][ij] + this->ft[6][ij] + this->ft[7][ij])/3.0 + 2.0*_tx/3.0;
-            this->ft[5][ij] = this->ft[6][ij] - (this->ft[3][ij] + this->ft[6][ij] + this->ft[7][ij])/3.0 + (_tx + 3.0*_ty)/6.0;
-            this->ft[8][ij] = this->ft[7][ij] - (this->ft[3][ij] + this->ft[6][ij] + this->ft[7][ij])/3.0 + (_tx - 3.0*_ty)/6.0;
-        } else if (_i == this->nx - 1) {
-            this->ft[3][ij] = this->ft[1][ij] - 4.0*(this->ft[1][ij] + this->ft[5][ij] + this->ft[8][ij])/3.0 - 2.0*_tx/3.0;
-            this->ft[6][ij] = this->ft[5][ij] - (this->ft[1][ij] + this->ft[5][ij] + this->ft[8][ij])/3.0 - (_tx - 3.0*_ty)/6.0;
-            this->ft[7][ij] = this->ft[8][ij] - (this->ft[1][ij] + this->ft[5][ij] + this->ft[8][ij])/3.0 - (_tx + 3.0*_ty)/6.0;
-        } else if (_j == 0) {
-            this->ft[2][ij] = this->ft[4][ij] - 4.0*(this->ft[4][ij] + this->ft[7][ij] + this->ft[8][ij])/3.0 + 2.0*_ty/3.0;
-            this->ft[5][ij] = this->ft[8][ij] - (this->ft[4][ij] + this->ft[7][ij] + this->ft[8][ij])/3.0 + (_ty + 3.0*_tx)/6.0;
-            this->ft[6][ij] = this->ft[7][ij] - (this->ft[4][ij] + this->ft[7][ij] + this->ft[8][ij])/3.0 + (_ty - 3.0*_tx)/6.0;
-        } else if (_j == this->ny - 1) {
-            this->ft[4][ij] = this->ft[2][ij] - 4.0*(this->ft[2][ij] + this->ft[5][ij] + this->ft[6][ij])/3.0 - 2.0*_ty/3.0;
-            this->ft[7][ij] = this->ft[6][ij] - (this->ft[2][ij] + this->ft[5][ij] + this->ft[6][ij])/3.0 - (_ty + 3.0*_tx)/6.0;
-            this->ft[8][ij] = this->ft[5][ij] - (this->ft[2][ij] + this->ft[5][ij] + this->ft[6][ij])/3.0 - (_ty - 3.0*_tx)/6.0;
-        } else {
-            //  境界に沿っていないことを警告する
+            if (this->PEx == this->mx - 1 && this->PEy == this->my - 1) {
+                idx = this->Index(this->nx - 1, this->ny - 1);
+                idxx = this->Index(this->nx - 2, this->ny - 1);
+                idxy = this->Index(this->nx - 1, this->ny - 2);
+                this->f[D2Q9<T>::IndexF(idx, c)] = 0.5*(this->f[D2Q9<T>::IndexF(idxx, c)] + this->f[D2Q9<T>::IndexF(idxy, c)]);  
+            }
         }
     }
 
-
     template<class T>
-    void D2Q9<T>::SetiStress(int _i, int _j, T _rho, T _tx, T _ty) {
-        int ij = this->GetIndex(_i, _j);
-        if (_i == 0) {
-            this->ft[3][ij] = this->ft[1][ij] - (4.0*this->ft[1][ij] + this->ft[5][ij] + this->ft[8][ij])/3.0 + 2.0*_tx/_rho;
-            this->ft[6][ij] = this->ft[5][ij] - (4.0*this->ft[1][ij] + this->ft[5][ij] + this->ft[8][ij])/3.0 + 2.0*(_tx - _ty)/_rho;
-            this->ft[7][ij] = this->ft[8][ij] - (4.0*this->ft[1][ij] + this->ft[5][ij] + this->ft[8][ij])/3.0 + 2.0*(_tx + _ty)/_rho;
-        } else if (_i == this->nx - 1) {
-            this->ft[1][ij] = this->ft[3][ij] - (4.0*this->ft[3][ij] + this->ft[6][ij] + this->ft[7][ij])/3.0 - 2.0*_tx/_rho;
-            this->ft[5][ij] = this->ft[6][ij] - (4.0*this->ft[3][ij] + this->ft[6][ij] + this->ft[7][ij])/3.0 - 2.0*(_tx + _ty)/_rho;
-            this->ft[8][ij] = this->ft[7][ij] - (4.0*this->ft[3][ij] + this->ft[6][ij] + this->ft[7][ij])/3.0 - 2.0*(_tx - _ty)/_rho;
-        } else if (_j == 0) {
-            this->ft[4][ij] = this->ft[2][ij] - (4.0*this->ft[2][ij] + this->ft[5][ij] + this->ft[6][ij])/3.0 + 2.0*_ty/_rho;
-            this->ft[7][ij] = this->ft[6][ij] - (4.0*this->ft[2][ij] + this->ft[5][ij] + this->ft[6][ij])/3.0 + 2.0*(_ty + _tx)/_rho;
-            this->ft[8][ij] = this->ft[5][ij] - (4.0*this->ft[2][ij] + this->ft[5][ij] + this->ft[6][ij])/3.0 + 2.0*(_ty - _tx)/_rho;
-        } else if (_j == this->ny - 1) {
-            this->ft[2][ij] = this->ft[4][ij] - (4.0*this->ft[4][ij] + this->ft[7][ij] + this->ft[8][ij])/3.0 - 2.0*_ty/_rho;
-            this->ft[5][ij] = this->ft[8][ij] - (4.0*this->ft[4][ij] + this->ft[7][ij] + this->ft[8][ij])/3.0 - 2.0*(_ty + _tx)/_rho;
-            this->ft[6][ij] = this->ft[7][ij] - (4.0*this->ft[4][ij] + this->ft[7][ij] + this->ft[8][ij])/3.0 - 2.0*(_ty - _tx)/_rho;
-        } else {
-            //  境界に沿っていないことを警告する
+    void D2Q9<T>::Synchronize() {
+#ifdef _USE_MPI_DEFINES
+        int idx, idxedge;
+
+        //  Copy from f to fsend along edge or at corner
+        if (this->mx != 1) {
+            for (int j = 0; j < this->ny; ++j) {
+                //  Edge along xmin  
+                idx = this->Index(this->nx - 1, j);
+                idxedge = j + this->offsetxmin;
+                this->fsend[D2Q9<T>::IndexF(idxedge, 3)] = this->f[D2Q9<T>::IndexF(idx, 3)];
+                this->fsend[D2Q9<T>::IndexF(idxedge, 6)] = this->f[D2Q9<T>::IndexF(idx, 6)];
+                this->fsend[D2Q9<T>::IndexF(idxedge, 7)] = this->f[D2Q9<T>::IndexF(idx, 7)];
+
+                //  Edge along xmax
+                idx = this->Index(0, j);
+                idxedge = j + this->offsetxmax;
+                this->fsend[D2Q9<T>::IndexF(idxedge, 1)] = this->f[D2Q9<T>::IndexF(idx, 1)];
+                this->fsend[D2Q9<T>::IndexF(idxedge, 5)] = this->f[D2Q9<T>::IndexF(idx, 5)];
+                this->fsend[D2Q9<T>::IndexF(idxedge, 8)] = this->f[D2Q9<T>::IndexF(idx, 8)]; 
+            }
         }
+        if (this->my != 1) {
+            for (int i = 0; i < this->nx; ++i) {
+                //  Edge along ymin
+                idx = this->Index(i, this->ny - 1);
+                idxedge = i + this->offsetymin;
+                this->fsend[D2Q9<T>::IndexF(idxedge, 4)] = this->f[D2Q9<T>::IndexF(idx, 4)];
+                this->fsend[D2Q9<T>::IndexF(idxedge, 7)] = this->f[D2Q9<T>::IndexF(idx, 7)];
+                this->fsend[D2Q9<T>::IndexF(idxedge, 8)] = this->f[D2Q9<T>::IndexF(idx, 8)]; 
+
+                //  Edge along ymax
+                idx = this->Index(i, 0);
+                idxedge = i + this->offsetymax;
+                this->fsend[D2Q9<T>::IndexF(idxedge, 2)] = this->f[D2Q9<T>::IndexF(idx, 2)];
+                this->fsend[D2Q9<T>::IndexF(idxedge, 5)] = this->f[D2Q9<T>::IndexF(idx, 5)];
+                this->fsend[D2Q9<T>::IndexF(idxedge, 6)] = this->f[D2Q9<T>::IndexF(idx, 6)];
+            }
+        }
+        if (this->mx != 1 || this->my != 1) {
+            this->fsend[D2Q9<T>::IndexF(this->nbc + 0, 7)] = this->f[D2Q9<T>::IndexF(this->Index(this->nx - 1, this->ny - 1), 7)];  //  Corner at xmin and ymin
+            this->fsend[D2Q9<T>::IndexF(this->nbc + 1, 6)] = this->f[D2Q9<T>::IndexF(this->Index(this->nx - 1, 0), 6)];             //  Corner at xmin and ymax
+            this->fsend[D2Q9<T>::IndexF(this->nbc + 2, 8)] = this->f[D2Q9<T>::IndexF(this->Index(0, this->ny - 1), 8)];             //  Corner at xmax and ymin
+            this->fsend[D2Q9<T>::IndexF(this->nbc + 3, 5)] = this->f[D2Q9<T>::IndexF(this->Index(0, 0), 5)];                        //  Corner at xmax and ymax
+        }
+        
+        //  Communicate with other PE
+        int neib = 0;
+        if (this->mx != 1) {
+            //  Left
+            MPI_Isend(&fsend[D2Q9<T>::IndexF(this->offsetxmin, 0)], this->ny*D2Q9<T>::nc, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy), 0, MPI_COMM_WORLD, &this->ReqSend[neib]);
+            MPI_Irecv(&frecv[D2Q9<T>::IndexF(this->offsetxmax, 0)], this->ny*D2Q9<T>::nc, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy), 0, MPI_COMM_WORLD, &this->ReqRecv[neib++]);
+
+            //  Right
+            MPI_Isend(&fsend[D2Q9<T>::IndexF(this->offsetxmax, 0)], this->ny*D2Q9<T>::nc, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy), 1, MPI_COMM_WORLD, &this->ReqSend[neib]);
+            MPI_Irecv(&frecv[D2Q9<T>::IndexF(this->offsetxmin, 0)], this->ny*D2Q9<T>::nc, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy), 1, MPI_COMM_WORLD, &this->ReqRecv[neib++]);
+        }
+        if (this->my != 1) {
+            //  Bottom
+            MPI_Isend(&fsend[D2Q9<T>::IndexF(this->offsetymin, 0)], this->nx*D2Q9<T>::nc, MPI_DOUBLE, this->IndexPE(this->PEx, this->PEy - 1), 2, MPI_COMM_WORLD, &this->ReqSend[neib]);
+            MPI_Irecv(&frecv[D2Q9<T>::IndexF(this->offsetymax, 0)], this->nx*D2Q9<T>::nc, MPI_DOUBLE, this->IndexPE(this->PEx, this->PEy + 1), 2, MPI_COMM_WORLD, &this->ReqRecv[neib++]);
+
+            //  Top
+            MPI_Isend(&fsend[D2Q9<T>::IndexF(this->offsetymax, 0)], this->nx*D2Q9<T>::nc, MPI_DOUBLE, this->IndexPE(this->PEx, this->PEy + 1), 3, MPI_COMM_WORLD, &this->ReqSend[neib]);
+            MPI_Irecv(&frecv[D2Q9<T>::IndexF(this->offsetymin, 0)], this->nx*D2Q9<T>::nc, MPI_DOUBLE, this->IndexPE(this->PEx, this->PEy - 1), 3, MPI_COMM_WORLD, &this->ReqRecv[neib++]);
+        }
+        if (this->mx != 1 || this->my != 1) {
+            //  Left bottom
+            MPI_Isend(&fsend[D2Q9<T>::IndexF(this->nbc + 0, 0)], D2Q9<T>::nc, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy - 1), 4, MPI_COMM_WORLD, &this->ReqSend[neib]);
+            MPI_Irecv(&frecv[D2Q9<T>::IndexF(this->nbc + 3, 0)], D2Q9<T>::nc, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy + 1), 4, MPI_COMM_WORLD, &this->ReqRecv[neib++]);
+
+            //  Left top
+            MPI_Isend(&fsend[D2Q9<T>::IndexF(this->nbc + 1, 0)], D2Q9<T>::nc, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy + 1), 5, MPI_COMM_WORLD, &this->ReqSend[neib]);
+            MPI_Irecv(&frecv[D2Q9<T>::IndexF(this->nbc + 2, 0)], D2Q9<T>::nc, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy - 1), 5, MPI_COMM_WORLD, &this->ReqRecv[neib++]);
+
+            //  Right bottom
+            MPI_Irecv(&frecv[D2Q9<T>::IndexF(this->nbc + 1, 0)], D2Q9<T>::nc, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy + 1), 6, MPI_COMM_WORLD, &this->ReqRecv[neib]);
+            MPI_Isend(&fsend[D2Q9<T>::IndexF(this->nbc + 2, 0)], D2Q9<T>::nc, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy - 1), 6, MPI_COMM_WORLD, &this->ReqSend[neib++]);
+
+            //  Right top
+            MPI_Irecv(&frecv[D2Q9<T>::IndexF(this->nbc + 0, 0)], D2Q9<T>::nc, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy - 1), 7, MPI_COMM_WORLD, &this->ReqRecv[neib]);
+            MPI_Isend(&fsend[D2Q9<T>::IndexF(this->nbc + 3, 0)], D2Q9<T>::nc, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy + 1), 7, MPI_COMM_WORLD, &this->ReqSend[neib++]);      
+        }
+        if (neib > 0) {
+            MPI_Waitall(neib, this->ReqSend, this->StatSend);
+            MPI_Waitall(neib, this->ReqRecv, this->StatRecv);
+        }
+
+        //  Copy to f from frecv along edge or at corner
+        if (this->mx != 1) {
+            for (int j = 0; j < this->ny; ++j) {
+                //  Edge along xmin
+                idx = this->Index(0, j);
+                idxedge = j + this->offsetxmin;
+                this->f[D2Q9<T>::IndexF(idx, 1)] = this->frecv[D2Q9<T>::IndexF(idxedge, 1)];
+                this->f[D2Q9<T>::IndexF(idx, 5)] = this->frecv[D2Q9<T>::IndexF(idxedge, 5)];
+                this->f[D2Q9<T>::IndexF(idx, 8)] = this->frecv[D2Q9<T>::IndexF(idxedge, 8)]; 
+            
+                //  Edge along xmax
+                idx = this->Index(this->nx - 1, j);
+                idxedge = j + this->offsetxmax;
+                this->f[D2Q9<T>::IndexF(idx, 3)] = this->frecv[D2Q9<T>::IndexF(idxedge, 3)];
+                this->f[D2Q9<T>::IndexF(idx, 6)] = this->frecv[D2Q9<T>::IndexF(idxedge, 6)];
+                this->f[D2Q9<T>::IndexF(idx, 7)] = this->frecv[D2Q9<T>::IndexF(idxedge, 7)];
+            }
+        }
+        if (this->my != 1) {
+            for (int i = 0; i < this->nx; ++i) {
+                //  Edge along ymin
+                idx = this->Index(i, 0);
+                idxedge = i + this->offsetymin;
+                this->f[D2Q9<T>::IndexF(idx, 2)] = this->frecv[D2Q9<T>::IndexF(idxedge, 2)];
+                this->f[D2Q9<T>::IndexF(idx, 5)] = this->frecv[D2Q9<T>::IndexF(idxedge, 5)];
+                this->f[D2Q9<T>::IndexF(idx, 6)] = this->frecv[D2Q9<T>::IndexF(idxedge, 6)];
+            
+                //  Edge along ymax
+                idx = this->Index(i, this->ny - 1);
+                idxedge = i + this->offsetymax;
+                this->f[D2Q9<T>::IndexF(idx, 4)] = this->frecv[D2Q9<T>::IndexF(idxedge, 4)];
+                this->f[D2Q9<T>::IndexF(idx, 7)] = this->frecv[D2Q9<T>::IndexF(idxedge, 7)];
+                this->f[D2Q9<T>::IndexF(idx, 8)] = this->frecv[D2Q9<T>::IndexF(idxedge, 8)];
+            }
+        }
+        if (this->mx != 1 || this->my != 1) {
+            this->f[D2Q9<T>::IndexF(this->Index(0, 0), 5)] = this->frecv[D2Q9<T>::IndexF(this->nbc + 0, 5)];                        //  Corner at xmin and ymin
+            this->f[D2Q9<T>::IndexF(this->Index(0, this->ny - 1), 8)] = this->frecv[D2Q9<T>::IndexF(this->nbc + 1, 8)];             //  Corner at xmin and ymax
+            this->f[D2Q9<T>::IndexF(this->Index(this->nx - 1, 0), 6)] = this->frecv[D2Q9<T>::IndexF(this->nbc + 2, 6)];             //  Corner at xmax and ymin
+            this->f[D2Q9<T>::IndexF(this->Index(this->nx - 1, this->ny - 1), 7)] = this->frecv[D2Q9<T>::IndexF(this->nbc + 3, 7)];  //  Corner at xmax and ymax
+        }
+#endif
     }
-*/
 }

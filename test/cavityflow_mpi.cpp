@@ -3,7 +3,8 @@
 #include <cassert>
 #include "mpi.h"
 
-#include "../src/particle/d2q9mpi.h"
+#define _USE_MPI_DEFINES
+#include "../src/particle/d2q9.h"
 #include "../src/equation/navierstokes.h"
 #include "vtkexport.h"
 

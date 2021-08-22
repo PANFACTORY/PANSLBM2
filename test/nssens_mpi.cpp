@@ -10,7 +10,8 @@
 
 using namespace PANSLBM2;
 
-int main() {int PeTot, MyRank;
+int main(int argc, char** argv) {
+    int PeTot, MyRank;
     MPI_Init(&argc, &argv);
     MPI_Comm_size(MPI_COMM_WORLD, &PeTot);
     MPI_Comm_rank(MPI_COMM_WORLD, &MyRank);

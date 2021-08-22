@@ -65,17 +65,9 @@ public:
         }
         
         int Index(int _i, int _j) const {
-            return _i + this->nx*_j;
-        }
-        int IndexStream(int _i, int _j, int _c) const {
-            int ip1 = _i + D2Q9<T>::cx[_c] == -1 ? this->nx - 1 : (_i + D2Q9<T>::cx[_c] == this->nx ? 0 : _i + D2Q9<T>::cx[_c]);
-            int jp1 = _j + D2Q9<T>::cy[_c] == -1 ? this->ny - 1 : (_j + D2Q9<T>::cy[_c] == this->ny ? 0 : _j + D2Q9<T>::cy[_c]);
-            return this->Index(ip1, jp1);
-        }
-        int IndexiStream(int _i, int _j, int _c) const {
-            int ip1 = _i - D2Q9<T>::cx[_c] == -1 ? this->nx - 1 : (_i - D2Q9<T>::cx[_c] == this->nx ? 0 : _i - D2Q9<T>::cx[_c]);
-            int jp1 = _j - D2Q9<T>::cy[_c] == -1 ? this->ny - 1 : (_j - D2Q9<T>::cy[_c] == this->ny ? 0 : _j - D2Q9<T>::cy[_c]);
-            return this->Index(ip1, jp1);
+            int i = _i == -1 ? this->nx - 1 : (_i == this->nx ? 0 : _i);
+            int j = _j == -1 ? this->ny - 1 : (_j == this->ny ? 0 : _j);
+            return i + this->nx*j;
         }
         static int IndexF(int _idx, int _c) {
             return D2Q9<T>::nc*_idx + _c;

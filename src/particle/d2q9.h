@@ -416,7 +416,7 @@ private:
     template<class T>
     void D2Q9<T>::iSynchronize() {
 #ifdef _USE_MPI_DEFINES
-        int idx, idxedgeint, neib = 0;
+        int idx, idxedge, neib = 0;
 
         //  Copy from f to fsend along edge or at corner
         if (this->mx != 1) {

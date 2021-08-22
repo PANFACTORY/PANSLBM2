@@ -87,7 +87,7 @@ namespace PANSLBM2 {
 
                     //  Collide and stream
                     for (int c = 0; c < P::nc; ++c) {
-                        int idxstream = _p.IndexiStream(i, j, c);
+                        int idxstream = _p.Index(i - P::cx[c], j - P::cy[c]);
                         _p.fnext[P::IndexF(idxstream, c)] = (1.0 - omega)*_p.f[P::IndexF(idx, c)] + omega*Equilibrium<T, P>(_ux[idx], _uy[idx], ip, iux, iuy, c);
                     }
                 }

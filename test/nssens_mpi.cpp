@@ -89,7 +89,7 @@ int main() {int PeTot, MyRank;
     }
 
     //--------------------Export result--------------------
-    VTKExport file("result/adjoint.vtk", nx, ny);
+    VTKExport file("result/adjointns_at" + std::to_string(MyRank) + ".vtk", pf.nx, pf.ny);
     file.AddPointScaler("p", [&](int _i, int _j, int _k) { return rho[pf.Index(_i, _j)]/3.0; });
     file.AddPointVector("u", 
         [&](int _i, int _j, int _k) { return ux[pf.Index(_i, _j)]; },

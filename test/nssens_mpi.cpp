@@ -21,7 +21,7 @@ int main(int argc, char** argv) {
     assert(mx*my == PeTot);
 
     //--------------------Set parameters--------------------
-    int lx = 201, ly = 101, nt = 10000, tmax = nt - 1;
+    int lx = 201, ly = 101, nt = 10000, dt = 100;
     double nu = 0.1, u0 = 0.0109, rho0 = 1.0, epsdu = 1.0e-4, q = 1e-2, amax = 50.0, smin = 0.1, smax = 0.9;
     D2Q9<double> pf(lx, ly);
     double *rho = new double[pf.nxy], *ux = new double[pf.nxy], *uy = new double[pf.nxy];
@@ -56,6 +56,9 @@ int main(int argc, char** argv) {
     //--------------------Direct analyze--------------------
     NS::InitialCondition(pf, rho, ux, uy);
     for (int t = 1; t <= nt; ++t) {
+        if (MyRank == 0) {
+            std::cout << "t = " << t/dt << std::endl;
+        }
         NS::Macro_Brinkman_Collide_Stream(pf, rho, ux, uy, nu, alpha, true);
         pf.Swap();
         pf.Synchronize();
@@ -68,6 +71,9 @@ int main(int argc, char** argv) {
     //--------------------Invert analyze--------------------
     ANS::InitialCondition(pf, ux, uy, irho, iux, iuy);
     for (int t = 1; t <= nt; ++t) {
+        if (MyRank == 0) {
+            std::cout << "t = " << t/dt << std::endl;
+        }
         ANS::Macro_Brinkman_Collide_Stream(pf, rho, ux, uy, irho, iux, iuy, imx, imy, nu, alpha, true);
         pf.Swap();
         pf.iSynchronize();

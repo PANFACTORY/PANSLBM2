@@ -21,7 +21,7 @@ int main(int argc, char** argv) {
     assert(mx*my == PeTot);
 
     //--------------------Set parameters--------------------
-    int lx = 101, ly = 101, nt = 100000, dt = 1000;
+    int lx = 101, ly = 101, nt = 1000, dt = 100;
     double nu = 0.1, u0 = 0.1, Re = u0*(lx - 1)/nu;
     D2Q9<double> pf(lx, ly, MyRank, mx, my);
     double rho[pf.nxy], ux[pf.nxy], uy[pf.nxy];

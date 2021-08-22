@@ -6,7 +6,7 @@
 #define _USE_MPI_DEFINES
 #include "../src/particle/d2q9.h"
 #include "../src/equation/navierstokes.h"
-#include "vtkexport.h"
+#include "../src/utility/vtkexport.h"
 
 using namespace PANSLBM2;
 

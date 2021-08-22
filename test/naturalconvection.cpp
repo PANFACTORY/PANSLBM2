@@ -3,7 +3,7 @@
 
 #include "../src/particle/d2q9.h"
 #include "../src/equation/advection.h"
-#include "vtkexport.h"
+#include "../src/utility/vtkexport.h"
 
 using namespace PANSLBM2;
 

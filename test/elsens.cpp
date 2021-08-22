@@ -5,7 +5,7 @@
 #include "../src/particle/d2q9.h"
 #include "../src/equation/elastic.h"
 #include "../src/equation/adjointelastic.h"
-#include "vtkexport.h"
+#include "../src/utility/vtkexport.h"
 
 using namespace PANSLBM2;
 

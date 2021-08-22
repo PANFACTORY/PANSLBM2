@@ -5,7 +5,7 @@
 #include "../src/particle/d2q9.h"
 #include "../src/equation_avx/navierstokes_avx.h"
 #include "../src/equation_avx/adjointnavierstokes_avx.h"
-#include "vtkexport.h"
+#include "../src/utility/vtkexport.h"
 
 using namespace PANSLBM2;
 

@@ -8,7 +8,7 @@
 #include "../src/equation/advection.h"
 #include "../src/equation/adjointnavierstokes.h"
 #include "../src/equation/adjointadvection.h"
-#include "vtkexport.h"
+#include "../src/utility/vtkexport.h"
 
 using namespace PANSLBM2;
 

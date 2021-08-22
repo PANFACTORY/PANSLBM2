@@ -56,7 +56,7 @@ int main(int argc, char** argv) {
     //--------------------Direct analyze--------------------
     NS::InitialCondition(pf, rho, ux, uy);
     for (int t = 1; t <= nt; ++t) {
-        if (MyRank == 0) {
+        if (MyRank == 0 && t%dt == 0) {
             std::cout << "t = " << t/dt << std::endl;
         }
         NS::Macro_Brinkman_Collide_Stream(pf, rho, ux, uy, nu, alpha, true);
@@ -71,7 +71,7 @@ int main(int argc, char** argv) {
     //--------------------Invert analyze--------------------
     ANS::InitialCondition(pf, ux, uy, irho, iux, iuy);
     for (int t = 1; t <= nt; ++t) {
-        if (MyRank == 0) {
+        if (MyRank == 0 && t%dt == 0) {
             std::cout << "t = " << t/dt << std::endl;
         }
         ANS::Macro_Brinkman_Collide_Stream(pf, rho, ux, uy, irho, iux, iuy, imx, imy, nu, alpha, true);

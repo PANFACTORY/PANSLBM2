@@ -41,18 +41,10 @@ public:
             for (int idx = 0; idx < this->nbc; ++idx) {
                 this->bctype[idx] = 0;
             }
-
-#ifdef _USE_MPI_DEFINES
-            this->status = new MPI_Status[16];
-            this->request = new MPI_Request[16];
-#endif
         }
         D2Q9(const D2Q9<T>& _p) = delete;
         ~D2Q9() {
             delete[] this->f, this->fnext, this->fsend, this->frecv, this->bctype;
-#ifdef _USE_MPI_DEFINES
-            delete[] this->status, this->request;
-#endif
         }
 
         template<class F>
@@ -92,8 +84,8 @@ public:
 private:
         int *bctype;
 #ifdef _USE_MPI_DEFINES
-        MPI_Status *status;
-        MPI_Request *request;
+        MPI_Status status[16];
+        MPI_Request request[16];
 #endif
     };
 

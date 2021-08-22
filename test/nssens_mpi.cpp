@@ -23,14 +23,14 @@ int main(int argc, char** argv) {
     //--------------------Set parameters--------------------
     int lx = 101, ly = 51, nt = 10000, dt = 100;
     double nu = 0.1, u0 = 0.0109, rho0 = 1.0, epsdu = 1.0e-4, q = 1e-2, amax = 50.0, smin = 0.1, smax = 0.9;
-    D2Q9<double> pf(lx, ly);
+    D2Q9<double> pf(lx, ly, MyRank, mx, my);
     double *rho = new double[pf.nxy], *ux = new double[pf.nxy], *uy = new double[pf.nxy];
     double *irho = new double[pf.nxy], *iux = new double[pf.nxy], *iuy = new double[pf.nxy], *imx = new double[pf.nxy], *imy = new double[pf.nxy];
     double *s = new double[pf.nxy], *alpha = new double[pf.nxy], *sensitivity = new double[pf.nxy];
     for (int i = 0; i < pf.nx; ++i) {
         for (int j = 0; j < pf.ny; ++j) {
             int idx = pf.Index(i, j);
-            s[idx] = pow(i - 0.5*pf.lx, 2.0) + pow(j, 2.0) < pow(0.15*pf.lx, 2.0) ? smin : smax;
+            s[idx] = pow((i + pf.offsetx) - 0.5*pf.lx, 2.0) + pow((j + pf.offsety), 2.0) < pow(0.15*pf.lx, 2.0) ? smin : smax;
         }
     }
     for (int idx = 0; idx < pf.nxy; ++idx) {
@@ -44,7 +44,7 @@ int main(int argc, char** argv) {
     pf.SetBoundary(boundaryup, [&](int _i, int _j) {    return (_i == 0 && _j < 0.33*pf.ly) ? 1 : ((_i == pf.lx - 1 && _j < 0.33*pf.ly) ? 2 : 0); });
     double *uxbc = new double[pf.nxy], *uybc = new double[pf.nxy], *rhobc = new double[pf.nxy], *usbc = new double[pf.nxy];
     for (int j = 0; j < pf.ny; ++j) {
-        uxbc[j + pf.offsetxmin] = (j + pf.offsetx) < 0.33*pf.ly ? -u0*((j + pf.offsetx) - 0.33*pf.ly)*((j + pf.offsetx)  + 0.33*pf.ly)/(0.33*pf.ly*0.33*pf.ly) : 0.0;
+        uxbc[j + pf.offsetxmin] = (j + pf.offsety) < 0.33*pf.ly ? -u0*((j + pf.offsety) - 0.33*pf.ly)*((j + pf.offsety)  + 0.33*pf.ly)/(0.33*pf.ly*0.33*pf.ly) : 0.0;
         uybc[j + pf.offsetxmin] = 0.0;  rhobc[j + pf.offsetxmin] = 1.0; usbc[j + pf.offsetxmin] = 0.0;
         uxbc[j + pf.offsetxmax] = 0.0;  uybc[j + pf.offsetxmax] = 0.0;  rhobc[j + pf.offsetxmax] = 1.0; usbc[j + pf.offsetxmax] = 0.0;
     }

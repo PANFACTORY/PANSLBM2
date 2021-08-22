@@ -86,13 +86,12 @@ public:
         void Synchronize();
         void iSynchronize();
         
-        const int lx, ly, PEid, mx, my, PEx, PEy, nx, ny, nxy, nbc, offsetxmin, offsetxmax, offsetymin, offsetymax;
+        const int lx, ly, PEid, mx, my, PEx, PEy, nx, ny, nxy, nbc, offsetxmin, offsetxmax, offsetymin, offsetymax, offsetx, offsety;
         static const int nc = 9, nd = 2, cx[nc], cy[nc];
         static const T ei[nc];
         T *f, *fnext, *fsend, *frecv;
 
 private:
-        const int offsetx, offsety;
         int *bctype;
 #ifdef _USE_MPI_DEFINES
         MPI_Status *StatSend, *StatRecv;

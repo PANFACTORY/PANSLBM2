@@ -88,11 +88,11 @@ namespace PANSLBM2 {
 
                     //  Collide and stream
                     for (int c = 0; c < P::nc; ++c) {
-                        int idxstream = _p.IndexStream(i, j, c);
+                        int idxstream = _p.Index(i + P::cx[c], j + P::cy[c]);
                         _p.fnext[P::IndexF(idxstream, c)] = (1.0 - omegaf)*_p.f[P::IndexF(idx, c)] + omegaf*NS::Equilibrium<T, P>(rho, ux, uy, c);
                     }
                     for (int c = 0; c < Q::nc; ++c) {
-                        int idxstream = _q.IndexStream(i, j, c);
+                        int idxstream = _q.Index(i + Q::cx[c], j + Q::cy[c]);
                         _q.fnext[Q::IndexF(idxstream, c)] = (1.0 - omegag)*_q.f[Q::IndexF(idx, c)] + omegag*Equilibrium<T, Q>(tem, ux, uy, c);
                     }
                 }
@@ -134,11 +134,11 @@ namespace PANSLBM2 {
 
                     //  Collide and stream
                     for (int c = 0; c < P::nc; ++c) {
-                        int idxstream = _p.IndexStream(i, j, c);
+                        int idxstream = _p.Index(i + P::cx[c], j + P::cy[c]);
                         _p.fnext[P::IndexF(idxstream, c)] = (1.0 - omegaf)*_p.f[P::IndexF(idx, c)] + omegaf*NS::Equilibrium<T, P>(rho, ux, uy, c);
                     }
                     for (int c = 0; c < Q::nc; ++c) {
-                        int idxstream = _q.IndexStream(i, j, c);
+                        int idxstream = _q.Index(i + Q::cx[c], j + Q::cy[c]);
                         _q.fnext[Q::IndexF(idxstream, c)] = (1.0 - omegag)*_q.f[Q::IndexF(idx, c)] + omegag*Equilibrium<T, Q>(tem, ux, uy, c);
                     }
                 }

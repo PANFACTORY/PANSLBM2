@@ -114,7 +114,7 @@ int main(int argc, char** argv) {
     file.AddPointScaler("alpha", [&](int _i, int _j, int _k) { return alpha[pf.Index(_i, _j)]; });
     file.AddPointScaler("s", [&](int _i, int _j, int _k) { return s[pf.Index(_i, _j)]; });
     
-    delete[] rho, ux, uy, irho, iux, iuy, imx, imy, s, alpha, sensitivity;
+    delete[] rho, ux, uy, irho, iux, iuy, imx, imy, s, alpha, dfds;
     delete[] boundaryup, uxbc, uybc, rhobc, usbc;
 
     MPI_Finalize();

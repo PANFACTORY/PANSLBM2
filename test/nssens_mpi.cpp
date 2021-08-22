@@ -26,7 +26,7 @@ int main(int argc, char** argv) {
     D2Q9<double> pf(lx, ly, MyRank, mx, my);
     double *rho = new double[pf.nxy], *ux = new double[pf.nxy], *uy = new double[pf.nxy];
     double *irho = new double[pf.nxy], *iux = new double[pf.nxy], *iuy = new double[pf.nxy], *imx = new double[pf.nxy], *imy = new double[pf.nxy];
-    double *s = new double[pf.nxy], *alpha = new double[pf.nxy], *sensitivity = new double[pf.nxy];
+    double *s = new double[pf.nxy], *alpha = new double[pf.nxy], *dfds = new double[pf.nxy];
     for (int i = 0; i < pf.nx; ++i) {
         for (int j = 0; j < pf.ny; ++j) {
             int idx = pf.Index(i, j);
@@ -36,7 +36,7 @@ int main(int argc, char** argv) {
     for (int idx = 0; idx < pf.nxy; ++idx) {
         rho[idx] = 1.0; ux[idx] = 0.0;  uy[idx] = 0.0;
         irho[idx] = 0.0;    iux[idx] = 0.0; iuy[idx] = 0.0; imx[idx] = 0.0; imy[idx] = 0.0;
-        alpha[idx] = amax/(double)(pf.nx - 1)*q*(1.0 - s[idx])/(s[idx] + q);
+        alpha[idx] = amax/(double)(pf.lx - 1)*q*(1.0 - s[idx])/(s[idx] + q);
     }
 
     pf.SetBoundary([&](int _i, int _j) {    return _j == 0 ? 2 : (_j >= 0.33*pf.ly ? 1 : 0); });
@@ -84,15 +84,16 @@ int main(int argc, char** argv) {
     }
 
     //--------------------Get sensitivity--------------------
-    double sensitivitymax = 0.0;
+    double dfdsmax = 0.0, dfdsmaxall;
     for (int idx = 0; idx < pf.nxy; ++idx) {
-        sensitivity[idx] = 3.0*(imx[idx]*ux[idx] + imy[idx]*uy[idx])*(-amax/(double)(pf.nx - 1)*q*(q + 1.0)/pow(q + s[idx], 2.0));
-        if (sensitivitymax < fabs(sensitivity[idx])) {
-            sensitivitymax = fabs(sensitivity[idx]);
+        dfds[idx] = 3.0*(imx[idx]*ux[idx] + imy[idx]*uy[idx])*(-amax/(double)(pf.lx - 1)*q*(q + 1.0)/pow(q + s[idx], 2.0));
+        if (dfdsmax < fabs(dfds[idx])) {
+            dfdsmax = fabs(dfds[idx]);
         }
     }
+    MPI_Allreduce(&dfdsmax, &dfdsmaxall, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
     for (int idx = 0; idx < pf.nxy; ++idx) {  
-        sensitivity[idx] /= sensitivitymax;
+        dfds[idx] /= dfdsmaxall;
     }
 
     //--------------------Export result--------------------
@@ -103,7 +104,7 @@ int main(int argc, char** argv) {
         [&](int _i, int _j, int _k) { return uy[pf.Index(_i, _j)]; },
         [](int _i, int _j, int _k) { return 0.0; }
     );
-    file.AddPointScaler("dfds", [&](int _i, int _j, int _k) {   return sensitivity[pf.Index(_i, _j)];  });
+    file.AddPointScaler("dfds", [&](int _i, int _j, int _k) {   return dfds[pf.Index(_i, _j)];  });
     file.AddPointScaler("ip", [&](int _i, int _j, int _k) { return irho[pf.Index(_i, _j)]; });
     file.AddPointVector("iu", 
         [&](int _i, int _j, int _k) { return iux[pf.Index(_i, _j)]; },

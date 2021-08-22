@@ -43,7 +43,7 @@ int main() {int PeTot, MyRank;
     pf.SetBoundary(boundaryup, [&](int _i, int _j) {    return (_i == 0 && _j < 0.33*pf.ly) ? 1 : ((_i == pf.lx - 1 && _j < 0.33*pf.ly) ? 2 : 0); });
     double *uxbc = new double[pf.nxy], *uybc = new double[pf.nxy], *rhobc = new double[pf.nxy], *usbc = new double[pf.nxy];
     for (int j = 0; j < pf.ny; ++j) {
-        uxbc[j + pf.offsetxmin] = j < 0.33*pf.ly ? -u0*(j - 0.33*pf.ly)*(j + 0.33*pf.ly)/(0.33*pf.ly*0.33*pf.ly) : 0.0;
+        uxbc[j + pf.offsetxmin] = (j + pf.offsetx) < 0.33*pf.ly ? -u0*((j + pf.offsetx) - 0.33*pf.ly)*((j + pf.offsetx)  + 0.33*pf.ly)/(0.33*pf.ly*0.33*pf.ly) : 0.0;
         uybc[j + pf.offsetxmin] = 0.0;  rhobc[j + pf.offsetxmin] = 1.0; usbc[j + pf.offsetxmin] = 0.0;
         uxbc[j + pf.offsetxmax] = 0.0;  uybc[j + pf.offsetxmax] = 0.0;  rhobc[j + pf.offsetxmax] = 1.0; usbc[j + pf.offsetxmax] = 0.0;
     }

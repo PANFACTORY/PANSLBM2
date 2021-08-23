@@ -25,11 +25,11 @@ public:
         D2Q9(int _lx, int _ly, int _PEid = 0, int _mx = 1, int _my = 1) :
             lx(_lx), ly(_ly), PEid(_PEid), mx(_mx), my(_my), 
             PEx(this->PEid%this->mx), PEy(this->PEid/this->mx),
-            nx((this->lx + this->PEx)/this->mx + 1), ny((this->ly + this->PEy)/this->my + 1),
+            nx(((this->lx - 1) + this->PEx)/this->mx + 1), ny(((this->ly - 1) + this->PEy)/this->my + 1),
             nxy(this->nx*this->ny), nbc(2*(this->nx + this->ny)),
             offsetxmin(0), offsetxmax(this->ny), offsetymin(2*this->ny), offsetymax(2*this->ny + this->nx),
-            offsetx(this->mx - this->PEx > this->lx%this->mx ? this->PEx*(this->nx - 1) : this->lx - (this->mx - this->PEx)*(this->nx - 1)),
-            offsety(this->my - this->PEy > this->ly%this->my ? this->PEy*(this->ny - 1) : this->ly - (this->my - this->PEy)*(this->ny - 1))
+            offsetx(this->mx - this->PEx > (this->lx - 1)%this->mx ? this->PEx*(this->nx - 1) : (this->lx - 1) - (this->mx - this->PEx)*(this->nx - 1)),
+            offsety(this->my - this->PEy > (this->ly - 1)%this->my ? this->PEy*(this->ny - 1) : (this->ly - 1) - (this->my - this->PEy)*(this->ny - 1))
         {
             assert(0 < _lx && 0 < _ly && 0 <= _PEid && 0 < _mx && 0 < _my);
 

@@ -193,9 +193,9 @@ private:
             for (int j = 0; j < this->ny; ++j) {
                 for (int i = 0; i < this->nx; ++i) {
                     this->fout << "\t\t\t\t\t" 
-                        << _value00(i, j, k) << " " << _value01(i, j, k) << " " << _value02(i, j, k) << " "
-                        << _value10(i, j, k) << " " << _value11(i, j, k) << " " << _value12(i, j, k) << " "
-                        << _value20(i, j, k) << " " << _value21(i, j, k) << " " << _value22(i, j, k) << std::endl;
+                        << _v00(i, j, k) << " " << _v01(i, j, k) << " " << _v02(i, j, k) << " "
+                        << _v10(i, j, k) << " " << _v11(i, j, k) << " " << _v12(i, j, k) << " "
+                        << _v20(i, j, k) << " " << _v21(i, j, k) << " " << _v22(i, j, k) << std::endl;
                 }
             }
         }

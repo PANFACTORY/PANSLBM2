@@ -6,7 +6,7 @@
 #include "../src/particle/d2q9.h"
 #include "../src/equation/navierstokes.h"
 #include "../src/equation/adjointnavierstokes.h"
-#include "../src/utility/vtkexport.h"
+#include "../src/utility/vtkxmlexport.h"
 
 using namespace PANSLBM2;
 
@@ -97,7 +97,7 @@ int main(int argc, char** argv) {
     }
 
     //--------------------Export result--------------------
-    VTKExport file("result/adjointns_at" + std::to_string(MyRank) + ".vtk", pf.nx, pf.ny);
+    VTKXMLExport file("result/adjoint", MyRank, lx, ly, 1, mx, my, 1);
     file.AddPointScaler("p", [&](int _i, int _j, int _k) { return rho[pf.Index(_i, _j)]/3.0; });
     file.AddPointVector("u", 
         [&](int _i, int _j, int _k) { return ux[pf.Index(_i, _j)]; },

@@ -8,7 +8,7 @@
 namespace {
     template<class T>
     std::vector<T> solvels(std::vector<std::vector<T> > _A, std::vector<T> _b){
-        std::vector<T> x = std::vector<T>(_b.size());
+        std::vector<T> x(_b.size());
         for(int i = 0; i < _b.size() - 1; i++){
             //----------Get pivot----------
             T pivot = fabs(_A[i][i]);

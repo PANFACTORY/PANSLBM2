@@ -9,10 +9,12 @@ public:
         VTKXMLExport(std::string _fname, int _PEid, int _lx, int _ly, int _lz, int _mx, int _my, int _mz) :
             lx(_lx), ly(_ly), lz(_lz), mx(_mx), my(_my), mz(_mz), PEid(_PEid),
             PEx(this->PEid%this->mx), PEy((this->PEid/this->mx)%this->my), PEz(this->PEid/(this->mx*this->my)),
-            nx(((this->lx - 1) + this->PEx)/this->mx + 1), ny(((this->ly - 1) + this->PEy)/this->my + 1), nz(((this->lz - 1) + this->PEz)/this->mz + 1),
-            offsetx(this->mx - this->PEx > (this->lx - 1)%this->mx ? this->PEx*(this->nx - 1) : (this->lx - 1) - (this->mx - this->PEx)*(this->nx - 1)),
-            offsety(this->my - this->PEy > (this->ly - 1)%this->my ? this->PEy*(this->ny - 1) : (this->ly - 1) - (this->my - this->PEy)*(this->ny - 1)),
-            offsetz(this->mz - this->PEz > (this->lz - 1)%this->mz ? this->PEz*(this->nz - 1) : (this->lz - 1) - (this->mz - this->PEz)*(this->nz - 1))
+            nx((this->lx + this->PEx)/this->mx + (this->PEx != this->mx - 1 ? 1 : 0)), 
+            ny((this->ly + this->PEy)/this->my + (this->PEy != this->my - 1 ? 1 : 0)), 
+            nz((this->lz + this->PEz)/this->mz + (this->PEz != this->mz - 1 ? 1 : 0)),
+            offsetx(this->mx - this->PEx > this->lx%this->mx ? this->PEx*this->nx : this->lx - (this->mx - this->PEx)*this->nx),
+            offsety(this->my - this->PEy > this->ly%this->my ? this->PEy*this->ny : this->ly - (this->my - this->PEy)*this->ny),
+            offsetz(this->mz - this->PEz > this->lz%this->mz ? this->PEz*this->nz : this->lz - (this->mz - this->PEz)*this->nz)
         {
             this->isaddpointdata = false;
 
@@ -20,7 +22,7 @@ public:
             if (this->PEid == 0) {
                 int pos = std::max((int)_fname.rfind('\\'), (int)_fname.rfind('/'));
                 std::string fname = _fname.substr(pos != std::string::npos ? pos + 1 : 0);
-                
+            
                 this->fout0.open(_fname + ".pvts");
                 this->fout0 << "<VTKFile type=\"PStructuredGrid\">" << std::endl;
                 this->fout0 << "\t<PStructuredGrid GhostLevel=\"0\" WholeExtent=\"0 " << this->lx - 1 << " 0 " << this->ly - 1 << " 0 " << this->lz - 1 << "\">" << std::endl;
@@ -31,10 +33,15 @@ public:
                     for (int j = 0; j < this->my; ++j) {
                         for (int i = 0; i < this->mx; ++i) {
                             int peid = i + this->mx*j + this->mx*this->my*k;
-                            int nnx = ((this->lx - 1) + i)/this->mx + 1, nny = ((this->ly - 1) + j)/this->my + 1, nnz = ((this->lz - 1) + k)/this->mz + 1;
-                            int osx = this->mx - i > (this->lx - 1)%this->mx ? i*(nnx - 1) : (this->lx - 1) - (this->mx - i)*(nnx - 1);
-                            int osy = this->my - j > (this->ly - 1)%this->my ? j*(nny - 1) : (this->ly - 1) - (this->my - j)*(nny - 1);
-                            int osz = this->mz - k > (this->lz - 1)%this->mz ? k*(nnz - 1) : (this->lz - 1) - (this->mz - k)*(nnz - 1);
+                            int nnx = (this->lx + i)/this->mx;
+                            int nny = (this->ly + j)/this->my;
+                            int nnz = (this->lz + k)/this->mz;
+                            int osx = this->mx - i > this->lx%this->mx ? i*nnx : this->lx - (this->mx - i)*nnx;
+                            int osy = this->my - j > this->ly%this->my ? j*nny : this->ly - (this->my - j)*nny;
+                            int osz = this->mz - k > this->lz%this->mz ? k*nnz : this->lz - (this->mz - k)*nnz;
+                            nnx += i != this->mx - 1 ? 1 : 0;
+                            nny += j != this->my - 1 ? 1 : 0;
+                            nnz += k != this->mz - 1 ? 1 : 0;
                             this->fout0 << "\t\t<Piece Extent=\"" 
                                 << 0 + osx << " " << (nnx - 1) + osx << " " 
                                 << 0 + osy << " " << (nny - 1) + osy << " " 
@@ -138,7 +145,15 @@ private:
         for (int k = 0; k < this->nz; ++k) {
             for (int j = 0; j < this->ny; ++j) {
                 for (int i = 0; i < this->nx; ++i) {
-                    this->fout << "\t\t\t\t\t" << _value(i, j, k) << std::endl;
+                    if (
+                        (this->PEx != this->mx - 1 && i == this->nx - 1) || 
+                        (this->PEy != this->my - 1 && j == this->ny - 1) || 
+                        (this->PEz != this->mz - 1 && k == this->nz - 1)
+                    ) {
+                        this->fout << "\t\t\t\t\t" << 0 << std::endl;
+                    } else {
+                        this->fout << "\t\t\t\t\t" << _value(i, j, k) << std::endl;
+                    }
                 }
             }
         }
@@ -165,7 +180,15 @@ private:
         for (int k = 0; k < this->nz; ++k) {
             for (int j = 0; j < this->ny; ++j) {
                 for (int i = 0; i < this->nx; ++i) {
-                    this->fout << "\t\t\t\t\t" << _value0(i, j, k) << " " << _value1(i, j, k) << " " << _value2(i, j, k) << std::endl;
+                    if (
+                        (this->PEx != this->mx - 1 && i == this->nx - 1) || 
+                        (this->PEy != this->my - 1 && j == this->ny - 1) || 
+                        (this->PEz != this->mz - 1 && k == this->nz - 1)
+                    ) {
+                        this->fout << "\t\t\t\t\t" << 0 << " " << 0 << " " << 0 << std::endl;
+                    } else {
+                        this->fout << "\t\t\t\t\t" << _value0(i, j, k) << " " << _value1(i, j, k) << " " << _value2(i, j, k) << std::endl;
+                    }
                 }
             }
         }
@@ -192,10 +215,18 @@ private:
         for (int k = 0; k < this->nz; ++k) {
             for (int j = 0; j < this->ny; ++j) {
                 for (int i = 0; i < this->nx; ++i) {
-                    this->fout << "\t\t\t\t\t" 
-                        << _v00(i, j, k) << " " << _v01(i, j, k) << " " << _v02(i, j, k) << " "
-                        << _v10(i, j, k) << " " << _v11(i, j, k) << " " << _v12(i, j, k) << " "
-                        << _v20(i, j, k) << " " << _v21(i, j, k) << " " << _v22(i, j, k) << std::endl;
+                    if (
+                        (this->PEx != this->mx - 1 && i == this->nx - 1) || 
+                        (this->PEy != this->my - 1 && j == this->ny - 1) || 
+                        (this->PEz != this->mz - 1 && k == this->nz - 1)
+                    ) {
+                        this->fout << "\t\t\t\t\t" << 0 << " " << 0 << " " << 0 << " " << 0 << " " << 0 << " " << 0 << " " << 0 << " " << 0 << " " << 0 << std::endl;
+                    } else {
+                        this->fout << "\t\t\t\t\t" 
+                            << _v00(i, j, k) << " " << _v01(i, j, k) << " " << _v02(i, j, k) << " "
+                            << _v10(i, j, k) << " " << _v11(i, j, k) << " " << _v12(i, j, k) << " "
+                            << _v20(i, j, k) << " " << _v21(i, j, k) << " " << _v22(i, j, k) << std::endl;
+                    }
                 }
             }
         }

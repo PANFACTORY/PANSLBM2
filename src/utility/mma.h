@@ -337,7 +337,7 @@ private:
 
             //.....Get Newton direction.....
             if(this->n > this->m){
-                std::vector<std::vector<T> > A = std::vector<std::vector<T> >(this->m + 1, std::vector<T>(this->m + 1, T()));
+                std::vector<std::vector<T> > A(this->m + 1, std::vector<T>(this->m + 1, T()));
                 for(int ii = 0; ii < this->m; ii++){
                     for(int jj = 0; jj < this->m; jj++){
                         for(int kk= 0; kk < this->n; kk++){
@@ -349,7 +349,7 @@ private:
                     A[this->m][ii] = this->a[ii];
                 }
                 A[this->m][this->m] = -zeta/z;
-                std::vector<T> B = std::vector<T>(this->m + 1);
+                std::vector<T> B(this->m + 1);
                 for(int ii = 0; ii < this->m; ii++){
                     B[ii] = deltillambday[ii];
                     for(int jj = 0; jj < this->n; jj++){
@@ -369,7 +369,7 @@ private:
                     }
                 }
             } else {
-                std::vector<std::vector<T> > A = std::vector<std::vector<T> >(this->n + 1, std::vector<T>(this->n + 1, T()));             
+                std::vector<std::vector<T> > A(this->n + 1, std::vector<T>(this->n + 1, T()));             
                 for(int ii = 0; ii < this->n; ii++){
                     for(int jj = 0; jj < this->n; jj++){
                         for(int kk = 0; kk < this->m; kk++){
@@ -384,7 +384,7 @@ private:
                     }
                 }
                 A[this->n][this->n] += zeta/z;
-                std::vector<T> B = std::vector<T>(this->n + 1);
+                std::vector<T> B(this->n + 1);
                 for(int ii = 0; ii < this->n; ii++){
                     B[ii] = -deltilx[ii];
                     for(int jj = 0; jj < this->m; jj++){
@@ -473,11 +473,7 @@ private:
 
             //.....Update epsl.....
             T deltawlp1 = this->KKTNorm(x, y, z, lambda, gsi, ita, mu, zeta, s, eps, p, q, p0, q0, alpha, beta, b);
-            if(deltawlp1 < 0.9*eps){
-                eps *= 0.1;
-            } else {
-                eps *= 1.0;
-            }
+            eps *= deltawlp1 < 0.9*eps ? 0.1 : 1.0;
         }
         
         //----------Update outer loop counter k----------

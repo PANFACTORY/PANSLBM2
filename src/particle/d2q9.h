@@ -25,11 +25,11 @@ public:
         D2Q9(int _lx, int _ly, int _PEid = 0, int _mx = 1, int _my = 1) :
             lx(_lx), ly(_ly), PEid(_PEid), mx(_mx), my(_my), 
             PEx(this->PEid%this->mx), PEy(this->PEid/this->mx),
-            nx(((this->lx - 1) + this->PEx)/this->mx + 1), ny(((this->ly - 1) + this->PEy)/this->my + 1),
+            nx((this->lx + this->PEx)/this->mx), ny((this->ly + this->PEy)/this->my),
             nxy(this->nx*this->ny), nbc(2*(this->nx + this->ny)),
             offsetxmin(0), offsetxmax(this->ny), offsetymin(2*this->ny), offsetymax(2*this->ny + this->nx),
-            offsetx(this->mx - this->PEx > (this->lx - 1)%this->mx ? this->PEx*(this->nx - 1) : (this->lx - 1) - (this->mx - this->PEx)*(this->nx - 1)),
-            offsety(this->my - this->PEy > (this->ly - 1)%this->my ? this->PEy*(this->ny - 1) : (this->ly - 1) - (this->my - this->PEy)*(this->ny - 1))
+            offsetx(this->mx - this->PEx > this->lx%this->mx ? this->PEx*this->nx : this->lx - (this->mx - this->PEx)*this->nx),
+            offsety(this->my - this->PEy > this->ly%this->my ? this->PEy*this->ny : this->ly - (this->my - this->PEy)*this->ny)
         {
             assert(0 < _lx && 0 < _ly && 0 <= _PEid && 0 < _mx && 0 < _my);
 
@@ -291,14 +291,14 @@ private:
         if (this->mx != 1) {
             for (int j = 0; j < this->ny; ++j) {
                 //  Edge along xmin  
-                idx = this->Index(0, j);
+                idx = this->Index(this->nx - 1, j);
                 idxedge = j + this->offsetxmin;
                 this->fsend[idxedge*3 + 0] = this->f[D2Q9<T>::IndexF(idx, 3)];
                 this->fsend[idxedge*3 + 1] = this->f[D2Q9<T>::IndexF(idx, 6)];
                 this->fsend[idxedge*3 + 2] = this->f[D2Q9<T>::IndexF(idx, 7)];
 
                 //  Edge along xmax
-                idx = this->Index(this->nx - 1, j);
+                idx = this->Index(0, j);
                 idxedge = j + this->offsetxmax;
                 this->fsend[idxedge*3 + 0] = this->f[D2Q9<T>::IndexF(idx, 1)];
                 this->fsend[idxedge*3 + 1] = this->f[D2Q9<T>::IndexF(idx, 5)];
@@ -308,14 +308,14 @@ private:
         if (this->my != 1) {
             for (int i = 0; i < this->nx; ++i) {
                 //  Edge along ymin
-                idx = this->Index(i, 0);
+                idx = this->Index(i, this->ny - 1);
                 idxedge = i + this->offsetymin;
                 this->fsend[idxedge*3 + 0] = this->f[D2Q9<T>::IndexF(idx, 4)];
                 this->fsend[idxedge*3 + 1] = this->f[D2Q9<T>::IndexF(idx, 7)];
                 this->fsend[idxedge*3 + 2] = this->f[D2Q9<T>::IndexF(idx, 8)]; 
 
                 //  Edge along ymax
-                idx = this->Index(i, this->ny - 1);
+                idx = this->Index(i, 0);
                 idxedge = i + this->offsetymax;
                 this->fsend[idxedge*3 + 0] = this->f[D2Q9<T>::IndexF(idx, 2)];
                 this->fsend[idxedge*3 + 1] = this->f[D2Q9<T>::IndexF(idx, 5)];
@@ -323,10 +323,10 @@ private:
             }
         }
         if (this->mx != 1 || this->my != 1) {
-            this->fsend[this->nbc*3 + 0] = this->f[D2Q9<T>::IndexF(this->Index(0, 0), 7)];                          //  Corner at xmin and ymin
-            this->fsend[this->nbc*3 + 1] = this->f[D2Q9<T>::IndexF(this->Index(0, this->ny - 1), 6)];               //  Corner at xmin and ymax
-            this->fsend[this->nbc*3 + 2] = this->f[D2Q9<T>::IndexF(this->Index(this->nx - 1, 0), 8)];               //  Corner at xmax and ymin
-            this->fsend[this->nbc*3 + 3] = this->f[D2Q9<T>::IndexF(this->Index(this->nx - 1, this->ny - 1), 5)];    //  Corner at xmax and ymax
+            this->fsend[this->nbc*3 + 0] = this->f[D2Q9<T>::IndexF(this->Index(this->nx - 1, this->ny - 1), 7)];    //  Corner at xmin and ymin
+            this->fsend[this->nbc*3 + 1] = this->f[D2Q9<T>::IndexF(this->Index(this->nx - 1, 0), 6)];               //  Corner at xmin and ymax
+            this->fsend[this->nbc*3 + 2] = this->f[D2Q9<T>::IndexF(this->Index(0, this->ny - 1), 8)];               //  Corner at xmax and ymin
+            this->fsend[this->nbc*3 + 3] = this->f[D2Q9<T>::IndexF(this->Index(0, 0), 5)];                          //  Corner at xmax and ymax
         }
         
         //  Communicate with other PE
@@ -422,14 +422,14 @@ private:
         if (this->mx != 1) {
             for (int j = 0; j < this->ny; ++j) {
                 //  Edge along xmin  
-                idx = this->Index(0, j);
+                idx = this->Index(this->nx - 1, j);
                 idxedge = j + this->offsetxmin;
                 this->fsend[idxedge*3 + 0] = this->f[D2Q9<T>::IndexF(idx, 1)];
                 this->fsend[idxedge*3 + 1] = this->f[D2Q9<T>::IndexF(idx, 5)];
                 this->fsend[idxedge*3 + 2] = this->f[D2Q9<T>::IndexF(idx, 8)];
 
                 //  Edge along xmax
-                idx = this->Index(this->nx - 1, j);
+                idx = this->Index(0, j);
                 idxedge = j + this->offsetxmax;
                 this->fsend[idxedge*3 + 0] = this->f[D2Q9<T>::IndexF(idx, 3)];
                 this->fsend[idxedge*3 + 1] = this->f[D2Q9<T>::IndexF(idx, 6)];
@@ -439,14 +439,14 @@ private:
         if (this->my != 1) {
             for (int i = 0; i < this->nx; ++i) {
                 //  Edge along ymin
-                idx = this->Index(i, 0);
+                idx = this->Index(i, this->ny - 1);
                 idxedge = i + this->offsetymin;
                 this->fsend[idxedge*3 + 0] = this->f[D2Q9<T>::IndexF(idx, 2)];
                 this->fsend[idxedge*3 + 1] = this->f[D2Q9<T>::IndexF(idx, 5)];
                 this->fsend[idxedge*3 + 2] = this->f[D2Q9<T>::IndexF(idx, 6)]; 
 
                 //  Edge along ymax
-                idx = this->Index(i, this->ny - 1);
+                idx = this->Index(i, 0);
                 idxedge = i + this->offsetymax;
                 this->fsend[idxedge*3 + 0] = this->f[D2Q9<T>::IndexF(idx, 4)];
                 this->fsend[idxedge*3 + 1] = this->f[D2Q9<T>::IndexF(idx, 7)];
@@ -454,10 +454,10 @@ private:
             }
         }
         if (this->mx != 1 || this->my != 1) {
-            this->fsend[this->nbc*3 + 0] = this->f[D2Q9<T>::IndexF(this->Index(0, 0), 5)];                          //  Corner at xmin and ymin
-            this->fsend[this->nbc*3 + 1] = this->f[D2Q9<T>::IndexF(this->Index(0, this->ny - 1), 8)];               //  Corner at xmin and ymax
-            this->fsend[this->nbc*3 + 2] = this->f[D2Q9<T>::IndexF(this->Index(this->nx - 1, 0), 6)];               //  Corner at xmax and ymin
-            this->fsend[this->nbc*3 + 3] = this->f[D2Q9<T>::IndexF(this->Index(this->nx - 1, this->ny - 1), 7)];    //  Corner at xmax and ymax
+            this->fsend[this->nbc*3 + 0] = this->f[D2Q9<T>::IndexF(this->Index(this->nx - 1, this->ny - 1), 5)];    //  Corner at xmin and ymin
+            this->fsend[this->nbc*3 + 1] = this->f[D2Q9<T>::IndexF(this->Index(this->nx - 1, 0), 8)];               //  Corner at xmin and ymax
+            this->fsend[this->nbc*3 + 2] = this->f[D2Q9<T>::IndexF(this->Index(0, this->ny - 1), 6)];               //  Corner at xmax and ymin
+            this->fsend[this->nbc*3 + 3] = this->f[D2Q9<T>::IndexF(this->Index(0, 0), 7)];                          //  Corner at xmax and ymax
         }
         
         //  Communicate with other PE

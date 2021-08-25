@@ -87,8 +87,8 @@ int main(int argc, char** argv) {
         double g_buffer = 0.0, g;
         std::vector<double> dgds(s.size(), 0.0);
         for(int idx = 0; idx < pf.nxy; idx++){
-            g_buffer += s[i]/(weightlimit*(double)(lx*ly));
-            dgds[i] = 1.0/(weightlimit*(double)(lx*ly)); 
+            g_buffer += s[idx]/(weightlimit*(double)(lx*ly));
+            dgds[idx] = 1.0/(weightlimit*(double)(lx*ly)); 
         }
         MPI_Allreduce(&g_buffer, &g, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
         g -= 1.0;

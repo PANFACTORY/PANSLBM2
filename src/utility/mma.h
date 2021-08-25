@@ -124,13 +124,13 @@ private:
         std::vector<T> L;       //  Parameter of asymptotes
         std::vector<T> U;       //  Parameter of asymptotes
 
-        int IdxAm(int _i, int _j) {
+        int IdxAm(int _i, int _j) const {
             return (this->m + 1)*_i + _j;
         }
-        int IdxAn(int _i, int _j) {
+        int IdxAn(int _i, int _j) const {
             return (this->n + 1)*_i + _j;
         }
-        int IdxG(int _i, int _j) {
+        int IdxG(int _i, int _j) const {
             return this->n*_i + _j;
         }
 
@@ -387,7 +387,7 @@ private:
                 for(int j = 0; j < this->n; j++){
                     dx[j] = -deltilx[j]/Dx[j];
                     for(int i = 0; i < this->m; i++){
-                        dx[j] -= G[i][j]*dlambda[i]/Dx[j];
+                        dx[j] -= G[this->IdxG(i, j)]*dlambda[i]/Dx[j];
                     }
                 }
             } else {
@@ -410,7 +410,7 @@ private:
                 for(int ii = 0; ii < this->n; ii++){
                     B[ii] = -deltilx[ii];
                     for(int jj = 0; jj < this->m; jj++){
-                        B[ii] -= G[jj][ii]*deltillambday[jj]/Dlambday[jj];
+                        B[ii] -= G[this->IdxG(jj, ii)]*deltillambday[jj]/Dlambday[jj];
                     }
                 }
                 B[this->n] = -deltilz;

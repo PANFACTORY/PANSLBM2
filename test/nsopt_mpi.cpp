@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <cmath>
+#include <iomanip>
 #include "mpi.h"
 
 #define _USE_MPI_DEFINES
@@ -78,8 +79,8 @@ int main(int argc, char** argv) {
         std::cout << "\nk = " << k;
         //********************Set parameter********************
         for (int idx = 0; idx < s.size(); idx++) {
-            alpha[i] = amax/(double)lx*q*(1.0 - s[i])/(s[i] + q);
-            dads[i] = -amax/(double)lx*q*(q + 1.0)/pow(q + s[i], 2.0);
+            alpha[idx] = amax/(double)lx*q*(1.0 - s[idx])/(s[idx] + q);
+            dads[idx] = -amax/(double)lx*q*(q + 1.0)/pow(q + s[idx], 2.0);
         }
 
         //********************Get weight********************
@@ -128,19 +129,19 @@ int main(int argc, char** argv) {
         double f_buffer = 0.0, f;
         for (int j = 0; j < pf.ny; ++j) {
             if (0.7*ly < j + pf.offsety && j + pf.offsety < 0.9*ly) {
-                f_buffer += rhot[particle.GetIndex(0, j)]/3.0;
+                f_buffer += rho[pf.Index(0, j)]/3.0;
             }
         }
-        for (int i = 0; i < nx; i++) {
+        for (int i = 0; i < pf.nx; i++) {
             if (0.7*lx < i + pf.offsetx && i + pf.offsetx < 0.9*lx) {
-                f_buffer -= rhot[particle.GetIndex(i, 0)]/3.0;
+                f_buffer -= rho[pf.Index(i, 0)]/3.0;
             }
         }
         MPI_Allreduce(&f_buffer, &f, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
         double dfdsmax_buffer = 0.0, dfdsmax;
         std::vector<double> dfds(s.size(), 0.0);
         for (int idx = 0; idx < pf.nxy; ++idx) {
-            dfds[idx] = 3.0*(imx[idx]*ux[idx] + imy[idx]*uy[idx])*(-amax/(double)(pf.lx - 1)*q*(q + 1.0)/pow(q + s[idx], 2.0));
+            dfds[idx] = 3.0*(imx[idx]*ux[idx] + imy[idx]*uy[idx])*dads[idx];
             if (dfdsmax_buffer < fabs(dfds[idx])) {
                 dfdsmax_buffer = fabs(dfds[idx]);
             }

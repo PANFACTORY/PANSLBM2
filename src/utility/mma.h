@@ -321,7 +321,7 @@ private:
 
             for(int i = 0; i < this->m; i++){
                 for(int j = 0; j < this->n; j++){
-                    G[i][j] = p[i][j]/pow(this->U[j] - x[j], 2.0) - q[i][j]/pow(x[j] - this->L[j], 2.0);
+                    G[this->IdxG(i, j)] = p[i][j]/pow(this->U[j] - x[j], 2.0) - q[i][j]/pow(x[j] - this->L[j], 2.0);
                 }
             }
 
@@ -371,7 +371,7 @@ private:
                 std::vector<T> B(this->m + 1), B_buffer(this->m, T());
                 for(int ii = 0; ii < this->m; ii++){
                     for(int jj = 0; jj < this->n; jj++){
-                        B_buffer[ii] -= G[ii][jj]*deltilx[jj]/Dx[jj];
+                        B_buffer[ii] -= G[this->IdxG(ii, jj)]*deltilx[jj]/Dx[jj];
                     }
                 }
                 MPI_Allreduce(B_buffer.data(), B.data(), this->m, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
@@ -379,7 +379,7 @@ private:
                     B[ii] += deltillambday[ii];
                 }
                 B[this->m] = deltilz;
-                std::vector<T> dlambdaz = solvels<T>(A, B, this->IdxAm);
+                std::vector<T> dlambdaz = solvels<T>(A, B, &this->IdxAm);
                 for(int i = 0; i < this->m; i++){
                     dlambda[i] = dlambdaz[i];
                 }
@@ -417,7 +417,7 @@ private:
                 for(int jj = 0; jj < this->m; jj++){
                     B[this->n] += this->a[jj]*deltillambday[jj]/Dlambday[jj];
                 }
-                std::vector<T> dxz = solvels<T>(A, B, this->IdxAn);
+                std::vector<T> dxz = solvels<T>(A, B, &this->IdxAn);
                 for(int j = 0; j < this->n; j++){
                     dx[j] = dxz[j];
                 }
@@ -425,7 +425,7 @@ private:
                 for(int i = 0; i < this->m; i++){
                     dlambda_buffer[i] = T();
                     for(int j = 0; j < this->n; j++){
-                        dlambda_buffer[i] += G[i][j]*dx[j]/Dlambday[i];
+                        dlambda_buffer[i] += G[this->IdxG(i, j)]*dx[j]/Dlambday[i];
                     }
                 }
                 MPI_Allreduce(dlambda_buffer.data(), dlambda.data(), this->m, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);

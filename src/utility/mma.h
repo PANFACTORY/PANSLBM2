@@ -131,8 +131,10 @@ private:
             return this->n*_i + _j;
         }
 
-		T KKTNorm(const std::vector<T>& _x, const std::vector<T>& _y, T _z, const std::vector<T>& _lambda, const std::vector<T>& _gsi, const std::vector<T>& _ita, const std::vector<T>& _mu, T _zeta, const std::vector<T>& _s,
-            T _eps, const std::vector<std::vector<T> >& _p, const std::vector<std::vector<T> >& _q, const std::vector<T>& _p0, const std::vector<T>&  _q0, const std::vector<T>& _alpha, const std::vector<T>& _beta, const std::vector<T>& _b);
+		T KKTNorm(
+            const std::vector<T>& _x, const std::vector<T>& _y, T _z, const std::vector<T>& _lambda, const std::vector<T>& _gsi, const std::vector<T>& _ita, const std::vector<T>& _mu, T _zeta, const std::vector<T>& _s,
+            T _eps, const std::vector<T>& _p, const std::vector<T>& _q, const std::vector<T>& _p0, const std::vector<T>&  _q0, const std::vector<T>& _alpha, const std::vector<T>& _beta, const std::vector<T>& _b
+        );
 	};
 
     template<class T>

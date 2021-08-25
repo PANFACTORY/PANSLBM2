@@ -379,7 +379,7 @@ private:
                     B[ii] += deltillambday[ii];
                 }
                 B[this->m] = deltilz;
-                std::vector<T> dlambdaz = solvels<T>(A, B, this->*(&MMA<T>::IdxAm));
+                std::vector<T> dlambdaz = solvels<T>(A, B, [&](int _i, int _j) { return this->IdxAm(_i, _j); });
                 for(int i = 0; i < this->m; i++){
                     dlambda[i] = dlambdaz[i];
                 }
@@ -417,7 +417,7 @@ private:
                 for(int jj = 0; jj < this->m; jj++){
                     B[this->n] += this->a[jj]*deltillambday[jj]/Dlambday[jj];
                 }
-                std::vector<T> dxz = solvels<T>(A, B, this->*(&MMA<T>::IdxAn));
+                std::vector<T> dxz = solvels<T>(A, B, [&](int _i, int _j) { return this->IdxAn(_i, _j); });
                 for(int j = 0; j < this->n; j++){
                     dx[j] = dxz[j];
                 }

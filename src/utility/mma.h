@@ -417,7 +417,7 @@ private:
                 for(int jj = 0; jj < this->m; jj++){
                     B[this->n] += this->a[jj]*deltillambday[jj]/Dlambday[jj];
                 }
-                std::vector<T> dxz = solvels<T>(A, B, &this->IdxAn);
+                std::vector<T> dxz = solvels<T>(A, B, &MMA<T>::IdxAn);
                 for(int j = 0; j < this->n; j++){
                     dx[j] = dxz[j];
                 }

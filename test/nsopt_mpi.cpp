@@ -25,7 +25,7 @@ int main(int argc, char** argv) {
     //********************Set parameters********************
     int lx = 200, ly = 200, nt = 10000, dt = 100, nk = 50;
     double nu = 0.005, u0 = 0.05, rho0 = 1.0, q = 0.01, amax = 50.0, scale0 = 1.0e0, weightlimit = 0.25, movelimit = 0.5, epsu = 1.0e-4;
-    D2Q9<double> particle(lx, ly);
+    D2Q9<double> pf(lx, ly, MyRank, mx, my);
     double *rho = new double[pf.nxy], *ux = new double[pf.nxy], *uy = new double[pf.nxy], *uxm1 = new double[pf.nxy], *uym1 = new double[pf.nxy];
     double *irho = new double[pf.nxy], *iux = new double[pf.nxy], *iuy = new double[pf.nxy], *imx = new double[pf.nxy], *imy = new double[pf.nxy];
     double *alpha = new double[pf.nxy], *dads = new double[pf.nxy];

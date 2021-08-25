@@ -76,7 +76,9 @@ int main(int argc, char** argv) {
     optimizer.move = movelimit;
 	
     for (int k = 0; k < nk; k++) {
-        std::cout << "\nk = " << k;
+        if (MyRank == 0) {
+            std::cout << "\nk = " << k;
+        }
         //********************Set parameter********************
         for (int idx = 0; idx < s.size(); idx++) {
             alpha[idx] = amax/(double)lx*q*(1.0 - s[idx])/(s[idx] + q);
@@ -94,7 +96,9 @@ int main(int argc, char** argv) {
         g -= 1.0;
 
         //********************Direct Analyse********************
-        std::cout << "Direct analyse t = 0";
+        if (MyRank == 0) {
+            std::cout << "Direct analyse t = 0";
+        }
         NS::InitialCondition(pf, rho, ux, uy);
         for (int t = 1; t <= nt; ++t) {
             if (MyRank == 0 && t%dt == 0) {
@@ -110,7 +114,9 @@ int main(int argc, char** argv) {
         }
 
         //********************Invert analyze********************
-        std::cout << "\rInverse analyse t = 0" << std::string(10, ' ');
+        if (MyRank == 0) {
+            std::cout << "\rInverse analyse t = 0" << std::string(10, ' ');
+        }
         ANS::InitialCondition(pf, ux, uy, irho, iux, iuy);
         for (int t = 1; t <= nt; ++t) {
             if (MyRank == 0 && t%dt == 0) {
@@ -152,13 +158,17 @@ int main(int argc, char** argv) {
         }
 
         //********************Update variable********************
-        std::cout << "\rUpdate design variable" << std::string(10, ' ');
+        if (MyRank == 0) {
+            std::cout << "\rUpdate design variable" << std::string(10, ' ');
+        }
         optimizer.UpdateVariables(s, f, dfds, { g }, { dgds });
 
         //********************Check convergence********************
         std::cout << "\r" << std::fixed << std::setprecision(6) << k << "\t" << f << "\t" << g << std::endl;
         if(g < 0.0 && optimizer.IsConvergence(f)){
-            std::cout << std::endl << "-----Optimized-----" << std::endl;
+            if (MyRank == 0) {
+                std::cout << std::endl << "-----Optimized-----" << std::endl;
+            }
             break;
         }
     }

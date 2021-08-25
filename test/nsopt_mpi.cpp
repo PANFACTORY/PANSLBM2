@@ -165,11 +165,11 @@ int main(int argc, char** argv) {
     //********************Export result********************
     VTKXMLExport file("result/pipebend", MyRank, lx, ly, 1, mx, my, 1);
     file.AddPointScaler("p", [&](int _i, int _j, int _k) { return rho[pf.Index(_i, _j)]/3.0; });
-    file.AddPointVector("u", 
+    /*file.AddPointVector("u", 
         [&](int _i, int _j, int _k) { return ux[pf.Index(_i, _j)]; },
         [&](int _i, int _j, int _k) { return uy[pf.Index(_i, _j)]; },
         [](int _i, int _j, int _k) { return 0.0; }
-    );
+    );*//
     //file.AddPointScaler("dfds", [&](int _i, int _j, int _k) {   return dfds[pf.Index(_i, _j)];  });
     //file.AddPointScaler("ip", [&](int _i, int _j, int _k) { return irho[pf.Index(_i, _j)]; });
     /*file.AddPointVector("iu", 

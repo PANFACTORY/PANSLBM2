@@ -1,7 +1,6 @@
 #pragma once
 #include <vector>
 #include <algorithm>
-#include <utility>
 #include <numeric>
 #include <string>
 #include <fstream>
@@ -9,7 +8,7 @@
 namespace {
     template<class T, class F>
     std::vector<T> solvels(std::vector<T> _A, std::vector<T> _b, F _idx){
-        std::vector<T> x = std::vector<T>(_b.size());
+        std::vector<T> x(_b.size());
         for(int i = 0; i < _b.size() - 1; i++){
             //----------Get pivot----------
             T pivot = fabs(_A[_idx(i, i)]);
@@ -23,9 +22,13 @@ namespace {
             
             //----------Exchange pivot----------
             if(pivoti != i){
-                std::swap(_b[i], _b[pivoti]);
+                T tmp = _b[i];
+                _b[i] = _b[pivoti];
+                _b[pivoti] = tmp;
                 for(int j = i; j < _b.size(); j++){
-                    std::swap(_A[_idx(i, j)], _A[_idx(pivoti, j)]);
+                    tmp = _A[_idx(i, j)];
+                    _A[_idx(i, j)] = _A[_idx(pivoti, j)];
+                    _A[_idx(pivoti, j)] = tmp;
                 }
             }
             
@@ -50,7 +53,7 @@ namespace {
     }
 }
 
-namespace PANSLBM3 {
+namespace PANSLBM2 {
     //********************Optimizational solver with MMA********************
     template<class T>
     class MMA{
@@ -234,19 +237,22 @@ private:
 		}
 
 		//----------Get p, q and b----------
-		std::vector<T> p(this->m*this->n);
-        std::vector<T> q(this->m*this->n);
-        std::vector<T> b(this->m);
+		std::vector<std::vector<T> > p(this->m, std::vector<T>(this->n));
+        std::vector<std::vector<T> > q(this->m, std::vector<T>(this->n));
+        std::vector<T> b(this->m), b_buffer(this->m, T());
 		for(int i = 0; i < this->m; i++){
-			b[i] = -_g[i];
 			for(int j = 0; j < this->n; j++){
 				T dfdxp = std::max(_dgdx[i][j], T());
 				T dfdxm = std::max(-_dgdx[i][j], T());
-				p[this->IdxG(i, j)] = pow(this->U[j] - _xk[j], 2.0)*(1.001*dfdxp + 0.001*dfdxm + this->raa0/(this->xmax[j] - this->xmin[j]));
-				q[this->IdxG(i, j)] = pow(_xk[j] - this->L[j], 2.0)*(0.001*dfdxp + 1.001*dfdxm + this->raa0/(this->xmax[j] - this->xmin[j]));
-				b[i] += p[this->IdxG(i, j)]/(this->U[j] - _xk[j]) + q[this->IdxG(i, j)]/(_xk[j] - this->L[j]);
+				p[i][j] = pow(this->U[j] - _xk[j], 2.0)*(1.001*dfdxp + 0.001*dfdxm + this->raa0/(this->xmax[j] - this->xmin[j]));
+				q[i][j] = pow(_xk[j] - this->L[j], 2.0)*(0.001*dfdxp + 1.001*dfdxm + this->raa0/(this->xmax[j] - this->xmin[j]));
+				b_buffer[i] += p[i][j]/(this->U[j] - _xk[j]) + q[i][j]/(_xk[j] - this->L[j]);
 			}
 		}
+        MPI_Allreduce(b_buffer.data(), b.data(), this->m, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+        for(int i = 0; i < this->m; i++){
+			b[i] -= _g[i];
+        }
      
         //----------Inner loop----------
         T eps = 1.0;
@@ -278,14 +284,14 @@ private:
         std::vector<T> Dy(this->m);
         std::vector<T> Dlambda(this->m);
         std::vector<T> deltily(this->m);
-        std::vector<T> deltillambda(this->m);
+        std::vector<T> deltillambda(this->m), deltillambda_buffer(this->m);;
         std::vector<T> Dlambday(this->m);
         std::vector<T> deltillambday(this->m);
         
         std::vector<T> dx(this->n);
         std::vector<T> dy(this->m);
         T dz = T();
-        std::vector<T> dlambda(this->m);
+        std::vector<T> dlambda(this->m), dlambda_buffer(this->m);
         std::vector<T> dgsi(this->n);
         std::vector<T> dita(this->n);
         std::vector<T> dmu(this->m);
@@ -308,14 +314,14 @@ private:
                 plambda[j] = p0[j];
                 qlambda[j] = q0[j];
                 for(int i = 0; i < this->m; i++){
-                    plambda[j] += lambda[i]*p[this->IdxG(i, j)];
-                    qlambda[j] += lambda[i]*q[this->IdxG(i, j)];
+                    plambda[j] += lambda[i]*p[i][j];
+                    qlambda[j] += lambda[i]*q[i][j];
                 }
             }
 
             for(int i = 0; i < this->m; i++){
                 for(int j = 0; j < this->n; j++){
-                    G[this->IdxG(i, j) ] = p[this->IdxG(i, j)]/pow(this->U[j] - x[j], 2.0) - q[this->IdxG(i, j)]/pow(x[j] - this->L[j], 2.0);
+                    G[this->IdxG(i, j)] = p[i][j]/pow(this->U[j] - x[j], 2.0) - q[i][j]/pow(x[j] - this->L[j], 2.0);
                 }
             }
 
@@ -332,35 +338,45 @@ private:
 
             T deltilz = this->a0 - eps/z - std::inner_product(lambda.begin(), lambda.end(), this->a.begin(), T());
             
-            for(int i = 0; i < this->m; i++){
-                deltillambda[i] = -this->a[i]*z - y[i] - b[i] + eps/lambda[i];
-                for(int j = 0; j < this->n; j++){
-                    deltillambda[i] += p[this->IdxG(i, j)]/(this->U[j] - x[j]) + q[this->IdxG(i, j)]/(x[j] - this->L[j]);
+            for (int i = 0; i < this->m; ++i) {
+                deltillambda_buffer[i] = T();
+                for (int j = 0; j < this->n; j++) {
+                    deltillambda_buffer[i] += p[i][j]/(this->U[j] - x[j]) + q[i][j]/(x[j] - this->L[j]);
                 }
+            }
+            MPI_Allreduce(deltillambda_buffer.data(), deltillambda.data(), this->m, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+            for (int i = 0; i < this->m; i++) {
+                deltillambda[i] += -this->a[i]*z - y[i] - b[i] + eps/lambda[i];
                 Dlambday[i] = Dlambda[i] + 1.0/Dy[i];
                 deltillambday[i] = deltillambda[i] + deltily[i]/Dy[i];
             }
 
             //.....Get Newton direction.....
             if(this->n > this->m){
-                std::vector<T> A((this->m + 1)*(this->m + 1), T());
+                std::vector<T> A((this->m + 1)*(this->m + 1), T()), A_buffer((this->m + 1)*(this->m + 1), T());
                 for(int ii = 0; ii < this->m; ii++){
                     for(int jj = 0; jj < this->m; jj++){
                         for(int kk= 0; kk < this->n; kk++){
-                            A[this->IdxAm(ii, jj)] += G[this->IdxG(ii, kk)]*G[this->IdxG(jj, kk)]/Dx[kk];
+                            A_buffer[this->IdxAm(ii, jj)] += G[this->IdxG(ii, kk)]*G[this->IdxG(jj, kk)]/Dx[kk];
                         }
                     }
+                }
+                MPI_Allreduce(A_buffer.data(), A.data(), (this->m + 1)*(this->m + 1), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+                for(int ii = 0; ii < this->m; ii++){
                     A[this->IdxAm(ii, ii)] += Dlambday[ii];
                     A[this->IdxAm(ii, this->m)] = this->a[ii];
                     A[this->IdxAm(this->m, ii)] = this->a[ii];
                 }
                 A[this->IdxAm(this->m, this->m)] = -zeta/z;
-                std::vector<T> B(this->m + 1);
+                std::vector<T> B(this->m + 1), B_buffer(this->m, T());
                 for(int ii = 0; ii < this->m; ii++){
-                    B[ii] = deltillambday[ii];
                     for(int jj = 0; jj < this->n; jj++){
-                        B[ii] -= G[this->IdxG(ii, jj)]*deltilx[jj]/Dx[jj];
+                        B_buffer[ii] -= G[this->IdxG(ii, jj)]*deltilx[jj]/Dx[jj];
                     }
+                }
+                MPI_Allreduce(B_buffer.data(), B.data(), this->m, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+                for(int ii = 0; ii < this->m; ii++){
+                    B[ii] += deltillambday[ii];
                 }
                 B[this->m] = deltilz;
                 std::vector<T> dlambdaz = solvels<T>(A, B, [&](int _i, int _j) { return this->IdxAm(_i, _j); });
@@ -369,7 +385,7 @@ private:
                 }
                 dz = dlambdaz[this->m];
                 for(int j = 0; j < this->n; j++){
-                    dx[j] =  -deltilx[j]/Dx[j];
+                    dx[j] = -deltilx[j]/Dx[j];
                     for(int i = 0; i < this->m; i++){
                         dx[j] -= G[this->IdxG(i, j)]*dlambda[i]/Dx[j];
                     }
@@ -407,10 +423,14 @@ private:
                 }
                 dz = dxz[this->n];
                 for(int i = 0; i < this->m; i++){
-                    dlambda[i] = -this->a[i]*dz/Dlambday[i] + deltillambday[i]/Dlambday[i];
+                    dlambda_buffer[i] = T();
                     for(int j = 0; j < this->n; j++){
-                        dlambda[i] += G[this->IdxG(i, j)]*dx[j]/Dlambday[i];
+                        dlambda_buffer[i] += G[this->IdxG(i, j)]*dx[j]/Dlambday[i];
                     }
+                }
+                MPI_Allreduce(dlambda_buffer.data(), dlambda.data(), this->m, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+                for(int i = 0; i < this->m; i++){
+                    dlambda[i] += -this->a[i]*dz/Dlambday[i] + deltillambday[i]/Dlambday[i];
                 }
             }
             
@@ -428,13 +448,14 @@ private:
             dzeta = -zeta*dz/z - zeta + eps/z;
 
             //.....Get step size.....
-            T txmax = T();
+            T txmax, txmax_buffer = T();
             for(int j = 0; j < this->n; j++){
                 T txmaxj = std::max({-1.01*dx[j]/(x[j] - alpha[j]), 1.01*dx[j]/(beta[j] - x[j]), -1.01*dgsi[j]/gsi[j], -1.01*dita[j]/ita[j]});
-                if(txmax < txmaxj){
-                    txmax = txmaxj;
+                if(txmax_buffer < txmaxj){
+                    txmax_buffer = txmaxj;
                 }
             }
+            MPI_Allreduce(&txmax_buffer, &txmax, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
             T tymax = T();
             for(int i = 0; i < this->m; i++){
                 T tymaxi = std::max({-1.01*dy[i]/y[i], -1.01*dlambda[i]/lambda[i], -1.01*dmu[i]/mu[i], -1.01*ds[i]/s[i]});
@@ -492,44 +513,48 @@ private:
 
     template<class T>
     T MMA<T>::KKTNorm(
-        const std::vector<T>& _x, const std::vector<T>& _y, T _z, const std::vector<T>& _lambda, const std::vector<T>& _gsi, const std::vector<T>& _ita, const std::vector<T>& _mu, T _zeta, const std::vector<T>& _s,
-        T _eps, const std::vector<T>& _p, const std::vector<T>& _q, const std::vector<T>& _p0, const std::vector<T>&  _q0, const std::vector<T>& _alpha, const std::vector<T>& _beta, const std::vector<T>& _b
+        const std::vector<T>& _x, const std::vector<T>& _y, T _z, 
+        const std::vector<T>& _lambda, const std::vector<T>& _gsi, const std::vector<T>& _ita, const std::vector<T>& _mu, T _zeta, const std::vector<T>& _s,
+        T _eps, const std::vector<std::vector<T> >& _p, const std::vector<std::vector<T> >& _q, const std::vector<T>& _p0, const std::vector<T>&  _q0, 
+        const std::vector<T>& _alpha, const std::vector<T>& _beta, const std::vector<T>& _b
     ){
-        T norm = T();
+        T norm = T(), norm_buffer = T();
 
         //----------Get parameters----------
         std::vector<T> plambda(this->n);
         std::vector<T> qlambda(this->n);
-        std::vector<T> g(this->m, T());
+        std::vector<T> g(this->m, T()), g_buffer(this->m, T());
         for(int j = 0; j < this->n; j++){
             plambda[j] = _p0[j];
             qlambda[j] = _q0[j];
             for(int i = 0; i < this->m; i++){
-                plambda[j] += _lambda[i]*_p[this->IdxG(i, j)];
-                qlambda[j] += _lambda[i]*_q[this->IdxG(i, j)];
-                g[i] += _p[this->IdxG(i, j)]/(this->U[j] - _x[j]) + _q[this->IdxG(i, j)]/(_x[j] - this->L[j]);
+                plambda[j] += _lambda[i]*_p[i][j];
+                qlambda[j] += _lambda[i]*_q[i][j];
+                g_buffer[i] += _p[i][j]/(this->U[j] - _x[j]) + _q[i][j]/(_x[j] - this->L[j]);
             }
         }
+        MPI_Allreduce(g_buffer.data(), g.data(), this->m, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
         //----------Equation(5.9a)(5.9e)(5.9f)----------
         for(int j = 0; j < this->n; j++){
-            norm += pow(plambda[j]/pow(this->U[j] - _x[j], 2.0) - qlambda[j]/pow(_x[j] - this->L[j], 2.0) - _gsi[j] + _ita[j], 2.0);    //  Equation(5.9a)
-            norm += pow(_gsi[j]*(_x[j] - _alpha[j]) - _eps, 2.0);   //  Equation(5.9e)
-            norm += pow(_ita[j]*(_beta[j] - _x[j]) - _eps, 2.0);    //  Equation(5.9f)
+            norm_buffer += pow(plambda[j]/pow(this->U[j] - _x[j], 2.0) - qlambda[j]/pow(_x[j] - this->L[j], 2.0) - _gsi[j] + _ita[j], 2.0); //  Equation(5.9a)
+            norm_buffer += pow(_gsi[j]*(_x[j] - _alpha[j]) - _eps, 2.0);    //  Equation(5.9e)
+            norm_buffer += pow(_ita[j]*(_beta[j] - _x[j]) - _eps, 2.0);     //  Equation(5.9f)
         }
 
         //----------Equation(5.9b)(5.9d)(5.9g)(5.9i)----------
         for(int i = 0; i < this->m; i++){
-            norm += pow(this->c[i] + this->d[i]*_y[i] - _lambda[i] - _mu[i], 2.0);      //  Equation(5.9b)
-            norm += pow(g[i] - this->a[i]*_z - _y[i] + _s[i] - _b[i], 2.0);             //  Equation(5.9d)
-            norm += pow(_mu[i]*_y[i] - _eps, 2.0);                                      //  Equation(5.9g)
-            norm += pow(_lambda[i]*_s[i] - _eps, 2.0);                                  //  Equation(5.9i)
+            norm_buffer += pow(this->c[i] + this->d[i]*_y[i] - _lambda[i] - _mu[i], 2.0);   //  Equation(5.9b)
+            norm_buffer += pow(g[i] - this->a[i]*_z - _y[i] + _s[i] - _b[i], 2.0);          //  Equation(5.9d)
+            norm_buffer += pow(_mu[i]*_y[i] - _eps, 2.0);                                   //  Equation(5.9g)
+            norm_buffer += pow(_lambda[i]*_s[i] - _eps, 2.0);                               //  Equation(5.9i)
         }
 
         //----------Equation(5.9c)(5.9h)----------
-        norm += pow(this->a0 - _zeta - std::inner_product(_lambda.begin(), _lambda.end(), this->a.begin(), T()), 2.0);      //  Equation(5.9c)
-        norm += pow(_zeta*_z - _eps, 2.0);                                                                                  //  Equation(5.9h)
+        norm_buffer += pow(this->a0 - _zeta - std::inner_product(_lambda.begin(), _lambda.end(), this->a.begin(), T()), 2.0);   //  Equation(5.9c)
+        norm_buffer += pow(_zeta*_z - _eps, 2.0);                                                                               //  Equation(5.9h)
 
+        MPI_Allreduce(&norm_buffer, &norm, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
         return sqrt(norm);
     }
 }

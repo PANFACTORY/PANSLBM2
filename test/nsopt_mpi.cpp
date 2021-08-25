@@ -75,6 +75,7 @@ int main(int argc, char** argv) {
 		std::vector<double>(s.size(), 0.0), std::vector<double>(s.size(), 1.0));
     optimizer.move = movelimit;
 	
+    std::cout << "optimization loop" << std::endl; 
     for (int k = 0; k < nk; k++) {
         //********************Set parameter********************
         for (int idx = 0; idx < s.size(); idx++) {

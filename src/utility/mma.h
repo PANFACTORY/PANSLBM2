@@ -379,7 +379,7 @@ private:
                     B[ii] += deltillambday[ii];
                 }
                 B[this->m] = deltilz;
-                std::vector<T> dlambdaz = solvels<T>(A, B, &this->IdxAm);
+                std::vector<T> dlambdaz = solvels<T>(A, B, &MMA<T>::IdxAm);
                 for(int i = 0; i < this->m; i++){
                     dlambda[i] = dlambdaz[i];
                 }

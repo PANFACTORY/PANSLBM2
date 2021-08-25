@@ -53,7 +53,7 @@ namespace {
     }
 }
 
-namespace PANSLBM3 {
+namespace PANSLBM2 {
     //********************Optimizational solver with MMA********************
     template<class T>
     class MMA{

@@ -153,6 +153,7 @@ int main(int argc, char** argv) {
         for (int idx = 0; idx < pf.nxy; ++idx) {  
             dfds[idx] /= dfdsmax;
         }
+        std::cout << "\r" << std::fixed << std::setprecision(6) << k << "\t" << f << "\t" << g << std::endl;
 
         //********************Update variable********************
         if (MyRank == 0) {
@@ -161,7 +162,6 @@ int main(int argc, char** argv) {
         optimizer.UpdateVariables(s, f, dfds, { g }, { dgds });
 
         //********************Check convergence********************
-        std::cout << "\r" << std::fixed << std::setprecision(6) << k << "\t" << f << "\t" << g << std::endl;
         if(g < 0.0 && optimizer.IsConvergence(f)){
             if (MyRank == 0) {
                 std::cout << std::endl << "-----Optimized-----" << std::endl;

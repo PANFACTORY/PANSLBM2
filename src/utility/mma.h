@@ -6,6 +6,7 @@
 #include <string>
 #include <fstream>
 #include <cmath>
+#include "mpi.h"
 
 namespace {
     template<class T, class F>

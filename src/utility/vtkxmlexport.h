@@ -9,9 +9,7 @@ public:
         VTKXMLExport(std::string _fname, int _PEid, int _lx, int _ly, int _lz, int _mx, int _my, int _mz) :
             lx(_lx), ly(_ly), lz(_lz), mx(_mx), my(_my), mz(_mz), PEid(_PEid),
             PEx(this->PEid%this->mx), PEy((this->PEid/this->mx)%this->my), PEz(this->PEid/(this->mx*this->my)),
-            nx((this->lx + this->PEx)/this->mx + (this->PEx != this->mx - 1 ? 1 : 0)), 
-            ny((this->ly + this->PEy)/this->my + (this->PEy != this->my - 1 ? 1 : 0)), 
-            nz((this->lz + this->PEz)/this->mz + (this->PEz != this->mz - 1 ? 1 : 0)),
+            nx((this->lx + this->PEx)/this->mx), ny((this->ly + this->PEy)/this->my), nz((this->lz + this->PEz)/this->mz),
             offsetx(this->mx - this->PEx > this->lx%this->mx ? this->PEx*this->nx : this->lx - (this->mx - this->PEx)*this->nx),
             offsety(this->my - this->PEy > this->ly%this->my ? this->PEy*this->ny : this->ly - (this->my - this->PEy)*this->ny),
             offsetz(this->mz - this->PEz > this->lz%this->mz ? this->PEz*this->nz : this->lz - (this->mz - this->PEz)*this->nz)
@@ -59,15 +57,18 @@ public:
             this->fout.open(_fname + "_" + std::to_string(this->PEid) + ".vts");
             this->fout << "<VTKFile type=\"StructuredGrid\">" << std::endl;
             this->fout << "\t<StructuredGrid WholeExtent=\"0 "<< this->lx - 1 << " 0 " << this->ly - 1 << " 0 " << this->lz - 1 << "\">" << std::endl;
+            int nnx = this->nx + (this->PEx != this->mx - 1 ? 1 : 0);
+            int nny = this->ny + (this->PEy != this->my - 1 ? 1 : 0);
+            int nnz = this->nz + (this->PEz != this->mz - 1 ? 1 : 0);
             this->fout << "\t\t<Piece Extent=\"" 
-                << 0 + this->offsetx << " " << (this->nx - 1) + this->offsetx << " " 
-                << 0 + this->offsety << " " << (this->ny - 1) + this->offsety << " " 
-                << 0 + this->offsetz << " " << (this->nz - 1) + this->offsetz << "\">" << std::endl;
+                << 0 + this->offsetx << " " << (nnx - 1) + this->offsetx << " " 
+                << 0 + this->offsety << " " << (nny - 1) + this->offsety << " " 
+                << 0 + this->offsetz << " " << (nnz - 1) + this->offsetz << "\">" << std::endl;
             this->fout << "\t\t\t<Points>" << std::endl; 
             this->fout << "\t\t\t\t<DataArray type=\"Float64\" NumberOfComponents=\"3\" format=\"ascii\">" << std::endl;
-            for (int k = 0; k < this->nz; ++k) {
-                for (int j = 0; j < this->ny; ++j) {
-                    for (int i = 0; i < this->nx; ++i) {
+            for (int k = 0; k < nnz; ++k) {
+                for (int j = 0; j < nny; ++j) {
+                    for (int i = 0; i < nnx; ++i) {
                         this->fout << "\t\t\t\t\t" << i + this->offsetx << " " << j + this->offsety << " " << k + this->offsetz << std::endl;
                     }
                 }
@@ -140,15 +141,18 @@ private:
         }
 
         //  Export .vts file
+        int nnx = this->nx + (this->PEx != this->mx - 1 ? 1 : 0);
+        int nny = this->ny + (this->PEy != this->my - 1 ? 1 : 0);
+        int nnz = this->nz + (this->PEz != this->mz - 1 ? 1 : 0);
         this->fout.seekp(this->addpos);
         this->fout << "\t\t\t\t<DataArray type=\"Float64\" Name=\"" << _label << "\" format=\"ascii\">" << std::endl;
-        for (int k = 0; k < this->nz; ++k) {
-            for (int j = 0; j < this->ny; ++j) {
-                for (int i = 0; i < this->nx; ++i) {
+        for (int k = 0; k < nnz; ++k) {
+            for (int j = 0; j < nny; ++j) {
+                for (int i = 0; i < nnx; ++i) {
                     if (
-                        (this->PEx != this->mx - 1 && i == this->nx - 1) || 
-                        (this->PEy != this->my - 1 && j == this->ny - 1) || 
-                        (this->PEz != this->mz - 1 && k == this->nz - 1)
+                        (this->PEx != this->mx - 1 && i == nnx - 1) || 
+                        (this->PEy != this->my - 1 && j == nny - 1) || 
+                        (this->PEz != this->mz - 1 && k == nnz - 1)
                     ) {
                         this->fout << "\t\t\t\t\t" << 0 << std::endl;
                     } else {
@@ -175,15 +179,18 @@ private:
         }
 
         //  Export .vts file
+        int nnx = this->nx + (this->PEx != this->mx - 1 ? 1 : 0);
+        int nny = this->ny + (this->PEy != this->my - 1 ? 1 : 0);
+        int nnz = this->nz + (this->PEz != this->mz - 1 ? 1 : 0);
         this->fout.seekp(this->addpos);
         this->fout << "\t\t\t\t<DataArray type=\"Float64\" Name=\"" << _label << "\" NumberOfComponents=\"3\" format=\"ascii\">" << std::endl;
-        for (int k = 0; k < this->nz; ++k) {
-            for (int j = 0; j < this->ny; ++j) {
-                for (int i = 0; i < this->nx; ++i) {
+        for (int k = 0; k < nnz; ++k) {
+            for (int j = 0; j < nny; ++j) {
+                for (int i = 0; i < nnx; ++i) {
                     if (
-                        (this->PEx != this->mx - 1 && i == this->nx - 1) || 
-                        (this->PEy != this->my - 1 && j == this->ny - 1) || 
-                        (this->PEz != this->mz - 1 && k == this->nz - 1)
+                        (this->PEx != this->mx - 1 && i == nnx - 1) || 
+                        (this->PEy != this->my - 1 && j == nny - 1) || 
+                        (this->PEz != this->mz - 1 && k == nnz - 1)
                     ) {
                         this->fout << "\t\t\t\t\t" << 0 << " " << 0 << " " << 0 << std::endl;
                     } else {
@@ -210,15 +217,18 @@ private:
         }
 
         //  Export .vts file
+        int nnx = this->nx + (this->PEx != this->mx - 1 ? 1 : 0);
+        int nny = this->ny + (this->PEy != this->my - 1 ? 1 : 0);
+        int nnz = this->nz + (this->PEz != this->mz - 1 ? 1 : 0);
         this->fout.seekp(this->addpos);
         this->fout << "\t\t\t\t<DataArray type=\"Float64\" Name=\"" << _label << "\" NumberOfComponents=\"9\" format=\"ascii\">" << std::endl;
-        for (int k = 0; k < this->nz; ++k) {
-            for (int j = 0; j < this->ny; ++j) {
-                for (int i = 0; i < this->nx; ++i) {
+        for (int k = 0; k < nnz; ++k) {
+            for (int j = 0; j < nny; ++j) {
+                for (int i = 0; i < nnx; ++i) {
                     if (
-                        (this->PEx != this->mx - 1 && i == this->nx - 1) || 
-                        (this->PEy != this->my - 1 && j == this->ny - 1) || 
-                        (this->PEz != this->mz - 1 && k == this->nz - 1)
+                        (this->PEx != this->mx - 1 && i == nnx - 1) || 
+                        (this->PEy != this->my - 1 && j == nny - 1) || 
+                        (this->PEz != this->mz - 1 && k == nnz - 1)
                     ) {
                         this->fout << "\t\t\t\t\t" << 0 << " " << 0 << " " << 0 << " " << 0 << " " << 0 << " " << 0 << " " << 0 << " " << 0 << " " << 0 << std::endl;
                     } else {

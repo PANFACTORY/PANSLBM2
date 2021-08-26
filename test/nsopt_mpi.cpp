@@ -160,9 +160,6 @@ int main(int argc, char** argv) {
             std::cout << "\r" << std::fixed << std::setprecision(6) << k << "\t" << f << "\t" << g << "\t" << td << "\t" << ti << std::endl;
         }
 
-        //********************Update variable********************
-        optimizer.UpdateVariables(s, f, dfds, { g }, { dgds });
-
         //********************Check convergence********************
         if(g < 0.0 && optimizer.IsConvergence(f)){
             if (MyRank == 0) {
@@ -170,6 +167,9 @@ int main(int argc, char** argv) {
             }
             break;
         }
+
+        //********************Update variable********************
+        optimizer.UpdateVariables(s, f, dfds, { g }, { dgds });
     }
 
     //********************Export result********************

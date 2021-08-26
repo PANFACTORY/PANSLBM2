@@ -25,8 +25,8 @@ int main(int argc, char** argv) {
     assert(mx*my == PeTot);
 
     //********************Set parameters********************
-    int lx = 100, ly = 100, nt = 10000, dt = 100, nk = 50;
-    double nu = 0.1, u0 = 0.01, rho0 = 1.0, q = 0.01, amax = 50.0, scale0 = 1.0e0, weightlimit = 0.25, movelimit = 0.5, epsu = 1.0e-4;
+    int lx = 200, ly = 200, nt = 10000, dt = 100, nk = 100;
+    double nu = 0.1, u0 = 0.01, rho0 = 1.0, q = 0.01, amax = 2e2, scale0 = 1.0e0, weightlimit = 0.25, movelimit = 0.5, epsu = 1.0e-4;
     D2Q9<double> pf(lx, ly, MyRank, mx, my);
     double *rho = new double[pf.nxy], *ux = new double[pf.nxy], *uy = new double[pf.nxy], *uxp = new double[pf.nxy], *uyp = new double[pf.nxy];
     double *irho = new double[pf.nxy], *iux = new double[pf.nxy], *iuy = new double[pf.nxy], *imx = new double[pf.nxy], *imy = new double[pf.nxy], *iuxp = new double[pf.nxy], *iuyp = new double[pf.nxy];
@@ -164,12 +164,12 @@ int main(int argc, char** argv) {
         optimizer.UpdateVariables(s, f, dfds, { g }, { dgds });
 
         //********************Check convergence********************
-        /*if(g < 0.0 && optimizer.IsConvergence(f)){
+        if(g < 0.0 && optimizer.IsConvergence(f)){
             if (MyRank == 0) {
                 std::cout << std::endl << "-----Optimized-----" << std::endl;
             }
             break;
-        }*/
+        }
     }
 
     //********************Export result********************

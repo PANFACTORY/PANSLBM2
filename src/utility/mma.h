@@ -453,7 +453,7 @@ private:
                     txmax_buffer = txmaxj;
                 }
             }
-            MPI_Allreduce(&txmax_buffer, txmax, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+            MPI_Allreduce(&txmax_buffer, &txmax, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
             T tymax = T();
             for(int i = 0; i < this->m; i++){
                 T tymaxi = std::max({-1.01*dy[i]/y[i], -1.01*dlambda[i]/lambda[i], -1.01*dmu[i]/mu[i], -1.01*ds[i]/s[i]});

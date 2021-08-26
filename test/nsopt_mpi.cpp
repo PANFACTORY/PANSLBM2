@@ -25,7 +25,7 @@ int main(int argc, char** argv) {
 
     //********************Set parameters********************
     int lx = 100, ly = 100, nt = 10000, dt = 100, nk = 1;
-    double nu = 0.005, u0 = 0.05, rho0 = 1.0, q = 0.01, amax = 50.0, scale0 = 1.0e0, weightlimit = 0.25, movelimit = 0.5, epsu = 1.0e-4;
+    double nu = 0.005, u0 = 0.1, rho0 = 1.0, q = 0.01, amax = 50.0, scale0 = 1.0e0, weightlimit = 0.25, movelimit = 0.5, epsu = 1.0e-4;
     D2Q9<double> pf(lx, ly, MyRank, mx, my);
     double *rho = new double[pf.nxy], *ux = new double[pf.nxy], *uy = new double[pf.nxy], *uxm1 = new double[pf.nxy], *uym1 = new double[pf.nxy];
     double *irho = new double[pf.nxy], *iux = new double[pf.nxy], *iuy = new double[pf.nxy], *imx = new double[pf.nxy], *imy = new double[pf.nxy];
@@ -180,15 +180,15 @@ int main(int argc, char** argv) {
         [&](int _i, int _j, int _k) { return uy[pf.Index(_i, _j)]; },
         [](int _i, int _j, int _k) { return 0.0; }
     );
-    //file.AddPointScaler("dfds", [&](int _i, int _j, int _k) {   return dfds[pf.Index(_i, _j)];  });
-    //file.AddPointScaler("ip", [&](int _i, int _j, int _k) { return irho[pf.Index(_i, _j)]; });
-    /*file.AddPointVector("iu", 
+    file.AddPointScaler("dfds", [&](int _i, int _j, int _k) {   return dfds[pf.Index(_i, _j)];  });
+    file.AddPointScaler("ip", [&](int _i, int _j, int _k) { return irho[pf.Index(_i, _j)]; });
+    file.AddPointVector("iu", 
         [&](int _i, int _j, int _k) { return iux[pf.Index(_i, _j)]; },
         [&](int _i, int _j, int _k) { return iuy[pf.Index(_i, _j)]; },
         [](int _i, int _j, int _k) { return 0.0; }
-    );*/
-    //file.AddPointScaler("alpha", [&](int _i, int _j, int _k) { return alpha[pf.Index(_i, _j)]; });
-    //file.AddPointScaler("s", [&](int _i, int _j, int _k) { return s[pf.Index(_i, _j)]; });
+    );
+    file.AddPointScaler("alpha", [&](int _i, int _j, int _k) { return alpha[pf.Index(_i, _j)]; });
+    file.AddPointScaler("s", [&](int _i, int _j, int _k) { return s[pf.Index(_i, _j)]; });
 
     delete[] rho, ux, uy, uxm1, uym1, irho, iux, iuy, imx, imy, alpha, dads, boundaryup, uxbc, uybc, rhobc, usbc;
 

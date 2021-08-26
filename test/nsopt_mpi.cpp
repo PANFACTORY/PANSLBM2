@@ -56,6 +56,7 @@ int main(int argc, char** argv) {
     for (int j = 0; j < pf.ny; ++j) {
         if (0.7*ly < j + pf.offsety && j + pf.offsety < 0.9*ly) {
             uxbc[j + pf.offsetxmin] = -u0*((j + pf.offsety) - 0.7*pf.ly)*((j + pf.offsety) - 0.9*pf.ly)/(0.2*pf.ly*0.2*pf.ly);
+            std::cout << j + pf.offsety << "\t" << -u0*((j + pf.offsety) - 0.7*pf.ly)*((j + pf.offsety) - 0.9*pf.ly)/(0.2*pf.ly*0.2*pf.ly) << std::endl;
         } else {
             uxbc[j + pf.offsetxmin] = 0.0;
         }

@@ -31,7 +31,7 @@ int main(int argc, char** argv) {
     double *irho = new double[pf.nxy], *iux = new double[pf.nxy], *iuy = new double[pf.nxy], *imx = new double[pf.nxy], *imy = new double[pf.nxy];
     double *alpha = new double[pf.nxy], *dads = new double[pf.nxy];
     for (int idx = 0; idx < pf.nxy; ++idx) {
-        rho[idx] = 0.0; ux[idx] = 0.0;  uy[idx] = 0.0;  uxm1[idx] = 0.0;    uym1[idx] = 0.0;
+        rho[idx] = 1.0; ux[idx] = 0.0;  uy[idx] = 0.0;  uxm1[idx] = 0.0;    uym1[idx] = 0.0;
         irho[idx] = 0.0;    iux[idx] = 0.0; iuy[idx] = 0.0; imx[idx] = 0.0; imy[idx] = 0.0;
     }
 

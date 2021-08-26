@@ -9,6 +9,7 @@
 #include "../src/equation/navierstokes.h"
 #include "../src/equation/adjointnavierstokes.h"
 #include "../src/utility/mma.h"
+#include "../src/utility/residual.h"
 #include "../src/utility/vtkxmlexport.h"
 
 using namespace PANSLBM2;
@@ -27,12 +28,12 @@ int main(int argc, char** argv) {
     int lx = 100, ly = 100, nt = 10000, dt = 100, nk = 10;
     double nu = 0.1, u0 = 0.01, rho0 = 1.0, q = 0.01, amax = 50.0, scale0 = 1.0e0, weightlimit = 0.25, movelimit = 0.5, epsu = 1.0e-4;
     D2Q9<double> pf(lx, ly, MyRank, mx, my);
-    double *rho = new double[pf.nxy], *ux = new double[pf.nxy], *uy = new double[pf.nxy], *uxm1 = new double[pf.nxy], *uym1 = new double[pf.nxy];
-    double *irho = new double[pf.nxy], *iux = new double[pf.nxy], *iuy = new double[pf.nxy], *imx = new double[pf.nxy], *imy = new double[pf.nxy];
+    double *rho = new double[pf.nxy], *ux = new double[pf.nxy], *uy = new double[pf.nxy], *uxp = new double[pf.nxy], *uyp = new double[pf.nxy];
+    double *irho = new double[pf.nxy], *iux = new double[pf.nxy], *iuy = new double[pf.nxy], *imx = new double[pf.nxy], *imy = new double[pf.nxy], *iuxp = new double[pf.nxy], *iuyp = new double[pf.nxy];
     double *alpha = new double[pf.nxy], *dads = new double[pf.nxy];
     for (int idx = 0; idx < pf.nxy; ++idx) {
-        rho[idx] = 1.0; ux[idx] = 0.0;  uy[idx] = 0.0;  uxm1[idx] = 0.0;    uym1[idx] = 0.0;
-        irho[idx] = 0.0;    iux[idx] = 0.0; iuy[idx] = 0.0; imx[idx] = 0.0; imy[idx] = 0.0;
+        rho[idx] = 1.0; ux[idx] = 0.0;  uy[idx] = 0.0;  uxp[idx] = 0.0; uyp[idx] = 0.0;
+        irho[idx] = 0.0;    iux[idx] = 0.0; iuy[idx] = 0.0; imx[idx] = 0.0; imy[idx] = 0.0; iuxp[idx] = 0.0;    iuyp[idx] = 0.0;
     }
 
     pf.SetBoundary([&](int _i, int _j) {
@@ -94,26 +95,40 @@ int main(int argc, char** argv) {
 
         //********************Direct Analyse********************
         NS::InitialCondition(pf, rho, ux, uy);
-        for (int t = 1; t <= nt; ++t) {
+        int td;
+        for (td = 1; td <= nt; ++td) {
             NS::Macro_Brinkman_Collide_Stream(pf, rho, ux, uy, nu, alpha, true);
+            if (residual(ux, uy, uxp, uyp, pf.nxy) < epsu) {
+                break;
+            }
             pf.Swap();
             pf.Synchronize();
             pf.BoundaryCondition();
             NS::BoundaryConditionSetU(pf, uxbc, uybc, boundaryup);
             NS::BoundaryConditionSetRho(pf, rhobc, usbc, boundaryup);
             pf.SmoothCorner();
+
+            std::swap(ux, uxp);
+            std::swap(uy, uyp);
         }
 
         //********************Invert analyze********************
         ANS::InitialCondition(pf, ux, uy, irho, iux, iuy);
-        for (int t = 1; t <= nt; ++t) {
+        int ti;
+        for (ti = 1; ti <= nt; ++ti) {
             ANS::Macro_Brinkman_Collide_Stream(pf, rho, ux, uy, irho, iux, iuy, imx, imy, nu, alpha, true);
+            if (residual(iux, iuy, iuxp, iuyp, pf.nxy) < epsu) {
+                break;
+            }
             pf.Swap();
             pf.iSynchronize();
             pf.iBoundaryCondition();
             ANS::BoundaryConditionSetiU(pf, uxbc, uybc, boundaryup);
             ANS::BoundaryConditionSetiRho<double>(pf, boundaryup);
             pf.SmoothCorner();
+
+            std::swap(iux, iuxp);
+            std::swap(iuy, iuyp);
         }
 
         //********************Get sensitivity********************
@@ -142,7 +157,7 @@ int main(int argc, char** argv) {
             dfds[idx] /= dfdsmax;
         }
         if (MyRank == 0) {
-            std::cout << "\r" << std::fixed << std::setprecision(6) << k << "\t" << f << "\t" << g << std::endl;
+            std::cout << "\r" << std::fixed << std::setprecision(6) << k << "\t" << f << "\t" << g << "\t" << td << "\t" << ti << std::endl;
         }
 
         //********************Update variable********************
@@ -175,7 +190,7 @@ int main(int argc, char** argv) {
     file.AddPointScaler("alpha", [&](int _i, int _j, int _k) { return alpha[pf.Index(_i, _j)]; });
     file.AddPointScaler("s", [&](int _i, int _j, int _k) { return s[pf.Index(_i, _j)]; });
 
-    delete[] rho, ux, uy, uxm1, uym1, irho, iux, iuy, imx, imy, alpha, dads, boundaryup, uxbc, uybc, rhobc, usbc;
+    delete[] rho, ux, uy, uxp, uyp, irho, iux, iuy, imx, imy, iuxp, iuyp, alpha, dads, boundaryup, uxbc, uybc, rhobc, usbc;
 
     MPI_Finalize();
 

@@ -24,7 +24,7 @@ int main(int argc, char** argv) {
     assert(mx*my == PeTot);
 
     //********************Set parameters********************
-    int lx = 100, ly = 100, nt = 2, dt = 100, nk = 1;
+    int lx = 100, ly = 100, nt = 2, dt = 10000, nk = 100;
     double nu = 0.1, u0 = 0.01, rho0 = 1.0, q = 0.01, amax = 50.0, scale0 = 1.0e0, weightlimit = 0.25, movelimit = 0.5, epsu = 1.0e-4;
     D2Q9<double> pf(lx, ly, MyRank, mx, my);
     double *rho = new double[pf.nxy], *ux = new double[pf.nxy], *uy = new double[pf.nxy], *uxm1 = new double[pf.nxy], *uym1 = new double[pf.nxy];
@@ -55,8 +55,7 @@ int main(int argc, char** argv) {
     double *uxbc = new double[pf.nbc], *uybc = new double[pf.nbc], *rhobc = new double[pf.nbc], *usbc = new double[pf.nbc];
     for (int j = 0; j < pf.ny; ++j) {
         if (0.7*ly < j + pf.offsety && j + pf.offsety < 0.9*ly) {
-            uxbc[j + pf.offsetxmin] = -u0*((j + pf.offsety) - 0.7*pf.ly)*((j + pf.offsety) - 0.9*pf.ly)/(0.2*pf.ly*0.2*pf.ly);
-            std::cout << j + pf.offsety << "\t" << -u0*((j + pf.offsety) - 0.7*pf.ly)*((j + pf.offsety) - 0.9*pf.ly)/(0.2*pf.ly*0.2*pf.ly) << std::endl;
+            uxbc[j + pf.offsetxmin] = -u0*((j + pf.offsety) - 0.7*pf.ly)*((j + pf.offsety) - 0.9*pf.ly)/(0.1*pf.ly*0.1*pf.ly);
         } else {
             uxbc[j + pf.offsetxmin] = 0.0;
         }

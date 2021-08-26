@@ -24,7 +24,7 @@ int main(int argc, char** argv) {
     assert(mx*my == PeTot);
 
     //********************Set parameters********************
-    int lx = 100, ly = 100, nt = 10000, dt = 100, nk = 50;
+    int lx = 100, ly = 100, nt = 10000, dt = 100, nk = 1;
     double nu = 0.005, u0 = 0.05, rho0 = 1.0, q = 0.01, amax = 50.0, scale0 = 1.0e0, weightlimit = 0.25, movelimit = 0.5, epsu = 1.0e-4;
     D2Q9<double> pf(lx, ly, MyRank, mx, my);
     double *rho = new double[pf.nxy], *ux = new double[pf.nxy], *uy = new double[pf.nxy], *uxm1 = new double[pf.nxy], *uym1 = new double[pf.nxy];
@@ -153,10 +153,12 @@ int main(int argc, char** argv) {
         for (int idx = 0; idx < pf.nxy; ++idx) {  
             dfds[idx] /= dfdsmax;
         }
-        std::cout << "\r" << std::fixed << std::setprecision(6) << k << "\t" << f << "\t" << g << std::endl;
+        if (MyRank == 0) {
+            std::cout << "\r" << std::fixed << std::setprecision(6) << k << "\t" << f << "\t" << g << std::endl;
+        }
 
         //********************Update variable********************
-        if (MyRank == 0) {
+        /*if (MyRank == 0) {
             std::cout << "Update design variable" << std::endl;
         }
         optimizer.UpdateVariables(s, f, dfds, { g }, { dgds });
@@ -167,17 +169,17 @@ int main(int argc, char** argv) {
                 std::cout << std::endl << "-----Optimized-----" << std::endl;
             }
             break;
-        }
+        }*/
     }
 
     //********************Export result********************
     VTKXMLExport file("result/pipebend", MyRank, lx, ly, 1, mx, my, 1);
     file.AddPointScaler("p", [&](int _i, int _j, int _k) { return rho[pf.Index(_i, _j)]/3.0; });
-    /*file.AddPointVector("u", 
+    file.AddPointVector("u", 
         [&](int _i, int _j, int _k) { return ux[pf.Index(_i, _j)]; },
         [&](int _i, int _j, int _k) { return uy[pf.Index(_i, _j)]; },
         [](int _i, int _j, int _k) { return 0.0; }
-    );*/
+    );
     //file.AddPointScaler("dfds", [&](int _i, int _j, int _k) {   return dfds[pf.Index(_i, _j)];  });
     //file.AddPointScaler("ip", [&](int _i, int _j, int _k) { return irho[pf.Index(_i, _j)]; });
     /*file.AddPointVector("iu", 

@@ -6,7 +6,9 @@
 #include <string>
 #include <fstream>
 #include <cmath>
-#include "mpi.h"
+#ifdef _USE_MPI_DEFINES
+    #include "mpi.h"
+#endif
 
 namespace {
     template<class T, class F>
@@ -250,9 +252,15 @@ private:
 				b_buffer[i] += p[this->IdxG(i, j)]/(this->U[j] - _xk[j]) + q[this->IdxG(i, j)]/(_xk[j] - this->L[j]);
 			}
 		}
+#ifdef _USE_MPI_DEFINES
         MPI_Allreduce(b_buffer.data(), b.data(), this->m, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+#endif
         for(int i = 0; i < this->m; i++){
+#ifdef _USE_MPI_DEFINES
 			b[i] -= _g[i];
+#else
+            b[i] = b_buffer[i] - _g[i];
+#endif
         }
      
         //----------Inner loop----------
@@ -343,9 +351,15 @@ private:
                     deltillambda_buffer[i] += p[this->IdxG(i, j)]/(this->U[j] - x[j]) + q[this->IdxG(i, j)]/(x[j] - this->L[j]);
                 }
             }
+#ifdef _USE_MPI_DEFINES
             MPI_Allreduce(deltillambda_buffer.data(), deltillambda.data(), this->m, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+#endif
             for(int i = 0; i < this->m; i++){
+#ifdef _USE_MPI_DEFINES
                 deltillambda[i] += -this->a[i]*z - y[i] - b[i] + eps/lambda[i];
+#else
+                deltillambda[i] = deltillambda_buffer[i] - this->a[i]*z - y[i] - b[i] + eps/lambda[i];
+#endif
                 Dlambday[i] = Dlambda[i] + 1.0/Dy[i];
                 deltillambday[i] = deltillambda[i] + deltily[i]/Dy[i];
             }
@@ -360,8 +374,15 @@ private:
                         }
                     }
                 }
+#ifdef _USE_MPI_DEFINES
                 MPI_Allreduce(A_buffer.data(), A.data(), (this->m + 1)*(this->m + 1), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+#endif
                 for(int ii = 0; ii < this->m; ii++){
+#ifndef _USE_MPI_DEFINES
+                    for(int jj = 0; jj < this->m; jj++){
+                        A[this->IdxAm(ii, jj)] = A_buffer[this->IdxAm(ii, jj)];
+                    }
+#endif
                     A[this->IdxAm(ii, ii)] += Dlambday[ii];
                     A[this->IdxAm(ii, this->m)] = this->a[ii];
                     A[this->IdxAm(this->m, ii)] = this->a[ii];
@@ -373,9 +394,15 @@ private:
                         B_buffer[ii] -= G[this->IdxG(ii, jj)]*deltilx[jj]/Dx[jj];
                     }
                 }
+#ifdef _USE_MPI_DEFINES
                 MPI_Allreduce(B_buffer.data(), B.data(), this->m, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+#endif
                 for(int ii = 0; ii < this->m; ii++){
+#ifdef _USE_MPI_DEFINES
                     B[ii] += deltillambday[ii];
+#else
+                    B[ii] = B_buffer[ii] + deltillambday[ii];
+#endif
                 }
                 B[this->m] = deltilz;
                 std::vector<T> dlambdaz = solvels<T>(A, B, [&](int _i, int _j) { return this->IdxAm(_i, _j); });
@@ -427,9 +454,15 @@ private:
                         dlambda_buffer[i] += G[this->IdxG(i, j)]*dx[j]/Dlambday[i];
                     }
                 }
+#ifdef _USE_MPI_DEFINES
                 MPI_Allreduce(dlambda_buffer.data(), dlambda.data(), this->m, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+#endif
                 for(int i = 0; i < this->m; i++){
+#ifdef _USE_MPI_DEFINES
                     dlambda[i] += -this->a[i]*dz/Dlambday[i] + deltillambday[i]/Dlambday[i];
+#else
+                    dlambda[i] = dlambda_buffer[i] - this->a[i]*dz/Dlambday[i] + deltillambday[i]/Dlambday[i];
+#endif
                 }
             }
             
@@ -454,7 +487,11 @@ private:
                     txmax_buffer = txmaxj;
                 }
             }
+#ifdef _USE_MPI_DEFINES
             MPI_Allreduce(&txmax_buffer, &txmax, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+#else
+            txmax = txmax_buffer;
+#endif
             T tymax = T();
             for(int i = 0; i < this->m; i++){
                 T tymaxi = std::max({-1.01*dy[i]/y[i], -1.01*dlambda[i]/lambda[i], -1.01*dmu[i]/mu[i], -1.01*ds[i]/s[i]});
@@ -527,10 +564,16 @@ private:
             for(int i = 0; i < this->m; i++){
                 plambda[j] += _lambda[i]*_p[this->IdxG(i, j)];
                 qlambda[j] += _lambda[i]*_q[this->IdxG(i, j)];
+#ifdef _USE_MPI_DEFINES
                 g_buffer[i] += _p[this->IdxG(i, j)]/(this->U[j] - _x[j]) + _q[this->IdxG(i, j)]/(_x[j] - this->L[j]);
+#else
+                g[i] += _p[this->IdxG(i, j)]/(this->U[j] - _x[j]) + _q[this->IdxG(i, j)]/(_x[j] - this->L[j]);
+#endif          
             }
         }
+#ifdef _USE_MPI_DEFINES
         MPI_Allreduce(g_buffer.data(), g.data(), this->m, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+#endif
 
         //----------Equation(5.9a)(5.9e)(5.9f)----------
         for(int j = 0; j < this->n; j++){
@@ -538,7 +581,11 @@ private:
             norm_buffer += pow(_gsi[j]*(_x[j] - _alpha[j]) - _eps, 2.0);    //  Equation(5.9e)
             norm_buffer += pow(_ita[j]*(_beta[j] - _x[j]) - _eps, 2.0);     //  Equation(5.9f)
         }
+#ifdef _USE_MPI_DEFINES
         MPI_Allreduce(&norm_buffer, &norm, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+#else
+        norm = norm_buffer;
+#endif
 
         //----------Equation(5.9b)(5.9d)(5.9g)(5.9i)----------
         for(int i = 0; i < this->m; i++){

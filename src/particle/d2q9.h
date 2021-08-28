@@ -6,7 +6,6 @@
 //*****************************************************************************
 
 #pragma once
-#include <cmath>
 #include <cassert>
 #ifdef _USE_MPI_DEFINES
     #include "mpi.h"

@@ -43,29 +43,25 @@ int main(int argc, char** argv) {
     //--------------------Direct analyze--------------------
     NS::InitialCondition(pf, rho, ux, uy, uz);
     for (int t = 1; t <= nt; ++t) {
-        if (t%dt != 0) {
-            NS::Macro_Collide_Stream(pf, rho, ux, uy, uz, nu);
-        } else {
-            NS::Macro_Collide_Stream(pf, rho, ux, uy, uz, nu, true);
-
-            if (MyRank == 0) {
-                std::cout << "t = " << t/dt << std::endl;
-            }
-            VTKXMLExport file("result/cavity3D", MyRank, lx, ly, lz, mx, my, mz);
-            file.AddPointScaler("rho", [&](int _i, int _j, int _k) { return rho[pf.Index(_i, _j, _k)]; });
-            file.AddPointVector("u", 
-                [&](int _i, int _j, int _k) { return ux[pf.Index(_i, _j, _k)]; },
-                [&](int _i, int _j, int _k) { return uy[pf.Index(_i, _j, _k)]; },
-                [&](int _i, int _j, int _k) { return uz[pf.Index(_i, _j, _k)]; }
-            );
+        if (t%dt == 0 && MyRank == 0) {
+            std::cout << "t = " << t/dt << std::endl;
         }
-
+        NS::Macro_Collide_Stream(pf, rho, ux, uy, uz, nu, true);
         pf.Swap();
         pf.Synchronize();
         pf.BoundaryCondition();
         NS::BoundaryConditionSetU(pf, uxbc, uybc, uzbc, boundaryu);
         pf.SmoothCorner();
     }
+
+    //--------------------Export result--------------------
+    VTKXMLExport file("result/cavity3D", MyRank, lx, ly, lz, mx, my, mz);
+    file.AddPointScaler("rho", [&](int _i, int _j, int _k) { return rho[pf.Index(_i, _j, _k)]; });
+    file.AddPointVector("u", 
+        [&](int _i, int _j, int _k) { return ux[pf.Index(_i, _j, _k)]; },
+        [&](int _i, int _j, int _k) { return uy[pf.Index(_i, _j, _k)]; },
+        [&](int _i, int _j, int _k) { return uz[pf.Index(_i, _j, _k)]; }
+    );
 
     delete[] rho, ux, uy, uz, uxbc, uybc, uzbc;
     delete[] boundaryu;

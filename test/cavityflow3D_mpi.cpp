@@ -6,7 +6,7 @@
 #define _USE_MPI_DEFINES
 #include "../src/particle/d3q15.h"
 #include "../src/equation/navierstokes.h"
-#include "../src/utility/vtkexport.h"
+#include "../src/utility/vtkxmlexport.h"
 
 using namespace PANSLBM2;
 
@@ -21,7 +21,7 @@ int main(int argc, char** argv) {
     assert(mx*my*mz == PeTot);
 
     //--------------------Set parameters--------------------
-    int lx = 30, ly = 30, lz = 30, nt = 100000, dt = 1000;
+    int lx = 30, ly = 30, lz = 30, nt = 10, dt = 1;
     double nu = 0.1, u0 = 0.1, theta = 30.0;
     D3Q15<double> pf(lx, ly, lz, MyRank, mx, my, mz);
     double *rho = new double[pf.nxyz], *ux = new double[pf.nxyz], *uy = new double[pf.nxyz], *uz = new double[pf.nxyz];
@@ -51,7 +51,7 @@ int main(int argc, char** argv) {
             if (MyRank == 0) {
                 std::cout << "t = " << t/dt << std::endl;
             }
-            VTKExport file("result/ns_at" + std::to_string(MyRank) + "_" + std::to_string(t/dt) + ".vtk", pf.nx, pf.ny, pf.nz);
+            VTKXMLExport file("result/cavity3D", MyRank, lx, ly, lz, mx, my, mz);
             file.AddPointScaler("rho", [&](int _i, int _j, int _k) { return rho[pf.Index(_i, _j, _k)]; });
             file.AddPointVector("u", 
                 [&](int _i, int _j, int _k) { return ux[pf.Index(_i, _j, _k)]; },

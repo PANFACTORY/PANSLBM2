@@ -51,12 +51,12 @@ int main(int argc, char** argv) {
             if (MyRank == 0) {
                 std::cout << "t = " << t/dt << std::endl;
             }
-            VTKExport file("result/ns_at" + std::to_string(MyRank) + "_" + std::to_string(t/dt) + ".vtk", pf.nx, pf.ny);
-            file.AddPointScaler("rho", [&](int _i, int _j, int _k) { return rho[pf.Index(_i, _j)]; });
+            VTKExport file("result/ns_at" + std::to_string(MyRank) + "_" + std::to_string(t/dt) + ".vtk", pf.nx, pf.ny, pf.nz);
+            file.AddPointScaler("rho", [&](int _i, int _j, int _k) { return rho[pf.Index(_i, _j, _k)]; });
             file.AddPointVector("u", 
-                [&](int _i, int _j, int _k) { return ux[pf.Index(_i, _j)]; },
-                [&](int _i, int _j, int _k) { return uy[pf.Index(_i, _j)]; },
-                [](int _i, int _j, int _k) { return 0.0; }
+                [&](int _i, int _j, int _k) { return ux[pf.Index(_i, _j, _k)]; },
+                [&](int _i, int _j, int _k) { return uy[pf.Index(_i, _j, _k)]; },
+                [&](int _i, int _j, int _k) { return uz[pf.Index(_i, _j, _k)]; }
             );
         }
 

@@ -257,7 +257,7 @@ private:
             
             //  Corner at xmin, ymax
             if (this->PEx == 0 && this->PEy == this->my - 1) {
-               idx = this->Index(0, this->ny - 1);
+                idx = this->Index(0, this->ny - 1);
                 idxx = this->Index(1, this->ny - 1);
                 idxy = this->Index(0,this->ny - 2);
                 this->f[D2Q9<T>::IndexF(idx, c)] = 0.5*(this->f[D2Q9<T>::IndexF(idxx, c)] + this->f[D2Q9<T>::IndexF(idxy, c)]);    

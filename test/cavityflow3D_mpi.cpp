@@ -62,6 +62,7 @@ int main(int argc, char** argv) {
         [&](int _i, int _j, int _k) { return uy[pf.Index(_i, _j, _k)]; },
         [&](int _i, int _j, int _k) { return uz[pf.Index(_i, _j, _k)]; }
     );
+    file.AddPointScaler("bctype", [&](int _i, int _j, int _k) { return pf.GetBoundary(_i, _j, _k); });
 
     delete[] rho, ux, uy, uz, uxbc, uybc, uzbc;
     delete[] boundaryu;

@@ -290,10 +290,13 @@ namespace PANSLBM2 {
         //  Function of setting boundary condition of NS set U for 3D
         template<class T, class P>
         void BoundaryConditionSetU(P& _p, const T *_uxbc, const T *_uybc, const T *_uzbc, const int *_bctype) {
+            int idx, idxbc;
+
             for (int j = 0; j < _p.ny; ++j) {
                 for (int k = 0; k < _p.nz; ++k) {
                     //  On xmin
-                    int idx = P::Index(0, j, k), idxbc = P::IndexBCx(j, k);
+                    idx = P::Index(0, j, k);
+                    idxbc = P::IndexBCx(j, k);
                     if (_bctype[idxbc] == INLET) {
                         T rho0 = (_p.f[P::IndexF(idx, 0)] + _p.f[P::IndexF(idx, 2)] + _p.f[P::IndexF(idx, 3)] + _p.f[P::IndexF(idx, 5)] + _p.f[P::IndexF(idx, 6)] + 2.0*(_p.f[P::IndexF(idx, 4)] + _p.f[P::IndexF(idx, 8)] + _p.f[P::IndexF(idx, 11)] + _p.f[P::IndexF(idx, 13)] + _p.f[P::IndexF(idx, 14)]))/(1.0 - _uxbc[idxbc]);
                         T mx = rho0*_uxbc[idxbc]/12.0;
@@ -307,7 +310,8 @@ namespace PANSLBM2 {
                     }
 
                     //  On xmax
-                    int idx = P::Index(_p.nx - 1, j, k), idxbc = P::IndexBCx(j, k);
+                    idx = P::Index(_p.nx - 1, j, k);
+                    idxbc = P::IndexBCx(j, k);
                     if (_bctype[idxbc] == INLET) {
                         T rho0 = (_p.f[P::IndexF(idx, 0)] + _p.f[P::IndexF(idx, 2)] + _p.f[P::IndexF(idx, 3)] + _p.f[P::IndexF(idx, 5)] + _p.f[P::IndexF(idx, 6)] + 2.0*(_p.f[P::IndexF(idx, 1)] + _p.f[P::IndexF(idx, 7)] + _p.f[P::IndexF(idx, 9)] + _p.f[P::IndexF(idx, 10)] + _p.f[P::IndexF(idx, 12)]))/(1.0 + _uxbc[idxbc]);
                         T mx = rho0*_uxbc[idxbc]/12.0;
@@ -324,7 +328,8 @@ namespace PANSLBM2 {
             for (int k = 0; k < _p.nz; ++k) {
                 for (int i = 0; i < _p.nx; ++i) {
                     //  On ymin
-                    int idx = P::Index(i, 0, k), idxbc = P::IndexBCy(k, i);
+                    idx = P::Index(i, 0, k);
+                    idxbc = P::IndexBCy(k, i);
                     if (_bctype[idxbc] == INLET) {
                         T rho0 = (_p.f[P::IndexF(idx, 0)] + _p.f[P::IndexF(idx, 1)] + _p.f[P::IndexF(idx, 3)] + _p.f[P::IndexF(idx, 4)] + _p.f[P::IndexF(idx, 6)] + 2.0*(_p.f[P::IndexF(idx, 5)] + _p.f[P::IndexF(idx, 9)] + _p.f[P::IndexF(idx, 11)] + _p.f[P::IndexF(idx, 12)] + _p.f[P::IndexF(idx, 14)]))/(1.0 - _uybc[idxbc]);
                         T mx = 0.25*(_p.f[P::IndexF(idx, 1)] - _p.f[P::IndexF(idx, 4)] - rho0*_uxbc[idxbc]);
@@ -338,7 +343,8 @@ namespace PANSLBM2 {
                     }
 
                     //  On ymax
-                    int idx = P::Index(i, _p.ny - 1, k), idxbc = P::IndexBCy(k, i);
+                    idx = P::Index(i, _p.ny - 1, k);
+                    idxbc = P::IndexBCy(k, i);
                     if (_bctype[idxbc] == INLET) {
                         T rho0 = (_p.f[P::IndexF(idx, 0)] + _p.f[P::IndexF(idx, 1)] + _p.f[P::IndexF(idx, 3)] + _p.f[P::IndexF(idx, 4)] + _p.f[P::IndexF(idx, 6)] + 2.0*(_p.f[P::IndexF(idx, 2)] + _p.f[P::IndexF(idx, 7)] + _p.f[P::IndexF(idx, 8)] + _p.f[P::IndexF(idx, 10)] + _p.f[P::IndexF(idx, 13)]))/(1.0 + _uybc[idxbc]);
                         T mx = 0.25*(_p.f[P::IndexF(idx, 1)] - _p.f[P::IndexF(idx, 4)] - rho0*_uxbc[idxbc]);
@@ -355,7 +361,8 @@ namespace PANSLBM2 {
             for (int i = 0; i < _p.nx; ++i) {
                 for (int j = 0; j < _p.ny; ++j) {
                     //  On zmin
-                    int idx = P::Index(i, j, 0), idxbc = P::IndexBCz(i, j);
+                    idx = P::Index(i, j, 0);
+                    idxbc = P::IndexBCz(i, j);
                     if (_bctype[idxbc] == INLET) {
                         T rho0 = (_p.f[P::IndexF(idx, 0)] + _p.f[P::IndexF(idx, 1)] + _p.f[P::IndexF(idx, 2)] + _p.f[P::IndexF(idx, 4)] + _p.f[P::IndexF(idx, 5)] + 2.0*(_p.f[P::IndexF(idx, 6)] + _p.f[P::IndexF(idx, 10)] + _p.f[P::IndexF(idx, 11)] + _p.f[P::IndexF(idx, 12)] + _p.f[P::IndexF(idx, 13)]))/(1.0 - _uzbc[idxbc]);
                         T mx = 0.25*(_p.f[P::IndexF(idx, 1)] - _p.f[P::IndexF(idx, 4)] - rho0*_uxbc[idxbc]);
@@ -369,7 +376,8 @@ namespace PANSLBM2 {
                     }
 
                     //  On zmax
-                    int idx = P::Index(i, j, _p.nz - 1), idxbc = P::IndexBCz(i, j);
+                    idx = P::Index(i, j, _p.nz - 1);
+                    idxbc = P::IndexBCz(i, j);
                     if (_bctype[idxbc] == INLET) {
                         T rho0 = (_p.f[P::IndexF(idx, 0)] + _p.f[P::IndexF(idx, 1)] + _p.f[P::IndexF(idx, 2)] + _p.f[P::IndexF(idx, 4)] + _p.f[P::IndexF(idx, 5)] + 2.0*(_p.f[P::IndexF(idx, 3)] + _p.f[P::IndexF(idx, 7)] + _p.f[P::IndexF(idx, 8)] + _p.f[P::IndexF(idx, 9)] + _p.f[P::IndexF(idx, 14)]))/(1.0 + _uzbc[idxbc]);
                         T mx = 0.25*(_p.f[P::IndexF(idx, 1)] - _p.f[P::IndexF(idx, 4)] - rho0*_uxbc[idxbc]);
@@ -440,10 +448,13 @@ namespace PANSLBM2 {
         //  Function of setting boundary condition of NS set rho for 3D
         template<class T, class P>
         void BoundaryConditionSetRho(P& _p, const T *_rhobc, const T *_usbc, const T *_utbc, const int *_bctype) {
+            int idx, idxbc;
+
             for (int j = 0; j < _p.ny; ++j) {
                 for (int k = 0; k < _p.nz; ++k) {
                     //  On xmin
-                    int idx = P::Index(0, j, k), idxbc = P::IndexBCx(j, k);
+                    idx = P::Index(0, j, k);
+                    idxbc = P::IndexBCx(j, k);
                     if (_bctype[idxbc] == OUTLET) {
                         T ux0 = 1.0 - (_p.f[P::IndexF(idx, 0)] + _p.f[P::IndexF(idx, 2)] + _p.f[P::IndexF(idx, 3)] + _p.f[P::IndexF(idx, 5)] + _p.f[P::IndexF(idx, 6)] + 2.0*(_p.f[P::IndexF(idx, 4)] + _p.f[P::IndexF(idx, 8)] + _p.f[P::IndexF(idx, 11)] + _p.f[P::IndexF(idx, 13)] + _p.f[P::IndexF(idx, 14)]))/_rhobc[idxbc];
                         T mx = _rhobc[idxbc]*ux0/12.0;
@@ -457,7 +468,8 @@ namespace PANSLBM2 {
                     }
 
                     //  On xmax
-                    int idx = P::Index(_p.nx - 1, j, k), idxbc = P::IndexBCx(j, k);
+                    idx = P::Index(_p.nx - 1, j, k);
+                    idxbc = P::IndexBCx(j, k);
                     if (_bctype[idxbc] == OUTLET) {
                         T ux0 = -1.0 + (_p.f[P::IndexF(idx, 0)] + _p.f[P::IndexF(idx, 2)] + _p.f[P::IndexF(idx, 3)] + _p.f[P::IndexF(idx, 5)] + _p.f[P::IndexF(idx, 6)] + 2.0*(_p.f[P::IndexF(idx, 1)] + _p.f[P::IndexF(idx, 7)] + _p.f[P::IndexF(idx, 9)] + _p.f[P::IndexF(idx, 10)] + _p.f[P::IndexF(idx, 12)]))/_rhobc[idxbc];
                         T mx = _rhobc[idxbc]*ux0/12.0;
@@ -474,7 +486,8 @@ namespace PANSLBM2 {
             for (int k = 0; k < _p.nz; ++k) {
                 for (int i = 0; i < _p.nx; ++i) {
                     //  On ymin
-                    int idx = P::Index(i, 0, k), idxbc = P::IndexBCy(k, i);
+                    idx = P::Index(i, 0, k);
+                    idxbc = P::IndexBCy(k, i);
                     if (_bctype[idxbc] == OUTLET) {
                         T uy0 = 1.0 - (_p.f[P::IndexF(idx, 0)] + _p.f[P::IndexF(idx, 1)] + _p.f[P::IndexF(idx, 3)] + _p.f[P::IndexF(idx, 4)] + _p.f[P::IndexF(idx, 6)] + 2.0*(_p.f[P::IndexF(idx, 5)] + _p.f[P::IndexF(idx, 9)] + _p.f[P::IndexF(idx, 11)] + _p.f[P::IndexF(idx, 12)] + _p.f[P::IndexF(idx, 14)]))/_rhobc[idxbc];
                         T mx = 0.25*(_p.f[P::IndexF(idx, 1)] - _p.f[P::IndexF(idx, 4)] - _rhobc[idxbc]*_utbc[idxbc]);
@@ -488,7 +501,8 @@ namespace PANSLBM2 {
                     }
 
                     //  On ymax
-                    int idx = P::Index(i, _p.ny - 1, k), idxbc = P::IndexBCy(k, i);
+                    idx = P::Index(i, _p.ny - 1, k);
+                    idxbc = P::IndexBCy(k, i);
                     if (_bctype[idxbc] == OUTLET) {
                         T uy0 = -1.0 + (_p.f[P::IndexF(idx, 0)] + _p.f[P::IndexF(idx, 1)] + _p.f[P::IndexF(idx, 3)] + _p.f[P::IndexF(idx, 4)] + _p.f[P::IndexF(idx, 6)] + 2.0*(_p.f[P::IndexF(idx, 2)] + _p.f[P::IndexF(idx, 7)] + _p.f[P::IndexF(idx, 8)] + _p.f[P::IndexF(idx, 10)] + _p.f[P::IndexF(idx, 13)]))/_rhobc[idxbc];
                         T mx = 0.25*(_p.f[P::IndexF(idx, 1)] - _p.f[P::IndexF(idx, 4)] - _rhobc[idxbc]*_utbc[idxbc]);
@@ -505,7 +519,8 @@ namespace PANSLBM2 {
             for (int i = 0; i < _p.nx; ++i) {
                 for (int j = 0; j < _p.ny; ++j) {
                     //  On zmin
-                    int idx = P::Index(i, j, 0), idxbc = P::IndexBCz(i, j);
+                    idx = P::Index(i, j, 0);
+                    idxbc = P::IndexBCz(i, j);
                     if (_bctype[idxbc] == OUTLET) {
                         T uz0 = 1.0 - (_p.f[P::IndexF(idx, 0)] + _p.f[P::IndexF(idx, 1)] + _p.f[P::IndexF(idx, 2)] + _p.f[P::IndexF(idx, 4)] + _p.f[P::IndexF(idx, 5)] + 2.0*(_p.f[P::IndexF(idx, 6)] + _p.f[P::IndexF(idx, 10)] + _p.f[P::IndexF(idx, 11)] + _p.f[P::IndexF(idx, 12)] + _p.f[P::IndexF(idx, 13)]))/_rhobc[idxbc];
                         T mx = 0.25*(_p.f[P::IndexF(idx, 1)] - _p.f[P::IndexF(idx, 4)] - _rhobc[idxbc]*_usbc[idxbc]);
@@ -519,7 +534,8 @@ namespace PANSLBM2 {
                     }
 
                     //  On zmax
-                    int idx = P::Index(i, j, _p.nz - 1), idxbc = P::IndexBCz(i, j);
+                    idx = P::Index(i, j, _p.nz - 1);
+                    idxbc = P::IndexBCz(i, j);
                     if (_bctype[idxbc] == OUTLET) {
                         T uz0 = -1.0 + (_p.f[P::IndexF(idx, 0)] + _p.f[P::IndexF(idx, 1)] + _p.f[P::IndexF(idx, 2)] + _p.f[P::IndexF(idx, 4)] + _p.f[P::IndexF(idx, 5)] + 2.0*(_p.f[P::IndexF(idx, 3)] + _p.f[P::IndexF(idx, 7)] + _p.f[P::IndexF(idx, 8)] + _p.f[P::IndexF(idx, 9)] + _p.f[P::IndexF(idx, 14)]))/_rhobc[idxbc];
                         T mx = 0.25*(_p.f[P::IndexF(idx, 1)] - _p.f[P::IndexF(idx, 4)] - _rhobc[idxbc]*_usbc[idxbc]);

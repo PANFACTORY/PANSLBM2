@@ -398,172 +398,172 @@ private:
         int idx, idxx, idxy, idxz;
         for (int i = 0; i < this->nx; ++i) {
             //  Along line ymin and zmin
-            idx = D3Q15<T>::Index(i, 0, 0, this->nx, this->ny, this->nz);
-            idxy = D3Q15<T>::Index(i, 1, 0, this->nx, this->ny, this->nz);
-            idxz = D3Q15<T>::Index(i, 0, 1, this->nx, this->ny, this->nz);
+            idx = this->Index(i, 0, 0, this->nx, this->ny, this->nz);
+            idxy = this->Index(i, 1, 0, this->nx, this->ny, this->nz);
+            idxz = this->Index(i, 0, 1, this->nx, this->ny, this->nz);
             for (int c = 0; c < D3Q15<T>::nc; ++c) {
                 this->f[D3Q15<T>::IndexF(idx, c)] = 0.5*(this->f[D3Q15<T>::IndexF(idxy, c)] + this->f[D3Q15<T>::IndexF(idxz, c)]);
             }
             
             //  Along line ymax and zmin
-            idx = D3Q15<T>::Index(i, this->ny - 1, 0, this->nx, this->ny, this->nz);
-            idxy = D3Q15<T>::Index(i, this->ny - 2, 0, this->nx, this->ny, this->nz);
-            idxz = D3Q15<T>::Index(i, this->ny - 1, 1, this->nx, this->ny, this->nz);
+            idx = this->Index(i, this->ny - 1, 0, this->nx, this->ny, this->nz);
+            idxy = this->Index(i, this->ny - 2, 0, this->nx, this->ny, this->nz);
+            idxz = this->Index(i, this->ny - 1, 1, this->nx, this->ny, this->nz);
             for (int c = 0; c < D3Q15<T>::nc; ++c) {
                 this->f[D3Q15<T>::IndexF(idx, c)] = 0.5*(this->f[D3Q15<T>::IndexF(idxy, c)] + this->f[D3Q15<T>::IndexF(idxz, c)]);
             }
 
             //  Along line ymax and zmax
-            idx = D3Q15<T>::Index(i, this->ny - 1, this->nz - 1, this->nx, this->ny, this->nz);
-            idxy = D3Q15<T>::Index(i, this->ny - 2, this->nz - 1, this->nx, this->ny, this->nz);
-            idxz = D3Q15<T>::Index(i, this->ny - 1, this->nz - 2, this->nx, this->ny, this->nz);
+            idx = this->Index(i, this->ny - 1, this->nz - 1, this->nx, this->ny, this->nz);
+            idxy = this->Index(i, this->ny - 2, this->nz - 1, this->nx, this->ny, this->nz);
+            idxz = this->Index(i, this->ny - 1, this->nz - 2, this->nx, this->ny, this->nz);
             for (int c = 0; c < D3Q15<T>::nc; ++c) {
                 this->f[D3Q15<T>::IndexF(idx, c)] = 0.5*(this->f[D3Q15<T>::IndexF(idxy, c)] + this->f[D3Q15<T>::IndexF(idxz, c)]);
             }
 
             //  Along line ymin and zmax
-            idx = D3Q15<T>::Index(i, 0, this->nz - 1, this->nx, this->ny, this->nz);
-            idxy = D3Q15<T>::Index(i, 1, this->nz - 1, this->nx, this->ny, this->nz);
-            idxz = D3Q15<T>::Index(i, 0, this->nz - 2, this->nx, this->ny, this->nz);
+            idx = this->Index(i, 0, this->nz - 1, this->nx, this->ny, this->nz);
+            idxy = this->Index(i, 1, this->nz - 1, this->nx, this->ny, this->nz);
+            idxz = this->Index(i, 0, this->nz - 2, this->nx, this->ny, this->nz);
             for (int c = 0; c < D3Q15<T>::nc; ++c) {
                 this->f[D3Q15<T>::IndexF(idx, c)] = 0.5*(this->f[D3Q15<T>::IndexF(idxy, c)] + this->f[D3Q15<T>::IndexF(idxz, c)]);
             }
         }
         for (int j = 0; j < this->ny; ++j) {
             //  Along line zmin and xmin
-            idx = D3Q15<T>::Index(0, j, 0, this->nx, this->ny, this->nz);
-            idxz = D3Q15<T>::Index(1, j, 0, this->nx, this->ny, this->nz);
-            idxx = D3Q15<T>::Index(0, j, 1, this->nx, this->ny, this->nz);
+            idx = this->Index(0, j, 0, this->nx, this->ny, this->nz);
+            idxz = this->Index(1, j, 0, this->nx, this->ny, this->nz);
+            idxx = this->Index(0, j, 1, this->nx, this->ny, this->nz);
             for (int c = 0; c < D3Q15<T>::nc; ++c) {
                 this->f[D3Q15<T>::IndexF(idx, c)] = 0.5*(this->f[D3Q15<T>::IndexF(idxz, c)] + this->f[D3Q15<T>::IndexF(idxx, c)]);
             }
                             
             //  Along line zmax and xmin
-            idx = D3Q15<T>::Index(0, j, this->nz - 1, this->nx, this->ny, this->nz);
-            idxz = D3Q15<T>::Index(0, j, this->nz - 2, this->nx, this->ny, this->nz);
-            idxx = D3Q15<T>::Index(1, j, this->nz - 1, this->nx, this->ny, this->nz);
+            idx = this->Index(0, j, this->nz - 1, this->nx, this->ny, this->nz);
+            idxz = this->Index(0, j, this->nz - 2, this->nx, this->ny, this->nz);
+            idxx = this->Index(1, j, this->nz - 1, this->nx, this->ny, this->nz);
             for (int c = 0; c < D3Q15<T>::nc; ++c) {
                 this->f[D3Q15<T>::IndexF(idx, c)] = 0.5*(this->f[D3Q15<T>::IndexF(idxz, c)] + this->f[D3Q15<T>::IndexF(idxx, c)]);
             }
                         
             //  Along line zmax and xmax
-            idx = D3Q15<T>::Index(this->nx - 1, j, this->nz - 1, this->nx, this->ny, this->nz);
-            idxz = D3Q15<T>::Index(this->nx - 1, j, this->nz - 2, this->nx, this->ny, this->nz);
-            idxx = D3Q15<T>::Index(this->nx - 2, j, this->nz - 1, this->nx, this->ny, this->nz);
+            idx = this->Index(this->nx - 1, j, this->nz - 1, this->nx, this->ny, this->nz);
+            idxz = this->Index(this->nx - 1, j, this->nz - 2, this->nx, this->ny, this->nz);
+            idxx = this->Index(this->nx - 2, j, this->nz - 1, this->nx, this->ny, this->nz);
             for (int c = 0; c < D3Q15<T>::nc; ++c) {
                 this->f[D3Q15<T>::IndexF(idx, c)] = 0.5*(this->f[D3Q15<T>::IndexF(idxz, c)] + this->f[D3Q15<T>::IndexF(idxx, c)]);
             }
             
             //  Along line zmin and xmax
-            idx = D3Q15<T>::Index(this->nx - 1, j, 0, this->nx, this->ny, this->nz);
-            idxz = D3Q15<T>::Index(this->nx - 1, j, 1, this->nx, this->ny, this->nz);
-            idxx = D3Q15<T>::Index(this->nx - 2, j, 0, this->nx, this->ny, this->nz);
+            idx = this->Index(this->nx - 1, j, 0, this->nx, this->ny, this->nz);
+            idxz = this->Index(this->nx - 1, j, 1, this->nx, this->ny, this->nz);
+            idxx = this->Index(this->nx - 2, j, 0, this->nx, this->ny, this->nz);
             for (int c = 0; c < D3Q15<T>::nc; ++c) {
                 this->f[D3Q15<T>::IndexF(idx, c)] = 0.5*(this->f[D3Q15<T>::IndexF(idxz, c)] + this->f[D3Q15<T>::IndexF(idxx, c)]);
             }
         }
         for (int k = 0; k < this->nz; ++k) {
             //  Along line xmin and ymin
-            idx = D3Q15<T>::Index(0, 0, k, this->nx, this->ny, this->nz);
-            idxx = D3Q15<T>::Index(1, 0, k, this->nx, this->ny, this->nz);
-            idxy = D3Q15<T>::Index(0, 1, k, this->nx, this->ny, this->nz);
+            idx = this->Index(0, 0, k, this->nx, this->ny, this->nz);
+            idxx = this->Index(1, 0, k, this->nx, this->ny, this->nz);
+            idxy = this->Index(0, 1, k, this->nx, this->ny, this->nz);
             for (int c = 0; c < D3Q15<T>::nc; ++c) {
                 this->f[D3Q15<T>::IndexF(idx, c)] = 0.5*(this->f[D3Q15<T>::IndexF(idxx, c)] + this->f[D3Q15<T>::IndexF(idxy, c)]);
             }
                             
             //  Along line xmax and ymin
-            idx = D3Q15<T>::Index(this->nx - 1, 0, k, this->nx, this->ny, this->nz);
-            idxx = D3Q15<T>::Index(this->nx - 2, 0, k, this->nx, this->ny, this->nz);
-            idxy = D3Q15<T>::Index(this->nx - 1, 1, k, this->nx, this->ny, this->nz);
+            idx = this->Index(this->nx - 1, 0, k, this->nx, this->ny, this->nz);
+            idxx = this->Index(this->nx - 2, 0, k, this->nx, this->ny, this->nz);
+            idxy = this->Index(this->nx - 1, 1, k, this->nx, this->ny, this->nz);
             for (int c = 0; c < D3Q15<T>::nc; ++c) {
                 this->f[D3Q15<T>::IndexF(idx, c)] = 0.5*(this->f[D3Q15<T>::IndexF(idxx, c)] + this->f[D3Q15<T>::IndexF(idxy, c)]);
             }
             
             //  Along line xmax and ymax
-            idx = D3Q15<T>::Index(this->nx - 1, this->ny - 1, k, this->nx, this->ny, this->nz);
-            idxx = D3Q15<T>::Index(this->nx - 2, this->ny - 1, k, this->nx, this->ny, this->nz);
-            idxy = D3Q15<T>::Index(this->nx - 1, this->ny - 2, k, this->nx, this->ny, this->nz);
+            idx = this->Index(this->nx - 1, this->ny - 1, k, this->nx, this->ny, this->nz);
+            idxx = this->Index(this->nx - 2, this->ny - 1, k, this->nx, this->ny, this->nz);
+            idxy = this->Index(this->nx - 1, this->ny - 2, k, this->nx, this->ny, this->nz);
             for (int c = 0; c < D3Q15<T>::nc; ++c) {
                 this->f[D3Q15<T>::IndexF(idx, c)] = 0.5*(this->f[D3Q15<T>::IndexF(idxx, c)] + this->f[D3Q15<T>::IndexF(idxy, c)]);
             }
                             
             //  Along line xmin and ymax
-            idx = D3Q15<T>::Index(0, this->ny - 1, k, this->nx, this->ny, this->nz);
-            idxx = D3Q15<T>::Index(1, this->ny - 1, k, this->nx, this->ny, this->nz);
-            idxy = D3Q15<T>::Index(0, this->ny - 2, k, this->nx, this->ny, this->nz);
+            idx = this->Index(0, this->ny - 1, k, this->nx, this->ny, this->nz);
+            idxx = this->Index(1, this->ny - 1, k, this->nx, this->ny, this->nz);
+            idxy = this->Index(0, this->ny - 2, k, this->nx, this->ny, this->nz);
             for (int c = 0; c < D3Q15<T>::nc; ++c) {
                 this->f[D3Q15<T>::IndexF(idx, c)] = 0.5*(this->f[D3Q15<T>::IndexF(idxx, c)] + this->f[D3Q15<T>::IndexF(idxy, c)]);
             }
         }
 
         //  Corner at xmin, ymin and zmin
-        idx = D3Q15<T>::Index(0, 0, 0, this->nx, this->ny, this->nz);
-        idxx = D3Q15<T>::Index(1, 0, 0, this->nx, this->ny, this->nz);
-        idxy = D3Q15<T>::Index(0, 1, 0, this->nx, this->ny, this->nz);
-        idxz = D3Q15<T>::Index(0, 0, 1, this->nx, this->ny, this->nz);
+        idx = this->Index(0, 0, 0, this->nx, this->ny, this->nz);
+        idxx = this->Index(1, 0, 0, this->nx, this->ny, this->nz);
+        idxy = this->Index(0, 1, 0, this->nx, this->ny, this->nz);
+        idxz = this->Index(0, 0, 1, this->nx, this->ny, this->nz);
         for (int c = 0; c < D3Q15<T>::nc; ++c) {
             this->f[D3Q15<T>::IndexF(idx, c)] = (this->f[D3Q15<T>::IndexF(idxx, c)] + this->f[D3Q15<T>::IndexF(idxy, c)] + this->f[D3Q15<T>::IndexF(idxz, c)])/3.0;
         }
 
         //  Corner at xmax, ymin and zmin
-        idx = D3Q15<T>::Index(this->nx - 1, 0, 0, this->nx, this->ny, this->nz);
-        idxx = D3Q15<T>::Index(this->nx - 2, 0, 0, this->nx, this->ny, this->nz);
-        idxy = D3Q15<T>::Index(this->nx - 1, 1, 0, this->nx, this->ny, this->nz);
-        idxz = D3Q15<T>::Index(this->nx - 1, 0, 1, this->nx, this->ny, this->nz);
+        idx = this->Index(this->nx - 1, 0, 0, this->nx, this->ny, this->nz);
+        idxx = this->Index(this->nx - 2, 0, 0, this->nx, this->ny, this->nz);
+        idxy = this->Index(this->nx - 1, 1, 0, this->nx, this->ny, this->nz);
+        idxz = this->Index(this->nx - 1, 0, 1, this->nx, this->ny, this->nz);
         for (int c = 0; c < D3Q15<T>::nc; ++c) {
             this->f[D3Q15<T>::IndexF(idx, c)] = (this->f[D3Q15<T>::IndexF(idxx, c)] + this->f[D3Q15<T>::IndexF(idxy, c)] + this->f[D3Q15<T>::IndexF(idxz, c)])/3.0;
         }
 
         //  Corner at xmax, ymax and zmin
-        idx = D3Q15<T>::Index(this->nx - 1, this->ny - 1, 0, this->nx, this->ny, this->nz);
-        idxx = D3Q15<T>::Index(this->nx - 2, this->ny - 1, 0, this->nx, this->ny, this->nz);
-        idxy = D3Q15<T>::Index(this->nx - 1, this->ny - 2, 0, this->nx, this->ny, this->nz);
-        idxz = D3Q15<T>::Index(this->nx - 1, this->ny - 1, 1, this->nx, this->ny, this->nz);
+        idx = this->Index(this->nx - 1, this->ny - 1, 0, this->nx, this->ny, this->nz);
+        idxx = this->Index(this->nx - 2, this->ny - 1, 0, this->nx, this->ny, this->nz);
+        idxy = this->Index(this->nx - 1, this->ny - 2, 0, this->nx, this->ny, this->nz);
+        idxz = this->Index(this->nx - 1, this->ny - 1, 1, this->nx, this->ny, this->nz);
         for (int c = 0; c < D3Q15<T>::nc; ++c) {
             this->f[D3Q15<T>::IndexF(idx, c)] = (this->f[D3Q15<T>::IndexF(idxx, c)] + this->f[D3Q15<T>::IndexF(idxy, c)] + this->f[D3Q15<T>::IndexF(idxz, c)])/3.0;
         }
 
         //  Corner at xmin, ymax and zmin
-        idx = D3Q15<T>::Index(0, this->ny - 1, 0, this->nx, this->ny, this->nz);
-        idxx = D3Q15<T>::Index(1, this->ny - 1, 0, this->nx, this->ny, this->nz);
-        idxy = D3Q15<T>::Index(0, this->ny - 2, 0, this->nx, this->ny, this->nz);
-        idxz = D3Q15<T>::Index(0, this->ny - 1, 1, this->nx, this->ny, this->nz);
+        idx = this->Index(0, this->ny - 1, 0, this->nx, this->ny, this->nz);
+        idxx = this->Index(1, this->ny - 1, 0, this->nx, this->ny, this->nz);
+        idxy = this->Index(0, this->ny - 2, 0, this->nx, this->ny, this->nz);
+        idxz = this->Index(0, this->ny - 1, 1, this->nx, this->ny, this->nz);
         for (int c = 0; c < D3Q15<T>::nc; ++c) {
             this->f[D3Q15<T>::IndexF(idx, c)] = (this->f[D3Q15<T>::IndexF(idxx, c)] + this->f[D3Q15<T>::IndexF(idxy, c)] + this->f[D3Q15<T>::IndexF(idxz, c)])/3.0;
         }
 
         //  Corner at xmin, ymin and zmax
-        idx = D3Q15<T>::Index(0, 0, this->nz - 1, this->nx, this->ny, this->nz);
-        idxx = D3Q15<T>::Index(1, 0, this->nz - 1, this->nx, this->ny, this->nz);
-        idxy = D3Q15<T>::Index(0, 1, this->nz - 1, this->nx, this->ny, this->nz);
-        idxz = D3Q15<T>::Index(0, 0, this->nz - 2, this->nx, this->ny, this->nz);
+        idx = this->Index(0, 0, this->nz - 1, this->nx, this->ny, this->nz);
+        idxx = this->Index(1, 0, this->nz - 1, this->nx, this->ny, this->nz);
+        idxy = this->Index(0, 1, this->nz - 1, this->nx, this->ny, this->nz);
+        idxz = this->Index(0, 0, this->nz - 2, this->nx, this->ny, this->nz);
         for (int c = 0; c < D3Q15<T>::nc; ++c) {
             this->f[D3Q15<T>::IndexF(idx, c)] = (this->f[D3Q15<T>::IndexF(idxx, c)] + this->f[D3Q15<T>::IndexF(idxy, c)] + this->f[D3Q15<T>::IndexF(idxz, c)])/3.0;
         }
 
         //  Corner at xmax, ymin and zmax
-        idx = D3Q15<T>::Index(this->nx - 1, 0, this->nz - 1, this->nx, this->ny, this->nz);
-        idxx = D3Q15<T>::Index(this->nx - 2, 0, this->nz - 1, this->nx, this->ny, this->nz);
-        idxy = D3Q15<T>::Index(this->nx - 1, 1, this->nz - 1, this->nx, this->ny, this->nz);
-        idxz = D3Q15<T>::Index(this->nx - 1, 0, this->nz - 2, this->nx, this->ny, this->nz);
+        idx = this->Index(this->nx - 1, 0, this->nz - 1, this->nx, this->ny, this->nz);
+        idxx = this->Index(this->nx - 2, 0, this->nz - 1, this->nx, this->ny, this->nz);
+        idxy = this->Index(this->nx - 1, 1, this->nz - 1, this->nx, this->ny, this->nz);
+        idxz = this->Index(this->nx - 1, 0, this->nz - 2, this->nx, this->ny, this->nz);
         for (int c = 0; c < D3Q15<T>::nc; ++c) {
             this->f[D3Q15<T>::IndexF(idx, c)] = (this->f[D3Q15<T>::IndexF(idxx, c)] + this->f[D3Q15<T>::IndexF(idxy, c)] + this->f[D3Q15<T>::IndexF(idxz, c)])/3.0;
         }
 
         //  Corner at xmax, ymax and zmax
-        idx = D3Q15<T>::Index(this->nx - 1, this->ny - 1, this->nz - 1, this->nx, this->ny, this->nz);
-        idxx = D3Q15<T>::Index(this->nx - 2, this->ny - 1, this->nz - 1, this->nx, this->ny, this->nz);
-        idxy = D3Q15<T>::Index(this->nx - 1, this->ny - 2, this->nz - 1, this->nx, this->ny, this->nz);
-        idxz = D3Q15<T>::Index(this->nx - 1, this->ny - 1, this->nz - 2, this->nx, this->ny, this->nz);
+        idx = this->Index(this->nx - 1, this->ny - 1, this->nz - 1, this->nx, this->ny, this->nz);
+        idxx = this->Index(this->nx - 2, this->ny - 1, this->nz - 1, this->nx, this->ny, this->nz);
+        idxy = this->Index(this->nx - 1, this->ny - 2, this->nz - 1, this->nx, this->ny, this->nz);
+        idxz = this->Index(this->nx - 1, this->ny - 1, this->nz - 2, this->nx, this->ny, this->nz);
         for (int c = 0; c < D3Q15<T>::nc; ++c) {
             this->f[D3Q15<T>::IndexF(idx, c)] = (this->f[D3Q15<T>::IndexF(idxx, c)] + this->f[D3Q15<T>::IndexF(idxy, c)] + this->f[D3Q15<T>::IndexF(idxz, c)])/3.0;
         }
 
         //  Corner at xmin, ymax and zmax
-        idx = D3Q15<T>::Index(0, this->ny - 1, this->nz - 1, this->nx, this->ny, this->nz);
-        idxx = D3Q15<T>::Index(1, this->ny - 1, this->nz - 1, this->nx, this->ny, this->nz);
-        idxy = D3Q15<T>::Index(0, this->ny - 2, this->nz - 1, this->nx, this->ny, this->nz);
-        idxz = D3Q15<T>::Index(0, this->ny - 1, this->nz - 2, this->nx, this->ny, this->nz);
+        idx = this->Index(0, this->ny - 1, this->nz - 1, this->nx, this->ny, this->nz);
+        idxx = this->Index(1, this->ny - 1, this->nz - 1, this->nx, this->ny, this->nz);
+        idxy = this->Index(0, this->ny - 2, this->nz - 1, this->nx, this->ny, this->nz);
+        idxz = this->Index(0, this->ny - 1, this->nz - 2, this->nx, this->ny, this->nz);
         for (int c = 0; c < D3Q15<T>::nc; ++c) {
             this->f[D3Q15<T>::IndexF(idx, c)] = (this->f[D3Q15<T>::IndexF(idxx, c)] + this->f[D3Q15<T>::IndexF(idxy, c)] + this->f[D3Q15<T>::IndexF(idxz, c)])/3.0;
         }

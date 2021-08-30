@@ -1,0 +1,74 @@
+#define _USE_MATH_DEFINES
+#include <cmath>
+#include <iostream>
+#include "mpi.h"
+
+#define _USE_MPI_DEFINES
+#include "../src/particle/d3q15.h"
+#include "../src/equation/navierstokes.h"
+#include "../src/utility/vtkexport.h"
+
+using namespace PANSLBM2;
+
+int main(int argc, char** argv) {
+    int PeTot, MyRank;
+    MPI_Init(&argc, &argv);
+    MPI_Comm_size(MPI_COMM_WORLD, &PeTot);
+    MPI_Comm_rank(MPI_COMM_WORLD, &MyRank);
+
+    assert(argc == 4);
+    int mx = atoi(argv[1]), my = atoi(argv[2]), mz = atoi(argv[3]);
+    assert(mx*my*mz == PeTot);
+
+    //--------------------Set parameters--------------------
+    int lx = 30, ly = 30, lz = 30, nt = 100000, dt = 1000;
+    double nu = 0.1, u0 = 0.1, theta = 30.0;
+    D3Q15<double> pf(lx, ly, lz, MyRank, mx, my, mz);
+    double *rho = new double[pf.nxyz], *ux = new double[pf.nxyz], *uy = new double[pf.nxyz], *uz = new double[pf.nxyz];
+    for (int idx = 0; idx < pf.nxyz; ++idx) {
+        rho[idx] = 1.0;
+        ux[idx] = 0.0;  uy[idx] = 0.0;  uz[idx] = 0.0;
+    }
+
+    pf.SetBoundary([&](int _i, int _j, int _k) { return (_i == 0 || _i == pf.lx - 1 || _j == 0 || _j == pf.ly - 1 || _k == 0) ? 1 : 0; });
+    int *boundaryu = new int[pf.nbc];
+    pf.SetBoundary(boundaryu, [&](int _i, int _j, int _k) { return _k == pf.lz - 1 ? 1 : 0; });
+    double *uxbc = new double[pf.nbc], *uybc = new double[pf.nbc], *uzbc = new double[pf.nbc];
+    for (int idxbc = 0; idxbc < pf.nbc; ++idxbc) {
+        uxbc[idxbc] = u0*cos(theta*M_PI/180.0);
+        uybc[idxbc] = u0*sin(theta*M_PI/180.0);
+        uzbc[idxbc] = 0.0;
+    }
+
+    //--------------------Direct analyze--------------------
+    NS::InitialCondition(pf, rho, ux, uy, uz);
+    for (int t = 1; t <= nt; ++t) {
+        if (t%dt != 0) {
+            NS::Macro_Collide_Stream(pf, rho, ux, uy, uz, nu);
+        } else {
+            NS::Macro_Collide_Stream(pf, rho, ux, uy, uz, nu, true);
+
+            if (MyRank == 0) {
+                std::cout << "t = " << t/dt << std::endl;
+            }
+            VTKExport file("result/ns_at" + std::to_string(MyRank) + "_" + std::to_string(t/dt) + ".vtk", pf.nx, pf.ny);
+            file.AddPointScaler("rho", [&](int _i, int _j, int _k) { return rho[pf.Index(_i, _j)]; });
+            file.AddPointVector("u", 
+                [&](int _i, int _j, int _k) { return ux[pf.Index(_i, _j)]; },
+                [&](int _i, int _j, int _k) { return uy[pf.Index(_i, _j)]; },
+                [](int _i, int _j, int _k) { return 0.0; }
+            );
+        }
+
+        pf.Swap();
+        pf.Synchronize();
+        pf.BoundaryCondition();
+        NS::BoundaryConditionSetU(pf, uxbc, uybc, uzbc, boundaryu);
+        pf.SmoothCorner();
+    }
+
+    delete[] rho, ux, uy, uz, uxbc, uybc, uzbc;
+    delete[] boundaryu;
+
+    MPI_Finalize();
+}

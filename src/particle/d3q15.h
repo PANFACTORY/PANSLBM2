@@ -55,6 +55,10 @@ public:
         void SetBoundary(F _func) {
             this->SetBoundary(this->bctype, _func);
         }
+        T GetBoundary(int *_bctype, int _i, int _j, int _k) const;
+        T GetBoundary(int _i, int _j, int _k) const {
+            return this->GetBoundary(this->bctype, _i, _j, _k);
+        }
 
         int Index(int _i, int _j, int _k) const {
             int i = _i == -1 ? this->nx - 1 : (_i == this->nx ? 0 : _i);
@@ -151,6 +155,25 @@ private:
                     _bctype[this->IndexBCz(i, j) + this->offsetzmax] = _func(i + this->offsetx, j + this->offsety, (this->nz - 1) + this->offsetz);
                 }
             }
+        }
+    }
+
+    template<class T>
+    T D3Q15<T>::GetBoundary(int *_bctype, int _i, int _j, int _k) const {
+        if (_i == 0) {
+            return T(_bctype[this->IndexBCx(_j, _k) + this->offsetxmin]);
+        } else if (_i == this->nx - 1) {
+            return T(_bctype[this->IndexBCx(_j, _k) + this->offsetxmax]);
+        } else if (_j == 0) {
+            return T(_bctype[this->IndexBCy(_k, _i) + this->offsetymin]);
+        } else if (_j == this->ny - 1) {
+            return T(_bctype[this->IndexBCy(_k, _i) + this->offsetymax]);
+        } else if (_k == 0) {
+            return T(_bctype[this->IndexBCz(_i, _j) + this->offsetzmin]);
+        } else if (_k == this->nz - 1) {
+            return T(_bctype[this->IndexBCz(_i, _j) + this->offsetzmax]);
+        } else {
+            return T();
         }
     }
 

@@ -63,7 +63,7 @@ public:
             return i + this->nx*j + this->nx*this->ny*k;
         }
         static int IndexF(int _idx, int _c) {
-            return D2Q9<T>::nc*_idx + _c;
+            return D3Q15<T>::nc*_idx + _c;
         }
         int IndexPE(int _i, int _j, int _k) const {
             int i = _i == -1 ? this->mx - 1 : (_i == this->mx ? 0 : _i);

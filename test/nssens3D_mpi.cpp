@@ -23,7 +23,7 @@ int main(int argc, char** argv) {
     //--------------------Set parameters--------------------
     int lx = 101, ly = 51, lz = 51, nt = 10000, dt = 100;
     double nu = 0.1, u0 = 0.0109, rho0 = 1.0, epsdu = 1.0e-4, q = 1e-2, amax = 50.0, smin = 0.1, smax = 0.9;
-    D2Q9<double> pf(lx, ly, lz, MyRank, mx, my, mz);
+    D3Q15<double> pf(lx, ly, lz, MyRank, mx, my, mz);
     double *rho = new double[pf.nxyz], *ux = new double[pf.nxyz], *uy = new double[pf.nxyz], *uz = new double[pf.nxyz];
     double *irho = new double[pf.nxyz], *iux = new double[pf.nxyz], *iuy = new double[pf.nxyz], *iuz = new double[pf.nxyz];
     double *imx = new double[pf.nxyz], *imy = new double[pf.nxyz], *imz = new double[pf.nxyz];

@@ -264,30 +264,30 @@ namespace PANSLBM2 {
                     idx = _p.Index(0, j, k);
                     idxbc = _p.IndexBCx(j, k) + _p.offsetxmin;
                     if (_bctype[idxbc] == INLET) {
-                        T rho0 = (-4.0 + _uxbc[idxbc]*(8.0*_f[P::IndexF(idx, 1)] + _f[P::IndexF(idx, 7)] + _f[P::IndexF(idx, 9)] + _f[P::IndexF(idx, 10)] + _f[P::IndexF(idx, 12)])
-                            + 3.0*_uybc[idxbc]*(_f[P::IndexF(idx, 7)] - _f[P::IndexF(idx, 9)] + _f[P::IndexF(idx, 10)] - _f[P::IndexF(idx, 12)])
-                            + 3.0*_uzbc[idxbc]*(_f[P::IndexF(idx, 7)] + _f[P::IndexF(idx, 9)] - _f[P::IndexF(idx, 10)] - _f[P::IndexF(idx, 12)])
+                        T rho0 = (-4.0 + _uxbc[idxbc]*(8.0*_p.f[P::IndexF(idx, 1)] + _p.f[P::IndexF(idx, 7)] + _p.f[P::IndexF(idx, 9)] + _p.f[P::IndexF(idx, 10)] + _p.f[P::IndexF(idx, 12)])
+                            + 3.0*_uybc[idxbc]*(_p.f[P::IndexF(idx, 7)] - _p.f[P::IndexF(idx, 9)] + _p.f[P::IndexF(idx, 10)] - _p.f[P::IndexF(idx, 12)])
+                            + 3.0*_uzbc[idxbc]*(_p.f[P::IndexF(idx, 7)] + _p.f[P::IndexF(idx, 9)] - _p.f[P::IndexF(idx, 10)] - _p.f[P::IndexF(idx, 12)])
                         )/(6.0*(1.0 - _uxbc[idxbc]));
-                        _f[P::IndexF(idx, 4)] = _f[P::IndexF(idx, 1)] + rho0;
-                        _f[P::IndexF(idx, 8)] = _f[P::IndexF(idx, 12)] + rho0;
-                        _f[P::IndexF(idx, 11)] = _f[P::IndexF(idx, 7)] + rho0;
-                        _f[P::IndexF(idx, 13)] = _f[P::IndexF(idx, 9)] + rho0;
-                        _f[P::IndexF(idx, 14)] = _f[P::IndexF(idx, 10)] + rho0;
+                        _p.f[P::IndexF(idx, 4)] = _p.f[P::IndexF(idx, 1)] + rho0;
+                        _p.f[P::IndexF(idx, 8)] = _p.f[P::IndexF(idx, 12)] + rho0;
+                        _p.f[P::IndexF(idx, 11)] = _p.f[P::IndexF(idx, 7)] + rho0;
+                        _p.f[P::IndexF(idx, 13)] = _p.f[P::IndexF(idx, 9)] + rho0;
+                        _p.f[P::IndexF(idx, 14)] = _p.f[P::IndexF(idx, 10)] + rho0;
                     }
 
                     //  On xmax
                     idx = _p.Index(_p.nx - 1, j, k);
                     idxbc = _p.IndexBCx(j, k) + _p.offsetxmax;
                     if (_bctype[idxbc] == INLET) {
-                        T rho0 = (-4.0 - _uxbc[idxbc]*(8.0*_f[P::IndexF(idx, 4)] + _f[P::IndexF(idx, 8)] + _f[P::IndexF(idx, 11)] + _f[P::IndexF(idx, 13)] + _f[P::IndexF(idx, 14)])
-                            + 3.0*_uybc[idxbc]*(_f[P::IndexF(idx, 8)] - _f[P::IndexF(idx, 11)] + _f[P::IndexF(idx, 13)] - _f[P::IndexF(idx, 14)])
-                            + 3.0*_uzbc[idxbc]*(_f[P::IndexF(idx, 8)] - _f[P::IndexF(idx, 11)] - _f[P::IndexF(idx, 13)] + _f[P::IndexF(idx, 14)])
+                        T rho0 = (-4.0 - _uxbc[idxbc]*(8.0*_p.f[P::IndexF(idx, 4)] + _p.f[P::IndexF(idx, 8)] + _p.f[P::IndexF(idx, 11)] + _p.f[P::IndexF(idx, 13)] + _p.f[P::IndexF(idx, 14)])
+                            + 3.0*_uybc[idxbc]*(_p.f[P::IndexF(idx, 8)] - _p.f[P::IndexF(idx, 11)] + _p.f[P::IndexF(idx, 13)] - _p.f[P::IndexF(idx, 14)])
+                            + 3.0*_uzbc[idxbc]*(_p.f[P::IndexF(idx, 8)] - _p.f[P::IndexF(idx, 11)] - _p.f[P::IndexF(idx, 13)] + _p.f[P::IndexF(idx, 14)])
                         )/(6.0*(1.0 + _uxbc[idxbc]));
-                        _f[P::IndexF(idx, 1)] = _f[P::IndexF(idx, 4)] + rho0;
-                        _f[P::IndexF(idx, 7)] = _f[P::IndexF(idx, 11)] + rho0;
-                        _f[P::IndexF(idx, 9)] = _f[P::IndexF(idx, 13)] + rho0;
-                        _f[P::IndexF(idx, 10)] = _f[P::IndexF(idx, 14)] + rho0;
-                        _f[P::IndexF(idx, 12)] = _f[P::IndexF(idx, 8)] + rho0;
+                        _p.f[P::IndexF(idx, 1)] = _p.f[P::IndexF(idx, 4)] + rho0;
+                        _p.f[P::IndexF(idx, 7)] = _p.f[P::IndexF(idx, 11)] + rho0;
+                        _p.f[P::IndexF(idx, 9)] = _p.f[P::IndexF(idx, 13)] + rho0;
+                        _p.f[P::IndexF(idx, 10)] = _p.f[P::IndexF(idx, 14)] + rho0;
+                        _p.f[P::IndexF(idx, 12)] = _p.f[P::IndexF(idx, 8)] + rho0;
                     }
                 }
             }
@@ -297,30 +297,30 @@ namespace PANSLBM2 {
                     idx = _p.Index(i, 0, k);
                     idxbc = _p.IndexBCy(k, i) + _p.offsetymin;
                     if (_bctype[idxbc] == INLET) {
-                        T rho0 = (-4.0 + 3.0*_uxbc[idxbc]*(_f[P::IndexF(idx, 7)] - _f[P::IndexF(idx, 8)] + _f[P::IndexF(idx, 10)] - _f[P::IndexF(idx, 13)]) 
-                            + _uybc[idxbc]*(8.0*_f[P::IndexF(idx, 2)] + _f[P::IndexF(idx, 7)] + _f[P::IndexF(idx, 8)] + _f[P::IndexF(idx, 10)] + _f[P::IndexF(idx, 13)])
-                            + 3.0*_uzbc[idxbc]*(_f[P::IndexF(idx, 7)] + _f[P::IndexF(idx, 8)] - _f[P::IndexF(idx, 10)] - _f[P::IndexF(idx, 13)])
+                        T rho0 = (-4.0 + 3.0*_uxbc[idxbc]*(_p.f[P::IndexF(idx, 7)] - _p.f[P::IndexF(idx, 8)] + _p.f[P::IndexF(idx, 10)] - _p.f[P::IndexF(idx, 13)]) 
+                            + _uybc[idxbc]*(8.0*_p.f[P::IndexF(idx, 2)] + _p.f[P::IndexF(idx, 7)] + _p.f[P::IndexF(idx, 8)] + _p.f[P::IndexF(idx, 10)] + _p.f[P::IndexF(idx, 13)])
+                            + 3.0*_uzbc[idxbc]*(_p.f[P::IndexF(idx, 7)] + _p.f[P::IndexF(idx, 8)] - _p.f[P::IndexF(idx, 10)] - _p.f[P::IndexF(idx, 13)])
                         )/(6.0*(1.0 - _uybc[idxbc]));
-                        _f[P::IndexF(idx, 5)] = _f[P::IndexF(idx, 2)] + rho0;
-                        _f[P::IndexF(idx, 9)] = _f[P::IndexF(idx, 13)] + rho0;
-                        _f[P::IndexF(idx, 11)] = _f[P::IndexF(idx, 7)] + rho0;
-                        _f[P::IndexF(idx, 12)] = _f[P::IndexF(idx, 8)] + rho0;
-                        _f[P::IndexF(idx, 14)] = _f[P::IndexF(idx, 10)] + rho0;
+                        _p.f[P::IndexF(idx, 5)] = _p.f[P::IndexF(idx, 2)] + rho0;
+                        _p.f[P::IndexF(idx, 9)] = _p.f[P::IndexF(idx, 13)] + rho0;
+                        _p.f[P::IndexF(idx, 11)] = _p.f[P::IndexF(idx, 7)] + rho0;
+                        _p.f[P::IndexF(idx, 12)] = _p.f[P::IndexF(idx, 8)] + rho0;
+                        _p.f[P::IndexF(idx, 14)] = _p.f[P::IndexF(idx, 10)] + rho0;
                     }
 
                     //  On ymax
                     idx = _p.Index(i, _p.ny - 1, k);
                     idxbc = _p.IndexBCy(k, i) + _p.offsetymax;
                     if (_bctype[idxbc] == INLET) {
-                        T rho0 = (-4.0 + 3.0*_uxbc[idxbc]*(_f[P::IndexF(idx, 9)] - _f[P::IndexF(idx, 11)] + _f[P::IndexF(idx, 12)] - _f[P::IndexF(idx, 14)]) 
-                            - _uybc[idxbc]*(8.0*_f[P::IndexF(idx, 5)] + _f[P::IndexF(idx, 9)] + _f[P::IndexF(idx, 11)] + _f[P::IndexF(idx, 12)] + _f[P::IndexF(idx, 14)])
-                            + 3.0*_uzbc[idxbc]*(_f[P::IndexF(idx, 9)] - _f[P::IndexF(idx, 11)] - _f[P::IndexF(idx, 12)] + _f[P::IndexF(idx, 14)])
+                        T rho0 = (-4.0 + 3.0*_uxbc[idxbc]*(_p.f[P::IndexF(idx, 9)] - _p.f[P::IndexF(idx, 11)] + _p.f[P::IndexF(idx, 12)] - _p.f[P::IndexF(idx, 14)]) 
+                            - _uybc[idxbc]*(8.0*_p.f[P::IndexF(idx, 5)] + _p.f[P::IndexF(idx, 9)] + _p.f[P::IndexF(idx, 11)] + _p.f[P::IndexF(idx, 12)] + _p.f[P::IndexF(idx, 14)])
+                            + 3.0*_uzbc[idxbc]*(_p.f[P::IndexF(idx, 9)] - _p.f[P::IndexF(idx, 11)] - _p.f[P::IndexF(idx, 12)] + _p.f[P::IndexF(idx, 14)])
                         )/(6.0*(1.0 + _uybc[idxbc]));
-                        _f[P::IndexF(idx, 2)] = _f[P::IndexF(idx, 5)] + rho0;
-                        _f[P::IndexF(idx, 7)] = _f[P::IndexF(idx, 11)] + rho0;
-                        _f[P::IndexF(idx, 8)] = _f[P::IndexF(idx, 12)] + rho0;
-                        _f[P::IndexF(idx, 10)] = _f[P::IndexF(idx, 14)] + rho0;
-                        _f[P::IndexF(idx, 13)] = _f[P::IndexF(idx, 9)] + rho0;
+                        _p.f[P::IndexF(idx, 2)] = _p.f[P::IndexF(idx, 5)] + rho0;
+                        _p.f[P::IndexF(idx, 7)] = _p.f[P::IndexF(idx, 11)] + rho0;
+                        _p.f[P::IndexF(idx, 8)] = _p.f[P::IndexF(idx, 12)] + rho0;
+                        _p.f[P::IndexF(idx, 10)] = _p.f[P::IndexF(idx, 14)] + rho0;
+                        _p.f[P::IndexF(idx, 13)] = _p.f[P::IndexF(idx, 9)] + rho0;
                     }
                 }
             }
@@ -330,30 +330,30 @@ namespace PANSLBM2 {
                     idx = _p.Index(i, j, 0);
                     idxbc = _p.IndexBCz(i, j) + _p.offsetzmin;
                     if (_bctype[idxbc] == INLET) {
-                        T rho0 = (-4.0 + 3.0*_uxbc[idxbc]*(_f[P::IndexF(idx, 7)] - _f[P::IndexF(idx, 8)] + _f[P::IndexF(idx, 9)] - _f[P::IndexF(idx, 14)])
-                            + 3.0*_uybc[idxbc]*(_f[P::IndexF(idx, 7)] + _f[P::IndexF(idx, 8)] - _f[P::IndexF(idx, 9)] - _f[P::IndexF(idx, 14)])
-                            + _uzbc[idxbc]*(8.0*_f[P::IndexF(idx, 3)] + _f[P::IndexF(idx, 7)] + _f[P::IndexF(idx, 8)] + _f[P::IndexF(idx, 9)] + _f[P::IndexF(idx, 14)])
+                        T rho0 = (-4.0 + 3.0*_uxbc[idxbc]*(_p.f[P::IndexF(idx, 7)] - _p.f[P::IndexF(idx, 8)] + _p.f[P::IndexF(idx, 9)] - _p.f[P::IndexF(idx, 14)])
+                            + 3.0*_uybc[idxbc]*(_p.f[P::IndexF(idx, 7)] + _p.f[P::IndexF(idx, 8)] - _p.f[P::IndexF(idx, 9)] - _p.f[P::IndexF(idx, 14)])
+                            + _uzbc[idxbc]*(8.0*_p.f[P::IndexF(idx, 3)] + _p.f[P::IndexF(idx, 7)] + _p.f[P::IndexF(idx, 8)] + _p.f[P::IndexF(idx, 9)] + _p.f[P::IndexF(idx, 14)])
                         )/(6.0*(1.0 - _uzbc[idxbc]));
-                        _f[P::IndexF(idx, 6)] = _f[P::IndexF(idx, 3)] + rho0;
-                        _f[P::IndexF(idx, 10)] = _f[P::IndexF(idx, 14)] + rho0;
-                        _f[P::IndexF(idx, 11)] = _f[P::IndexF(idx, 7)] + rho0;
-                        _f[P::IndexF(idx, 12)] = _f[P::IndexF(idx, 8)] + rho0;
-                        _f[P::IndexF(idx, 13)] = _f[P::IndexF(idx, 9)] + rho0;
+                        _p.f[P::IndexF(idx, 6)] = _p.f[P::IndexF(idx, 3)] + rho0;
+                        _p.f[P::IndexF(idx, 10)] = _p.f[P::IndexF(idx, 14)] + rho0;
+                        _p.f[P::IndexF(idx, 11)] = _p.f[P::IndexF(idx, 7)] + rho0;
+                        _p.f[P::IndexF(idx, 12)] = _p.f[P::IndexF(idx, 8)] + rho0;
+                        _p.f[P::IndexF(idx, 13)] = _p.f[P::IndexF(idx, 9)] + rho0;
                     }
 
                     //  On zmax
                     idx = _p.Index(i, j, _p.nz - 1);
                     idxbc = _p.IndexBCz(i, j) + _p.offsetzmax;
                     if (_bctype[idxbc] == INLET) {
-                        T rho0 = (-4.0 + 3.0*_uxbc[idxbc]*(_f[P::IndexF(idx, 10)] - _f[P::IndexF(idx, 11)] + _f[P::IndexF(idx, 12)] - _f[P::IndexF(idx, 13)])
-                            + 3.0*_uybc[idxbc]*(_f[P::IndexF(idx, 10)] - _f[P::IndexF(idx, 11)] - _f[P::IndexF(idx, 12)] + _f[P::IndexF(idx, 13)])
-                            - _uzbc[idxbc]*(8.0*_f[P::IndexF(idx, 6)] + _f[P::IndexF(idx, 10)] + _f[P::IndexF(idx, 11)] + _f[P::IndexF(idx, 12)] + _f[P::IndexF(idx, 13)])
+                        T rho0 = (-4.0 + 3.0*_uxbc[idxbc]*(_p.f[P::IndexF(idx, 10)] - _p.f[P::IndexF(idx, 11)] + _p.f[P::IndexF(idx, 12)] - _p.f[P::IndexF(idx, 13)])
+                            + 3.0*_uybc[idxbc]*(_p.f[P::IndexF(idx, 10)] - _p.f[P::IndexF(idx, 11)] - _p.f[P::IndexF(idx, 12)] + _p.f[P::IndexF(idx, 13)])
+                            - _uzbc[idxbc]*(8.0*_p.f[P::IndexF(idx, 6)] + _p.f[P::IndexF(idx, 10)] + _p.f[P::IndexF(idx, 11)] + _p.f[P::IndexF(idx, 12)] + _p.f[P::IndexF(idx, 13)])
                         )/(6.0*(1.0 + _uzbc[idxbc]));
-                        _f[P::IndexF(idx, 3)] = _f[P::IndexF(idx, 6)] + rho0;
-                        _f[P::IndexF(idx, 7)] = _f[P::IndexF(idx, 11)] + rho0;
-                        _f[P::IndexF(idx, 8)] = _f[P::IndexF(idx, 12)] + rho0;
-                        _f[P::IndexF(idx, 9)] = _f[P::IndexF(idx, 13)] + rho0;
-                        _f[P::IndexF(idx, 14)] = _f[P::IndexF(idx, 10)] + rho0;
+                        _p.f[P::IndexF(idx, 3)] = _p.f[P::IndexF(idx, 6)] + rho0;
+                        _p.f[P::IndexF(idx, 7)] = _p.f[P::IndexF(idx, 11)] + rho0;
+                        _p.f[P::IndexF(idx, 8)] = _p.f[P::IndexF(idx, 12)] + rho0;
+                        _p.f[P::IndexF(idx, 9)] = _p.f[P::IndexF(idx, 13)] + rho0;
+                        _p.f[P::IndexF(idx, 14)] = _p.f[P::IndexF(idx, 10)] + rho0;
                     }
                 }
             }
@@ -414,24 +414,24 @@ namespace PANSLBM2 {
                     idx = _p.Index(0, j, k);
                     idxbc = _p.IndexBCx(j, k) + _p.offsetxmin;
                     if (_bctype[idxbc] == OUTLET) {
-                        T rho0 = (8.0*_f[P::IndexF(idx, 1)] + _f[P::IndexF(idx, 7)] + _f[P::IndexF(idx, 9)] + _f[P::IndexF(idx, 10)] + _f[P::IndexF(idx, 12)])/6.0;
-                        _f[P::IndexF(idx, 4)] = _f[P::IndexF(idx, 1)] - rho0;
-                        _f[P::IndexF(idx, 8)] = _f[P::IndexF(idx, 12)] - rho0;
-                        _f[P::IndexF(idx, 11)] = _f[P::IndexF(idx, 7)] - rho0;
-                        _f[P::IndexF(idx, 13)] = _f[P::IndexF(idx, 9)] - rho0;
-                        _f[P::IndexF(idx, 14)] = _f[P::IndexF(idx, 10)] - rho0;
+                        T rho0 = (8.0*_p.f[P::IndexF(idx, 1)] + _p.f[P::IndexF(idx, 7)] + _p.f[P::IndexF(idx, 9)] + _p.f[P::IndexF(idx, 10)] + _p.f[P::IndexF(idx, 12)])/6.0;
+                        _p.f[P::IndexF(idx, 4)] = _p.f[P::IndexF(idx, 1)] - rho0;
+                        _p.f[P::IndexF(idx, 8)] = _p.f[P::IndexF(idx, 12)] - rho0;
+                        _p.f[P::IndexF(idx, 11)] = _p.f[P::IndexF(idx, 7)] - rho0;
+                        _p.f[P::IndexF(idx, 13)] = _p.f[P::IndexF(idx, 9)] - rho0;
+                        _p.f[P::IndexF(idx, 14)] = _p.f[P::IndexF(idx, 10)] - rho0;
                     }
 
                     //  On xmax
                     idx = _p.Index(_p.nx - 1, j, k);
                     idxbc = _p.IndexBCx(j, k) + _p.offsetxmax;
                     if (_bctype[idxbc] == OUTLET) {
-                        T rho0 = (8.0*_f[P::IndexF(idx, 4)] + _f[P::IndexF(idx, 8)] + _f[P::IndexF(idx, 11)] + _f[P::IndexF(idx, 13)] + _f[P::IndexF(idx, 14)])/6.0;
-                        _f[P::IndexF(idx, 1)] = _f[P::IndexF(idx, 4)] - rho0;
-                        _f[P::IndexF(idx, 7)] = _f[P::IndexF(idx, 11)] - rho0;
-                        _f[P::IndexF(idx, 9)] = _f[P::IndexF(idx, 13)] - rho0;
-                        _f[P::IndexF(idx, 10)] = _f[P::IndexF(idx, 14)] - rho0;
-                        _f[P::IndexF(idx, 12)] = _f[P::IndexF(idx, 8)] - rho0;
+                        T rho0 = (8.0*_p.f[P::IndexF(idx, 4)] + _p.f[P::IndexF(idx, 8)] + _p.f[P::IndexF(idx, 11)] + _p.f[P::IndexF(idx, 13)] + _p.f[P::IndexF(idx, 14)])/6.0;
+                        _p.f[P::IndexF(idx, 1)] = _p.f[P::IndexF(idx, 4)] - rho0;
+                        _p.f[P::IndexF(idx, 7)] = _p.f[P::IndexF(idx, 11)] - rho0;
+                        _p.f[P::IndexF(idx, 9)] = _p.f[P::IndexF(idx, 13)] - rho0;
+                        _p.f[P::IndexF(idx, 10)] = _p.f[P::IndexF(idx, 14)] - rho0;
+                        _p.f[P::IndexF(idx, 12)] = _p.f[P::IndexF(idx, 8)] - rho0;
                     }
                 }
             }
@@ -441,24 +441,24 @@ namespace PANSLBM2 {
                     idx = _p.Index(i, 0, k);
                     idxbc = _p.IndexBCy(k, i) + _p.offsetymin;
                     if (_bctype[idxbc] == OUTLET) {
-                        T rho0 = (8.0*_f[P::IndexF(idx, 2)] + _f[P::IndexF(idx, 7)] + _f[P::IndexF(idx, 8)] + _f[P::IndexF(idx, 10)] + _f[P::IndexF(idx, 13)])/6.0;
-                        _f[P::IndexF(idx, 5)] = _f[P::IndexF(idx, 2)] - rho0;
-                        _f[P::IndexF(idx, 9)] = _f[P::IndexF(idx, 13)] - rho0;
-                        _f[P::IndexF(idx, 11)] = _f[P::IndexF(idx, 7)] - rho0;
-                        _f[P::IndexF(idx, 12)] = _f[P::IndexF(idx, 8)] - rho0;
-                        _f[P::IndexF(idx, 14)] = _f[P::IndexF(idx, 10)] - rho0;
+                        T rho0 = (8.0*_p.f[P::IndexF(idx, 2)] + _p.f[P::IndexF(idx, 7)] + _p.f[P::IndexF(idx, 8)] + _p.f[P::IndexF(idx, 10)] + _p.f[P::IndexF(idx, 13)])/6.0;
+                        _p.f[P::IndexF(idx, 5)] = _p.f[P::IndexF(idx, 2)] - rho0;
+                        _p.f[P::IndexF(idx, 9)] = _p.f[P::IndexF(idx, 13)] - rho0;
+                        _p.f[P::IndexF(idx, 11)] = _p.f[P::IndexF(idx, 7)] - rho0;
+                        _p.f[P::IndexF(idx, 12)] = _p.f[P::IndexF(idx, 8)] - rho0;
+                        _p.f[P::IndexF(idx, 14)] = _p.f[P::IndexF(idx, 10)] - rho0;
                     }
 
                     //  On ymax
                     idx = _p.Index(i, _p.ny - 1, k);
                     idxbc = _p.IndexBCy(k, i) + _p.offsetymax;
                     if (_bctype[idxbc] == OUTLET) {
-                        T rho0 = (8.0*_f[P::IndexF(idx, 5)] + _f[P::IndexF(idx, 9)] + _f[P::IndexF(idx, 11)] + _f[P::IndexF(idx, 12)] + _f[P::IndexF(idx, 14)])/6.0;
-                        _f[P::IndexF(idx, 2)] = _f[P::IndexF(idx, 5)] - rho0;
-                        _f[P::IndexF(idx, 7)] = _f[P::IndexF(idx, 11)] - rho0;
-                        _f[P::IndexF(idx, 8)] = _f[P::IndexF(idx, 12)] - rho0;
-                        _f[P::IndexF(idx, 10)] = _f[P::IndexF(idx, 14)] - rho0;
-                        _f[P::IndexF(idx, 13)] = _f[P::IndexF(idx, 9)] - rho0;
+                        T rho0 = (8.0*_p.f[P::IndexF(idx, 5)] + _p.f[P::IndexF(idx, 9)] + _p.f[P::IndexF(idx, 11)] + _p.f[P::IndexF(idx, 12)] + _p.f[P::IndexF(idx, 14)])/6.0;
+                        _p.f[P::IndexF(idx, 2)] = _p.f[P::IndexF(idx, 5)] - rho0;
+                        _p.f[P::IndexF(idx, 7)] = _p.f[P::IndexF(idx, 11)] - rho0;
+                        _p.f[P::IndexF(idx, 8)] = _p.f[P::IndexF(idx, 12)] - rho0;
+                        _p.f[P::IndexF(idx, 10)] = _p.f[P::IndexF(idx, 14)] - rho0;
+                        _p.f[P::IndexF(idx, 13)] = _p.f[P::IndexF(idx, 9)] - rho0;
                     }
                 }
             }
@@ -468,24 +468,24 @@ namespace PANSLBM2 {
                     idx = _p.Index(i, j, 0);
                     idxbc = _p.IndexBCz(i, j) + _p.offsetzmin;
                     if (_bctype[idxbc] == OUTLET) {
-                        T rho0 = (8.0*_f[P::IndexF(idx, 3)] + _f[P::IndexF(idx, 7)] + _f[P::IndexF(idx, 8)] + _f[P::IndexF(idx, 9)] + _f[P::IndexF(idx, 14)])/6.0;
-                        _f[P::IndexF(idx, 6)] = _f[P::IndexF(idx, 3)] - rho0;
-                        _f[P::IndexF(idx, 10)] = _f[P::IndexF(idx, 14)] - rho0;
-                        _f[P::IndexF(idx, 11)] = _f[P::IndexF(idx, 7)] - rho0;
-                        _f[P::IndexF(idx, 12)] = _f[P::IndexF(idx, 8)] - rho0;
-                        _f[P::IndexF(idx, 13)] = _f[P::IndexF(idx, 9)] - rho0;
+                        T rho0 = (8.0*_p.f[P::IndexF(idx, 3)] + _p.f[P::IndexF(idx, 7)] + _p.f[P::IndexF(idx, 8)] + _p.f[P::IndexF(idx, 9)] + _p.f[P::IndexF(idx, 14)])/6.0;
+                        _p.f[P::IndexF(idx, 6)] = _p.f[P::IndexF(idx, 3)] - rho0;
+                        _p.f[P::IndexF(idx, 10)] = _p.f[P::IndexF(idx, 14)] - rho0;
+                        _p.f[P::IndexF(idx, 11)] = _p.f[P::IndexF(idx, 7)] - rho0;
+                        _p.f[P::IndexF(idx, 12)] = _p.f[P::IndexF(idx, 8)] - rho0;
+                        _p.f[P::IndexF(idx, 13)] = _p.f[P::IndexF(idx, 9)] - rho0;
                     }
 
                     //  On zmax
                     idx = _p.Index(i, j, _p.nz - 1);
                     idxbc = _p.IndexBCz(i, j) + _p.offsetzmax;
                     if (_bctype[idxbc] == OUTLET) {
-                        T rho0 = (8.0*_f[P::IndexF(idx, 6)] + _f[P::IndexF(idx, 10)] + _f[P::IndexF(idx, 11)] + _f[P::IndexF(idx, 12)] + _f[P::IndexF(idx, 13)])/6.0;
-                        _f[P::IndexF(idx, 3)] = _f[P::IndexF(idx, 6)] - rho0;
-                        _f[P::IndexF(idx, 7)] = _f[P::IndexF(idx, 11)] - rho0;
-                        _f[P::IndexF(idx, 8)] = _f[P::IndexF(idx, 12)] - rho0;
-                        _f[P::IndexF(idx, 9)] = _f[P::IndexF(idx, 13)] - rho0;
-                        _f[P::IndexF(idx, 14)] = _f[P::IndexF(idx, 10)] - rho0;
+                        T rho0 = (8.0*_p.f[P::IndexF(idx, 6)] + _p.f[P::IndexF(idx, 10)] + _p.f[P::IndexF(idx, 11)] + _p.f[P::IndexF(idx, 12)] + _p.f[P::IndexF(idx, 13)])/6.0;
+                        _p.f[P::IndexF(idx, 3)] = _p.f[P::IndexF(idx, 6)] - rho0;
+                        _p.f[P::IndexF(idx, 7)] = _p.f[P::IndexF(idx, 11)] - rho0;
+                        _p.f[P::IndexF(idx, 8)] = _p.f[P::IndexF(idx, 12)] - rho0;
+                        _p.f[P::IndexF(idx, 9)] = _p.f[P::IndexF(idx, 13)] - rho0;
+                        _p.f[P::IndexF(idx, 14)] = _p.f[P::IndexF(idx, 10)] - rho0;
                     }
                 }
             }

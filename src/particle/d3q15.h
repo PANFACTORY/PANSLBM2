@@ -499,7 +499,7 @@ private:
             }
         }
         //  Along line zmin and xmax
-        if (this->PEz == 0 && this->PEy == this->mx - 1) {
+        if (this->PEz == 0 && this->PEx == this->mx - 1) {
             for (int j = 0; j < this->ny; ++j) {                                        
                 idx = this->Index(this->nx - 1, j, 0);
                 idxz = this->Index(this->nx - 1, j, 1);

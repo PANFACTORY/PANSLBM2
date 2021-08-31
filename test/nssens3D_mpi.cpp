@@ -16,7 +16,7 @@ int main(int argc, char** argv) {
     MPI_Comm_size(MPI_COMM_WORLD, &PeTot);
     MPI_Comm_rank(MPI_COMM_WORLD, &MyRank);
 
-    assert(argc == 3);
+    assert(argc == 4);
     int mx = atoi(argv[1]), my = atoi(argv[2]), mz = atoi(argv[3]);
     assert(mx*my*mz == PeTot);
 

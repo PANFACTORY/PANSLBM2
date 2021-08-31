@@ -22,7 +22,7 @@ int main(int argc, char** argv) {
 
     //--------------------Set parameters--------------------
     int lx = 30, ly = 30, lz = 30, nt = 10, dt = 1;
-    double nu = 0.1, u0 = 0.1, theta = 0.0;
+    double nu = 0.1, u0 = 0.1, theta = 90.0;
     D3Q15<double> pf(lx, ly, lz, MyRank, mx, my, mz);
     double *rho = new double[pf.nxyz], *ux = new double[pf.nxyz], *uy = new double[pf.nxyz], *uz = new double[pf.nxyz];
     for (int idx = 0; idx < pf.nxyz; ++idx) {

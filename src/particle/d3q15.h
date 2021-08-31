@@ -680,7 +680,7 @@ private:
 
                     //  Face on ymax
                     idx = this->Index(i, 0, k);
-                    idxface = this->IndexBCx(k, i) + this->offsetymax;
+                    idxface = this->IndexBCy(k, i) + this->offsetymax;
                     this->fsend[idxface*5 + 0] = this->f[D3Q15<T>::IndexF(idx, 2)];
                     this->fsend[idxface*5 + 1] = this->f[D3Q15<T>::IndexF(idx, 7)];
                     this->fsend[idxface*5 + 2] = this->f[D3Q15<T>::IndexF(idx, 8)];
@@ -943,7 +943,7 @@ private:
 
                     //  Face on ymax
                     idx = this->Index(i, this->ny - 1, k);
-                    idxface = this->IndexBCx(k, i) + this->offsetymax;
+                    idxface = this->IndexBCy(k, i) + this->offsetymax;
                     this->f[D3Q15<T>::IndexF(idx, 2)] = this->frecv[idxface*5 + 0];
                     this->f[D3Q15<T>::IndexF(idx, 7)] = this->frecv[idxface*5 + 1];
                     this->f[D3Q15<T>::IndexF(idx, 8)] = this->frecv[idxface*5 + 2];
@@ -1112,7 +1112,7 @@ private:
 
                     //  Face on ymax
                     idx = this->Index(i, 0, k);
-                    idxface = this->IndexBCx(k, i) + this->offsetymax;
+                    idxface = this->IndexBCy(k, i) + this->offsetymax;
                     this->fsend[idxface*5 + 0] = this->f[D3Q15<T>::IndexF(idx, 5)];
                     this->fsend[idxface*5 + 1] = this->f[D3Q15<T>::IndexF(idx, 9)];
                     this->fsend[idxface*5 + 2] = this->f[D3Q15<T>::IndexF(idx, 11)];
@@ -1375,7 +1375,7 @@ private:
 
                     //  Face on ymax
                     idx = this->Index(i, this->ny - 1, k);
-                    idxface = this->IndexBCx(k, i) + this->offsetymax;
+                    idxface = this->IndexBCy(k, i) + this->offsetymax;
                     this->f[D3Q15<T>::IndexF(idx, 5)] = this->frecv[idxface*5 + 0];
                     this->f[D3Q15<T>::IndexF(idx, 9)] = this->frecv[idxface*5 + 1];
                     this->f[D3Q15<T>::IndexF(idx, 11)] = this->frecv[idxface*5 + 2];

@@ -118,12 +118,12 @@ int main(int argc, char** argv) {
         [&](int _i, int _j, int _k) { return uz[pf.Index(_i, _j, _k)]; }
     );
     //file.AddPointScaler("dfds", [&](int _i, int _j, int _k) {   return dfds[pf.Index(_i, _j, _k)];  });
-    /*file.AddPointScaler("ip", [&](int _i, int _j, int _k) { return irho[pf.Index(_i, _j, _k)]; });
+    file.AddPointScaler("ip", [&](int _i, int _j, int _k) { return irho[pf.Index(_i, _j, _k)]; });
     file.AddPointVector("iu", 
         [&](int _i, int _j, int _k) { return iux[pf.Index(_i, _j, _k)]; },
         [&](int _i, int _j, int _k) { return iuy[pf.Index(_i, _j, _k)]; },
         [&](int _i, int _j, int _k) { return iuz[pf.Index(_i, _j, _k)]; }
-    );*/
+    );
     //file.AddPointScaler("alpha", [&](int _i, int _j, int _k) { return alpha[pf.Index(_i, _j, _k)]; });
     //file.AddPointScaler("s", [&](int _i, int _j, int _k) { return s[pf.Index(_i, _j, _k)]; });
     

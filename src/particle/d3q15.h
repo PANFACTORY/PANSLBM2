@@ -1149,7 +1149,7 @@ private:
                 //  Edge on ymin and zmin
                 idx = this->Index(i, this->ny - 1, this->nz - 1);
                 idxedge = i + 0*this->nx;
-                 this->fsend[this->nbc*5 + idxedge*2 + 0] = this->f[D3Q15<T>::IndexF(idx, 7)];
+                this->fsend[this->nbc*5 + idxedge*2 + 0] = this->f[D3Q15<T>::IndexF(idx, 7)];
                 this->fsend[this->nbc*5 + idxedge*2 + 1] = this->f[D3Q15<T>::IndexF(idx, 8)];
 
                 //  Edge on ymin and zmax
@@ -1267,71 +1267,71 @@ private:
         if (this->my != 1 || this->mz != 1) {
             //  To ymin and zmin
             MPI_Isend(&fsend[this->nbc*5 + 0*this->nx*2], this->nx*2, MPI_DOUBLE, this->IndexPE(this->PEx, this->PEy - 1, this->PEz - 1), 6, MPI_COMM_WORLD, &this->request[neib++]);
-            MPI_Irecv(&frecv[this->nbc*5 + 0*this->nx*2], this->nx*2, MPI_DOUBLE, this->IndexPE(this->PEx, this->PEy + 1, this->PEz + 1), 6, MPI_COMM_WORLD, &this->request[neib++]);
+            MPI_Irecv(&frecv[this->nbc*5 + 3*this->nx*2], this->nx*2, MPI_DOUBLE, this->IndexPE(this->PEx, this->PEy + 1, this->PEz + 1), 6, MPI_COMM_WORLD, &this->request[neib++]);
                 
             //  To ymin and zmax
             MPI_Isend(&fsend[this->nbc*5 + 1*this->nx*2], this->nx*2, MPI_DOUBLE, this->IndexPE(this->PEx, this->PEy - 1, this->PEz + 1), 7, MPI_COMM_WORLD, &this->request[neib++]);
-            MPI_Irecv(&frecv[this->nbc*5 + 1*this->nx*2], this->nx*2, MPI_DOUBLE, this->IndexPE(this->PEx, this->PEy + 1, this->PEz - 1), 7, MPI_COMM_WORLD, &this->request[neib++]);
+            MPI_Irecv(&frecv[this->nbc*5 + 2*this->nx*2], this->nx*2, MPI_DOUBLE, this->IndexPE(this->PEx, this->PEy + 1, this->PEz - 1), 7, MPI_COMM_WORLD, &this->request[neib++]);
                 
             //  To ymax and zmin
             MPI_Isend(&fsend[this->nbc*5 + 2*this->nx*2], this->nx*2, MPI_DOUBLE, this->IndexPE(this->PEx, this->PEy + 1, this->PEz - 1), 8, MPI_COMM_WORLD, &this->request[neib++]);
-            MPI_Irecv(&frecv[this->nbc*5 + 2*this->nx*2], this->nx*2, MPI_DOUBLE, this->IndexPE(this->PEx, this->PEy - 1, this->PEz + 1), 8, MPI_COMM_WORLD, &this->request[neib++]);
+            MPI_Irecv(&frecv[this->nbc*5 + 1*this->nx*2], this->nx*2, MPI_DOUBLE, this->IndexPE(this->PEx, this->PEy - 1, this->PEz + 1), 8, MPI_COMM_WORLD, &this->request[neib++]);
                 
             //  To ymax and zmax
             MPI_Isend(&fsend[this->nbc*5 + 3*this->nx*2], this->nx*2, MPI_DOUBLE, this->IndexPE(this->PEx, this->PEy + 1, this->PEz + 1), 9, MPI_COMM_WORLD, &this->request[neib++]);
-            MPI_Irecv(&frecv[this->nbc*5 + 3*this->nx*2], this->nx*2, MPI_DOUBLE, this->IndexPE(this->PEx, this->PEy - 1, this->PEz - 1), 9, MPI_COMM_WORLD, &this->request[neib++]);
+            MPI_Irecv(&frecv[this->nbc*5 + 0*this->nx*2], this->nx*2, MPI_DOUBLE, this->IndexPE(this->PEx, this->PEy - 1, this->PEz - 1), 9, MPI_COMM_WORLD, &this->request[neib++]);
         }
         if (this->mz != 1 || this->mx != 1) {
             //  To zmin and xmin
             MPI_Isend(&fsend[this->nbc*5 + 4*this->nx*2 + 0*this->ny*2], this->ny*2, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy, this->PEz - 1), 10, MPI_COMM_WORLD, &this->request[neib++]);
-            MPI_Irecv(&frecv[this->nbc*5 + 4*this->nx*2 + 0*this->ny*2], this->ny*2, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy, this->PEz + 1), 10, MPI_COMM_WORLD, &this->request[neib++]);
+            MPI_Irecv(&frecv[this->nbc*5 + 4*this->nx*2 + 3*this->ny*2], this->ny*2, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy, this->PEz + 1), 10, MPI_COMM_WORLD, &this->request[neib++]);
                 
             //  To zmin and xmax
             MPI_Isend(&fsend[this->nbc*5 + 4*this->nx*2 + 1*this->ny*2], this->ny*2, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy, this->PEz - 1), 11, MPI_COMM_WORLD, &this->request[neib++]);
-            MPI_Irecv(&frecv[this->nbc*5 + 4*this->nx*2 + 1*this->ny*2], this->ny*2, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy, this->PEz + 1), 11, MPI_COMM_WORLD, &this->request[neib++]);
+            MPI_Irecv(&frecv[this->nbc*5 + 4*this->nx*2 + 2*this->ny*2], this->ny*2, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy, this->PEz + 1), 11, MPI_COMM_WORLD, &this->request[neib++]);
                  
             //  To zmax and xmin
             MPI_Isend(&fsend[this->nbc*5 + 4*this->nx*2 + 2*this->ny*2], this->ny*2, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy, this->PEz + 1), 12, MPI_COMM_WORLD, &this->request[neib++]);
-            MPI_Irecv(&frecv[this->nbc*5 + 4*this->nx*2 + 2*this->ny*2], this->ny*2, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy, this->PEz - 1), 12, MPI_COMM_WORLD, &this->request[neib++]);
+            MPI_Irecv(&frecv[this->nbc*5 + 4*this->nx*2 + 1*this->ny*2], this->ny*2, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy, this->PEz - 1), 12, MPI_COMM_WORLD, &this->request[neib++]);
                              
             //  To zmax and xmax
             MPI_Isend(&fsend[this->nbc*5 + 4*this->nx*2 + 3*this->ny*2], this->ny*2, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy, this->PEz + 1), 13, MPI_COMM_WORLD, &this->request[neib++]);
-            MPI_Irecv(&frecv[this->nbc*5 + 4*this->nx*2 + 3*this->ny*2], this->ny*2, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy, this->PEz - 1), 13, MPI_COMM_WORLD, &this->request[neib++]);
+            MPI_Irecv(&frecv[this->nbc*5 + 4*this->nx*2 + 0*this->ny*2], this->ny*2, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy, this->PEz - 1), 13, MPI_COMM_WORLD, &this->request[neib++]);
         }
         if (this->mx != 1 || this->my != 1) {
             //  To xmin and ymin
             MPI_Isend(&fsend[this->nbc*5 + 4*this->nx*2 + 4*this->ny*2 + 0*this->nz*2], this->nz*2, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy - 1, this->PEz), 14, MPI_COMM_WORLD, &this->request[neib++]);
-            MPI_Irecv(&frecv[this->nbc*5 + 4*this->nx*2 + 4*this->ny*2 + 0*this->nz*2], this->nz*2, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy + 1, this->PEz), 14, MPI_COMM_WORLD, &this->request[neib++]);
+            MPI_Irecv(&frecv[this->nbc*5 + 4*this->nx*2 + 4*this->ny*2 + 3*this->nz*2], this->nz*2, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy + 1, this->PEz), 14, MPI_COMM_WORLD, &this->request[neib++]);
                              
             //  To xmin and ymax
             MPI_Isend(&fsend[this->nbc*5 + 4*this->nx*2 + 4*this->ny*2 + 1*this->nz*2], this->nz*2, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy + 1, this->PEz), 15, MPI_COMM_WORLD, &this->request[neib++]);
-            MPI_Irecv(&frecv[this->nbc*5 + 4*this->nx*2 + 4*this->ny*2 + 1*this->nz*2], this->nz*2, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy - 1, this->PEz), 15, MPI_COMM_WORLD, &this->request[neib++]);
+            MPI_Irecv(&frecv[this->nbc*5 + 4*this->nx*2 + 4*this->ny*2 + 2*this->nz*2], this->nz*2, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy - 1, this->PEz), 15, MPI_COMM_WORLD, &this->request[neib++]);
                            
             //  To xmax and ymin
             MPI_Isend(&fsend[this->nbc*5 + 4*this->nx*2 + 4*this->ny*2 + 2*this->nz*2], this->nz*2, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy - 1, this->PEz), 16, MPI_COMM_WORLD, &this->request[neib++]);
-            MPI_Irecv(&frecv[this->nbc*5 + 4*this->nx*2 + 4*this->ny*2 + 2*this->nz*2], this->nz*2, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy + 1, this->PEz), 16, MPI_COMM_WORLD, &this->request[neib++]);
+            MPI_Irecv(&frecv[this->nbc*5 + 4*this->nx*2 + 4*this->ny*2 + 1*this->nz*2], this->nz*2, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy + 1, this->PEz), 16, MPI_COMM_WORLD, &this->request[neib++]);
                            
             //  To xmax and ymax
             MPI_Isend(&fsend[this->nbc*5 + 4*this->nx*2 + 4*this->ny*2 + 3*this->nz*2], this->nz*2, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy + 1, this->PEz), 17, MPI_COMM_WORLD, &this->request[neib++]);
-            MPI_Irecv(&frecv[this->nbc*5 + 4*this->nx*2 + 4*this->ny*2 + 3*this->nz*2], this->nz*2, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy - 1, this->PEz), 17, MPI_COMM_WORLD, &this->request[neib++]);
+            MPI_Irecv(&frecv[this->nbc*5 + 4*this->nx*2 + 4*this->ny*2 + 0*this->nz*2], this->nz*2, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy - 1, this->PEz), 17, MPI_COMM_WORLD, &this->request[neib++]);
         }
         if (this->mx != 1 || this->my != 1 || this->mz != 1) {
             MPI_Isend(&fsend[this->nbc*5 + 4*(this->nx + this->ny + this->nz)*2 + 0], 1, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy - 1, this->PEz - 1), 18, MPI_COMM_WORLD, &this->request[neib++]);
-            MPI_Irecv(&frecv[this->nbc*5 + 4*(this->nx + this->ny + this->nz)*2 + 0], 1, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy - 1, this->PEz - 1), 18, MPI_COMM_WORLD, &this->request[neib++]);   //  Corner at xmin, ymin and zmin
+            MPI_Irecv(&frecv[this->nbc*5 + 4*(this->nx + this->ny + this->nz)*2 + 7], 1, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy - 1, this->PEz - 1), 18, MPI_COMM_WORLD, &this->request[neib++]);   //  Corner at xmin, ymin and zmin
             MPI_Isend(&fsend[this->nbc*5 + 4*(this->nx + this->ny + this->nz)*2 + 1], 1, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy - 1, this->PEz - 1), 19, MPI_COMM_WORLD, &this->request[neib++]);
-            MPI_Irecv(&frecv[this->nbc*5 + 4*(this->nx + this->ny + this->nz)*2 + 1], 1, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy - 1, this->PEz - 1), 19, MPI_COMM_WORLD, &this->request[neib++]);   //  Corner at xmax, ymin and zmin
+            MPI_Irecv(&frecv[this->nbc*5 + 4*(this->nx + this->ny + this->nz)*2 + 6], 1, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy - 1, this->PEz - 1), 19, MPI_COMM_WORLD, &this->request[neib++]);   //  Corner at xmax, ymin and zmin
             MPI_Isend(&fsend[this->nbc*5 + 4*(this->nx + this->ny + this->nz)*2 + 2], 1, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy + 1, this->PEz - 1), 20, MPI_COMM_WORLD, &this->request[neib++]);
-            MPI_Irecv(&frecv[this->nbc*5 + 4*(this->nx + this->ny + this->nz)*2 + 2], 1, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy + 1, this->PEz - 1), 20, MPI_COMM_WORLD, &this->request[neib++]);   //  Corner at xmin, ymax and zmin
+            MPI_Irecv(&frecv[this->nbc*5 + 4*(this->nx + this->ny + this->nz)*2 + 5], 1, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy + 1, this->PEz - 1), 20, MPI_COMM_WORLD, &this->request[neib++]);   //  Corner at xmin, ymax and zmin
             MPI_Isend(&fsend[this->nbc*5 + 4*(this->nx + this->ny + this->nz)*2 + 3], 1, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy + 1, this->PEz - 1), 21, MPI_COMM_WORLD, &this->request[neib++]);
-            MPI_Irecv(&frecv[this->nbc*5 + 4*(this->nx + this->ny + this->nz)*2 + 3], 1, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy + 1, this->PEz - 1), 21, MPI_COMM_WORLD, &this->request[neib++]);   //  Corner at xmax, ymax and zmin
+            MPI_Irecv(&frecv[this->nbc*5 + 4*(this->nx + this->ny + this->nz)*2 + 4], 1, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy + 1, this->PEz - 1), 21, MPI_COMM_WORLD, &this->request[neib++]);   //  Corner at xmax, ymax and zmin
             MPI_Isend(&fsend[this->nbc*5 + 4*(this->nx + this->ny + this->nz)*2 + 4], 1, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy - 1, this->PEz + 1), 22, MPI_COMM_WORLD, &this->request[neib++]);
-            MPI_Irecv(&frecv[this->nbc*5 + 4*(this->nx + this->ny + this->nz)*2 + 4], 1, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy - 1, this->PEz + 1), 22, MPI_COMM_WORLD, &this->request[neib++]);   //  Corner at xmin, ymin and zmax
+            MPI_Irecv(&frecv[this->nbc*5 + 4*(this->nx + this->ny + this->nz)*2 + 3], 1, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy - 1, this->PEz + 1), 22, MPI_COMM_WORLD, &this->request[neib++]);   //  Corner at xmin, ymin and zmax
             MPI_Isend(&fsend[this->nbc*5 + 4*(this->nx + this->ny + this->nz)*2 + 5], 1, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy - 1, this->PEz + 1), 23, MPI_COMM_WORLD, &this->request[neib++]); 
-            MPI_Irecv(&frecv[this->nbc*5 + 4*(this->nx + this->ny + this->nz)*2 + 5], 1, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy - 1, this->PEz + 1), 23, MPI_COMM_WORLD, &this->request[neib++]);   //  Corner at xmax, ymin and zmax
+            MPI_Irecv(&frecv[this->nbc*5 + 4*(this->nx + this->ny + this->nz)*2 + 2], 1, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy - 1, this->PEz + 1), 23, MPI_COMM_WORLD, &this->request[neib++]);   //  Corner at xmax, ymin and zmax
             MPI_Isend(&fsend[this->nbc*5 + 4*(this->nx + this->ny + this->nz)*2 + 6], 1, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy + 1, this->PEz + 1), 24, MPI_COMM_WORLD, &this->request[neib++]); 
-            MPI_Irecv(&frecv[this->nbc*5 + 4*(this->nx + this->ny + this->nz)*2 + 6], 1, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy + 1, this->PEz + 1), 24, MPI_COMM_WORLD, &this->request[neib++]);   //  Corner at xmin, ymax and zmax
+            MPI_Irecv(&frecv[this->nbc*5 + 4*(this->nx + this->ny + this->nz)*2 + 1], 1, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy + 1, this->PEz + 1), 24, MPI_COMM_WORLD, &this->request[neib++]);   //  Corner at xmin, ymax and zmax
             MPI_Isend(&fsend[this->nbc*5 + 4*(this->nx + this->ny + this->nz)*2 + 7], 1, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy + 1, this->PEz + 1), 25, MPI_COMM_WORLD, &this->request[neib++]); 
-            MPI_Irecv(&frecv[this->nbc*5 + 4*(this->nx + this->ny + this->nz)*2 + 7], 1, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy + 1, this->PEz + 1), 25, MPI_COMM_WORLD, &this->request[neib++]);   //  Corner at xmax, ymax and zmax
+            MPI_Irecv(&frecv[this->nbc*5 + 4*(this->nx + this->ny + this->nz)*2 + 0], 1, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy + 1, this->PEz + 1), 25, MPI_COMM_WORLD, &this->request[neib++]);   //  Corner at xmax, ymax and zmax
         }
         if (neib > 0) {
             MPI_Waitall(neib, this->request, this->status);
@@ -1344,20 +1344,20 @@ private:
                     //  Face on xmin
                     idx = this->Index(0, j, k);
                     idxface = this->IndexBCx(j, k) + this->offsetxmin;
-                    this->f[D3Q15<T>::IndexF(idx, 1)] = this->frecv[idxface*5 + 0];
-                    this->f[D3Q15<T>::IndexF(idx, 7)] = this->frecv[idxface*5 + 1];
-                    this->f[D3Q15<T>::IndexF(idx, 9)] = this->frecv[idxface*5 + 2];
-                    this->f[D3Q15<T>::IndexF(idx, 10)] = this->frecv[idxface*5 + 3];
-                    this->f[D3Q15<T>::IndexF(idx, 12)] = this->frecv[idxface*5 + 4];
-
-                    //  Face on xmax
-                    idx = this->Index(this->nx - 1, j, k);
-                    idxface = this->IndexBCx(j, k) + this->offsetxmax;
                     this->f[D3Q15<T>::IndexF(idx, 4)] = this->frecv[idxface*5 + 0];
                     this->f[D3Q15<T>::IndexF(idx, 8)] = this->frecv[idxface*5 + 1];
                     this->f[D3Q15<T>::IndexF(idx, 11)] = this->frecv[idxface*5 + 2];
                     this->f[D3Q15<T>::IndexF(idx, 13)] = this->frecv[idxface*5 + 3];
                     this->f[D3Q15<T>::IndexF(idx, 14)] = this->frecv[idxface*5 + 4];
+
+                    //  Face on xmax
+                    idx = this->Index(this->nx - 1, j, k);
+                    idxface = this->IndexBCx(j, k) + this->offsetxmax;
+                    this->f[D3Q15<T>::IndexF(idx, 1)] = this->frecv[idxface*5 + 0];
+                    this->f[D3Q15<T>::IndexF(idx, 7)] = this->frecv[idxface*5 + 1];
+                    this->f[D3Q15<T>::IndexF(idx, 9)] = this->frecv[idxface*5 + 2];
+                    this->f[D3Q15<T>::IndexF(idx, 10)] = this->frecv[idxface*5 + 3];
+                    this->f[D3Q15<T>::IndexF(idx, 12)] = this->frecv[idxface*5 + 4];
                 }
             }
         }
@@ -1367,20 +1367,20 @@ private:
                     //  Face on ymin
                     idx = this->Index(i, 0, k);
                     idxface = this->IndexBCy(k, i) + this->offsetymin;
-                    this->f[D3Q15<T>::IndexF(idx, 2)] = this->frecv[idxface*5 + 0];
-                    this->f[D3Q15<T>::IndexF(idx, 7)] = this->frecv[idxface*5 + 1];
-                    this->f[D3Q15<T>::IndexF(idx, 8)] = this->frecv[idxface*5 + 2];
-                    this->f[D3Q15<T>::IndexF(idx, 10)] = this->frecv[idxface*5 + 3];
-                    this->f[D3Q15<T>::IndexF(idx, 13)] = this->frecv[idxface*5 + 4];
-
-                    //  Face on ymax
-                    idx = this->Index(i, this->ny - 1, k);
-                    idxface = this->IndexBCy(k, i) + this->offsetymax;
                     this->f[D3Q15<T>::IndexF(idx, 5)] = this->frecv[idxface*5 + 0];
                     this->f[D3Q15<T>::IndexF(idx, 9)] = this->frecv[idxface*5 + 1];
                     this->f[D3Q15<T>::IndexF(idx, 11)] = this->frecv[idxface*5 + 2];
                     this->f[D3Q15<T>::IndexF(idx, 12)] = this->frecv[idxface*5 + 3];
                     this->f[D3Q15<T>::IndexF(idx, 14)] = this->frecv[idxface*5 + 4];
+
+                    //  Face on ymax
+                    idx = this->Index(i, this->ny - 1, k);
+                    idxface = this->IndexBCy(k, i) + this->offsetymax;
+                    this->f[D3Q15<T>::IndexF(idx, 2)] = this->frecv[idxface*5 + 0];
+                    this->f[D3Q15<T>::IndexF(idx, 7)] = this->frecv[idxface*5 + 1];
+                    this->f[D3Q15<T>::IndexF(idx, 8)] = this->frecv[idxface*5 + 2];
+                    this->f[D3Q15<T>::IndexF(idx, 10)] = this->frecv[idxface*5 + 3];
+                    this->f[D3Q15<T>::IndexF(idx, 13)] = this->frecv[idxface*5 + 4];
                 }
             }
         }
@@ -1390,20 +1390,20 @@ private:
                     //  Face on zmin
                     idx = this->Index(i, j, 0);
                     idxface = this->IndexBCz(i, j) + this->offsetzmin;
-                    this->f[D3Q15<T>::IndexF(idx, 3)] = this->frecv[idxface*5 + 0];
-                    this->f[D3Q15<T>::IndexF(idx, 7)] = this->frecv[idxface*5 + 1];
-                    this->f[D3Q15<T>::IndexF(idx, 8)] = this->frecv[idxface*5 + 2];
-                    this->f[D3Q15<T>::IndexF(idx, 9)] = this->frecv[idxface*5 + 3];
-                    this->f[D3Q15<T>::IndexF(idx, 14)] = this->frecv[idxface*5 + 4];
-
-                    //  Face on zmax
-                    idx = this->Index(i, j, this->nz - 1);
-                    idxface = this->IndexBCz(i, j) + this->offsetzmax;
                     this->f[D3Q15<T>::IndexF(idx, 6)] = this->frecv[idxface*5 + 0];
                     this->f[D3Q15<T>::IndexF(idx, 10)] = this->frecv[idxface*5 + 1];
                     this->f[D3Q15<T>::IndexF(idx, 11)] = this->frecv[idxface*5 + 2];
                     this->f[D3Q15<T>::IndexF(idx, 12)] = this->frecv[idxface*5 + 3];
                     this->f[D3Q15<T>::IndexF(idx, 13)] = this->frecv[idxface*5 + 4];
+
+                    //  Face on zmax
+                    idx = this->Index(i, j, this->nz - 1);
+                    idxface = this->IndexBCz(i, j) + this->offsetzmax;
+                    this->f[D3Q15<T>::IndexF(idx, 3)] = this->frecv[idxface*5 + 0];
+                    this->f[D3Q15<T>::IndexF(idx, 7)] = this->frecv[idxface*5 + 1];
+                    this->f[D3Q15<T>::IndexF(idx, 8)] = this->frecv[idxface*5 + 2];
+                    this->f[D3Q15<T>::IndexF(idx, 9)] = this->frecv[idxface*5 + 3];
+                    this->f[D3Q15<T>::IndexF(idx, 14)] = this->frecv[idxface*5 + 4];
                 }
             }
         }
@@ -1412,26 +1412,26 @@ private:
                 //  Edge on ymin and zmin
                 idx = this->Index(i, 0, 0);
                 idxedge = i + 0*this->nx;
-                this->f[D3Q15<T>::IndexF(idx, 7)] = this->frecv[this->nbc*5 + idxedge*2 + 0];
-                this->f[D3Q15<T>::IndexF(idx, 8)] = this->frecv[this->nbc*5 + idxedge*2 + 1];
+                this->f[D3Q15<T>::IndexF(idx, 11)] = this->frecv[this->nbc*5 + idxedge*2 + 0];
+                this->f[D3Q15<T>::IndexF(idx, 12)] = this->frecv[this->nbc*5 + idxedge*2 + 1];
 
                 //  Edge on ymin and zmax
                 idx = this->Index(i, 0, this->nz - 1);
                 idxedge = i + 1*this->nx;
-                this->f[D3Q15<T>::IndexF(idx, 10)] = this->frecv[this->nbc*5 + idxedge*2 + 0];
-                this->f[D3Q15<T>::IndexF(idx, 13)] = this->frecv[this->nbc*5 + idxedge*2 + 1];
+                this->f[D3Q15<T>::IndexF(idx, 9)] = this->frecv[this->nbc*5 + idxedge*2 + 0];
+                this->f[D3Q15<T>::IndexF(idx, 14)] = this->frecv[this->nbc*5 + idxedge*2 + 1];
 
                 //  Edge on ymax and zmin
                 idx = this->Index(i, this->ny - 1, 0);
                 idxedge = i + 2*this->nx;
-                this->f[D3Q15<T>::IndexF(idx, 9)] = this->frecv[this->nbc*5 + idxedge*2 + 0];
-                this->f[D3Q15<T>::IndexF(idx, 14)] = this->frecv[this->nbc*5 + idxedge*2 + 1];
+                this->f[D3Q15<T>::IndexF(idx, 10)] = this->frecv[this->nbc*5 + idxedge*2 + 0];
+                this->f[D3Q15<T>::IndexF(idx, 13)] = this->frecv[this->nbc*5 + idxedge*2 + 1];
 
                 //  Edge on ymax and zmax
                 idx = this->Index(i, this->ny - 1, this->nz - 1);
                 idxedge = i + 3*this->nx;
-                this->f[D3Q15<T>::IndexF(idx, 11)] = this->frecv[this->nbc*5 + idxedge*2 + 0];
-                this->f[D3Q15<T>::IndexF(idx, 12)] = this->frecv[this->nbc*5 + idxedge*2 + 1];
+                this->f[D3Q15<T>::IndexF(idx, 7)] = this->frecv[this->nbc*5 + idxedge*2 + 0];
+                this->f[D3Q15<T>::IndexF(idx, 8)] = this->frecv[this->nbc*5 + idxedge*2 + 1];
             }
         }
         if (this->mz != 1 || this->mx != 1) {
@@ -1439,26 +1439,26 @@ private:
                 //  Edge on zmin and xmin
                 idx = this->Index(0, j, 0);
                 idxedge = j + 4*this->nx + 0*this->ny;
-                this->f[D3Q15<T>::IndexF(idx, 7)] = this->frecv[this->nbc*5 + idxedge*2 + 0];
-                this->f[D3Q15<T>::IndexF(idx, 9)] = this->frecv[this->nbc*5 + idxedge*2 + 1];
+                this->f[D3Q15<T>::IndexF(idx, 11)] = this->frecv[this->nbc*5 + idxedge*2 + 0];
+                this->f[D3Q15<T>::IndexF(idx, 13)] = this->frecv[this->nbc*5 + idxedge*2 + 1];
 
                 //  Edge on zmin and xmax
                 idx = this->Index(this->nx - 1, j, 0);
                 idxedge = j + 4*this->nx + 1*this->ny;
-                this->f[D3Q15<T>::IndexF(idx, 8)] = this->frecv[this->nbc*5 + idxedge*2 + 0];
-                this->f[D3Q15<T>::IndexF(idx, 14)] = this->frecv[this->nbc*5 + idxedge*2 + 1];
+                this->f[D3Q15<T>::IndexF(idx, 10)] = this->frecv[this->nbc*5 + idxedge*2 + 0];
+                this->f[D3Q15<T>::IndexF(idx, 12)] = this->frecv[this->nbc*5 + idxedge*2 + 1];
 
                 //  Edge on zmax and xmin
                 idx = this->Index(0, j, this->nz - 1);
                 idxedge = j + 4*this->nx + 2*this->ny;
-                this->f[D3Q15<T>::IndexF(idx, 10)] = this->frecv[this->nbc*5 + idxedge*2 + 0];
-                this->f[D3Q15<T>::IndexF(idx, 12)] = this->frecv[this->nbc*5 + idxedge*2 + 1];
+                this->f[D3Q15<T>::IndexF(idx, 8)] = this->frecv[this->nbc*5 + idxedge*2 + 0];
+                this->f[D3Q15<T>::IndexF(idx, 14)] = this->frecv[this->nbc*5 + idxedge*2 + 1];
 
                 //  Edge on zmax and xmax
                 idx = this->Index(this->nx - 1, j, this->nz - 1);
                 idxedge = j + 4*this->nx + 3*this->ny;
-                this->f[D3Q15<T>::IndexF(idx, 11)] = this->frecv[this->nbc*5 + idxedge*2 + 0];
-                this->f[D3Q15<T>::IndexF(idx, 13)] = this->frecv[this->nbc*5 + idxedge*2 + 1];
+                this->f[D3Q15<T>::IndexF(idx, 7)] = this->frecv[this->nbc*5 + idxedge*2 + 0];
+                this->f[D3Q15<T>::IndexF(idx, 9)] = this->frecv[this->nbc*5 + idxedge*2 + 1];
             }
         }
         if (this->mx != 1 || this->my != 1) {
@@ -1466,37 +1466,37 @@ private:
                 //  Edge on xmin and ymin
                 idx = this->Index(0, 0, k);
                 idxedge = k + 4*this->nx + 4*this->ny + 0*this->nz;
-                this->f[D3Q15<T>::IndexF(idx, 7)] = this->frecv[this->nbc*5 + idxedge*2 + 0];
-                this->f[D3Q15<T>::IndexF(idx, 10)] = this->frecv[this->nbc*5 + idxedge*2 + 1];
+                this->f[D3Q15<T>::IndexF(idx, 11)] = this->frecv[this->nbc*5 + idxedge*2 + 0];
+                this->f[D3Q15<T>::IndexF(idx, 14)] = this->frecv[this->nbc*5 + idxedge*2 + 1];
 
                 //  Edge on xmin and ymax
                 idx = this->Index(0, this->ny - 1, k);
                 idxedge = k + 4*this->nx + 4*this->ny + 1*this->nz;
-                this->f[D3Q15<T>::IndexF(idx, 9)] = this->frecv[this->nbc*5 + idxedge*2 + 0];
-                this->f[D3Q15<T>::IndexF(idx, 12)] = this->frecv[this->nbc*5 + idxedge*2 + 1];
+                this->f[D3Q15<T>::IndexF(idx, 8)] = this->frecv[this->nbc*5 + idxedge*2 + 0];
+                this->f[D3Q15<T>::IndexF(idx, 13)] = this->frecv[this->nbc*5 + idxedge*2 + 1];
 
                 //  Edge on xmax and ymin
                 idx = this->Index(this->nx - 1, 0, k);
                 idxedge = k + 4*this->nx + 4*this->ny + 2*this->nz;
-                this->f[D3Q15<T>::IndexF(idx, 8)] = this->frecv[this->nbc*5 + idxedge*2 + 0];
-                this->f[D3Q15<T>::IndexF(idx, 13)] = this->frecv[this->nbc*5 + idxedge*2 + 1];
+                this->f[D3Q15<T>::IndexF(idx, 9)] = this->frecv[this->nbc*5 + idxedge*2 + 0];
+                this->f[D3Q15<T>::IndexF(idx, 12)] = this->frecv[this->nbc*5 + idxedge*2 + 1];
 
                 //  Edge on xmax and ymax
                 idx = this->Index(this->nx - 1, this->ny - 1, k);
                 idxedge = k + 4*this->nx + 4*this->ny + 3*this->nz;
-                this->f[D3Q15<T>::IndexF(idx, 11)] = this->frecv[this->nbc*5 + idxedge*2 + 0];
-                this->f[D3Q15<T>::IndexF(idx, 14)] = this->frecv[this->nbc*5 + idxedge*2 + 1];
+                this->f[D3Q15<T>::IndexF(idx, 7)] = this->frecv[this->nbc*5 + idxedge*2 + 0];
+                this->f[D3Q15<T>::IndexF(idx, 10)] = this->frecv[this->nbc*5 + idxedge*2 + 1];
             }
         }
         if (this->mx != 1 || this->my != 1 || this->mz != 1) {
-            this->f[D3Q15<T>::IndexF(this->Index(0, 0, 0), 7)] = this->frecv[this->nbc*5 + 4*(this->nx + this->ny + this->nz)*2 + 0];                                   //  Corner at xmin, ymin and zmin
-            this->f[D3Q15<T>::IndexF(this->Index(this->nx - 1, 0, 0), 8)] = this->frecv[this->nbc*5 + 4*(this->nx + this->ny + this->nz)*2 + 1];                        //  Corner at xmax, ymin and zmin
-            this->f[D3Q15<T>::IndexF(this->Index(0, this->ny - 1, 0), 9)] = this->frecv[this->nbc*5 + 4*(this->nx + this->ny + this->nz)*2 + 2];                        //  Corner at xmin, ymax and zmin 
-            this->f[D3Q15<T>::IndexF(this->Index(this->nx - 1, this->ny - 1, 0), 14)] = this->frecv[this->nbc*5 + 4*(this->nx + this->ny + this->nz)*2 + 3];            //  Corner at xmax, ymax and zmin
-            this->f[D3Q15<T>::IndexF(this->Index(0, 0, this->nz - 1), 10)] = this->frecv[this->nbc*5 + 4*(this->nx + this->ny + this->nz)*2 + 4];                       //  Corner at xmin, ymin and zmax
-            this->f[D3Q15<T>::IndexF(this->Index(this->nx - 1, 0, this->nz - 1), 13)] = this->frecv[this->nbc*5 + 4*(this->nx + this->ny + this->nz)*2 + 5];            //  Corner at xmax, ymin and zmax
-            this->f[D3Q15<T>::IndexF(this->Index(0, this->ny - 1, this->nz - 1), 12)] = this->frecv[this->nbc*5 + 4*(this->nx + this->ny + this->nz)*2 + 6];            //  Corner at xmin, ymax and zmax
-            this->f[D3Q15<T>::IndexF(this->Index(this->nx - 1, this->ny - 1, this->nz - 1), 11)] = this->frecv[this->nbc*5 + 4*(this->nx + this->ny + this->nz)*2 + 7]; //  Corner at xmax, ymax and zmax
+            this->f[D3Q15<T>::IndexF(this->Index(0, 0, 0), 11)] = this->frecv[this->nbc*5 + 4*(this->nx + this->ny + this->nz)*2 + 0];                                  //  Corner at xmin, ymin and zmin
+            this->f[D3Q15<T>::IndexF(this->Index(this->nx - 1, 0, 0), 12)] = this->frecv[this->nbc*5 + 4*(this->nx + this->ny + this->nz)*2 + 1];                       //  Corner at xmax, ymin and zmin
+            this->f[D3Q15<T>::IndexF(this->Index(0, this->ny - 1, 0), 13)] = this->frecv[this->nbc*5 + 4*(this->nx + this->ny + this->nz)*2 + 2];                       //  Corner at xmin, ymax and zmin 
+            this->f[D3Q15<T>::IndexF(this->Index(this->nx - 1, this->ny - 1, 0), 10)] = this->frecv[this->nbc*5 + 4*(this->nx + this->ny + this->nz)*2 + 3];            //  Corner at xmax, ymax and zmin
+            this->f[D3Q15<T>::IndexF(this->Index(0, 0, this->nz - 1), 14)] = this->frecv[this->nbc*5 + 4*(this->nx + this->ny + this->nz)*2 + 4];                       //  Corner at xmin, ymin and zmax
+            this->f[D3Q15<T>::IndexF(this->Index(this->nx - 1, 0, this->nz - 1), 9)] = this->frecv[this->nbc*5 + 4*(this->nx + this->ny + this->nz)*2 + 5];             //  Corner at xmax, ymin and zmax
+            this->f[D3Q15<T>::IndexF(this->Index(0, this->ny - 1, this->nz - 1), 8)] = this->frecv[this->nbc*5 + 4*(this->nx + this->ny + this->nz)*2 + 6];             //  Corner at xmin, ymax and zmax
+            this->f[D3Q15<T>::IndexF(this->Index(this->nx - 1, this->ny - 1, this->nz - 1), 7)] = this->frecv[this->nbc*5 + 4*(this->nx + this->ny + this->nz)*2 + 7];  //  Corner at xmax, ymax and zmax
         }
 #endif
     }

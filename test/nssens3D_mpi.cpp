@@ -61,7 +61,7 @@ int main(int argc, char** argv) {
         for (int k = 0; k < pf.nz; ++k) {
             double r = sqrt(pow(j + pf.offsety, 2.0) + pow(k + pf.offsetz, 2.0));
             if (r < 0.15*pf.lx) {
-                uxbc[pf.IndexBCx(j, k) + pf.offsetxmin] = -u0*(r - 0.33*pf.ly)*(r + 0.33*pf.ly)/(0.15*pf.lx*0.15*pf.lx);
+                uxbc[pf.IndexBCx(j, k) + pf.offsetxmin] = -u0*(r - 0.15*pf.lx)*(r + 0.15*pf.lx)/(0.15*pf.lx*0.15*pf.lx);
             }
         }
     }
@@ -126,6 +126,7 @@ int main(int argc, char** argv) {
     );
     file.AddPointScaler("alpha", [&](int _i, int _j, int _k) { return alpha[pf.Index(_i, _j, _k)]; });
     file.AddPointScaler("s", [&](int _i, int _j, int _k) { return s[pf.Index(_i, _j, _k)]; });
+    file.AddPointScaler("bctype", [&](int _i, int _j, int _k) { return pf.GetBoundary(_i, _j, _k); });
     
     delete[] rho, ux, uy, uz, irho, iux, iuy, iuz, imx, imy, imz, s, alpha, dfds;
     delete[] boundaryup, uxbc, uybc, uzbc, rhobc, usbc, utbc;

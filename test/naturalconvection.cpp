@@ -52,7 +52,7 @@ int main(int argc, char** argv) {
     NS::InitialCondition(pf, rho, ux, uy);
     AD::InitialCondition(pg, tem, ux, uy);
     for (int t = 1; t <= nt; ++t) {
-        if (t%dt == 0) {
+        if (t%dt == 0 && MyRank == 0) {
             std::cout << "t = " << t/dt << std::endl;
         }
         AD::Macro_Collide_Stream_NaturalConvection(

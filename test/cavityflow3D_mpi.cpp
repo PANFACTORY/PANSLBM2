@@ -1,9 +1,11 @@
 #define _USE_MATH_DEFINES
+//#define _USE_MPI_DEFINES
 #include <cmath>
 #include <iostream>
-#include "mpi.h"
+#ifdef _USE_MPI_DEFINES
+    #include "mpi.h"
+#endif
 
-#define _USE_MPI_DEFINES
 #include "../src/particle/d3q15.h"
 #include "../src/equation/navierstokes.h"
 #include "../src/utility/vtkxmlexport.h"
@@ -11,6 +13,7 @@
 using namespace PANSLBM2;
 
 int main(int argc, char** argv) {
+#ifdef _USE_MPI_DEFINES
     int PeTot, MyRank;
     MPI_Init(&argc, &argv);
     MPI_Comm_size(MPI_COMM_WORLD, &PeTot);
@@ -19,6 +22,9 @@ int main(int argc, char** argv) {
     assert(argc == 4);
     int mx = atoi(argv[1]), my = atoi(argv[2]), mz = atoi(argv[3]);
     assert(mx*my*mz == PeTot);
+#else
+    int MyRank = 0, mx = 1, my = 1, mz = 1;
+#endif
 
     //--------------------Set parameters--------------------
     int lx = 30, ly = 30, lz = 30, nt = 10000, dt = 100;
@@ -66,6 +72,7 @@ int main(int argc, char** argv) {
 
     delete[] rho, ux, uy, uz, uxbc, uybc, uzbc;
     delete[] boundaryu;
-
+#ifdef _USE_MPI_DEFINES
     MPI_Finalize();
+#endif
 }

@@ -209,7 +209,7 @@ namespace PANSLBM2 {
             }
         }
 
-        //  Function of setting boundary condition of ANS set iU for 2D
+        //  Function of setting boundary condition of ANS set iU for D2Q9
         template<class T, class P>
         void BoundaryConditionSetiU(P& _p, const T *_uxbc, const T *_uybc, const int *_bctype, T _eps = 1.0) {
             for (int j = 0; j < _p.ny; ++j) {
@@ -253,7 +253,7 @@ namespace PANSLBM2 {
             }
         }
     
-        //  Function of setting boundary condition of ANS set iU for 3D
+        //  Function of setting boundary condition of ANS set iU for D3Q15
         template<class T, class P>
         void BoundaryConditionSetiU(P& _p, const T *_uxbc, const T *_uybc, const T *_uzbc, const int *_bctype, T _eps = 1.0) {
             int idx, idxbc;
@@ -359,7 +359,7 @@ namespace PANSLBM2 {
             }
         }
 
-        //  Function of setting boundary condition of ANS set iRho for 2D
+        //  Function of setting boundary condition of ANS set iRho for D2Q9
         template<class T, class P>
         void BoundaryConditionSetiRho2D(P& _p, const int *_bctype) {
             for (int j = 0; j < _p.ny; ++j) {
@@ -403,7 +403,7 @@ namespace PANSLBM2 {
             }
         }
     
-        //  Function of setting boundary condition of ANS set iRho for 3D
+        //  Function of setting boundary condition of ANS set iRho for D3Q15
         template<class T, class P>
         void BoundaryConditionSetiRho3D(P& _p, const int *_bctype) {
             int idx, idxbc;

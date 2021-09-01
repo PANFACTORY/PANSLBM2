@@ -1,16 +1,19 @@
+#define _USE_MPI_DEFINES
 #include <iostream>
 #include <chrono>
 #include <cassert>
-#include "mpi.h"
+#ifdef _USE_MPI_DEFINES
+    #include "mpi.h"
+#endif
 
-#define _USE_MPI_DEFINES
 #include "../src/particle/d2q9.h"
 #include "../src/equation/navierstokes.h"
-#include "../src/utility/vtkexport.h"
+#include "../src/utility/vtkxmlexport.h"
 
 using namespace PANSLBM2;
 
 int main(int argc, char** argv) {
+#ifdef _USE_MPI_DEFINES
     int PeTot, MyRank;
     MPI_Init(&argc, &argv);
     MPI_Comm_size(MPI_COMM_WORLD, &PeTot);
@@ -19,9 +22,12 @@ int main(int argc, char** argv) {
     assert(argc == 3);
     int mx = atoi(argv[1]), my = atoi(argv[2]);
     assert(mx*my == PeTot);
+#else
+    int MyRank = 0, mx = 1, my = 1; 
+#endif
 
     //--------------------Set parameters--------------------
-    int lx = 101, ly = 101, nt = 1000, dt = 100;
+    int lx = 101, ly = 101, nt = 10000, dt = 100;
     double nu = 0.1, u0 = 0.1, Re = u0*(lx - 1)/nu;
     D2Q9<double> pf(lx, ly, MyRank, mx, my);
     double rho[pf.nxy], ux[pf.nxy], uy[pf.nxy];
@@ -53,7 +59,7 @@ int main(int argc, char** argv) {
             if (MyRank == 0) {
                 std::cout << "t = " << t/dt << std::endl;
             }
-            VTKExport file("result/ns_at" + std::to_string(MyRank) + "_" + std::to_string(t/dt) + ".vtk", pf.nx, pf.ny);
+            VTKXMLExport file("result/cavity_" + std::to_string(t/dt), MyRank, lx, ly, 1, mx, my, 1);
             file.AddPointScaler("rho", [&](int _i, int _j, int _k) { return rho[pf.Index(_i, _j)]; });
             file.AddPointVector("u", 
                 [&](int _i, int _j, int _k) { return ux[pf.Index(_i, _j)]; },
@@ -73,6 +79,7 @@ int main(int argc, char** argv) {
     if (MyRank == 0) {
         std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count() << std::endl;
     }
-    
+#ifdef _USE_MPI_DEFINES
     MPI_Finalize();
+#endif
 }

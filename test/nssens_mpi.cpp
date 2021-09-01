@@ -1,8 +1,10 @@
+#define _USE_MPI_DEFINES
 #include <iostream>
 #include <cmath>
-#include "mpi.h"
+#ifdef _USE_MPI_DEFINES
+    #include "mpi.h"
+#endif
 
-#define _USE_MPI_DEFINES
 #include "../src/particle/d2q9.h"
 #include "../src/equation/navierstokes.h"
 #include "../src/equation/adjointnavierstokes.h"
@@ -11,6 +13,7 @@
 using namespace PANSLBM2;
 
 int main(int argc, char** argv) {
+#ifdef _USE_MPI_DEFINES
     int PeTot, MyRank;
     MPI_Init(&argc, &argv);
     MPI_Comm_size(MPI_COMM_WORLD, &PeTot);
@@ -19,6 +22,9 @@ int main(int argc, char** argv) {
     assert(argc == 3);
     int mx = atoi(argv[1]), my = atoi(argv[2]);
     assert(mx*my == PeTot);
+#else
+    int MyRank = 0, mx = 1, my = 1;
+#endif
 
     //--------------------Set parameters--------------------
     int lx = 101, ly = 51, nt = 10000, dt = 100;
@@ -79,7 +85,7 @@ int main(int argc, char** argv) {
         pf.iSynchronize();
         pf.iBoundaryCondition();
         ANS::BoundaryConditionSetiU(pf, uxbc, uybc, boundaryup);
-        ANS::BoundaryConditionSetiRho<double>(pf, boundaryup);
+        ANS::BoundaryConditionSetiRho2D<double>(pf, boundaryup);
         pf.SmoothCorner();
     }
 
@@ -91,7 +97,11 @@ int main(int argc, char** argv) {
             dfdsmax = fabs(dfds[idx]);
         }
     }
+#ifdef _USE_MPI_DEFINES
     MPI_Allreduce(&dfdsmax, &dfdsmaxall, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+#else
+    dfdsmaxall = dfdsmax;
+#endif
     for (int idx = 0; idx < pf.nxy; ++idx) {  
         dfds[idx] /= dfdsmaxall;
     }
@@ -116,8 +126,8 @@ int main(int argc, char** argv) {
     
     delete[] rho, ux, uy, irho, iux, iuy, imx, imy, s, alpha, dfds;
     delete[] boundaryup, uxbc, uybc, rhobc, usbc;
-
+#ifdef _USE_MPI_DEFINES
     MPI_Finalize();
-
+#endif
     return 0;
 }

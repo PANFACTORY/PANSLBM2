@@ -92,6 +92,22 @@ namespace PANSLBM2 {
             }
         }
 
+        //  Function of applying external force with natural convection of AAD for 2D
+        template<class T, class Q>
+        void ExternalForceNaturalConvection(T _imx, T _imy, T _gx, T _gy, T *_g, int _idx) {
+            for (int c = 0; c < Q::nc; ++c) {
+                _g[Q::IndexF(_idx, c)] += 3.0*(_imx*_gx + _imy*_gy);
+            }
+        }
+
+        //  Function of applying external force with natural convection of AAD for 3D
+        template<class T, class Q>
+        void ExternalForceNaturalConvection(T _imx, T _imy, T _imz, T _gx, T _gy, T gz, T *_g, int _idx) {
+            for (int c = 0; c < Q::nc; ++c) {
+                _g[Q::IndexF(_idx, c)] += 3.0*(_imx*_gx + _imy*_gy + _imz*_gz);
+            }
+        }
+
         //  Function of Update macro, External force(Brinkman, Heat exchange), Collide and Stream of AAD for 2D
         template<class T, class P, class Q>
         void Macro_Brinkman_Collide_Stream_HeatExchange(
@@ -140,6 +156,404 @@ namespace PANSLBM2 {
             }
         }
     
+        //  Function of Update macro, Collide and Stream of AAD for 2D (diffusivity constant)
+        template<class T, class P, class Q>
+        void Macro_Brinkman_Collide_Stream_ForceConvection(
+            P& _p, const T *_rho, const T *_ux, const T *_uy, T *_ip, T *_iux, T *_iuy, T *_imx, T *_imy, const T *_alpha, T _viscosity,
+            Q& _q, const T *_tem, T *_item, T *_iqx, T *_iqy, T _diffusivity, bool _issave = false
+        ) {
+            T omegaf = 1.0/(3.0*_viscosity + 0.5), omegag = 1.0/(3.0*_diffusivity + 0.5);
+            for (int i = 0; i < _p.nx; ++i) {
+                for (int j = 0; j < _p.ny; ++j) {
+                    int idx = _p.Index(i, j);
+
+                    //  Update macro
+                    T ip, iux, iuy, imx, imy;
+                    ANS::Macro<T, P>(ip, iux, iuy, imx, imy, _rho, _ux, _uy, _p.f, idx);
+                    T item, iqx, iqy;
+                    Macro<T, Q>(item, iqx, iqy, _q.f, idx);
+
+                    //  External force with Brinkman model
+                    ExternalForceBrinkman<T, P>(_rho, _ux, _uy, imx, imy, _tem, iqx, iqy, omegag, _p.f, _alpha, idx);
+                    ANS::Macro<T, P>(ip, iux, iuy, imx, imy, _rho, _ux, _uy, _p.f, idx);
+
+                    //  Save macro if need
+                    if (_issave) {
+                        _ip[idx] = ip;
+                        _iux[idx] = iux;
+                        _iuy[idx] = iuy;
+                        _imx[idx] = imx;
+                        _imy[idx] = imy;
+                        _item[idx] = item;
+                        _iqx[idx] = iqx;
+                        _iqy[idx] = iqy;
+                    }
+
+                    //  Collide and stream
+                    for (int c = 0; c < P::nc; ++c) {
+                        int idxstream = _p.Index(i - P::cx[c], j - P::cy[c]);
+                        _p.fnext[P::IndexF(idxstream, c)] = (1.0 - omegaf)*_p.f[P::IndexF(idx, c)] + omegaf*ANS::Equilibrium<T, P>(_ux[idx], _uy[idx], ip, iux, iuy, c);
+                    }
+                    for (int c = 0; c < Q::nc; ++c) {
+                        int idxstream = _q.Index(i - Q::cx[c], j - Q::cy[c]);
+                        _q.fnext[Q::IndexF(idxstream, c)] = (1.0 - omegag)*_q.f[Q::IndexF(idx, c)] + omegag*Equilibrium<T, Q>(item, iqx, iqy, _ux[idx], _uy[idx], c);
+                    }
+                }
+            }
+        }
+
+        //  Function of Update macro, Collide and Stream of AAD for 3D (diffusivity constant)
+        template<class T, class P, class Q>
+        void Macro_Brinkman_Collide_Stream_ForceConvection(
+            P& _p, const T *_rho, const T *_ux, const T *_uy, const T *_uz, T *_ip, T *_iux, T *_iuy, T *_iuz, T *_imx, T *_imy, T *_imz, const T *_alpha, T _viscosity,
+            Q& _q, const T *_tem, T *_item, T *_iqx, T *_iqy, T *_iqz, T _diffusivity, bool _issave = false
+        ) {
+            T omegaf = 1.0/(3.0*_viscosity + 0.5), omegag = 1.0/(3.0*_diffusivity + 0.5);
+            for (int i = 0; i < _p.nx; ++i) {
+                for (int j = 0; j < _p.ny; ++j) {
+                    for (int k = 0; k < _p.nz; ++k) {
+                        int idx = _p.Index(i, j, k);
+
+                        //  Update macro
+                        T ip, iux, iuy, iuz, imx, imy, imz;
+                        ANS::Macro<T, P>(ip, iux, iuy, iuz, imx, imy, imz, _rho, _ux, _uy, _uz, _p.f, idx);
+                        T item, iqx, iqy, iqz;
+                        Macro<T, Q>(item, iqx, iqy, iqz, _q.f, idx);
+
+                        //  External force with Brinkman model
+                        ExternalForceBrinkman<T, P>(_rho, _ux, _uy, _uz, imx, imy, imz, _tem, iqx, iqy, iqz, omegag, _p.f, _alpha, idx);
+                        ANS::Macro<T, P>(ip, iux, iuy, iuz, imx, imy, imz, _rho, _ux, _uy, _uz, _p.f, idx);
+
+                        //  Save macro if need
+                        if (_issave) {
+                            _ip[idx] = ip;
+                            _iux[idx] = iux;
+                            _iuy[idx] = iuy;
+                            _imx[idx] = imx;
+                            _imy[idx] = imy;
+                            _imz[idx] = imz;
+                            _item[idx] = item;
+                            _iqx[idx] = iqx;
+                            _iqy[idx] = iqy;
+                            _iqz[idx] = iqz;
+                        }
+
+                        //  Collide and stream
+                        for (int c = 0; c < P::nc; ++c) {
+                            int idxstream = _p.Index(i - P::cx[c], j - P::cy[c], k - P::cz[c]);
+                            _p.fnext[P::IndexF(idxstream, c)] = (1.0 - omegaf)*_p.f[P::IndexF(idx, c)] + omegaf*ANS::Equilibrium<T, P>(_ux[idx], _uy[idx], _uz[idx], ip, iux, iuy, iuz, c);
+                        }
+                        for (int c = 0; c < Q::nc; ++c) {
+                            int idxstream = _q.Index(i - Q::cx[c], j - Q::cy[c], k - Q::cz[c]);
+                            _q.fnext[Q::IndexF(idxstream, c)] = (1.0 - omegag)*_q.f[Q::IndexF(idx, c)] + omegag*Equilibrium<T, Q>(item, iqx, iqy, iqz, _ux[idx], _uy[idx], _uz[idx], c);
+                        }
+                    }
+                }
+            }
+        }
+
+        //  Function of Update macro, Collide and Stream of AAD for 2D (diffusivity heterogenious)
+        template<class T, class P, class Q>
+        void Macro_Brinkman_Collide_Stream_ForceConvection(
+            P& _p, const T *_rho, const T *_ux, const T *_uy, T *_ip, T *_iux, T *_iuy, T *_imx, T *_imy, const T *_alpha, T _viscosity,
+            Q& _q, const T *_tem, T *_item, T *_iqx, T *_iqy, const T *_diffusivity, bool _issave = false
+        ) {
+            T omegaf = 1.0/(3.0*_viscosity + 0.5);
+            for (int i = 0; i < _p.nx; ++i) {
+                for (int j = 0; j < _p.ny; ++j) {
+                    int idx = _p.Index(i, j);
+                    T omegag = 1.0/(3.0*_diffusivity[idx] + 0.5);
+
+                    //  Update macro
+                    T ip, iux, iuy, imx, imy;
+                    ANS::Macro<T, P>(ip, iux, iuy, imx, imy, _rho, _ux, _uy, _p.f, idx);
+                    T item, iqx, iqy;
+                    Macro<T, Q>(item, iqx, iqy, _q.f, idx);
+
+                    //  External force with Brinkman model
+                    ExternalForceBrinkman<T, P>(_rho, _ux, _uy, imx, imy, _tem, iqx, iqy, omegag, _p.f, _alpha, idx);
+                    ANS::Macro<T, P>(ip, iux, iuy, imx, imy, _rho, _ux, _uy, _p.f, idx);
+
+                    //  Save macro if need
+                    if (_issave) {
+                        _ip[idx] = ip;
+                        _iux[idx] = iux;
+                        _iuy[idx] = iuy;
+                        _imx[idx] = imx;
+                        _imy[idx] = imy;
+                        _item[idx] = item;
+                        _iqx[idx] = iqx;
+                        _iqy[idx] = iqy;
+                    }
+
+                    //  Collide and stream
+                    for (int c = 0; c < P::nc; ++c) {
+                        int idxstream = _p.Index(i - P::cx[c], j - P::cy[c]);
+                        _p.fnext[P::IndexF(idxstream, c)] = (1.0 - omegaf)*_p.f[P::IndexF(idx, c)] + omegaf*ANS::Equilibrium<T, P>(_ux[idx], _uy[idx], ip, iux, iuy, c);
+                    }
+                    for (int c = 0; c < Q::nc; ++c) {
+                        int idxstream = _q.Index(i - Q::cx[c], j - Q::cy[c]);
+                        _q.fnext[Q::IndexF(idxstream, c)] = (1.0 - omegag)*_q.f[Q::IndexF(idx, c)] + omegag*Equilibrium<T, Q>(item, iqx, iqy, _ux[idx], _uy[idx], c);
+                    }
+                }
+            }
+        }
+
+        //  Function of Update macro, Collide and Stream of AAD for 3D (diffusivity heterogenious)
+        template<class T, class P, class Q>
+        void Macro_Brinkman_Collide_Stream_ForceConvection(
+            P& _p, const T *_rho, const T *_ux, const T *_uy, const T *_uz, T *_ip, T *_iux, T *_iuy, T *_iuz, T *_imx, T *_imy, T *_imz, const T *_alpha, T _viscosity,
+            Q& _q, const T *_tem, T *_item, T *_iqx, T *_iqy, T *_iqz, const T *_diffusivity, bool _issave = false
+        ) {
+            T omegaf = 1.0/(3.0*_viscosity + 0.5);
+            for (int i = 0; i < _p.nx; ++i) {
+                for (int j = 0; j < _p.ny; ++j) {
+                    for (int k = 0; k < _p.nz; ++k) {
+                        int idx = _p.Index(i, j, k);
+                        T omegag = 1.0/(3.0*_diffusivity[idx] + 0.5);
+
+                        //  Update macro
+                        T ip, iux, iuy, iuz, imx, imy, imz;
+                        ANS::Macro<T, P>(ip, iux, iuy, iuz, imx, imy, imz, _rho, _ux, _uy, _uz, _p.f, idx);
+                        T item, iqx, iqy, iqz;
+                        Macro<T, Q>(item, iqx, iqy, iqz, _q.f, idx);
+
+                        //  External force with Brinkman model
+                        ExternalForceBrinkman<T, P>(_rho, _ux, _uy, _uz, imx, imy, imz, _tem, iqx, iqy, iqz, omegag, _p.f, _alpha, idx);
+                        ANS::Macro<T, P>(ip, iux, iuy, iuz, imx, imy, imz, _rho, _ux, _uy, _uz, _p.f, idx);
+
+                        //  Save macro if need
+                        if (_issave) {
+                            _ip[idx] = ip;
+                            _iux[idx] = iux;
+                            _iuy[idx] = iuy;
+                            _imx[idx] = imx;
+                            _imy[idx] = imy;
+                            _imz[idx] = imz;
+                            _item[idx] = item;
+                            _iqx[idx] = iqx;
+                            _iqy[idx] = iqy;
+                            _iqz[idx] = iqz;
+                        }
+
+                        //  Collide and stream
+                        for (int c = 0; c < P::nc; ++c) {
+                            int idxstream = _p.Index(i - P::cx[c], j - P::cy[c], k - P::cz[c]);
+                            _p.fnext[P::IndexF(idxstream, c)] = (1.0 - omegaf)*_p.f[P::IndexF(idx, c)] + omegaf*ANS::Equilibrium<T, P>(_ux[idx], _uy[idx], _uz[idx], ip, iux, iuy, iuz, c);
+                        }
+                        for (int c = 0; c < Q::nc; ++c) {
+                            int idxstream = _q.Index(i - Q::cx[c], j - Q::cy[c], k - Q::cz[c]);
+                            _q.fnext[Q::IndexF(idxstream, c)] = (1.0 - omegag)*_q.f[Q::IndexF(idx, c)] + omegag*Equilibrium<T, Q>(item, iqx, iqy, iqz, _ux[idx], _uy[idx], _uz[idx], c);
+                        }
+                    }
+                }
+            }
+        }
+
+        //  Function of Update macro, Collide and Stream of AAD for 2D (diffusivity constant)
+        template<class T, class P, class Q>
+        void Macro_Brinkman_Collide_Stream_NaturalConvection(
+            P& _p, const T *_rho, const T *_ux, const T *_uy, T *_ip, T *_iux, T *_iuy, T *_imx, T *_imy, const T *_alpha, T _viscosity,
+            Q& _q, const T *_tem, T *_item, T *_iqx, T *_iqy, T _diffusivity, T _gx, T _gy, bool _issave = false
+        ) {
+            T omegaf = 1.0/(3.0*_viscosity + 0.5), omegag = 1.0/(3.0*_diffusivity + 0.5);
+            for (int i = 0; i < _p.nx; ++i) {
+                for (int j = 0; j < _p.ny; ++j) {
+                    int idx = _p.Index(i, j);
+
+                    //  Update macro
+                    T ip, iux, iuy, imx, imy;
+                    ANS::Macro<T, P>(ip, iux, iuy, imx, imy, _rho, _ux, _uy, _p.f, idx);
+                    T item, iqx, iqy;
+                    Macro<T, Q>(item, iqx, iqy, _q.f, idx);
+
+                    //  External force with Brinkman model
+                    ExternalForceBrinkman<T, P>(_rho, _ux, _uy, imx, imy, _tem, iqx, iqy, omegag, _p.f, _alpha, idx);
+                    ANS::Macro<T, P>(ip, iux, iuy, imx, imy, _rho, _ux, _uy, _p.f, idx);
+                    ExternalForceNaturalConvection(imx, imy, _gx, _gy, _q.f, idx);
+                    Macro<T, Q>(item, iqx, iqy, _q.f, idx);
+
+                    //  Save macro if need
+                    if (_issave) {
+                        _ip[idx] = ip;
+                        _iux[idx] = iux;
+                        _iuy[idx] = iuy;
+                        _imx[idx] = imx;
+                        _imy[idx] = imy;
+                        _item[idx] = item;
+                        _iqx[idx] = iqx;
+                        _iqy[idx] = iqy;
+                    }
+
+                    //  Collide and stream
+                    for (int c = 0; c < P::nc; ++c) {
+                        int idxstream = _p.Index(i - P::cx[c], j - P::cy[c]);
+                        _p.fnext[P::IndexF(idxstream, c)] = (1.0 - omegaf)*_p.f[P::IndexF(idx, c)] + omegaf*ANS::Equilibrium<T, P>(_ux[idx], _uy[idx], ip, iux, iuy, c);
+                    }
+                    for (int c = 0; c < Q::nc; ++c) {
+                        int idxstream = _q.Index(i - Q::cx[c], j - Q::cy[c]);
+                        _q.fnext[Q::IndexF(idxstream, c)] = (1.0 - omegag)*_q.f[Q::IndexF(idx, c)] + omegag*Equilibrium<T, Q>(item, iqx, iqy, _ux[idx], _uy[idx], c);
+                    }
+                }
+            }
+        }
+
+        //  Function of Update macro, Collide and Stream of AAD for 3D (diffusivity constant)
+        template<class T, class P, class Q>
+        void Macro_Brinkman_Collide_Stream_NaturalConvection(
+            P& _p, const T *_rho, const T *_ux, const T *_uy, const T *_uz, T *_ip, T *_iux, T *_iuy, T *_iuz, T *_imx, T *_imy, T *_imz, const T *_alpha, T _viscosity,
+            Q& _q, const T *_tem, T *_item, T *_iqx, T *_iqy, T *_iqz, T _diffusivity, T _gx, T _gy, T _gz, bool _issave = false
+        ) {
+            T omegaf = 1.0/(3.0*_viscosity + 0.5), omegag = 1.0/(3.0*_diffusivity + 0.5);
+            for (int i = 0; i < _p.nx; ++i) {
+                for (int j = 0; j < _p.ny; ++j) {
+                    for (int k = 0; k < _p.nz; ++k) {
+                        int idx = _p.Index(i, j, k);
+
+                        //  Update macro
+                        T ip, iux, iuy, iuz, imx, imy, imz;
+                        ANS::Macro<T, P>(ip, iux, iuy, iuz, imx, imy, imz, _rho, _ux, _uy, _uz, _p.f, idx);
+                        T item, iqx, iqy, iqz;
+                        Macro<T, Q>(item, iqx, iqy, iqz, _q.f, idx);
+
+                        //  External force with Brinkman model
+                        ExternalForceBrinkman<T, P>(_rho, _ux, _uy, _uz, imx, imy, imz, _tem, iqx, iqy, iqz, omegag, _p.f, _alpha, idx);
+                        ANS::Macro<T, P>(ip, iux, iuy, iuz, imx, imy, imz, _rho, _ux, _uy, _uz, _p.f, idx);
+                        ExternalForceNaturalConvection(imx, imy, imz, _gx, _gy, _gz, _q.f, idx);
+                        Macro<T, Q>(item, iqx, iqy, iqz, _q.f, idx);
+
+                        //  Save macro if need
+                        if (_issave) {
+                            _ip[idx] = ip;
+                            _iux[idx] = iux;
+                            _iuy[idx] = iuy;
+                            _iuz[idx] = iuz;
+                            _imx[idx] = imx;
+                            _imy[idx] = imy;
+                            _imz[idx] = imz;
+                            _item[idx] = item;
+                            _iqx[idx] = iqx;
+                            _iqy[idx] = iqy;
+                            _iqz[idx] = iqz;
+                        }
+
+                        //  Collide and stream
+                        for (int c = 0; c < P::nc; ++c) {
+                            int idxstream = _p.Index(i - P::cx[c], j - P::cy[c], k - P::cz[c]);
+                            _p.fnext[P::IndexF(idxstream, c)] = (1.0 - omegaf)*_p.f[P::IndexF(idx, c)] + omegaf*ANS::Equilibrium<T, P>(_ux[idx], _uy[idx], _uz[idx], ip, iux, iuy, iuz, c);
+                        }
+                        for (int c = 0; c < Q::nc; ++c) {
+                            int idxstream = _q.Index(i - Q::cx[c], j - Q::cy[c], k - Q::cz[c]);
+                            _q.fnext[Q::IndexF(idxstream, c)] = (1.0 - omegag)*_q.f[Q::IndexF(idx, c)] + omegag*Equilibrium<T, Q>(item, iqx, iqy, iqz, _ux[idx], _uy[idx], _uz[idx], c);
+                        }
+                    }
+                }
+            }
+        }
+
+        //  Function of Update macro, Collide and Stream of AAD for 2D (diffusivity heterogenious)
+        template<class T, class P, class Q>
+        void Macro_Brinkman_Collide_Stream_NaturalConvection(
+            P& _p, const T *_rho, const T *_ux, const T *_uy, T *_ip, T *_iux, T *_iuy, T *_imx, T *_imy, const T *_alpha, T _viscosity,
+            Q& _q, const T *_tem, T *_item, T *_iqx, T *_iqy, const T *_diffusivity, T _gx, T _gy, bool _issave = false
+        ) {
+            T omegaf = 1.0/(3.0*_viscosity + 0.5);
+            for (int i = 0; i < _p.nx; ++i) {
+                for (int j = 0; j < _p.ny; ++j) {
+                    int idx = _p.Index(i, j);
+                    T omegag = 1.0/(3.0*_diffusivity[idx] + 0.5);
+
+                    //  Update macro
+                    T ip, iux, iuy, imx, imy;
+                    ANS::Macro<T, P>(ip, iux, iuy, imx, imy, _rho, _ux, _uy, _p.f, idx);
+                    T item, iqx, iqy;
+                    Macro<T, Q>(item, iqx, iqy, _q.f, idx);
+
+                    //  External force with Brinkman model
+                    ExternalForceBrinkman<T, P>(_rho, _ux, _uy, imx, imy, _tem, iqx, iqy, omegag, _p.f, _alpha, idx);
+                    ANS::Macro<T, P>(ip, iux, iuy, imx, imy, _rho, _ux, _uy, _p.f, idx);
+                    ExternalForceNaturalConvection(imx, imy, _gx, _gy, _q.f, idx);
+                    Macro<T, Q>(item, iqx, iqy, _q.f, idx);
+
+                    //  Save macro if need
+                    if (_issave) {
+                        _ip[idx] = ip;
+                        _iux[idx] = iux;
+                        _iuy[idx] = iuy;
+                        _imx[idx] = imx;
+                        _imy[idx] = imy;
+                        _item[idx] = item;
+                        _iqx[idx] = iqx;
+                        _iqy[idx] = iqy;
+                    }
+
+                    //  Collide and stream
+                    for (int c = 0; c < P::nc; ++c) {
+                        int idxstream = _p.Index(i - P::cx[c], j - P::cy[c]);
+                        _p.fnext[P::IndexF(idxstream, c)] = (1.0 - omegaf)*_p.f[P::IndexF(idx, c)] + omegaf*ANS::Equilibrium<T, P>(_ux[idx], _uy[idx], ip, iux, iuy, c);
+                    }
+                    for (int c = 0; c < Q::nc; ++c) {
+                        int idxstream = _q.Index(i - Q::cx[c], j - Q::cy[c]);
+                        _q.fnext[Q::IndexF(idxstream, c)] = (1.0 - omegag)*_q.f[Q::IndexF(idx, c)] + omegag*Equilibrium<T, Q>(item, iqx, iqy, _ux[idx], _uy[idx], c);
+                    }
+                }
+            }
+        }
+
+        //  Function of Update macro, Collide and Stream of AAD for 3D (diffusivity heterogenious)
+        template<class T, class P, class Q>
+        void Macro_Brinkman_Collide_Stream_NaturalConvection(
+            P& _p, const T *_rho, const T *_ux, const T *_uy, const T *_uz, T *_ip, T *_iux, T *_iuy, T *_iuz, T *_imx, T *_imy, T *_imz, const T *_alpha, T _viscosity,
+            Q& _q, const T *_tem, T *_item, T *_iqx, T *_iqy, T *_iqz, const T *_diffusivity, T _gx, T _gy, T _gz, bool _issave = false
+        ) {
+            T omegaf = 1.0/(3.0*_viscosity + 0.5);
+            for (int i = 0; i < _p.nx; ++i) {
+                for (int j = 0; j < _p.ny; ++j) {
+                    for (int k = 0; k < _p.nz; ++k) {
+                        int idx = _p.Index(i, j, k);
+                        T omegag = 1.0/(3.0*_diffusivity[idx] + 0.5);
+
+                        //  Update macro
+                        T ip, iux, iuy, iuz, imx, imy, imz;
+                        ANS::Macro<T, P>(ip, iux, iuy, iuz, imx, imy, imz, _rho, _ux, _uy, _uz, _p.f, idx);
+                        T item, iqx, iqy, iqz;
+                        Macro<T, Q>(item, iqx, iqy, iqz, _q.f, idx);
+
+                        //  External force with Brinkman model
+                        ExternalForceBrinkman<T, P>(_rho, _ux, _uy, _uz, imx, imy, imz, _tem, iqx, iqy, iqz, omegag, _p.f, _alpha, idx);
+                        ANS::Macro<T, P>(ip, iux, iuy, iuz, imx, imy, imz, _rho, _ux, _uy, _uz, _p.f, idx);
+                        ExternalForceNaturalConvection(imx, imy, imz, _gx, _gy, _gz, _q.f, idx);
+                        Macro<T, Q>(item, iqx, iqy, iqz, _q.f, idx);
+
+                        //  Save macro if need
+                        if (_issave) {
+                            _ip[idx] = ip;
+                            _iux[idx] = iux;
+                            _iuy[idx] = iuy;
+                            _iuz[idx] = iuz;
+                            _imx[idx] = imx;
+                            _imy[idx] = imy;
+                            _imz[idx] = imz;
+                            _item[idx] = item;
+                            _iqx[idx] = iqx;
+                            _iqy[idx] = iqy;
+                            _iqz[idx] = iqz;
+                        }
+
+                        //  Collide and stream
+                        for (int c = 0; c < P::nc; ++c) {
+                            int idxstream = _p.Index(i - P::cx[c], j - P::cy[c], k - P::cz[c]);
+                            _p.fnext[P::IndexF(idxstream, c)] = (1.0 - omegaf)*_p.f[P::IndexF(idx, c)] + omegaf*ANS::Equilibrium<T, P>(_ux[idx], _uy[idx], _uz[idx], ip, iux, iuy, iuz, c);
+                        }
+                        for (int c = 0; c < Q::nc; ++c) {
+                            int idxstream = _q.Index(i - Q::cx[c], j - Q::cy[c], k - Q::cz[c]);
+                            _q.fnext[Q::IndexF(idxstream, c)] = (1.0 - omegag)*_q.f[Q::IndexF(idx, c)] + omegag*Equilibrium<T, Q>(item, iqx, iqy, iqz, _ux[idx], _uy[idx], _uz[idx], c);
+                        }
+                    }
+                }
+            }
+        }
+
         //  Function of setting initial condition of AAD for 2D
         template<class T, class Q>
         void InitialCondition(Q& _q, const T *_ux, const T *_uy, const T *_item, const T *_iqx, const T *_iqy) {
@@ -160,7 +574,7 @@ namespace PANSLBM2 {
             }
         }
 
-        //  Function of setting boundary condition set iT of AAD for 2D
+        //  Function of setting boundary condition set iT of AAD for D2Q9
         template<class T, class Q>
         void BoundaryConditionSetiT(Q& _q, const T *_ux, const T *_uy, const int *_bctype) {
             for (int j = 0; j < _q.ny; ++j) {
@@ -204,7 +618,7 @@ namespace PANSLBM2 {
             }
         }
 
-        //  Function of setting boundary condition set iT of AAD for 3D
+        //  Function of setting boundary condition set iT of AAD for D3Q15
         template<class T, class Q>
         void BoundaryConditionSetiT(Q& _q, const T *_ux, const T *_uy, const T *_uz, const int *_bctype) {
             int idx, idxbc;
@@ -304,7 +718,7 @@ namespace PANSLBM2 {
             }
         }
     
-        //  Function of setting boundary condition set iQ of AAD for 2D
+        //  Function of setting boundary condition set iQ of AAD for D2Q9
         template<class T, class Q>
         void BoundaryConditionSetiQ(Q& _q, const T *_ux, const T *_uy, const int *_bctype, T _eps = T()) {
             for (int j = 0; j < _q.ny; ++j) {
@@ -364,7 +778,7 @@ namespace PANSLBM2 {
             }
         }
 
-        //  Function of setting boundary condition set iQ of AAD for 3D
+        //  Function of setting boundary condition set iQ of AAD for D3Q15
         template<class T, class Q>
         void BoundaryConditionSetiQ(Q& _q, const T *_ux, const T *_uy, const T *_uz, const int *_bctype, T _eps = T()) {
             int idx, idxbc;

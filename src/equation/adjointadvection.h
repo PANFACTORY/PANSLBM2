@@ -896,7 +896,7 @@ namespace PANSLBM2 {
             }
         }
     
-        //  Function of setting boundary condition set iRho and iT or iQ of AAD for 2D
+        //  Function of setting boundary condition set iRho and iT or iQ of AAD for D2Q9
         template<class T, class P, class Q>
         void BoundaryConditionSetiRho(P& _p, Q& _q, const T *_rho, const T *_ux, const T *_uy, const T *_tem, const int *_bctypef, const int *_bctypeg, T _eps = T()) {
             int idx, idxbc; 
@@ -985,7 +985,7 @@ namespace PANSLBM2 {
             }
         }
     
-        //  Function of setting boundary condition set iRho and iT or iQ of AAD for 3D
+        //  Function of setting boundary condition set iRho and iT or iQ of AAD for D3Q15
         template<class T, class P, class Q>
         void BoundaryConditionSetiRho(P& _p, Q& _q, const T *_rho, const T *_ux, const T *_uy, const T *_uz, const T *_tem, const int *_bctypef, const int *_bctypeg, T _eps = T()) {
             int idx, idxbc;
@@ -1152,6 +1152,175 @@ namespace PANSLBM2 {
                         _p.f[P::IndexF(idx, 8)] = _p.f[P::IndexF(idx, 12)] + rho0 + flux0 + obj0;
                         _p.f[P::IndexF(idx, 9)] = _p.f[P::IndexF(idx, 13)] + rho0 + flux0 + obj0;
                         _p.f[P::IndexF(idx, 14)] = _p.f[P::IndexF(idx, 10)] + rho0 + flux0 + obj0;
+                    }
+                }
+            }
+        }
+    
+        //  Function of getting sensitivity of temperature at heat source for D2Q9
+        template<class T, class Q>
+        void SensitivityTemperatureAtHeatSource(
+            const T *_ux, const T *_uy, const T *_imx, const T *_imy,
+            Q& _q, const T *_tem, const T *_item, const T *_iqx, const T *_iqy, const T *_g, const T *_ig,
+            T *_dfds, const T *_diffusivity, const T *_dads, const T *_dkds, const T *_qnbc, const int *_bctype
+        ) {
+            int idx, idxbc;
+
+            //  Brinkman term and diffusivity term
+            for (int i = 0; i < _q.nx; ++i) {
+                for (int j = 0; j < _q.ny; ++j) {
+                    idx = _q.Index(i, j);
+                    _dfds[idx] += 3.0*_dads[idx]*(_ux[idx]*_imx[idx] + _uy[idx]*_imy[idx]);
+                    T sumg = T();
+                    for (int c = 0; c < Q::nc; ++c) {
+                        sumg += _ig[Q::IndexF(idx, c)]*_g[Q::IndexF(idx, c)];
+                    }
+                    _dfds[idx] += -3.0/pow(3.0*_diffusivity[idx] + 0.5, 2.0)*_dkds[idx]*(sumg - _tem[idx]*(_item[idx] + 3.0*(_ux[idx]*_iqx[idx] + _uy[idx]*_iqy[idx])));
+                }
+            }
+
+            //  Boundary term 
+            for (int j = 0; j < _q.ny; ++j) {
+                //  Along xmin
+                idx = _q.Index(0, j);
+                idxbc = j + _q.offsetxmin;
+                if (_bctype[idxbc] == FixQ) {
+                    _dfds[idx] += _qnbc[idxbc]*_dkds[idx]*(
+                        (1.0 + 3.0*_ux[idx])*(-6.0 + 4.0*_ig[Q::IndexF(idx, 1)] + _ig[Q::IndexF(idx, 5)] + _ig[Q::IndexF(idx, 8)])
+                        + 3.0*_uy[idx]*(_ig[Q::IndexF(idx, 5)] - _ig[Q::IndexF(idx, 8)])
+                    )/(36.0*(1.0 - 3.0*_ux[idx])*pow(_diffusivity[idx], 2.0));
+                }
+
+                //  Along xmax
+                idx = _q.Index(_q.nx - 1, j);
+                idxbc = j + _q.offsetxmax;
+                if (_bctype[idxbc] == FixQ) {
+                    _dfds[idx] += _qnbc[idxbc]*_dkds[idx]*(
+                        (1.0 - 3.0*_ux[idx])*(-6.0 + 4.0*_ig[Q::IndexF(idx, 3)] + _ig[Q::IndexF(idx, 6)] + _ig[Q::IndexF(idx, 7)])
+                        + 3.0*_uy[idx]*(_ig[Q::IndexF(idx, 6)] - _ig[Q::IndexF(idx, 7)])
+                    )/(36.0*(1.0 + 3.0*_ux[idx])*pow(_diffusivity[idx], 2.0));
+                }
+            }
+            for (int i = 0; i < _q.nx; ++i) {
+                //  Along ymin
+                idx = _q.Index(i, 0);
+                idxbc = i + _q.offsetymin;
+                if (_bctype[idxbc] == FixQ) {
+                    _dfds[idx] += _qnbc[idxbc]*_dkds[idx]*(
+                        (1.0 + 3.0*_uy[idx])*(-6.0 + 4.0*_ig[Q::IndexF(idx, 2)] + _ig[Q::IndexF(idx, 5)] + _ig[Q::IndexF(idx, 6)])
+                        + 3.0*_ux[idx]*(_ig[Q::IndexF(idx, 5)] - _ig[Q::IndexF(idx, 6)])
+                    )/(36.0*(1.0 - 3.0*_uy[idx])*pow(_diffusivity[idx], 2.0));
+                }
+
+                //  Along ymax
+                idx = _q.Index(i, _q.ny - 1);
+                idxbc = i + _q.offsetymax;
+                if (_bctype[idxbc] == FixQ) {
+                    _dfds[idx] += _qnbc[idxbc]*_dkds[idx]*(
+                        (1.0 - 3.0*_uy[idx])*(-6.0 + 4.0*_ig[Q::IndexF(idx, 4)] + _ig[Q::IndexF(idx, 7)] + _ig[Q::IndexF(idx, 8)])
+                        + 3.0*_ux[idx]*(_ig[Q::IndexF(idx, 8)] - _ig[Q::IndexF(idx, 7)])
+                    )/(36.0*(1.0 + 3.0*_uy[idx])*pow(_diffusivity[idx], 2.0));
+                }
+            }
+        }
+
+        //  Function of getting sensitivity of temperature at heat source for D3Q15
+        template<class T, class Q>
+        void SensitivityTemperatureAtHeatSource(
+            const T *_ux, const T *_uy, const T *_uz, const T *_imx, const T *_imy, const T *_imz,
+            Q& _q, const T *_tem, const T *_item, const T *_iqx, const T *_iqy, const T *_iqz, const T *_g, const T *_ig,
+            T *_dfds, const T *_diffusivity, const T *_dads, const T *_dkds, const T *_qnbc, const int *_bctype
+        ) {
+            int idx, idxbc;
+
+            //  Brinkman term and diffusivity term
+            for (int i = 0; i < _q.nx; ++i) {
+                for (int j = 0; j < _q.ny; ++j) {
+                    for (int k = 0; k < _q.nz; ++k) {
+                        idx = _q.Index(i, j, k);
+                        _dfds[idx] += 3.0*_dads[idx]*(_ux[idx]*_imx[idx] + _uy[idx]*_imy[idx] + _uz[idx]*_imz[idx]);
+                        T sumg = T();
+                        for (int c = 0; c < Q::nc; ++c) {
+                            sumg += _ig[Q::IndexF(idx, c)]*_g[Q::IndexF(idx, c)];
+                        }
+                        _dfds[idx] += -3.0/pow(3.0*_diffusivity[idx] + 0.5, 2.0)*_dkds[idx]*(sumg - _tem[idx]*(_item[idx] + 3.0*(_ux[idx]*_iqx[idx] + _uy[idx]*_iqy[idx] + _uz[idx]*_iqz[idx])));
+                    }
+                }
+            }
+
+            //  Boundary term 
+            for (int j = 0; j < _q.ny; ++j) {
+                for (int k = 0; k < _q.nz; ++k) {
+                    //  Along xmin
+                    idx = _q.Index(0, j, k);
+                    idxbc = _q.IndexBCx(j, k) + _q.offsetxmin;
+                    if (_bctype[idxbc] == FixQ) {
+                        _dfds[idx] += _qnbc[idxbc]*_dkds[idx]*(
+                            (1.0 + 3.0*_ux[idx])*(-12.0 + 8.0*_ig[Q::IndexF(idx, 1)] + _ig[Q::IndexF(idx, 7)] + _ig[Q::IndexF(idx, 9)] + _ig[Q::IndexF(idx, 10)] + _ig[Q::IndexF(idx, 12)])
+                            + 3.0*_uy[idx]*(_ig[Q::IndexF(idx, 7)] - _ig[Q::IndexF(idx, 9)] + _ig[Q::IndexF(idx, 10)] - _ig[Q::IndexF(idx, 12)])
+                            + 3.0*_uz[idx]*(_ig[Q::IndexF(idx, 7)] + _ig[Q::IndexF(idx, 9)] - _ig[Q::IndexF(idx, 10)] - _ig[Q::IndexF(idx, 12)])
+                        )/(72.0*(1.0 - 3.0*_ux[idx])*pow(_diffusivity[idx], 2.0));
+                    }
+
+                    //  Along xmax
+                    idx = _q.Index(_q.nx - 1, j, k);
+                    idxbc = _q.IndexBCx(j, k) + _q.offsetxmax;
+                    if (_bctype[idxbc] == FixQ) {
+                        _dfds[idx] += _qnbc[idxbc]*_dkds[idx]*(
+                            (1.0 - 3.0*_ux[idx])*(-12.0 + 8.0*_ig[Q::IndexF(idx, 4)] + _ig[Q::IndexF(idx, 8)] + _ig[Q::IndexF(idx, 11)] + _ig[Q::IndexF(idx, 13)] + _ig[Q::IndexF(idx, 14)])
+                            + 3.0*_uy[idx]*(_ig[Q::IndexF(idx, 8)] - _ig[Q::IndexF(idx, 11)] + _ig[Q::IndexF(idx, 13)] - _ig[Q::IndexF(idx, 14)])
+                            + 3.0*_uz[idx]*(_ig[Q::IndexF(idx, 8)] - _ig[Q::IndexF(idx, 11)] - _ig[Q::IndexF(idx, 13)] + _ig[Q::IndexF(idx, 14)])
+                        )/(72.0*(1.0 + 3.0*_ux[idx])*pow(_diffusivity[idx], 2.0));
+                    }
+                }
+            }
+            for (int k = 0; k < _q.nz; ++k) {
+                for (int i = 0; i < _q.nx; ++i) {
+                    //  Along ymin
+                    idx = _q.Index(i, 0, k);
+                    idxbc = _q.IndexBCy(k, i) + _q.offsetymin;
+                    if (_bctype[idxbc] == FixQ) {
+                        _dfds[idx] += _qnbc[idxbc]*_dkds[idx]*(
+                            (1.0 + 3.0*_uy[idx])*(-12.0 + 8.0*_ig[Q::IndexF(idx, 2)] + _ig[Q::IndexF(idx, 7)] + _ig[Q::IndexF(idx, 8)] + _ig[Q::IndexF(idx, 10)] + _ig[Q::IndexF(idx, 13)])
+                            + 3.0*_uz[idx]*(_ig[Q::IndexF(idx, 7)] + _ig[Q::IndexF(idx, 8)] - _ig[Q::IndexF(idx, 10)] - _ig[Q::IndexF(idx, 13)])
+                            + 3.0*_ux[idx]*(_ig[Q::IndexF(idx, 7)] - _ig[Q::IndexF(idx, 8)] + _ig[Q::IndexF(idx, 10)] - _ig[Q::IndexF(idx, 13)])
+                        )/(72.0*(1.0 - 3.0*_uy[idx])*pow(_diffusivity[idx], 2.0));
+                    }
+
+                    //  Along ymax
+                    idx = _q.Index(i, _q.ny - 1, k);
+                    idxbc = _q.IndexBCy(k, i) + _q.offsetymax;
+                    if (_bctype[idxbc] == FixQ) {
+                        _dfds[idx] += _qnbc[idxbc]*_dkds[idx]*(
+                            (1.0 - 3.0*_uy[idx])*(-12.0 + 8.0*_ig[Q::IndexF(idx, 5)] + _ig[Q::IndexF(idx, 9)] + _ig[Q::IndexF(idx, 11)] + _ig[Q::IndexF(idx, 12)] + _ig[Q::IndexF(idx, 14)])
+                            + _uz[idx]*(_ig[Q::IndexF(idx, 9)] - _ig[Q::IndexF(idx, 11)] - _ig[Q::IndexF(idx, 12)] + _ig[Q::IndexF(idx, 14)])
+                            + _ux[idx]*(_ig[Q::IndexF(idx, 9)] - _ig[Q::IndexF(idx, 11)] + _ig[Q::IndexF(idx, 12)] - _ig[Q::IndexF(idx, 14)])
+                        )/(72.0*(1.0 + 3.0*_uy[idx])*pow(_diffusivity[idx], 2.0));
+                    }
+                }
+            }
+            for (int i = 0; i < _q.nx; ++i) {
+                for (int j = 0; j < _q.ny; ++j) {
+                    //  Along zmin
+                    idx = _q.Index(i, j, 0);
+                    idxbc = _q.IndexBCz(i, j) + _q.offsetzmin;
+                    if (_bctype[idxbc] == FixQ) {
+                        _dfds[idx] += _qnbc[idxbc]*_dkds[idx]*(
+                            (1.0 + 3.0*_uz[idx])*(-12.0 + 8.0*_ig[Q::IndexF(idx, 3)] + _ig[Q::IndexF(idx, 7)] + _ig[Q::IndexF(idx, 8)] + _ig[Q::IndexF(idx, 9)] + _ig[Q::IndexF(idx, 14)])
+                            + _ux[idx]*(_ig[Q::IndexF(idx, 7)] - _ig[Q::IndexF(idx, 8)] + _ig[Q::IndexF(idx, 9)] - _ig[Q::IndexF(idx, 14)])
+                            + _uy[idx]*(_ig[Q::IndexF(idx, 7)] + _ig[Q::IndexF(idx, 8)] - _ig[Q::IndexF(idx, 9)] - _ig[Q::IndexF(idx, 14)])
+                        )/(72.0*(1.0 - 3.0*_uz[idx])*pow(_diffusivity[idx], 2.0));
+                    }
+
+                    //  Along zmax
+                    idx = _q.Index(i, j, _q.nz - 1);
+                    idxbc = _q.IndexBCz(i, j) + _q.offsetzmax;
+                    if (_bctype[idxbc] == FixQ) {
+                        _dfds[idx] += _qnbc[idxbc]*_dkds[idx]*(
+                            (1.0 - 3.0*_uz[idx])*(-12.0 + 8.0*_ig[Q::IndexF(idx, 6)] + _ig[Q::IndexF(idx, 10)] + _ig[Q::IndexF(idx, 11)] + _ig[Q::IndexF(idx, 12)] + _ig[Q::IndexF(idx, 13)])
+                            + _ux[idx]*(_ig[Q::IndexF(idx, 10)] - _ig[Q::IndexF(idx, 11)] + _ig[Q::IndexF(idx, 12)] - _ig[Q::IndexF(idx, 13)])
+                            + _uy[idx]*(_ig[Q::IndexF(idx, 10)] - _ig[Q::IndexF(idx, 11)] - _ig[Q::IndexF(idx, 12)] + _ig[Q::IndexF(idx, 13)])
+                        )/(72.0*(1.0 + 3.0*_uz[idx])*pow(_diffusivity[idx], 2.0));
                     }
                 }
             }

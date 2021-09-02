@@ -8,11 +8,11 @@
 #pragma once
 #include <cassert>
 
-namespace PANSLBM2 {
-    namespace {
-        const int SetStress = 1;
-    }
+namespace {
+    const int SetS = 1;
+}
 
+namespace PANSLBM2 {
     namespace EL {
         //  Function of updating macroscopic values of EL for 2D
         template<class T, class P>
@@ -134,7 +134,7 @@ namespace PANSLBM2 {
         void BoundaryConditionSetStress(P& _p, const T *_txbc, const T *_tybc, const int *_bctype) {
             for (int j = 0; j < _p.ny; ++j) {
                 //  On xmin
-                if (_bctype[j + _p.offsetxmin] == SetStress) {
+                if (_bctype[j + _p.offsetxmin] == SetS) {
                     int idx = _p.Index(0, j), idxbc = j + _p.offsetxmin;
                     _p.f[P::IndexF(idx, 1)] = _p.f[P::IndexF(idx, 3)] - 4.0*(_p.f[P::IndexF(idx, 3)] + _p.f[P::IndexF(idx, 6)] + _p.f[P::IndexF(idx, 7)])/3.0 + 2.0*_txbc[idxbc]/3.0;
                     _p.f[P::IndexF(idx, 5)] = _p.f[P::IndexF(idx, 6)] - (_p.f[P::IndexF(idx, 3)] + _p.f[P::IndexF(idx, 6)] + _p.f[P::IndexF(idx, 7)])/3.0 + (_txbc[idxbc] + 3.0*_tybc[idxbc])/6.0;
@@ -142,7 +142,7 @@ namespace PANSLBM2 {
                 }
 
                 //  On xmax
-                if (_bctype[j + _p.offsetxmax] == SetStress) {
+                if (_bctype[j + _p.offsetxmax] == SetS) {
                     int idx = _p.Index(_p.nx - 1, j), idxbc = j + _p.offsetxmax;
                     _p.f[P::IndexF(idx, 3)] = _p.f[P::IndexF(idx, 1)] - 4.0*(_p.f[P::IndexF(idx, 1)] + _p.f[P::IndexF(idx, 5)] + _p.f[P::IndexF(idx, 8)])/3.0 - 2.0*_txbc[idxbc]/3.0;
                     _p.f[P::IndexF(idx, 6)] = _p.f[P::IndexF(idx, 5)] - (_p.f[P::IndexF(idx, 1)] + _p.f[P::IndexF(idx, 5)] + _p.f[P::IndexF(idx, 8)])/3.0 - (_txbc[idxbc] - 3.0*_tybc[idxbc])/6.0;
@@ -152,7 +152,7 @@ namespace PANSLBM2 {
 
             for (int i = 0; i < _p.nx; ++i) {
                 //  On ymin
-                if (_bctype[i + _p.offsetymin] == SetStress) {
+                if (_bctype[i + _p.offsetymin] == SetS) {
                     int idx = _p.Index(i, 0), idxbc = i + _p.offsetymin;
                     _p.f[P::IndexF(idx, 2)] = _p.f[P::IndexF(idx, 4)] - 4.0*(_p.f[P::IndexF(idx, 4)] + _p.f[P::IndexF(idx, 7)] + _p.f[P::IndexF(idx, 8)])/3.0 + 2.0*_tybc[idxbc]/3.0;
                     _p.f[P::IndexF(idx, 5)] = _p.f[P::IndexF(idx, 8)] - (_p.f[P::IndexF(idx, 4)] + _p.f[P::IndexF(idx, 7)] + _p.f[P::IndexF(idx, 8)])/3.0 + (_tybc[idxbc] + 3.0*_txbc[idxbc])/6.0;
@@ -160,7 +160,7 @@ namespace PANSLBM2 {
                 }
 
                 //  On ymax
-                if (_bctype[i + _p.offsetymax] == SetStress) {
+                if (_bctype[i + _p.offsetymax] == SetS) {
                     int idx = _p.Index(i, _p.ny - 1), idxbc = i + _p.offsetymax;
                     _p.f[P::IndexF(idx, 4)] = _p.f[P::IndexF(idx, 2)] - 4.0*(_p.f[P::IndexF(idx, 2)] + _p.f[P::IndexF(idx, 5)] + _p.f[P::IndexF(idx, 6)])/3.0 - 2.0*_tybc[idxbc]/3.0;
                     _p.f[P::IndexF(idx, 7)] = _p.f[P::IndexF(idx, 6)] - (_p.f[P::IndexF(idx, 2)] + _p.f[P::IndexF(idx, 5)] + _p.f[P::IndexF(idx, 6)])/3.0 - (_tybc[idxbc] + 3.0*_txbc[idxbc])/6.0;

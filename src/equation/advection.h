@@ -1114,7 +1114,7 @@ namespace PANSLBM2 {
                     //  On ymax
                     if (_bctype(i + _q.offsetx, (_q.ny - 1) + _q.offsety, k + _q.offsetz)) {
                         int idx = _q.Index(i, _q.ny - 1, k);
-                        T tem0 = 6.0*((1.0 + 1.0/(6.0*_diffusivity[idx]))*_qnbc[idxbc] + _q.f[Q<T>::IndexF(idx, 2)] + _q.f[Q<T>::IndexF(idx, 7)] + _q.f[Q<T>::IndexF(idx, 8)] + _q.f[Q<T>::IndexF(idx, 10)] + _q.f[Q<T>::IndexF(idx, 13)])/(1.0 + 3.0*_uy[idx]);
+                        T tem0 = 6.0*((1.0 + 1.0/(6.0*_diffusivity[idx]))*_qnbc(i + _q.offsetx, (_q.ny - 1) + _q.offsety, k + _q.offsetz) + _q.f[Q<T>::IndexF(idx, 2)] + _q.f[Q<T>::IndexF(idx, 7)] + _q.f[Q<T>::IndexF(idx, 8)] + _q.f[Q<T>::IndexF(idx, 10)] + _q.f[Q<T>::IndexF(idx, 13)])/(1.0 + 3.0*_uy[idx]);
                         _q.f[Q<T>::IndexF(idx, 5)] = tem0*(1.0 - 3.0*_uy[idx])/9.0;
                         _q.f[Q<T>::IndexF(idx, 9)] = tem0*(1.0 + 3.0*_ux[idx] - 3.0*_uy[idx] + 3.0*_uz[idx])/72.0;
                         _q.f[Q<T>::IndexF(idx, 11)] = tem0*(1.0 - 3.0*_ux[idx] - 3.0*_uy[idx] - 3.0*_uz[idx])/72.0;

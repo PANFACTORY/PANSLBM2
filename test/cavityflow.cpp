@@ -36,15 +36,6 @@ int main(int argc, char** argv) {
         ux[idx] = 0.0;
         uy[idx] = 0.0;
     }
-
-    pf.SetBoundary([&](int _i, int _j) {    return (_i == 0 || _i == pf.lx - 1 || _j == 0) ? 1 : 0; });
-    int boundaryu[pf.nxy];
-    pf.SetBoundary(boundaryu, [&](int _i, int _j) { return _j == pf.ly - 1 ? 1 : 0; });
-    double uxbc[pf.nbc] = { 0 }, uybc[pf.nbc] = { 0 };
-    for (int idxbc = 0; idxbc < pf.nbc; ++idxbc) {
-        uxbc[idxbc] = u0;
-        uybc[idxbc] = 0.0;
-    }
      
     std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
 
@@ -70,8 +61,12 @@ int main(int argc, char** argv) {
 
         pf.Swap();
         pf.Synchronize();
-        pf.BoundaryCondition();
-        NS::BoundaryConditionSetU(pf, uxbc, uybc, boundaryu);
+        pf.BoundaryCondition([=](int _i, int _j) { return (_i == 0 || _i == lx - 1 || _j == 0) ? 1 : 0; });
+        NS::BoundaryConditionSetU(pf, 
+            [=](int _i, int _j) { return u0; }, 
+            [=](int _i, int _j) { return 0.0; }, 
+            [=](int _i, int _j) { return _j == ly - 1; }
+        );
         pf.SmoothCorner();
     }
 

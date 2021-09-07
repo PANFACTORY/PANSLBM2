@@ -1,5 +1,5 @@
 //*****************************************************************************
-//  Title       :   src/particle/d2q9mpi.h
+//  Title       :   src/particle/d2q9.h
 //  Author      :   Tanabe Yuta
 //  Date        :   2021/8/14
 //  Copyright   :   (C)2021 TanabeYuta

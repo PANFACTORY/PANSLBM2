@@ -206,7 +206,7 @@ namespace PANSLBM2 {
 
         //  Function of setting boundary condition of ANS set iU for D2Q9
         template<class T, template<class>class P, class Fv0, class Fv1, class Ff>
-        void iBoundaryConditionSetU(P<T>& _p, Fv0 _uxbc, Fv1 _uybc, Ff _bctype, T _eps = 1.0) {
+        void iBoundaryConditionSetU(P<T>& _p, Fv0 _uxbc, Fv1 _uybc, Ff _bctype, T _eps = T()) {
             for (int j = 0; j < _p.ny; ++j) {
                 //  On xmin
                 if (_bctype(0 + _p.offsetx, j + _p.offsety)) {
@@ -250,7 +250,7 @@ namespace PANSLBM2 {
     
         //  Function of setting boundary condition of ANS set iU for D3Q15
         template<class T, template<class>class P, class Fv0, class Fv1, class Fv2, class Ff>
-        void iBoundaryConditionSetU(P<T>& _p, Fv0 _uxbc, Fv1 _uybc, Fv2 _uzbc, Ff _bctype, T _eps = 1.0) {
+        void iBoundaryConditionSetU(P<T>& _p, Fv0 _uxbc, Fv1 _uybc, Fv2 _uzbc, Ff _bctype, T _eps = T()) {
             for (int j = 0; j < _p.ny; ++j) {
                 for (int k = 0; k < _p.nz; ++k) {
                     //  On xmin

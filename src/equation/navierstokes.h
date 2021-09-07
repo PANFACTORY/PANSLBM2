@@ -85,7 +85,7 @@ namespace PANSLBM2 {
 
                     //  Update macro
                     T rho, ux, uy;
-                    Macro<T, P<T> >(rho, ux, uy, _p.f, idx);
+                    Macro<T, P>(rho, ux, uy, _p.f, idx);
 
                     //  Save macro if need
                     if (_issave) {
@@ -97,7 +97,7 @@ namespace PANSLBM2 {
                     //  Collide and stream
                     for (int c = 0; c < P<T>::nc; ++c) {
                         int idxstream = _p.Index(i + P<T>::cx[c], j + P<T>::cy[c]);
-                        _p.fnext[P<T>::IndexF(idxstream, c)] = (1.0 - omega)*_p.f[P<T>::IndexF(idx, c)] + omega*Equilibrium<T, P<T> >(rho, ux, uy, c);
+                        _p.fnext[P<T>::IndexF(idxstream, c)] = (1.0 - omega)*_p.f[P<T>::IndexF(idx, c)] + omega*Equilibrium<T, P>(rho, ux, uy, c);
                     }
                 }
             }
@@ -114,7 +114,7 @@ namespace PANSLBM2 {
 
                         //  Update macro
                         T rho, ux, uy, uz;
-                        Macro<T, P<T> >(rho, ux, uy, uz, _p.f, idx);
+                        Macro<T, P>(rho, ux, uy, uz, _p.f, idx);
 
                         //  Save macro if need
                         if (_issave) {
@@ -127,7 +127,7 @@ namespace PANSLBM2 {
                         //  Collide and stream
                         for (int c = 0; c < P<T>::nc; ++c) {
                             int idxstream = _p.Index(i + P<T>::cx[c], j + P<T>::cy[c], k + P<T>::cz[c]);
-                            _p.fnext[P<T>::IndexF(idxstream, c)] = (1.0 - omega)*_p.f[P<T>::IndexF(idx, c)] + omega*Equilibrium<T, P<T> >(rho, ux, uy, uz, c);
+                            _p.fnext[P<T>::IndexF(idxstream, c)] = (1.0 - omega)*_p.f[P<T>::IndexF(idx, c)] + omega*Equilibrium<T, P>(rho, ux, uy, uz, c);
                         }
                     }
                 }
@@ -144,11 +144,11 @@ namespace PANSLBM2 {
 
                     //  Update macro
                     T rho, ux, uy;
-                    Macro<T, P<T> >(rho, ux, uy, _p.f, idx);
+                    Macro<T, P>(rho, ux, uy, _p.f, idx);
 
                     //  External force with Brinkman model
-                    ExternalForceBrinkman<T, P<T> >(rho, ux, uy, _alpha[idx], _p.f, idx);
-                    Macro<T, P<T> >(rho, ux, uy, _p.f, idx);
+                    ExternalForceBrinkman<T, P>(rho, ux, uy, _alpha[idx], _p.f, idx);
+                    Macro<T, P>(rho, ux, uy, _p.f, idx);
 
                     //  Save macro if need
                     if (_issave) {
@@ -160,7 +160,7 @@ namespace PANSLBM2 {
                     //  Collide and stream
                     for (int c = 0; c < P<T>::nc; ++c) {
                         int idxstream = _p.Index(i + P<T>::cx[c], j + P<T>::cy[c]);
-                        _p.fnext[P<T>::IndexF(idxstream, c)] = (1.0 - omega)*_p.f[P<T>::IndexF(idx, c)] + omega*Equilibrium<T, P<T> >(rho, ux, uy, c);
+                        _p.fnext[P<T>::IndexF(idxstream, c)] = (1.0 - omega)*_p.f[P<T>::IndexF(idx, c)] + omega*Equilibrium<T, P>(rho, ux, uy, c);
                     }
                 }
             }
@@ -177,11 +177,11 @@ namespace PANSLBM2 {
 
                         //  Update macro
                         T rho, ux, uy, uz;
-                        Macro<T, P<T> >(rho, ux, uy, uz, _p.f, idx);
+                        Macro<T, P>(rho, ux, uy, uz, _p.f, idx);
 
                         //  External force with Brinkman model
-                        ExternalForceBrinkman<T, P<T> >(rho, ux, uy, uz, _alpha[idx], _p.f, idx);
-                        Macro<T, P<T> >(rho, ux, uy, uz, _p.f, idx);
+                        ExternalForceBrinkman<T, P>(rho, ux, uy, uz, _alpha[idx], _p.f, idx);
+                        Macro<T, P>(rho, ux, uy, uz, _p.f, idx);
 
                         //  Save macro if need
                         if (_issave) {
@@ -194,7 +194,7 @@ namespace PANSLBM2 {
                         //  Collide and stream
                         for (int c = 0; c < P<T>::nc; ++c) {
                             int idxstream = _p.Index(i + P<T>::cx[c], j + P<T>::cy[c], k + P<T>::cz[c]);
-                            _p.fnext[P<T>::IndexF(idxstream, c)] = (1.0 - omega)*_p.f[P<T>::IndexF(idx, c)] + omega*Equilibrium<T, P<T> >(rho, ux, uy, uz, c);
+                            _p.fnext[P<T>::IndexF(idxstream, c)] = (1.0 - omega)*_p.f[P<T>::IndexF(idx, c)] + omega*Equilibrium<T, P>(rho, ux, uy, uz, c);
                         }
                     }
                     
@@ -209,7 +209,7 @@ namespace PANSLBM2 {
                 for (int j = 0; j < _p.ny; ++j) {
                     int idx = _p.Index(i, j);
                     for (int c = 0; c < P<T>::nc; ++c) {
-                        _p.f[P<T>::IndexF(idx, c)] = Equilibrium<T, P<T> >(_rho[idx], _ux[idx], _uy[idx], c);
+                        _p.f[P<T>::IndexF(idx, c)] = Equilibrium<T, P>(_rho[idx], _ux[idx], _uy[idx], c);
                     }
                 }
             }
@@ -223,7 +223,7 @@ namespace PANSLBM2 {
                     for (int k = 0; k < _p.nz; ++k) {
                         int idx = _p.Index(i, j, k);
                         for (int c = 0; c < P<T>::nc; ++c) {
-                            _p.f[P<T>::IndexF(idx, c)] = Equilibrium<T, P<T> >(_rho[idx], _ux[idx], _uy[idx], _uz[idx], c);
+                            _p.f[P<T>::IndexF(idx, c)] = Equilibrium<T, P>(_rho[idx], _ux[idx], _uy[idx], _uz[idx], c);
                         }
                     }
                 }

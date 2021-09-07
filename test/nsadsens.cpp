@@ -86,17 +86,16 @@ int main() {
         pg.Swap();
         pf.Swap();
         pg.iBoundaryCondition([=](int _i, int _j) { return _j == 0 ? 2 : 0; });
-        AAD::BoundaryConditionSetiT(pg, ux, uy, { return _i == 0 && _j < 0.33*ny; });
-        AAD::BoundaryConditionSetiQ(pg, ux, uy, { return _i == nx - 1 || _j >= 0.33*ny; });
+        AAD::iBoundaryConditionSetT(pg, ux, uy, [=](int _i, int _j) { return _i == 0 && _j < 0.33*ny; });
+        AAD::iBoundaryConditionSetQ(pg, ux, uy, [=](int _i, int _j) { return _i == nx - 1 || _j >= 0.33*ny; });
         pg.SmoothCorner();
         pf.iBoundaryCondition([=](int _i, int _j) { return _j == 0 ? 2 : (_j >= 0.33*ny ? 1 : 0); });
-        ANS::BoundaryConditionSetiU(pf, 
+        ANS::iBoundaryConditionSetU(pf, 
             [=](int _i, int _j) { return -u0*(_j - 0.33*ny)*(_j + 0.33*ny)/(0.33*ny*0.33*ny); }, 
             [=](int _i, int _j) { return 0.0; }, 
             [=](int _i, int _j) { return _i == 0 && _j < 0.33*ny; }, 
-            0.0
         );
-        AAD::BoundaryConditionSetiRho(pf, pg, rho, ux, uy, tem, [=](int _i, int _j) { return _i == nx - 1 && _j < 0.33*ny; });
+        AAD::iBoundaryConditionSetRho(pf, pg, rho, ux, uy, tem, [=](int _i, int _j) { return _i == nx - 1 && _j < 0.33*ny; });
         pf.SmoothCorner();
     }
 

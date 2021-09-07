@@ -43,7 +43,7 @@ int main() {
         pf.Swap();
         pf.BoundaryCondition([=](int _i, int _j) { return _i == 0 ? 1 : 0; });
         EL::BoundaryConditionSetStress(pf, 
-            [=](int _i, int _j) { return (_i == nx - 1 && fabs(j - 0.5*pf.ny) < 0.08*pf.ny) ? stress0 : 0.0 }, 
+            [=](int _i, int _j) { return (_i == nx - 1 && fabs(j - 0.5*pf.ny) < 0.08*pf.ny) ? stress0 : 0.0; }, 
             [=](int _i, int _j) { return 0.0; }, 
             [=](int _i, int _j) { return _i != 0; }
         );
@@ -61,7 +61,7 @@ int main() {
         pf.Swap();
         pf.iBoundaryCondition([=](int _i, int _j) { return _i == 0 ? 1 : 0; });
         AEL::BoundaryConditionSetiStress(pf, 
-            [=](int _i, int _j) { return (_i == nx - 1 && fabs(j - 0.5*pf.ny) < 0.08*pf.ny) ? stress0 : 0.0 }, 
+            [=](int _i, int _j) { return (_i == nx - 1 && fabs(j - 0.5*pf.ny) < 0.08*pf.ny) ? stress0 : 0.0; }, 
             [=](int _i, int _j) { return 0.0; }, 
             rho, 
             [=](int _i, int _j) { return _i != 0; }

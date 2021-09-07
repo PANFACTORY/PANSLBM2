@@ -1,4 +1,4 @@
-#define _USE_MPI_DEFINES
+//#define _USE_MPI_DEFINES
 #include <iostream>
 #include <cmath>
 #ifdef _USE_MPI_DEFINES
@@ -45,20 +45,6 @@ int main(int argc, char** argv) {
         alpha[idx] = amax/(double)(pf.lx - 1)*q*(1.0 - s[idx])/(s[idx] + q);
     }
 
-    pf.SetBoundary([&](int _i, int _j) {    return _j == 0 ? 2 : (_j >= 0.33*pf.ly ? 1 : 0); });
-    int *boundaryup = new int[pf.nxy];
-    pf.SetBoundary(boundaryup, [&](int _i, int _j) {    return (_i == 0 && _j < 0.33*pf.ly) ? 1 : ((_i == pf.lx - 1 && _j < 0.33*pf.ly) ? 2 : 0); });
-    double *uxbc = new double[pf.nxy], *uybc = new double[pf.nxy], *rhobc = new double[pf.nxy], *usbc = new double[pf.nxy];
-    for (int j = 0; j < pf.ny; ++j) {
-        uxbc[j + pf.offsetxmin] = (j + pf.offsety) < 0.33*pf.ly ? -u0*((j + pf.offsety) - 0.33*pf.ly)*((j + pf.offsety)  + 0.33*pf.ly)/(0.33*pf.ly*0.33*pf.ly) : 0.0;
-        uybc[j + pf.offsetxmin] = 0.0;  rhobc[j + pf.offsetxmin] = 1.0; usbc[j + pf.offsetxmin] = 0.0;
-        uxbc[j + pf.offsetxmax] = 0.0;  uybc[j + pf.offsetxmax] = 0.0;  rhobc[j + pf.offsetxmax] = 1.0; usbc[j + pf.offsetxmax] = 0.0;
-    }
-    for (int i = 0; i < pf.nx; ++i) {
-        uxbc[i + pf.offsetymin] = 0.0;  uybc[i + pf.offsetymin] = 0.0;  rhobc[i + pf.offsetymin] = 1.0; usbc[i + pf.offsetymin] = 0.0;
-        uxbc[i + pf.offsetymax] = 0.0;  uybc[i + pf.offsetymax] = 0.0;  rhobc[i + pf.offsetymax] = 1.0; usbc[i + pf.offsetymax] = 0.0;
-    }
-
     //--------------------Direct analyze--------------------
     NS::InitialCondition(pf, rho, ux, uy);
     for (int t = 1; t <= nt; ++t) {
@@ -68,9 +54,17 @@ int main(int argc, char** argv) {
         NS::Macro_Brinkman_Collide_Stream(pf, rho, ux, uy, nu, alpha, true);
         pf.Swap();
         pf.Synchronize();
-        pf.BoundaryCondition();
-        NS::BoundaryConditionSetU(pf, uxbc, uybc, boundaryup);
-        NS::BoundaryConditionSetRho(pf, rhobc, usbc, boundaryup);
+        pf.BoundaryCondition([=](int _i, int _j) { return _j == 0 ? 2 : (_j >= 0.33*ly ? 1 : 0); });
+        NS::BoundaryConditionSetU(pf, 
+            [&](int _i, int _j) { return -u0*(_j - 0.33*ly)*(_j + 0.33*ly)/(0.33*ly*0.33*ly); }, 
+            [&](int _i, int _j) { return 0.0; }, 
+            [&](int _i, int _j) { return _i == 0 && _j < 0.33*ly; }
+        );
+        NS::BoundaryConditionSetRho(pf, 
+            [&](int _i, int _j) { return 1.0; }, 
+            [&](int _i, int _j) { return 0.0; }, 
+            [&](int _i, int _j) { return _i == lx - 1 && _j < 0.33*ly; }
+        );
         pf.SmoothCorner();
     }
 
@@ -83,9 +77,14 @@ int main(int argc, char** argv) {
         ANS::Macro_Brinkman_Collide_Stream(pf, rho, ux, uy, irho, iux, iuy, imx, imy, nu, alpha, true);
         pf.Swap();
         pf.iSynchronize();
-        pf.iBoundaryCondition();
-        ANS::BoundaryConditionSetiU(pf, uxbc, uybc, boundaryup);
-        ANS::BoundaryConditionSetiRho2D<double>(pf, boundaryup);
+        pf.iBoundaryCondition([=](int _i, int _j) { return _j == 0 ? 2 : (_j >= 0.33*ly ? 1 : 0); });
+        ANS::iBoundaryConditionSetU(pf, 
+            [&](int _i, int _j) { return -u0*(_j - 0.33*ly)*(_j + 0.33*ly)/(0.33*ly*0.33*ly); }, 
+            [&](int _i, int _j) { return 0.0; }, 
+            [&](int _i, int _j) { return _i == 0 && _j < 0.33*ly; },
+            1.0
+        );
+        ANS::iBoundaryConditionSetRho2D(pf, [&](int _i, int _j) { return _i == lx - 1 && _j < 0.33*ly; });
         pf.SmoothCorner();
     }
 
@@ -125,7 +124,6 @@ int main(int argc, char** argv) {
     file.AddPointScaler("s", [&](int _i, int _j, int _k) { return s[pf.Index(_i, _j)]; });
     
     delete[] rho, ux, uy, irho, iux, iuy, imx, imy, s, alpha, dfds;
-    delete[] boundaryup, uxbc, uybc, rhobc, usbc;
 #ifdef _USE_MPI_DEFINES
     MPI_Finalize();
 #endif

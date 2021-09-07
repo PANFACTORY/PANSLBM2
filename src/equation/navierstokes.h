@@ -433,7 +433,7 @@ namespace PANSLBM2 {
         }
     
         //  Function of setting boundary condition of NS set rho for 3D
-        template<class T, class P, class Fv0, class Fv1, class Ff>
+        template<class T, class P, class Fv0, class Fv1, class Fv2, class Ff>
         void BoundaryConditionSetRho(P& _p, Fv0 _rhobc, Fv1 _usbc, Fv2 _utbc, Ff _bctype) {
             for (int j = 0; j < _p.ny; ++j) {
                 for (int k = 0; k < _p.nz; ++k) {

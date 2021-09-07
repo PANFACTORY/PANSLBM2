@@ -1,5 +1,5 @@
 #define _USE_MATH_DEFINES
-#define _USE_MPI_DEFINES
+//#define _USE_MPI_DEFINES
 #include <cmath>
 #include <iostream>
 #ifdef _USE_MPI_DEFINES
@@ -36,16 +36,6 @@ int main(int argc, char** argv) {
         ux[idx] = 0.0;  uy[idx] = 0.0;  uz[idx] = 0.0;
     }
 
-    pf.SetBoundary([&](int _i, int _j, int _k) { return (_i == 0 || _i == pf.lx - 1 || _j == 0 || _j == pf.ly - 1 || _k == 0) ? 1 : 0; });
-    int *boundaryu = new int[pf.nbc];
-    pf.SetBoundary(boundaryu, [&](int _i, int _j, int _k) { return _k == pf.lz - 1 ? 1 : 0; });
-    double *uxbc = new double[pf.nbc], *uybc = new double[pf.nbc], *uzbc = new double[pf.nbc];
-    for (int idxbc = 0; idxbc < pf.nbc; ++idxbc) {
-        uxbc[idxbc] = u0*cos(theta*M_PI/180.0);
-        uybc[idxbc] = u0*sin(theta*M_PI/180.0);
-        uzbc[idxbc] = 0.0;
-    }
-
     //--------------------Direct analyze--------------------
     NS::InitialCondition(pf, rho, ux, uy, uz);
     for (int t = 1; t <= nt; ++t) {
@@ -55,8 +45,13 @@ int main(int argc, char** argv) {
         NS::Macro_Collide_Stream(pf, rho, ux, uy, uz, nu, true);
         pf.Swap();
         pf.Synchronize();
-        pf.BoundaryCondition();
-        NS::BoundaryConditionSetU(pf, uxbc, uybc, uzbc, boundaryu);
+        pf.BoundaryCondition([=](int _i, int _j, int _k) { return (_i == 0 || _i == lx - 1 || _j == 0 || _j == ly - 1 || _k == 0) ? 1 : 0; });
+        NS::BoundaryConditionSetU(pf, 
+            [=](int _i, int _j, int _k) { return u0*cos(theta*M_PI/180.0); }, 
+            [=](int _i, int _j, int _k) { return u0*sin(theta*M_PI/180.0); }, 
+            [=](int _i, int _j, int _k) { return 0.0; }, 
+            [=](int _i, int _j, int _k) { return _k == lz - 1; }
+        );
         pf.SmoothCorner();
     }
 
@@ -68,10 +63,8 @@ int main(int argc, char** argv) {
         [&](int _i, int _j, int _k) { return uy[pf.Index(_i, _j, _k)]; },
         [&](int _i, int _j, int _k) { return uz[pf.Index(_i, _j, _k)]; }
     );
-    file.AddPointScaler("bctype", [&](int _i, int _j, int _k) { return pf.GetBoundary(_i, _j, _k); });
-
-    delete[] rho, ux, uy, uz, uxbc, uybc, uzbc;
-    delete[] boundaryu;
+    
+    delete[] rho, ux, uy, uz;
 #ifdef _USE_MPI_DEFINES
     MPI_Finalize();
 #endif

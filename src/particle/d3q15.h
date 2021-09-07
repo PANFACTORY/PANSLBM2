@@ -260,6 +260,7 @@ private:
     }
 
     template<class T>
+    template<class Ff>
     void D3Q15<T>::iBoundaryCondition(Ff _bctype) {
         int idx;
         for (int j = 0; j < this->ny; ++j) {

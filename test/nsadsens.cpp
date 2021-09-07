@@ -93,7 +93,7 @@ int main() {
         ANS::iBoundaryConditionSetU(pf, 
             [=](int _i, int _j) { return -u0*(_j - 0.33*ny)*(_j + 0.33*ny)/(0.33*ny*0.33*ny); }, 
             [=](int _i, int _j) { return 0.0; }, 
-            [=](int _i, int _j) { return _i == 0 && _j < 0.33*ny; }, 
+            [=](int _i, int _j) { return _i == 0 && _j < 0.33*ny; }
         );
         AAD::iBoundaryConditionSetRho(pf, pg, rho, ux, uy, tem, [=](int _i, int _j) { return _i == nx - 1 && _j < 0.33*ny; });
         pf.SmoothCorner();

@@ -11,8 +11,6 @@
 #include "adjointnavierstokes.h"
 
 namespace {
-    const int SetU = 1;
-    const int SetRho = 2;
     const int SetT = 1;
     const int SetQ = 2;
 }
@@ -577,12 +575,12 @@ namespace PANSLBM2 {
         }
 
         //  Function of setting boundary condition set iT of AAD for D2Q9
-        template<class T, class Q>
-        void iBoundaryConditionSetT(Q& _q, const T *_ux, const T *_uy, const int *_bctype) {
+        template<class T, class Q, class Ff>
+        void iBoundaryConditionSetT(Q& _q, const T *_ux, const T *_uy, Ff _bctype) {
             for (int j = 0; j < _q.ny; ++j) {
                 //  On xmin
-                if (_bctype[j + _q.offsetxmin] == SetT) {
-                    int idx = _q.Index(0, j), idxbc = j + _q.offsetxmin;
+                if (_bctype(0 + _q.offsetx, j + _q.offsety)) {
+                    int idx = _q.Index(0, j);
                     T rho0 = -(4.0*(1.0 + 3.0*_ux[idx])*_q.f[Q::IndexF(idx, 1)] + (1.0 + 3.0*_ux[idx] + 3.0*_uy[idx])*_q.f[Q::IndexF(idx, 5)] + (1.0 + 3.0*_ux[idx] - 3.0*_uy[idx])*_q.f[Q::IndexF(idx, 8)])/(6.0*(1.0 + 3.0*_ux[idx]));
                     _q.f[Q::IndexF(idx, 3)] = rho0;
                     _q.f[Q::IndexF(idx, 6)] = rho0;
@@ -590,8 +588,8 @@ namespace PANSLBM2 {
                 }
 
                 //  On xmax
-                if (_bctype[j + _q.offsetxmax] == SetT) {
-                    int idx = _q.Index(_q.nx - 1, j), idxbc = j + _q.offsetxmax;
+                if (_bctype((_q.nx - 1) + _q.offsetx, j + _q.offsety)) {
+                    int idx = _q.Index(_q.nx - 1, j);
                     T rho0 = -(4.0*(1.0 - 3.0*_ux[idx])*_q.f[Q::IndexF(idx, 3)] + (1.0 - 3.0*_ux[idx] + 3.0*_uy[idx])*_q.f[Q::IndexF(idx, 6)] + (1.0 - 3.0*_ux[idx] - 3.0*_uy[idx])*_q.f[Q::IndexF(idx, 7)])/(6.0*(1.0 - 3.0*_ux[idx]));
                     _q.f[Q::IndexF(idx, 1)] = rho0;
                     _q.f[Q::IndexF(idx, 5)] = rho0;
@@ -601,8 +599,8 @@ namespace PANSLBM2 {
 
             for (int i = 0; i < _q.nx; ++i) {
                 //  On ymin
-                if (_bctype[i + _q.offsetymin] == SetT) {
-                    int idx = _q.Index(i, 0), idxbc = i + _q.offsetymin;
+                if (_bctype(i + _q.offsetx, 0 + _q.offsety)) {
+                    int idx = _q.Index(i, 0);
                     T rho0 = -(4.0*(1.0 + 3.0*_uy[idx])*_q.f[Q::IndexF(idx, 2)] + (1.0 + 3.0*_ux[idx] + 3.0*_uy[idx])*_q.f[Q::IndexF(idx, 5)] + (1.0 - 3.0*_ux[idx] + 3.0*_uy[idx])*_q.f[Q::IndexF(idx, 6)])/(6.0*(1.0 + 3.0*_uy[idx]));
                     _q.f[Q::IndexF(idx, 4)] = rho0;
                     _q.f[Q::IndexF(idx, 7)] = rho0;
@@ -610,8 +608,8 @@ namespace PANSLBM2 {
                 }
 
                 //  On ymax
-                if (_bctype[i + _q.offsetymax] == SetT) {
-                    int idx = _q.Index(i, _q.ny - 1), idxbc = i + _q.offsetymax;
+                if (_bctype(i + _q.offsetx, (_q.ny - 1) + _q.offsety)) {
+                    int idx = _q.Index(i, _q.ny - 1);
                     T rho0 = -(4.0*(1.0 - 3.0*_uy[idx])*_q.f[Q::IndexF(idx, 4)] + (1.0 - 3.0*_ux[idx] - 3.0*_uy[idx])*_q.f[Q::IndexF(idx, 7)] + (1.0 + 3.0*_ux[idx] - 3.0*_uy[idx])*_q.f[Q::IndexF(idx, 8)])/(6.0*(1.0 - 3.0*_uy[idx]));
                     _q.f[Q::IndexF(idx, 2)] = rho0;
                     _q.f[Q::IndexF(idx, 5)] = rho0;
@@ -621,16 +619,13 @@ namespace PANSLBM2 {
         }
 
         //  Function of setting boundary condition set iT of AAD for D3Q15
-        template<class T, class Q>
-        void iBoundaryConditionSetT(Q& _q, const T *_ux, const T *_uy, const T *_uz, const int *_bctype) {
-            int idx, idxbc;
-
+        template<class T, class Q, class Ff>
+        void iBoundaryConditionSetT(Q& _q, const T *_ux, const T *_uy, const T *_uz, Ff _bctype) {
             for (int j = 0; j < _q.ny; ++j) {
                 for (int k = 0; k < _q.nz; ++k) {
                     //  On xmin
-                    idx = _q.Index(0, j, k);
-                    idxbc = _q.IndexBCx(j, k) + _q.offsetxmin;
-                    if (_bctype[idxbc] == SetT) {
+                    if (_bctype(0 + _q.offsetx, j + _q.offsety, k + _q.offsetz)) {
+                        int idx = _q.Index(0, j, k);
                         T rho0 = -(8.0*_q.f[Q::IndexF(idx, 1)] + _q.f[Q::IndexF(idx, 7)] + _q.f[Q::IndexF(idx, 9)] + _q.f[Q::IndexF(idx, 10)] + _q.f[Q::IndexF(idx, 12)])/12.0
                             -_uy[idx]*(_q.f[Q::IndexF(idx, 7)] - _q.f[Q::IndexF(idx, 9)] + _q.f[Q::IndexF(idx, 10)] - _q.f[Q::IndexF(idx, 12)])/(4.0*(1.0 + 3.0*_ux[idx]))
                             -_uz[idx]*(_q.f[Q::IndexF(idx, 7)] + _q.f[Q::IndexF(idx, 9)] - _q.f[Q::IndexF(idx, 10)] - _q.f[Q::IndexF(idx, 12)])/(4.0*(1.0 + 3.0*_ux[idx]));
@@ -642,9 +637,8 @@ namespace PANSLBM2 {
                     }
 
                     //  On xmax
-                    idx = _q.Index(_q.nx - 1, j, k);
-                    idxbc = _q.IndexBCx(j, k) + _q.offsetxmax;
-                    if (_bctype[idxbc] == SetT) {
+                    if (_bctype((_q.nx - 1) + _q.offsetx, j + _q.offsety, k + _q.offsetz)) {
+                        int idx = _q.Index(_q.nx - 1, j, k);
                         T rho0 = -(8.0*_q.f[Q::IndexF(idx, 4)] + _q.f[Q::IndexF(idx, 8)] + _q.f[Q::IndexF(idx, 11)] + _q.f[Q::IndexF(idx, 13)] + _q.f[Q::IndexF(idx, 14)])/12.0
                             -_uy[idx]*(_q.f[Q::IndexF(idx, 8)] - _q.f[Q::IndexF(idx, 11)] + _q.f[Q::IndexF(idx, 13)] - _q.f[Q::IndexF(idx, 14)])/(4.0*(1.0 - 3.0*_ux[idx]))
                             -_uz[idx]*(_q.f[Q::IndexF(idx, 8)] - _q.f[Q::IndexF(idx, 11)] - _q.f[Q::IndexF(idx, 13)] + _q.f[Q::IndexF(idx, 14)])/(4.0*(1.0 - 3.0*_ux[idx]));
@@ -659,9 +653,8 @@ namespace PANSLBM2 {
             for (int k = 0; k < _q.nz; ++k) {
                 for (int i = 0; i < _q.nx; ++i) {
                     //  On ymin
-                    idx = _q.Index(i, 0, k);
-                    idxbc = _q.IndexBCy(k, i) + _q.offsetymin;
-                    if (_bctype[idxbc] == SetT) {
+                    if (_bctype(i + _q.offsetx, 0 + _q.offsety, k + _q.offsetz)) {
+                        int idx = _q.Index(i, 0, k);
                         T rho0 = -(8.0*_q.f[Q::IndexF(idx, 2)] + _q.f[Q::IndexF(idx, 7)] + _q.f[Q::IndexF(idx, 8)] + _q.f[Q::IndexF(idx, 10)] + _q.f[Q::IndexF(idx, 13)])/12.0
                             -_uz[idx]*(_q.f[Q::IndexF(idx, 7)] + _q.f[Q::IndexF(idx, 8)] - _q.f[Q::IndexF(idx, 10)] - _q.f[Q::IndexF(idx, 13)])/(4.0*(1.0 + 3.0*_uy[idx]))
                             -_ux[idx]*(_q.f[Q::IndexF(idx, 7)] - _q.f[Q::IndexF(idx, 8)] + _q.f[Q::IndexF(idx, 10)] - _q.f[Q::IndexF(idx, 13)])/(4.0*(1.0 + 3.0*_uy[idx]));
@@ -673,9 +666,8 @@ namespace PANSLBM2 {
                     }
 
                     //  On ymax
-                    idx = _q.Index(i, _q.ny - 1, k);
-                    idxbc = _q.IndexBCy(k, i) + _q.offsetymax;
-                    if (_bctype[idxbc] == SetT) {
+                    if (_bctype(i + _q.offsetx, (_q.ny - 1) + _q.offsety, k + _q.offsetz)) {
+                        int idx = _q.Index(i, _q.ny - 1, k);
                         T rho0 = -(8.0*_q.f[Q::IndexF(idx, 5)] + _q.f[Q::IndexF(idx, 9)] + _q.f[Q::IndexF(idx, 11)] + _q.f[Q::IndexF(idx, 12)] + _q.f[Q::IndexF(idx, 14)])/12.0
                             -_uz[idx]*(_q.f[Q::IndexF(idx, 9)] - _q.f[Q::IndexF(idx, 11)] - _q.f[Q::IndexF(idx, 12)] + _q.f[Q::IndexF(idx, 14)])/(4.0*(1.0 - 3.0*_uy[idx]))
                             -_ux[idx]*(_q.f[Q::IndexF(idx, 9)] - _q.f[Q::IndexF(idx, 11)] + _q.f[Q::IndexF(idx, 12)] - _q.f[Q::IndexF(idx, 14)])/(4.0*(1.0 - 3.0*_uy[idx]));
@@ -690,9 +682,8 @@ namespace PANSLBM2 {
             for (int i = 0; i < _q.nx; ++i) {
                 for (int j = 0; j < _q.ny; ++j) {
                     //  On zmin
-                    idx = _q.Index(i, j, 0);
-                    idxbc = _q.IndexBCz(i, j) + _q.offsetzmin;
-                    if (_bctype[idxbc] == SetT) {
+                    if (_bctype(i + _q.offsetx, j + _q.offsety, 0 + _q.offsetz)) {
+                        int idx = _q.Index(i, j, 0);
                         T rho0 = -(8.0*_q.f[Q::IndexF(idx, 3)] + _q.f[Q::IndexF(idx, 7)] + _q.f[Q::IndexF(idx, 8)] + _q.f[Q::IndexF(idx, 9)] + _q.f[Q::IndexF(idx, 14)])/12.0
                             -_ux[idx]*(_q.f[Q::IndexF(idx, 7)] - _q.f[Q::IndexF(idx, 8)] + _q.f[Q::IndexF(idx, 9)] - _q.f[Q::IndexF(idx, 14)])/(4.0*(1.0 + 3.0*_uz[idx]))
                             -_uy[idx]*(_q.f[Q::IndexF(idx, 7)] + _q.f[Q::IndexF(idx, 8)] - _q.f[Q::IndexF(idx, 9)] - _q.f[Q::IndexF(idx, 14)])/(4.0*(1.0 + 3.0*_uz[idx]));
@@ -704,9 +695,8 @@ namespace PANSLBM2 {
                     }
 
                     //  On zmax
-                    idx = _q.Index(i, j, _q.nz - 1);
-                    idxbc = _q.IndexBCz(i, j) + _q.offsetzmax;
-                    if (_bctype[idxbc] == SetT) {
+                    if (_bctype(i + _q.offsetx, j + _q.offsety, (_q.nz - 1) + _q.offsetz)) {
+                        int idx = _q.Index(i, j, _q.nz - 1);
                         T rho0 = -(8.0*_q.f[Q::IndexF(idx, 6)] + _q.f[Q::IndexF(idx, 10)] + _q.f[Q::IndexF(idx, 11)] + _q.f[Q::IndexF(idx, 12)] + _q.f[Q::IndexF(idx, 13)])/12.0
                             -_ux[idx]*(_q.f[Q::IndexF(idx, 10)] - _q.f[Q::IndexF(idx, 11)] + _q.f[Q::IndexF(idx, 12)] - _q.f[Q::IndexF(idx, 13)])/(4.0*(1.0 - 3.0*_uz[idx]))
                             -_uy[idx]*(_q.f[Q::IndexF(idx, 10)] - _q.f[Q::IndexF(idx, 11)] - _q.f[Q::IndexF(idx, 12)] + _q.f[Q::IndexF(idx, 13)])/(4.0*(1.0 - 3.0*_uz[idx]));
@@ -721,12 +711,12 @@ namespace PANSLBM2 {
         }
     
         //  Function of setting boundary condition set iQ of AAD for D2Q9
-        template<class T, class Q>
-        void iBoundaryConditionSetQ(Q& _q, const T *_ux, const T *_uy, const int *_bctype, T _eps = T()) {
+        template<class T, class Q, class Ff>
+        void iBoundaryConditionSetQ(Q& _q, const T *_ux, const T *_uy, Ff _bctype, T _eps = T()) {
             for (int j = 0; j < _q.ny; ++j) {
                 //  On xmin
-                if (_bctype[j + _q.offsetxmin] == SetQ) {
-                    int idx = _q.Index(0, j), idxbc = j + _q.offsetxmin;
+                if (_bctype(0 + _q.offsetx, j + _q.offsety)) {
+                    int idx = _q.Index(0, j);
                     T rho0 = (
                         (1.0 + 3.0*_ux[idx])*(4.0*_q.f[Q::IndexF(idx, 1)] + _q.f[Q::IndexF(idx, 5)] + _q.f[Q::IndexF(idx, 8)])
                         + 3.0*_uy[idx]*(_q.f[Q::IndexF(idx, 5)] - _q.f[Q::IndexF(idx, 8)])
@@ -738,8 +728,8 @@ namespace PANSLBM2 {
                 }
 
                 //  On xmax
-                if (_bctype[j + _q.offsetxmax] == SetQ) {
-                    int idx = _q.Index(_q.nx - 1, j), idxbc = j + _q.offsetxmax;
+                if (_bctype((_q.nx - 1) + _q.offsetx, j + _q.offsety)) {
+                    int idx = _q.Index(_q.nx - 1, j);
                     T rho0 = (
                         (1.0 - 3.0*_ux[idx])*(4.0*_q.f[Q::IndexF(idx, 3)] + _q.f[Q::IndexF(idx, 6)] + _q.f[Q::IndexF(idx, 7)])
                         + 3.0*_uy[idx]*(_q.f[Q::IndexF(idx, 6)] - _q.f[Q::IndexF(idx, 7)])
@@ -753,8 +743,8 @@ namespace PANSLBM2 {
 
             for (int i = 0; i < _q.nx; ++i) {
                 //  On ymin
-                if (_bctype[i + _q.offsetymin] == SetQ) {
-                    int idx = _q.Index(i, 0), idxbc = i + _q.offsetymin;
+                if (_bctype(i + _q.offsetx, 0 + _q.offsety)) {
+                    int idx = _q.Index(i, 0);
                     T rho0 = (
                         (1.0 + 3.0*_uy[idx])*(4.0*_q.f[Q::IndexF(idx, 2)] + _q.f[Q::IndexF(idx, 5)] + _q.f[Q::IndexF(idx, 6)])
                         + 3.0*_ux[idx]*(_q.f[Q::IndexF(idx, 5)] - _q.f[Q::IndexF(idx, 6)])
@@ -766,8 +756,8 @@ namespace PANSLBM2 {
                 }
 
                 //  On ymax
-                if (_bctype[i + _q.offsetymax] == SetQ) {
-                    int idx = _q.Index(i, _q.ny - 1), idxbc = i + _q.offsetymax;
+                if (_bctype(i + _q.offsetx, (_q.ny - 1) + _q.offsety)) {
+                    int idx = _q.Index(i, _q.ny - 1);
                     T rho0 = (
                         (1.0 - 3.0*_uy[idx])*(4.0*_q.f[Q::IndexF(idx, 4)] + _q.f[Q::IndexF(idx, 7)] + _q.f[Q::IndexF(idx, 8)])
                         + 3.0*_ux[idx]*(_q.f[Q::IndexF(idx, 8)] - _q.f[Q::IndexF(idx, 7)])
@@ -781,16 +771,13 @@ namespace PANSLBM2 {
         }
 
         //  Function of setting boundary condition set iQ of AAD for D3Q15
-        template<class T, class Q>
-        void iBoundaryConditionSetQ(Q& _q, const T *_ux, const T *_uy, const T *_uz, const int *_bctype, T _eps = T()) {
-            int idx, idxbc;
-
+        template<class T, class Q, class Ff>
+        void iBoundaryConditionSetQ(Q& _q, const T *_ux, const T *_uy, const T *_uz, Ff _bctype, T _eps = T()) {
             for (int j = 0; j < _q.ny; ++j) {
                 for (int k = 0; k < _q.nz; ++k) {
                     //  On xmin
-                    idx = _q.Index(0, j, k);
-                    idxbc = _q.IndexBCx(j, k) + _q.offsetxmin;
-                    if (_bctype[idxbc] == SetQ) {
+                    if (_bctype(0 + _q.offsetx, j + _q.offsety, k + _q.offsetz)) {
+                        int idx = _q.Index(0, j, k);
                         T rho0 = (
                             (1.0 + 3.0*_ux[idx])*(8.0*_q.f[Q::IndexF(idx, 1)] + _q.f[Q::IndexF(idx, 7)] + _q.f[Q::IndexF(idx, 9)] + _q.f[Q::IndexF(idx, 10)] + _q.f[Q::IndexF(idx, 12)])
                             + 3.0*_uy[idx]*(_q.f[Q::IndexF(idx, 7)] - _q.f[Q::IndexF(idx, 9)] + _q.f[Q::IndexF(idx, 10)] - _q.f[Q::IndexF(idx, 12)])
@@ -805,9 +792,8 @@ namespace PANSLBM2 {
                     }
 
                     //  On xmax
-                    idx = _q.Index(_q.nx - 1, j, k);
-                    idxbc = _q.IndexBCx(j, k) + _q.offsetxmax;
-                    if (_bctype[idxbc] == SetQ) {
+                    if (_bctype((_q.nx - 1) + _q.offsetx, j + _q.offsety, k + _q.offsetz)) {
+                        int idx = _q.Index(_q.nx - 1, j, k);
                         T rho0 = (
                             (1.0 - 3.0*_ux[idx])*(8.0*_q.f[Q::IndexF(idx, 4)] + _q.f[Q::IndexF(idx, 8)] + _q.f[Q::IndexF(idx, 11)] + _q.f[Q::IndexF(idx, 13)] + _q.f[Q::IndexF(idx, 14)])
                             + 3.0*_uy[idx]*(_q.f[Q::IndexF(idx, 8)] - _q.f[Q::IndexF(idx, 11)] + _q.f[Q::IndexF(idx, 13)] - _q.f[Q::IndexF(idx, 14)])
@@ -825,9 +811,8 @@ namespace PANSLBM2 {
             for (int k = 0; k < _q.nz; ++k) {
                 for (int i = 0; i < _q.nx; ++i) {
                     //  On ymin
-                    idx = _q.Index(i, 0, k);
-                    idxbc = _q.IndexBCy(k, i) + _q.offsetymin;
-                    if (_bctype[idxbc] == SetQ) {
+                    if (_bctype(i + _q.offsetx, 0 + _q.offsety, k + _q.offsetz)) {
+                        int idx = _q.Index(i, 0, k);
                         T rho0 = (
                             (1.0 + 3.0*_uy[idx])*(8.0*_q.f[Q::IndexF(idx, 2)] + _q.f[Q::IndexF(idx, 7)] + _q.f[Q::IndexF(idx, 8)] + _q.f[Q::IndexF(idx, 10)] + _q.f[Q::IndexF(idx, 13)])
                             + 3.0*_uz[idx]*(_q.f[Q::IndexF(idx, 7)] + _q.f[Q::IndexF(idx, 8)] - _q.f[Q::IndexF(idx, 10)] - _q.f[Q::IndexF(idx, 13)])
@@ -842,9 +827,8 @@ namespace PANSLBM2 {
                     }
 
                     //  On ymax
-                    idx = _q.Index(i, _q.ny - 1, k);
-                    idxbc = _q.IndexBCy(k, i) + _q.offsetymax;
-                    if (_bctype[idxbc] == SetQ) {
+                    if (_bctype(i + _q.offsetx, (_q.ny - 1) + _q.offsety, k + _q.offsetz)) {
+                        int idx = _q.Index(i, _q.ny - 1, k);
                         T rho0 = (
                             (1.0 - 3.0*_uy[idx])*(8.0*_q.f[Q::IndexF(idx, 5)] + _q.f[Q::IndexF(idx, 9)] + _q.f[Q::IndexF(idx, 11)] + _q.f[Q::IndexF(idx, 12)] + _q.f[Q::IndexF(idx, 14)])
                             + _uz[idx]*(_q.f[Q::IndexF(idx, 9)] - _q.f[Q::IndexF(idx, 11)] - _q.f[Q::IndexF(idx, 12)] + _q.f[Q::IndexF(idx, 14)])
@@ -862,9 +846,8 @@ namespace PANSLBM2 {
             for (int i = 0; i < _q.nx; ++i) {
                 for (int j = 0; j < _q.ny; ++j) {
                     //  On zmin
-                    idx = _q.Index(i, j, 0);
-                    idxbc = _q.IndexBCz(i, j) + _q.offsetzmin;
-                    if (_bctype[idxbc] == SetQ) {
+                    if (_bctype(i + _q.offsetx, j + _q.offsety, 0 + _q.offsetz)) {
+                        int idx = _q.Index(i, j, 0);
                         T rho0 = (
                             (1.0 + 3.0*_uz[idx])*(8.0*_q.f[Q::IndexF(idx, 3)] + _q.f[Q::IndexF(idx, 7)] + _q.f[Q::IndexF(idx, 8)] + _q.f[Q::IndexF(idx, 9)] + _q.f[Q::IndexF(idx, 14)])
                             + _ux[idx]*(_q.f[Q::IndexF(idx, 7)] - _q.f[Q::IndexF(idx, 8)] + _q.f[Q::IndexF(idx, 9)] - _q.f[Q::IndexF(idx, 14)])
@@ -879,9 +862,8 @@ namespace PANSLBM2 {
                     }
 
                     //  On zmax
-                    idx = _q.Index(i, j, _q.nz - 1);
-                    idxbc = _q.IndexBCz(i, j) + _q.offsetzmax;
-                    if (_bctype[idxbc] == SetQ) {
+                    if (_bctype(i + _q.offsetx, j + _q.offsety, (_q.nz - 1) + _q.offsetz)) {
+                        int idx = _q.Index(i, j, _q.nz - 1);
                         T rho0 = (
                             (1.0 - 3.0*_uz[idx])*(8.0*_q.f[Q::IndexF(idx, 6)] + _q.f[Q::IndexF(idx, 10)] + _q.f[Q::IndexF(idx, 11)] + _q.f[Q::IndexF(idx, 12)] + _q.f[Q::IndexF(idx, 13)])
                             + _ux[idx]*(_q.f[Q::IndexF(idx, 10)] - _q.f[Q::IndexF(idx, 11)] + _q.f[Q::IndexF(idx, 12)] - _q.f[Q::IndexF(idx, 13)])
@@ -899,19 +881,17 @@ namespace PANSLBM2 {
         }
     
         //  Function of setting boundary condition set iRho and iT or iQ of AAD for D2Q9
-        template<class T, class P, class Q>
-        void iBoundaryConditionSetRho(P& _p, Q& _q, const T *_rho, const T *_ux, const T *_uy, const T *_tem, const int *_bctypef, const int *_bctypeg, T _eps = T()) {
-            int idx, idxbc; 
+        template<class T, class P, class Q, class Ff>
+        void iBoundaryConditionSetRho(P& _p, Q& _q, const T *_rho, const T *_ux, const T *_uy, const T *_tem, Ff _bctype, T _eps = T()) { 
             for (int j = 0; j < _q.ny; ++j) {
                 //  On xmin
-                idx = _q.Index(0, j);
-                idxbc = j + _q.offsetxmin;
-                if (_bctypef[idxbc] == SetRho && (_bctypeg[idxbc] == SetT || _bctypeg[idxbc] == SetQ)) {
+                if (_bctype(0 + _p.offsetx, j + _p.offsety)) {
+                    int idx = _q.Index(0, j);
                     T rho0 = -(4.0*_p.f[P::IndexF(idx, 1)] + _p.f[P::IndexF(idx, 5)] + _p.f[P::IndexF(idx, 8)])/3.0;
                     T flux0 = T();
-                    if (_bctypeg[idxbc] == SetT) {
+                    if (_bctype(0 + _p.offsetx, j + _p.offsety) == SetT) {
                         flux0 = _tem[idx]*_uy[idx]*(_q.f[Q::IndexF(idx, 5)] - _q.f[Q::IndexF(idx, 8)])/(2.0*(1.0 + 3.0*_ux[idx])*_rho[idx]);
-                    } else if (_bctypeg[idxbc] == SetQ) {
+                    } else if (_bctype(0 + _p.offsetx, j + _p.offsety) == SetQ) {
                         flux0 = -_tem[idx]*(
                             (4.0*_q.f[Q::IndexF(idx, 1)] + _q.f[Q::IndexF(idx, 5)] + _q.f[Q::IndexF(idx, 8)])/3.0
                             + _uy[idx]*(_q.f[Q::IndexF(idx, 5)] - _q.f[Q::IndexF(idx, 8)])/2.0
@@ -924,14 +904,13 @@ namespace PANSLBM2 {
                 }
 
                 //  On xmax
-                idx = _q.Index(_q.nx - 1, j);
-                idxbc = j + _q.offsetxmax;
-                if (_bctypef[idxbc] == SetRho && (_bctypeg[idxbc] == SetT || _bctypeg[idxbc] == SetQ)) {    
+                if (_bctype((_p.nx - 1) + _p.offsetx, j + _p.offsety)) { 
+                    int idx = _q.Index(_q.nx - 1, j);    
                     T rho0 = -(4.0*_p.f[P::IndexF(idx, 3)] + _p.f[P::IndexF(idx, 6)] + _p.f[P::IndexF(idx, 7)])/3.0;
                     T flux0 = T();
-                    if (_bctypeg[idxbc] == SetT) {
+                    if (_bctype((_p.nx - 1) + _p.offsetx, j + _p.offsety) == SetT) {
                         flux0 = _tem[idx]*_uy[idx]*(_q.f[Q::IndexF(idx, 6)] - _q.f[Q::IndexF(idx, 7)])/(2.0*(1.0 - 3.0*_ux[idx])*_rho[idx]);
-                    } else if (_bctypeg[idxbc] == SetQ) {
+                    } else if (_bctype((_p.nx - 1) + _p.offsetx, j + _p.offsety) == SetQ) {
                         flux0 = -_tem[idx]*(
                             (4.0*_q.f[Q::IndexF(idx, 3)] + _q.f[Q::IndexF(idx, 6)] + _q.f[Q::IndexF(idx, 7)])/3.0
                              + _uy[idx]*(_q.f[Q::IndexF(idx, 6)] - _q.f[Q::IndexF(idx, 7)])/2.0
@@ -946,14 +925,13 @@ namespace PANSLBM2 {
 
             for (int i = 0; i < _q.nx; ++i) {
                 //  On ymin
-                idx = _q.Index(i, 0);
-                idxbc = i + _q.offsetymin;
-                if (_bctypef[idxbc] == SetRho && (_bctypeg[idxbc] == SetT || _bctypeg[idxbc] == SetQ)) {    
+                if (_bctype(i + _p.offsetx, 0 + _p.offsety)) { 
+                    int idx = _q.Index(i, 0);
                     T rho0 = -(4.0*_p.f[P::IndexF(idx, 2)] + _p.f[P::IndexF(idx, 5)] + _p.f[P::IndexF(idx, 6)])/3.0;
                     T flux0 = T();
-                    if (_bctypeg[idxbc] == SetT) {
+                    if (_bctype(i + _p.offsetx, 0 + _p.offsety) == SetT) {
                         flux0 = _tem[idx]*_ux[idx]*(_q.f[Q::IndexF(idx, 5)] - _q.f[Q::IndexF(idx, 6)])/(2.0*(1.0 + 3.0*_uy[idx])*_rho[idx]);
-                    } else if (_bctypeg[idxbc] == SetQ) {
+                    } else if (_bctype(i + _p.offsetx, 0 + _p.offsety) == SetQ) {
                         flux0 = -_tem[idx]*(
                             (4.0*_q.f[Q::IndexF(idx, 2)] + _q.f[Q::IndexF(idx, 5)] + _q.f[Q::IndexF(idx, 6)])/3.0
                             + _ux[idx]*(_q.f[Q::IndexF(idx, 5)] - _q.f[Q::IndexF(idx, 6)])/2.0
@@ -966,14 +944,13 @@ namespace PANSLBM2 {
                 }
 
                 //  On ymax
-                idx = _q.Index(i, _q.ny - 1);
-                idxbc = i + _q.offsetymax;
-                if (_bctypef[idxbc] == SetRho && (_bctypeg[idxbc] == SetT || _bctypeg[idxbc] == SetQ)) {    
+                if (_bctype(i + _p.offsetx, (_p.ny - 1) + _p.offsety)) {  
+                    int idx = _q.Index(i, _q.ny - 1);  
                     T rho0 = -(4.0*_p.f[P::IndexF(idx, 4)] + _p.f[P::IndexF(idx, 7)] + _p.f[P::IndexF(idx, 8)])/3.0;
                     T flux0 = T();
-                    if (_bctypeg[idxbc] == SetT) {
+                    if (_bctype(i + _p.offsetx, (_p.ny - 1) + _p.offsety) == SetT) {
                         flux0 = _tem[idx]*_ux[idx]*(_q.f[Q::IndexF(idx, 8)] - _q.f[Q::IndexF(idx, 7)])/(2.0*(1.0 - 3.0*_uy[idx])*_rho[idx]);
-                    } else if (_bctypeg[idxbc] == SetQ) {
+                    } else if (_bctype(i + _p.offsetx, (_p.ny - 1) + _p.offsety) == SetQ) {
                         flux0 = -_tem[idx]*(
                             (4.0*_q.f[Q::IndexF(idx, 4)] + _q.f[Q::IndexF(idx, 7)] + _q.f[Q::IndexF(idx, 8)])/3.0 
                             + _ux[idx]*(_q.f[Q::IndexF(idx, 8)] - _q.f[Q::IndexF(idx, 7)])/2.0
@@ -988,24 +965,21 @@ namespace PANSLBM2 {
         }
     
         //  Function of setting boundary condition set iRho and iT or iQ of AAD for D3Q15
-        template<class T, class P, class Q>
-        void iBoundaryConditionSetRho(P& _p, Q& _q, const T *_rho, const T *_ux, const T *_uy, const T *_uz, const T *_tem, const int *_bctypef, const int *_bctypeg, T _eps = T()) {
-            int idx, idxbc;
-
+        template<class T, class P, class Q, class Ff>
+        void iBoundaryConditionSetRho(P& _p, Q& _q, const T *_rho, const T *_ux, const T *_uy, const T *_uz, const T *_tem, Ff _bctypeg, T _eps = T()) {
             for (int j = 0; j < _p.ny; ++j) {
                 for (int k = 0; k < _p.nz; ++k) {
                     //  On xmin
-                    idx = _p.Index(0, j, k);
-                    idxbc = _p.IndexBCx(j, k) + _p.offsetxmin;
-                    if (_bctypef[idxbc] == SetRho && (_bctypeg[idxbc] == SetT || _bctypeg[idxbc] == SetQ)) {
+                    if (_bctype(0 + _p.offsetx, j + _p.offsety, k + _p.offsetz)) {
+                        int idx = _p.Index(0, j, k);
                         T rho0 = -(8.0*_p.f[P::IndexF(idx, 1)] + _p.f[P::IndexF(idx, 7)] + _p.f[P::IndexF(idx, 9)] + _p.f[P::IndexF(idx, 10)] + _p.f[P::IndexF(idx, 12)])/6.0;
                         T flux0 = T();
-                        if (_bctypeg[idxbc] == SetT) {
+                        if (_bctype(0 + _p.offsetx, j + _p.offsety, k + _p.offsetz) == SetT) {
                             flux0 = _tem[idx]*(
                                 _uy[idx]*(_q.f[Q::IndexF(idx, 7)] - _q.f[Q::IndexF(idx, 9)] + _q.f[Q::IndexF(idx, 10)] - _q.f[Q::IndexF(idx, 12)])/4.0
                                 + _uz[idx]*(_q.f[Q::IndexF(idx, 7)] + _q.f[Q::IndexF(idx, 9)] - _q.f[Q::IndexF(idx, 10)] - _q.f[Q::IndexF(idx, 12)])/4.0
                             )/(_rho[idx]*(1.0 + 3.0*_ux[idx]));
-                        } else if (_bctypeg[idxbc] == SetQ) {
+                        } else if (_bctype(0 + _p.offsetx, j + _p.offsety, k + _p.offsetz) == SetQ) {
                             flux0 = -_tem[idx]*(
                                 (8.0*_q.f[Q::IndexF(idx, 1)] + _q.f[Q::IndexF(idx, 7)] + _q.f[Q::IndexF(idx, 9)] + _q.f[Q::IndexF(idx, 10)] + _q.f[Q::IndexF(idx, 12)])/6.0
                                 + _uy[idx]*(_q.f[Q::IndexF(idx, 7)] - _q.f[Q::IndexF(idx, 9)] + _q.f[Q::IndexF(idx, 10)] - _q.f[Q::IndexF(idx, 12)])/4.0
@@ -1021,17 +995,16 @@ namespace PANSLBM2 {
                     }
 
                     //  On xmax
-                    idx = _p.Index(_p.nx - 1, j, k);
-                    idxbc = _p.IndexBCx(j, k) + _p.offsetxmax;
-                    if (_bctypef[idxbc] == SetRho && (_bctypeg[idxbc] == SetT || _bctypeg[idxbc] == SetQ)) {
+                    if (_bctype((_p.nx - 1) + _p.offsetx, j + _p.offsety, k + _p.offsetz)) {
+                        int idx = _p.Index(_p.nx - 1, j, k);
                         T rho0 = -(8.0*_p.f[P::IndexF(idx, 4)] + _p.f[P::IndexF(idx, 8)] + _p.f[P::IndexF(idx, 11)] + _p.f[P::IndexF(idx, 13)] + _p.f[P::IndexF(idx, 14)])/6.0;
                         T flux0 = T();
-                        if (_bctypeg[idxbc] == SetT) {
+                        if (_bctype((_p.nx - 1) + _p.offsetx, j + _p.offsety, k + _p.offsetz) == SetT) {
                             flux0 = _tem[idx]*(
                                 _uy[idx]*(_q.f[Q::IndexF(idx, 8)] - _q.f[Q::IndexF(idx, 11)] + _q.f[Q::IndexF(idx, 13)] - _q.f[Q::IndexF(idx, 14)])/4.0
                                 + _uz[idx]*(_q.f[Q::IndexF(idx, 8)] - _q.f[Q::IndexF(idx, 11)] - _q.f[Q::IndexF(idx, 13)] + _q.f[Q::IndexF(idx, 14)])/4.0
                             )/(_rho[idx]*(1.0 - 3.0*_ux[idx]));
-                        } else if (_bctypeg[idxbc] == SetQ) {
+                        } else if (_bctype((_p.nx - 1) + _p.offsetx, j + _p.offsety, k + _p.offsetz) == SetQ) {
                             flux0 = -_tem[idx]*(
                                 (8.0*_q.f[Q::IndexF(idx, 4)] + _q.f[Q::IndexF(idx, 8)] + _q.f[Q::IndexF(idx, 11)] + _q.f[Q::IndexF(idx, 13)] + _q.f[Q::IndexF(idx, 14)])/6.0
                                 + _uy[idx]*(_q.f[Q::IndexF(idx, 8)] - _q.f[Q::IndexF(idx, 11)] + _q.f[Q::IndexF(idx, 13)] - _q.f[Q::IndexF(idx, 14)])/4.0
@@ -1050,17 +1023,16 @@ namespace PANSLBM2 {
             for (int k = 0; k < _p.nz; ++k) {
                 for (int i = 0; i < _p.nx; ++i) {
                     //  On ymin
-                    idx = _p.Index(i, 0, k);
-                    idxbc = _p.IndexBCy(k, i) + _p.offsetymin;
-                    if (_bctypef[idxbc] == SetRho && (_bctypeg[idxbc] == SetT || _bctypeg[idxbc] == SetQ)) {
+                    if (_bctype(i + _p.offsetx, 0 + _p.offsety, k + _p.offsetz)) {
+                        int idx = _p.Index(i, 0, k);
                         T rho0 = -(8.0*_p.f[P::IndexF(idx, 2)] + _p.f[P::IndexF(idx, 7)] + _p.f[P::IndexF(idx, 8)] + _p.f[P::IndexF(idx, 10)] + _p.f[P::IndexF(idx, 13)])/6.0;
                         T flux0 = T();
-                        if (_bctypeg[idxbc] == SetT) {
+                        if (_bctype(i + _p.offsetx, 0 + _p.offsety, k + _p.offsetz) == SetT) {
                             flux0 = _tem[idx]*(
                                 _uz[idx]*(_q.f[Q::IndexF(idx, 7)] + _q.f[Q::IndexF(idx, 8)] - _q.f[Q::IndexF(idx, 10)] - _q.f[Q::IndexF(idx, 13)])/4.0
                                 + _ux[idx]*(_q.f[Q::IndexF(idx, 7)] - _q.f[Q::IndexF(idx, 8)] + _q.f[Q::IndexF(idx, 10)] - _q.f[Q::IndexF(idx, 13)])/4.0
                             )/(_rho[idx]*(1.0 + 3.0*_uy[idx]));
-                        } else if (_bctypeg[idxbc] == SetQ) {
+                        } else if (_bctype(i + _p.offsetx, 0 + _p.offsety, k + _p.offsetz) == SetQ) {
                             flux0 = -_tem[idx]*(
                                 (8.0*_q.f[Q::IndexF(idx, 2)] + _q.f[Q::IndexF(idx, 7)] + _q.f[Q::IndexF(idx, 8)] + _q.f[Q::IndexF(idx, 10)] + _q.f[Q::IndexF(idx, 13)])/6.0
                                 + _uz[idx]*(_q.f[Q::IndexF(idx, 7)] + _q.f[Q::IndexF(idx, 8)] - _q.f[Q::IndexF(idx, 10)] - _q.f[Q::IndexF(idx, 13)])/4.0
@@ -1076,17 +1048,16 @@ namespace PANSLBM2 {
                     }
 
                     //  On ymax
-                    idx = _p.Index(i, _p.ny - 1, k);
-                    idxbc = _p.IndexBCy(k, i) + _p.offsetymax;
-                    if (_bctypef[idxbc] == SetRho && (_bctypeg[idxbc] == SetT || _bctypeg[idxbc] == SetQ)) {
+                    if (_bctype(i + _p.offsetx, (_p.ny - 1) + _p.offsety, k + _p.offsetz)) {
+                        int idx = _p.Index(i, _p.ny - 1, k);
                         T rho0 = -(8.0*_p.f[P::IndexF(idx, 5)] + _p.f[P::IndexF(idx, 9)] + _p.f[P::IndexF(idx, 11)] + _p.f[P::IndexF(idx, 12)] + _p.f[P::IndexF(idx, 14)])/6.0;
                         T flux0 = T();
-                        if (_bctypeg[idxbc] == SetT) {
+                        if (_bctype(i + _p.offsetx, (_p.ny - 1) + _p.offsety, k + _p.offsetz) == SetT) {
                             flux0 = _tem[idx]*(
                                 _uz[idx]*(_q.f[Q::IndexF(idx, 9)] - _q.f[Q::IndexF(idx, 11)] - _q.f[Q::IndexF(idx, 12)] + _q.f[Q::IndexF(idx, 14)])/4.0
                                 + _ux[idx]*(_q.f[Q::IndexF(idx, 9)] - _q.f[Q::IndexF(idx, 11)] + _q.f[Q::IndexF(idx, 12)] - _q.f[Q::IndexF(idx, 14)])/4.0
                             )/(_rho[idx]*(1.0 - 3.0*_uy[idx]));
-                        } else if (_bctypeg[idxbc] == SetQ) {
+                        } else if (_bctype(i + _p.offsetx, (_p.ny - 1) + _p.offsety, k + _p.offsetz) == SetQ) {
                             flux0 = -_tem[idx]*(
                                 (8.0*_q.f[Q::IndexF(idx, 5)] + _q.f[Q::IndexF(idx, 9)] + _q.f[Q::IndexF(idx, 11)] + _q.f[Q::IndexF(idx, 12)] + _q.f[Q::IndexF(idx, 14)])/6.0
                                 + _uz[idx]*(_q.f[Q::IndexF(idx, 9)] - _q.f[Q::IndexF(idx, 11)] - _q.f[Q::IndexF(idx, 12)] + _q.f[Q::IndexF(idx, 14)])/4.0
@@ -1105,17 +1076,16 @@ namespace PANSLBM2 {
             for (int i = 0; i < _p.nx; ++i) {
                 for (int j = 0; j < _p.ny; ++j) {
                     //  On zmin
-                    idx = _p.Index(i, j, 0);
-                    idxbc = _p.IndexBCz(i, j) + _p.offsetzmin;
-                    if (_bctypef[idxbc] == SetRho && (_bctypeg[idxbc] == SetT || _bctypeg[idxbc] == SetQ)) {
+                    if (_bctype(i + _p.offsetx, j + _p.offsety, 0 + _p.offsetz)) {
+                        int idx = _p.Index(i, j, 0);
                         T rho0 = -(8.0*_p.f[P::IndexF(idx, 3)] + _p.f[P::IndexF(idx, 7)] + _p.f[P::IndexF(idx, 8)] + _p.f[P::IndexF(idx, 9)] + _p.f[P::IndexF(idx, 14)])/6.0;
                         T flux0 = T();
-                        if (_bctypeg[idxbc] == SetT) {
+                        if (_bctype(i + _p.offsetx, j + _p.offsety, 0 + _p.offsetz) == SetT) {
                             flux0 = _tem[idx]*(
                                 _ux[idx]*(_q.f[Q::IndexF(idx, 7)] - _q.f[Q::IndexF(idx, 8)] + _q.f[Q::IndexF(idx, 9)] - _q.f[Q::IndexF(idx, 14)])/4.0
                                 + _uy[idx]*(_q.f[Q::IndexF(idx, 7)] + _q.f[Q::IndexF(idx, 8)] - _q.f[Q::IndexF(idx, 9)] - _q.f[Q::IndexF(idx, 14)])/4.0
                             )/(_rho[idx]*(1.0 + 3.0*_uz[idx]));
-                        } else if (_bctypeg[idxbc] == SetQ) {
+                        } else if (_bctype(i + _p.offsetx, j + _p.offsety, 0 + _p.offsetz) == SetQ) {
                             flux0 = -_tem[idx]*(
                                 (8.0*_q.f[Q::IndexF(idx, 3)] + _q.f[Q::IndexF(idx, 7)] + _q.f[Q::IndexF(idx, 8)] + _q.f[Q::IndexF(idx, 9)] + _q.f[Q::IndexF(idx, 14)])/6.0
                                 + _ux[idx]*(_q.f[Q::IndexF(idx, 7)] - _q.f[Q::IndexF(idx, 8)] + _q.f[Q::IndexF(idx, 9)] - _q.f[Q::IndexF(idx, 14)])/4.0
@@ -1131,17 +1101,16 @@ namespace PANSLBM2 {
                     }
 
                     //  On zmax
-                    idx = _p.Index(i, j, _p.nz - 1);
-                    idxbc = _p.IndexBCz(i, j) + _p.offsetzmax;
-                    if (_bctypef[idxbc] == SetRho && (_bctypeg[idxbc] == SetT || _bctypeg[idxbc] == SetQ)) {
+                    if (_bctype(i + _p.offsetx, j + _p.offsety, (_p.nz - 1) + _p.offsetz)) {
+                        int idx = _p.Index(i, j, _p.nz - 1);
                         T rho0 = -(8.0*_p.f[P::IndexF(idx, 6)] + _p.f[P::IndexF(idx, 10)] + _p.f[P::IndexF(idx, 11)] + _p.f[P::IndexF(idx, 12)] + _p.f[P::IndexF(idx, 13)])/6.0;
                         T flux0 = T();
-                        if (_bctypeg[idxbc] == SetT) {
+                        if (_bctype(i + _p.offsetx, j + _p.offsety, (_p.nz - 1) + _p.offsetz) == SetT) {
                             flux0 = _tem[idx]*(
                                 _ux[idx]*(_q.f[Q::IndexF(idx, 10)] - _q.f[Q::IndexF(idx, 11)] + _q.f[Q::IndexF(idx, 12)] - _q.f[Q::IndexF(idx, 13)])/4.0
                                 + _uy[idx]*(_q.f[Q::IndexF(idx, 10)] - _q.f[Q::IndexF(idx, 11)] - _q.f[Q::IndexF(idx, 12)] + _q.f[Q::IndexF(idx, 13)])/4.0
                             )/(_rho[idx]*(1.0 - 3.0*_uz[idx]));
-                        } else if (_bctypeg[idxbc] == SetQ) {
+                        } else if (_bctype(i + _p.offsetx, j + _p.offsety, (_p.nz - 1) + _p.offsetz) == SetQ) {
                             flux0 = -_tem[idx]*(
                                 (8.0*_q.f[Q::IndexF(idx, 6)] + _q.f[Q::IndexF(idx, 10)] + _q.f[Q::IndexF(idx, 11)] + _q.f[Q::IndexF(idx, 12)] + _q.f[Q::IndexF(idx, 13)])/6.0
                                 + _ux[idx]*(_q.f[Q::IndexF(idx, 10)] - _q.f[Q::IndexF(idx, 11)] + _q.f[Q::IndexF(idx, 12)] - _q.f[Q::IndexF(idx, 13)])/4.0
@@ -1160,18 +1129,16 @@ namespace PANSLBM2 {
         }
     
         //  Function of getting sensitivity of temperature at heat source for D2Q9
-        template<class T, class Q>
+        template<class T, class Q, class Fv, class Ff>
         void SensitivityTemperatureAtHeatSource(
             const T *_ux, const T *_uy, const T *_imx, const T *_imy,
             Q& _q, const T *_tem, const T *_item, const T *_iqx, const T *_iqy, const T *_g, const T *_ig,
-            T *_dfds, const T *_diffusivity, const T *_dads, const T *_dkds, const T *_qnbc, const int *_bctype
+            T *_dfds, const T *_diffusivity, const T *_dads, const T *_dkds, Fv _qnbc, Ff _bctype
         ) {
-            int idx, idxbc;
-
             //  Brinkman term and diffusivity term
             for (int i = 0; i < _q.nx; ++i) {
                 for (int j = 0; j < _q.ny; ++j) {
-                    idx = _q.Index(i, j);
+                    int idx = _q.Index(i, j);
                     _dfds[idx] += 3.0*_dads[idx]*(_ux[idx]*_imx[idx] + _uy[idx]*_imy[idx]);
                     T sumg = T();
                     for (int c = 0; c < Q::nc; ++c) {
@@ -1184,20 +1151,18 @@ namespace PANSLBM2 {
             //  Boundary term 
             for (int j = 0; j < _q.ny; ++j) {
                 //  Along xmin
-                idx = _q.Index(0, j);
-                idxbc = j + _q.offsetxmin;
-                if (_bctype[idxbc] == SetQ) {
-                    _dfds[idx] += _qnbc[idxbc]*_dkds[idx]*(
+                if (_bctype(0 + _p.offsetx, j + _p.offsety)) {
+                    int idx = _q.Index(0, j);
+                    _dfds[idx] += _qnbc(0 + _p.offsetx, j + _p.offsety)*_dkds[idx]*(
                         (1.0 + 3.0*_ux[idx])*(-6.0 + 4.0*_ig[Q::IndexF(idx, 1)] + _ig[Q::IndexF(idx, 5)] + _ig[Q::IndexF(idx, 8)])
                         + 3.0*_uy[idx]*(_ig[Q::IndexF(idx, 5)] - _ig[Q::IndexF(idx, 8)])
                     )/(36.0*(1.0 - 3.0*_ux[idx])*pow(_diffusivity[idx], 2.0));
                 }
 
                 //  Along xmax
-                idx = _q.Index(_q.nx - 1, j);
-                idxbc = j + _q.offsetxmax;
-                if (_bctype[idxbc] == SetQ) {
-                    _dfds[idx] += _qnbc[idxbc]*_dkds[idx]*(
+                if (_bctype((_p.nx - 1) + _p.offsetx, j + _p.offsety)) {
+                    int idx = _q.Index(_q.nx - 1, j);
+                    _dfds[idx] += _qnbc((_p.nx - 1) + _p.offsetx, j + _p.offsety)*_dkds[idx]*(
                         (1.0 - 3.0*_ux[idx])*(-6.0 + 4.0*_ig[Q::IndexF(idx, 3)] + _ig[Q::IndexF(idx, 6)] + _ig[Q::IndexF(idx, 7)])
                         + 3.0*_uy[idx]*(_ig[Q::IndexF(idx, 6)] - _ig[Q::IndexF(idx, 7)])
                     )/(36.0*(1.0 + 3.0*_ux[idx])*pow(_diffusivity[idx], 2.0));
@@ -1205,20 +1170,18 @@ namespace PANSLBM2 {
             }
             for (int i = 0; i < _q.nx; ++i) {
                 //  Along ymin
-                idx = _q.Index(i, 0);
-                idxbc = i + _q.offsetymin;
-                if (_bctype[idxbc] == SetQ) {
-                    _dfds[idx] += _qnbc[idxbc]*_dkds[idx]*(
+                if (_bctype(i + _p.offsetx, 0 + _p.offsety)) {
+                    int idx = _q.Index(i, 0);
+                    _dfds[idx] += _qnbc(i + _p.offsetx, 0 + _p.offsety)*_dkds[idx]*(
                         (1.0 + 3.0*_uy[idx])*(-6.0 + 4.0*_ig[Q::IndexF(idx, 2)] + _ig[Q::IndexF(idx, 5)] + _ig[Q::IndexF(idx, 6)])
                         + 3.0*_ux[idx]*(_ig[Q::IndexF(idx, 5)] - _ig[Q::IndexF(idx, 6)])
                     )/(36.0*(1.0 - 3.0*_uy[idx])*pow(_diffusivity[idx], 2.0));
                 }
 
                 //  Along ymax
-                idx = _q.Index(i, _q.ny - 1);
-                idxbc = i + _q.offsetymax;
-                if (_bctype[idxbc] == SetQ) {
-                    _dfds[idx] += _qnbc[idxbc]*_dkds[idx]*(
+                if (_bctype(i + _p.offsetx, (_p.ny - 1) + _p.offsety)) {
+                    int idx = _q.Index(i, _q.ny - 1);
+                    _dfds[idx] += _qnbc(i + _p.offsetx, (_p.ny - 1) + _p.offsety)*_dkds[idx]*(
                         (1.0 - 3.0*_uy[idx])*(-6.0 + 4.0*_ig[Q::IndexF(idx, 4)] + _ig[Q::IndexF(idx, 7)] + _ig[Q::IndexF(idx, 8)])
                         + 3.0*_ux[idx]*(_ig[Q::IndexF(idx, 8)] - _ig[Q::IndexF(idx, 7)])
                     )/(36.0*(1.0 + 3.0*_uy[idx])*pow(_diffusivity[idx], 2.0));
@@ -1227,19 +1190,17 @@ namespace PANSLBM2 {
         }
 
         //  Function of getting sensitivity of temperature at heat source for D3Q15
-        template<class T, class Q>
+        template<class T, class Q, class Fv, class Ff>
         void SensitivityTemperatureAtHeatSource(
             const T *_ux, const T *_uy, const T *_uz, const T *_imx, const T *_imy, const T *_imz,
             Q& _q, const T *_tem, const T *_item, const T *_iqx, const T *_iqy, const T *_iqz, const T *_g, const T *_ig,
-            T *_dfds, const T *_diffusivity, const T *_dads, const T *_dkds, const T *_qnbc, const int *_bctype
+            T *_dfds, const T *_diffusivity, const T *_dads, const T *_dkds, Fv _qnbc, Ff _bctype
         ) {
-            int idx, idxbc;
-
             //  Brinkman term and diffusivity term
             for (int i = 0; i < _q.nx; ++i) {
                 for (int j = 0; j < _q.ny; ++j) {
                     for (int k = 0; k < _q.nz; ++k) {
-                        idx = _q.Index(i, j, k);
+                        int idx = _q.Index(i, j, k);
                         _dfds[idx] += 3.0*_dads[idx]*(_ux[idx]*_imx[idx] + _uy[idx]*_imy[idx] + _uz[idx]*_imz[idx]);
                         T sumg = T();
                         for (int c = 0; c < Q::nc; ++c) {
@@ -1254,10 +1215,9 @@ namespace PANSLBM2 {
             for (int j = 0; j < _q.ny; ++j) {
                 for (int k = 0; k < _q.nz; ++k) {
                     //  Along xmin
-                    idx = _q.Index(0, j, k);
-                    idxbc = _q.IndexBCx(j, k) + _q.offsetxmin;
-                    if (_bctype[idxbc] == SetQ) {
-                        _dfds[idx] += _qnbc[idxbc]*_dkds[idx]*(
+                    if (_bctype(0 + _p.offsetx, j + _p.offsety, k + _p.offsetz)) {
+                        int idx = _q.Index(0, j, k);
+                        _dfds[idx] += _qnbc_bctype(0 + _p.offsetx, j + _p.offsety, k + _p.offsetz)*_dkds[idx]*(
                             (1.0 + 3.0*_ux[idx])*(-12.0 + 8.0*_ig[Q::IndexF(idx, 1)] + _ig[Q::IndexF(idx, 7)] + _ig[Q::IndexF(idx, 9)] + _ig[Q::IndexF(idx, 10)] + _ig[Q::IndexF(idx, 12)])
                             + 3.0*_uy[idx]*(_ig[Q::IndexF(idx, 7)] - _ig[Q::IndexF(idx, 9)] + _ig[Q::IndexF(idx, 10)] - _ig[Q::IndexF(idx, 12)])
                             + 3.0*_uz[idx]*(_ig[Q::IndexF(idx, 7)] + _ig[Q::IndexF(idx, 9)] - _ig[Q::IndexF(idx, 10)] - _ig[Q::IndexF(idx, 12)])
@@ -1265,10 +1225,9 @@ namespace PANSLBM2 {
                     }
 
                     //  Along xmax
-                    idx = _q.Index(_q.nx - 1, j, k);
-                    idxbc = _q.IndexBCx(j, k) + _q.offsetxmax;
-                    if (_bctype[idxbc] == SetQ) {
-                        _dfds[idx] += _qnbc[idxbc]*_dkds[idx]*(
+                    if (_bctype((_p.nx - 1) + _p.offsetx, j + _p.offsety, k + _p.offsetz)) {
+                        int idx = _q.Index(_q.nx - 1, j, k);
+                        _dfds[idx] += _qnbc((_p.nx - 1) + _p.offsetx, j + _p.offsety, k + _p.offsetz)*_dkds[idx]*(
                             (1.0 - 3.0*_ux[idx])*(-12.0 + 8.0*_ig[Q::IndexF(idx, 4)] + _ig[Q::IndexF(idx, 8)] + _ig[Q::IndexF(idx, 11)] + _ig[Q::IndexF(idx, 13)] + _ig[Q::IndexF(idx, 14)])
                             + 3.0*_uy[idx]*(_ig[Q::IndexF(idx, 8)] - _ig[Q::IndexF(idx, 11)] + _ig[Q::IndexF(idx, 13)] - _ig[Q::IndexF(idx, 14)])
                             + 3.0*_uz[idx]*(_ig[Q::IndexF(idx, 8)] - _ig[Q::IndexF(idx, 11)] - _ig[Q::IndexF(idx, 13)] + _ig[Q::IndexF(idx, 14)])
@@ -1279,10 +1238,9 @@ namespace PANSLBM2 {
             for (int k = 0; k < _q.nz; ++k) {
                 for (int i = 0; i < _q.nx; ++i) {
                     //  Along ymin
-                    idx = _q.Index(i, 0, k);
-                    idxbc = _q.IndexBCy(k, i) + _q.offsetymin;
-                    if (_bctype[idxbc] == SetQ) {
-                        _dfds[idx] += _qnbc[idxbc]*_dkds[idx]*(
+                    if (_bctype(i + _p.offsetx, 0 + _p.offsety, k + _p.offsetz)) {
+                        int idx = _q.Index(i, 0, k);
+                        _dfds[idx] += _qnbc(i + _p.offsetx, 0 + _p.offsety, k + _p.offsetz)*_dkds[idx]*(
                             (1.0 + 3.0*_uy[idx])*(-12.0 + 8.0*_ig[Q::IndexF(idx, 2)] + _ig[Q::IndexF(idx, 7)] + _ig[Q::IndexF(idx, 8)] + _ig[Q::IndexF(idx, 10)] + _ig[Q::IndexF(idx, 13)])
                             + 3.0*_uz[idx]*(_ig[Q::IndexF(idx, 7)] + _ig[Q::IndexF(idx, 8)] - _ig[Q::IndexF(idx, 10)] - _ig[Q::IndexF(idx, 13)])
                             + 3.0*_ux[idx]*(_ig[Q::IndexF(idx, 7)] - _ig[Q::IndexF(idx, 8)] + _ig[Q::IndexF(idx, 10)] - _ig[Q::IndexF(idx, 13)])
@@ -1290,10 +1248,9 @@ namespace PANSLBM2 {
                     }
 
                     //  Along ymax
-                    idx = _q.Index(i, _q.ny - 1, k);
-                    idxbc = _q.IndexBCy(k, i) + _q.offsetymax;
-                    if (_bctype[idxbc] == SetQ) {
-                        _dfds[idx] += _qnbc[idxbc]*_dkds[idx]*(
+                    if (_bctype(i + _p.offsetx, (_p.ny - 1) + _p.offsety, k + _p.offsetz)) {
+                        int idx = _q.Index(i, _q.ny - 1, k);
+                        _dfds[idx] += _qnbc(i + _p.offsetx, (_p.ny - 1) + _p.offsety, k + _p.offsetz)*_dkds[idx]*(
                             (1.0 - 3.0*_uy[idx])*(-12.0 + 8.0*_ig[Q::IndexF(idx, 5)] + _ig[Q::IndexF(idx, 9)] + _ig[Q::IndexF(idx, 11)] + _ig[Q::IndexF(idx, 12)] + _ig[Q::IndexF(idx, 14)])
                             + _uz[idx]*(_ig[Q::IndexF(idx, 9)] - _ig[Q::IndexF(idx, 11)] - _ig[Q::IndexF(idx, 12)] + _ig[Q::IndexF(idx, 14)])
                             + _ux[idx]*(_ig[Q::IndexF(idx, 9)] - _ig[Q::IndexF(idx, 11)] + _ig[Q::IndexF(idx, 12)] - _ig[Q::IndexF(idx, 14)])
@@ -1304,10 +1261,9 @@ namespace PANSLBM2 {
             for (int i = 0; i < _q.nx; ++i) {
                 for (int j = 0; j < _q.ny; ++j) {
                     //  Along zmin
-                    idx = _q.Index(i, j, 0);
-                    idxbc = _q.IndexBCz(i, j) + _q.offsetzmin;
-                    if (_bctype[idxbc] == SetQ) {
-                        _dfds[idx] += _qnbc[idxbc]*_dkds[idx]*(
+                    if (_bctype(i + _p.offsetx, j + _p.offsety, 0 + _p.offsetz)) {
+                        int idx = _q.Index(i, j, 0);
+                        _dfds[idx] += _qnbc(i + _p.offsetx, j + _p.offsety, 0 + _p.offsetz)*_dkds[idx]*(
                             (1.0 + 3.0*_uz[idx])*(-12.0 + 8.0*_ig[Q::IndexF(idx, 3)] + _ig[Q::IndexF(idx, 7)] + _ig[Q::IndexF(idx, 8)] + _ig[Q::IndexF(idx, 9)] + _ig[Q::IndexF(idx, 14)])
                             + _ux[idx]*(_ig[Q::IndexF(idx, 7)] - _ig[Q::IndexF(idx, 8)] + _ig[Q::IndexF(idx, 9)] - _ig[Q::IndexF(idx, 14)])
                             + _uy[idx]*(_ig[Q::IndexF(idx, 7)] + _ig[Q::IndexF(idx, 8)] - _ig[Q::IndexF(idx, 9)] - _ig[Q::IndexF(idx, 14)])
@@ -1315,10 +1271,9 @@ namespace PANSLBM2 {
                     }
 
                     //  Along zmax
-                    idx = _q.Index(i, j, _q.nz - 1);
-                    idxbc = _q.IndexBCz(i, j) + _q.offsetzmax;
-                    if (_bctype[idxbc] == SetQ) {
-                        _dfds[idx] += _qnbc[idxbc]*_dkds[idx]*(
+                    if (_bctype(i + _p.offsetx, j + _p.offsety, (_p.nz - 1) + _p.offsetz)) {
+                        int idx = _q.Index(i, j, _q.nz - 1);
+                        _dfds[idx] += _qnbc(i + _p.offsetx, j + _p.offsety, (_p.nz - 1) + _p.offsetz)*_dkds[idx]*(
                             (1.0 - 3.0*_uz[idx])*(-12.0 + 8.0*_ig[Q::IndexF(idx, 6)] + _ig[Q::IndexF(idx, 10)] + _ig[Q::IndexF(idx, 11)] + _ig[Q::IndexF(idx, 12)] + _ig[Q::IndexF(idx, 13)])
                             + _ux[idx]*(_ig[Q::IndexF(idx, 10)] - _ig[Q::IndexF(idx, 11)] + _ig[Q::IndexF(idx, 12)] - _ig[Q::IndexF(idx, 13)])
                             + _uy[idx]*(_ig[Q::IndexF(idx, 10)] - _ig[Q::IndexF(idx, 11)] - _ig[Q::IndexF(idx, 12)] + _ig[Q::IndexF(idx, 13)])

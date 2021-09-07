@@ -77,10 +77,10 @@ public:
         static const int nc = 9, nd = 2, cx[nc], cy[nc];
         static const T ei[nc];
         T *f, *fnext;
+        
+private:
         T *fsend_xmin, *fsend_xmax, *fsend_ymin, *fsend_ymax, *frecv_xmin, *frecv_xmax, *frecv_ymin, *frecv_ymax;
         T fsend_corner[4], frecv_corner[4];
-
-private:
 #ifdef _USE_MPI_DEFINES
         MPI_Status status[16];
         MPI_Request request[16];

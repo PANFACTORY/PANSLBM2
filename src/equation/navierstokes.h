@@ -8,11 +8,6 @@
 #pragma once
 #include <cassert>
 
-namespace {
-    const int SetU = 1;
-    const int SetRho = 2;
-}
-
 namespace PANSLBM2 {
     namespace NS {
         //  Function of updating macroscopic values of NS for 2D

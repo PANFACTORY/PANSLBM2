@@ -34,14 +34,6 @@ int main() {
         gamma[idx] = pow(s[idx], p);
     }
 
-    pf.SetBoundary([&](int _i, int _j) {    return _i == 0 ? 1 : 0; });
-    int boundarys[pf.nbc];
-    pf.SetBoundary(boundarys, [&](int _i, int _j) { return _i == 0 ? 0: 1;  });
-    double txbc[pf.nbc] = { 0 }, tybc[pf.nbc] = { 0 };
-    for (int j = 0; j < pf.ny; ++j) {
-        tybc[j + pf.offsetxmax] = fabs(j - 0.5*pf.ny < 0.08*pf.ny) ? stress0 : 0.0;  
-    }
-    
     std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
     
     //--------------------Direct analyze--------------------
@@ -49,8 +41,12 @@ int main() {
     for (int t = 1; t <= nt; ++t) {
         EL::MacroExtended_Collide_Stream(pf, rho, ux, uy, sxx, sxy, syx, syy, 0.8, gamma, true);
         pf.Swap();
-        pf.BoundaryCondition();
-        EL::BoundaryConditionSetStress(pf, txbc, tybc, boundarys);
+        pf.BoundaryCondition([=](int _i, int _j) { return _i == 0 ? 1 : 0; });
+        EL::BoundaryConditionSetStress(pf, 
+            [=](int _i, int _j) { return (_i == nx - 1 && fabs(j - 0.5*pf.ny) < 0.08*pf.ny) ? stress0 : 0.0 }, 
+            [=](int _i, int _j) { return 0.0; }, 
+            [=](int _i, int _j) { return _i != 0; }
+        );
         pf.SmoothCorner();
 
         for (int idx = 0; idx < pf.nxy; ++idx) {
@@ -63,8 +59,13 @@ int main() {
     for (int t = 1; t <= nt; ++t) {
         AEL::Macro_Collide_Stream(pf, irho, imx, imy, isxx, isxy, isyx, isyy, 0.8, gamma, true);
         pf.Swap();
-        pf.iBoundaryCondition();
-        AEL::BoundaryConditionSetiStress(pf, txbc, tybc, rho, boundarys);
+        pf.iBoundaryCondition([=](int _i, int _j) { return _i == 0 ? 1 : 0; });
+        AEL::BoundaryConditionSetiStress(pf, 
+            [=](int _i, int _j) { return (_i == nx - 1 && fabs(j - 0.5*pf.ny) < 0.08*pf.ny) ? stress0 : 0.0 }, 
+            [=](int _i, int _j) { return 0.0; }, 
+            rho, 
+            [=](int _i, int _j) { return _i != 0; }
+        );
         pf.SmoothCorner();
     }
 

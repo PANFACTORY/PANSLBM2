@@ -37,23 +37,6 @@ int main() {
         beta[idx] = bmax/(double)(pf.nx - 1)*qb*(1.0 - s[idx])/(s[idx] + qb);
     }
 
-    pf.SetBoundary([&](int _i, int _j) {    return _j == 0 ? 2 : (_j >= 0.33*pf.ny ? 1 : 0); });
-    pg.SetBoundary([&](int _i, int _j) {    return _j == 0 ? 2 : 0; });
-    int *boundaryup = new int[pf.nxy], *boundarytq = new int[pf.nxy];
-    pf.SetBoundary(boundaryup, [&](int _i, int _j) {    return (_i == 0 && _j < 0.33*pf.ny) ? 1 : ((_i == pf.nx - 1 && _j < 0.33*pf.ny) ? 2 : 0); });
-    pg.SetBoundary(boundarytq, [&](int _i, int _j) {    return (_i == 0 && _j < 0.33*pg.ny) ? 1 : (_j == 0 ? 0 : 2); });
-    double *uxbc = new double[pf.nxy], *uybc = new double[pf.nxy], *rhobc = new double[pf.nxy], *usbc = new double[pf.nxy];
-    double *tembc = new double[pf.nxy], *qnbc = new double[pf.nxy];
-    for (int j = 0; j < pf.ny; ++j) {
-        uxbc[j + pf.offsetxmin] = j < 0.33*pf.ny ? -u0*(j - 0.33*pf.ny)*(j + 0.33*ny)/(0.33*pf.ny*0.33*pf.ny) : 0.0;
-        uybc[j + pf.offsetxmin] = 0.0;  rhobc[j + pf.offsetxmin] = 1.0; usbc[j + pf.offsetxmin] = 0.0;  tembc[j + pg.offsetxmin] = tem0;    qnbc[j + pg.offsetxmin] = 0.0;
-        uxbc[j + pf.offsetxmax] = 0.0;  uybc[j + pf.offsetxmax] = 0.0;  rhobc[j + pf.offsetxmax] = 1.0; usbc[j + pf.offsetxmax] = 0.0;  tembc[j + pg.offsetxmax] = 0.0;    qnbc[j + pg.offsetxmax] = q0;
-    }
-    for (int i = 0; i < pf.nx; ++i) {
-        uxbc[i + pf.offsetymin] = 0.0;  uybc[i + pf.offsetymin] = 0.0;  rhobc[i + pf.offsetymin] = 1.0; usbc[i + pf.offsetymin] = 0.0;  tembc[i + pg.offsetymin] = 0.0;    qnbc[i + pg.offsetymin] = 0.0;
-        uxbc[i + pf.offsetymax] = 0.0;  uybc[i + pf.offsetymax] = 0.0;  rhobc[i + pf.offsetymax] = 1.0; usbc[i + pf.offsetymax] = 0.0;  tembc[i + pg.offsetymax] = 0.0;    qnbc[i + pg.offsetymax] = 0.0;
-    }
-
     std::chrono::system_clock::time_point start = std::chrono::system_clock::now();                                    
 
     //--------------------Direct analyze--------------------
@@ -66,13 +49,29 @@ int main() {
         );
         pf.Swap();
         pg.Swap();
-        pf.BoundaryCondition();
-        NS::BoundaryConditionSetU(pf, uxbc, uybc, boundaryup);
-        NS::BoundaryConditionSetRho(pf, rhobc, usbc, boundaryup);
+        pf.BoundaryCondition([=](int _i, int _j) { return _j == 0 ? 2 : (_j >= 0.33*ny ? 1 : 0); });
+        NS::BoundaryConditionSetU(pf, 
+            [=](int _i, int _j) { return -u0*(_j - 0.33*ny)*(_j + 0.33*ny)/(0.33*ny*0.33*ny); }, 
+            [=](int _i, int _j) { return 0.0; }, 
+            [=](int _i, int _j) { return _i == 0 && _j < 0.33*ny; }
+        );
+        NS::BoundaryConditionSetRho(pf, 
+            [=](int _i, int _j) { return 1.0; }, 
+            [=](int _i, int _j) { return 0.0; }, 
+            [=](int _i, int _j) { return _i == nx - 1 && _j < 0.33*ny; }
+        );
         pf.SmoothCorner();
-        pg.BoundaryCondition();
-        AD::BoundaryConditionSetT(pg, tembc, ux, uy, boundarytq);
-        AD::BoundaryConditionSetQ(pg, qnbc, ux, uy, alp, boundarytq);
+        pg.BoundaryCondition([=](int _i, int _j) { return _j == 0 ? 2 : 0; });
+        AD::BoundaryConditionSetT(pg, 
+            [=](int _i, int _j) { return tem0; }, 
+            ux, uy, 
+            [=](int _i, int _j) { return _i == 0 && _j < 0.33*ny; }
+        );
+        AD::BoundaryConditionSetQ(pg, 
+            [=](int _i, int _j) { return q0; }, 
+            ux, uy, alp, 
+            [=](int _i, int _j) { return _i == nx - 1 || _j >= 0.33*ny; }
+        );
         pg.SmoothCorner();
     }
 
@@ -86,13 +85,18 @@ int main() {
         );
         pg.Swap();
         pf.Swap();
-        pg.iBoundaryCondition();
-        AAD::BoundaryConditionSetiT(pg, ux, uy, boundarytq);
-        AAD::BoundaryConditionSetiQ(pg, ux, uy, boundarytq);
+        pg.iBoundaryCondition([=](int _i, int _j) { return _j == 0 ? 2 : 0; });
+        AAD::BoundaryConditionSetiT(pg, ux, uy, { return _i == 0 && _j < 0.33*ny; });
+        AAD::BoundaryConditionSetiQ(pg, ux, uy, { return _i == nx - 1 || _j >= 0.33*ny; });
         pg.SmoothCorner();
-        pf.iBoundaryCondition();
-        ANS::BoundaryConditionSetiU(pf, uxbc, uybc, boundaryup, 0.0);
-        AAD::BoundaryConditionSetiRho(pf, pg, rho, ux, uy, tem, boundaryup, boundarytq);
+        pf.iBoundaryCondition([=](int _i, int _j) { return _j == 0 ? 2 : (_j >= 0.33*ny ? 1 : 0); });
+        ANS::BoundaryConditionSetiU(pf, 
+            [=](int _i, int _j) { return -u0*(_j - 0.33*ny)*(_j + 0.33*ny)/(0.33*ny*0.33*ny); }, 
+            [=](int _i, int _j) { return 0.0; }, 
+            [=](int _i, int _j) { return _i == 0 && _j < 0.33*ny; }, 
+            0.0
+        );
+        AAD::BoundaryConditionSetiRho(pf, pg, rho, ux, uy, tem, [=](int _i, int _j) { return _i == nx - 1 && _j < 0.33*ny; });
         pf.SmoothCorner();
     }
 
@@ -149,7 +153,6 @@ int main() {
     
     delete[] rho, ux, uy, tem, qx, qy, irho, iux, iuy, imx, imy, item, iqx, iqy;
     delete[] s, alpha, beta, sensitivity;
-    delete[] boundaryup, boundarytq, uxbc, uybc, rhobc, usbc, tembc, qnbc;
  
     return 0;
 }

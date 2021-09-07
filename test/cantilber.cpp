@@ -20,14 +20,6 @@ int main() {
         sxx[idx] = 0.0; sxy[idx] = 0.0; syx[idx] = 0.0; syy[idx] = 0.0;
     }
 
-    pf.SetBoundary([&](int _i, int _j) {    return _i == 0 ? 1 : 0; });
-    int boundarys[pf.nbc];
-    pf.SetBoundary(boundarys, [&](int _i, int _j) { return _i == 0 ? 0: 1;  });
-    double txbc[pf.nbc] = { 0 }, tybc[pf.nbc] = { 0 };
-    for (int j = 0; j < pf.ny; ++j) {
-        tybc[j + pf.offsetxmax] = stress0;  
-    }
-    
     std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
 
     //--------------------Direct analyze--------------------
@@ -64,8 +56,12 @@ int main() {
         }
 
         pf.Swap();
-        pf.BoundaryCondition();
-        EL::BoundaryConditionSetStress(pf, txbc, tybc, boundarys);
+        pf.BoundaryCondition([=](int _i, int _j) { return _i == 0 ? 1 : 0; });
+        EL::BoundaryConditionSetStress(pf, 
+            [=](int _i, int _j) { return 0.0; }, 
+            [=](int _i, int _j) { return _i == nx - 1 ? stress0 : 0.0; }, 
+            [=](int _i, int _j) { return _i != 0; }
+        );
         pf.SmoothCorner();
 
         for (int idx = 0; idx < pf.nxy; ++idx) {

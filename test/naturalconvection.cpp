@@ -28,24 +28,13 @@ int main(int argc, char** argv) {
     //--------------------Set parameters--------------------
     int lx = 101, ly = 51, nt = 100000, dt = 1000;
     double nu = 0.02, alpha = 0.02, Th = 2.0, Tl = 1.0;
-    D2Q9<double> pf(lx, ly, MyRank, mx, my);
-    D2Q9<double> pg(lx, ly, MyRank, mx, my);
+    D2Q9<double> pf(lx, ly, MyRank, mx, my), pg(lx, ly, MyRank, mx, my);
     double rho[pf.nxy], ux[pf.nxy], uy[pf.nxy], tem[pg.nxy], qx[pg.nxy], qy[pg.nxy];
     for (int idx = 0; idx < pf.nxy; ++ idx) {
         rho[idx] = 1.0; ux[idx] = 0.0;  uy[idx] = 0.0;
         tem[idx] = 0.5*(Th + Tl);   qx[idx] = 0.0;  qy[idx] = 0.0;
     }
 
-    pf.SetBoundary([&](int _i, int _j) {    return (_j == 0 || _j == pf.ly - 1) ? 2 : 0;    });
-    pg.SetBoundary([&](int _i, int _j) {    return 0;    });
-    int boundaryt[pg.nbc];
-    pg.SetBoundary(boundaryt, [&](int _i, int _j) {    return (_j == 0 || _j == pg.ly - 1) ? 1 : 0;    });
-    double tembc[pg.nbc] = { 0 };
-    for (int i = 0; i < pg.nx; ++i) {
-        tembc[i + pg.offsetymin] = Th;
-        tembc[i + pg.offsetymax] = Tl;
-    }
-    
     std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
 
     //--------------------Direct analyze--------------------
@@ -64,9 +53,13 @@ int main(int argc, char** argv) {
         pg.Swap();
         pf.Synchronize();
         pg.Synchronize();
-        pf.BoundaryCondition();
-        pg.BoundaryCondition();
-        AD::BoundaryConditionSetT(pg, tembc, ux, uy, boundaryt);
+        pf.BoundaryCondition([=](int _i, int _j) { return (_j == 0 || _j == ly - 1) ? 2 : 0; });
+        pg.BoundaryCondition([=](int _i, int _j) { return 0; });
+        AD::BoundaryConditionSetT(pg, 
+            [=](int _i, int _j) { return _j == 0 ? Th : (_j == ly - 1 ? Tl : 0.0); }, 
+            ux, uy, 
+            [=](int _i, int _j) { return _j == 0 || _j == ly - 1; }
+        );
         pf.SmoothCorner();
         pg.SmoothCorner();
     }
@@ -79,7 +72,6 @@ int main(int argc, char** argv) {
         [&](int _i, int _j, int _k) { return uy[pf.Index(_i, _j)]; },
         [](int _i, int _j, int _k) { return 0.0; }
     );
-    //file.AddPointScaler("bctype", [&](int _i, int _j, int _k) { return pf.GetBoundary(_i, _j, _k); });
     file.AddPointScaler("T", [&](int _i, int _j, int _k) { return tem[pg.Index(_i, _j)]; });
     file.AddPointVector("q", 
         [&](int _i, int _j, int _k) { return qx[pf.Index(_i, _j)]; },

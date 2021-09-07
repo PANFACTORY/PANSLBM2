@@ -23,7 +23,7 @@ int main(int argc, char** argv) {
     int mx = atoi(argv[1]), my = atoi(argv[2]), mz = atoi(argv[3]);
     assert(mx*my*mz == PeTot);
 #else
-    int MyRank = 0, mx = 1, my = 1;
+    int MyRank = 0, mx = 1, my = 1, mz = 1.0;
 #endif
 
     //--------------------Set parameters--------------------
@@ -60,7 +60,7 @@ int main(int argc, char** argv) {
         pf.BoundaryCondition([=](int _i, int _j, int _k) { return (_j == 0 || _k == 0) ? 2 : (pow(_j, 2.0) + pow(_k, 2.0) >= pow(0.15*lx, 2.0) ? 1 : 0); });
         NS::BoundaryConditionSetU(pf, 
             [=](int _i, int _j, int _k) { 
-                double r = sqrt(pow(j, 2.0) + pow(k, 2.0));
+                double r = sqrt(pow(_j, 2.0) + pow(_k, 2.0));
                 return -u0*(r - 0.15*lx)*(r + 0.15*lx)/(0.15*lx*0.15*lx); 
             }, 
             [=](int _i, int _j, int _k) { return 0.0; }, 
@@ -85,10 +85,10 @@ int main(int argc, char** argv) {
         ANS::Macro_Brinkman_Collide_Stream(pf, rho, ux, uy, uz, irho, iux, iuy, iuz, imx, imy, imz, nu, alpha, true);
         pf.Swap();
         pf.iSynchronize();
-        pf.iBoundaryCondition([=](int _i, int _j, int _k) { return (_j == 0 || _k == 0) ? 2 : (pow(_j, 2.0) + pow(_k, 2.0) >= pow(0.15*pf.lx, 2.0) ? 1 : 0); });
-        ANS::BoundaryConditionSetiU(pf, 
+        pf.iBoundaryCondition([=](int _i, int _j, int _k) { return (_j == 0 || _k == 0) ? 2 : (pow(_j, 2.0) + pow(_k, 2.0) >= pow(0.15*lx, 2.0) ? 1 : 0); });
+        ANS::iBoundaryConditionSetU(pf, 
             [=](int _i, int _j, int _k) { 
-                double r = sqrt(pow(j, 2.0) + pow(k, 2.0));
+                double r = sqrt(pow(_j, 2.0) + pow(_k, 2.0));
                 return -u0*(r - 0.15*lx)*(r + 0.15*lx)/(0.15*lx*0.15*lx); 
             }, 
             [=](int _i, int _j, int _k) { return 0.0; }, 
@@ -96,7 +96,7 @@ int main(int argc, char** argv) {
             [=](int _i, int _j, int _k) { return _i == 0 && pow(_j, 2.0) + pow(_k, 2.0) < pow(0.15*lx, 2.0); },
             1.0
         );
-        ANS::BoundaryConditionSetiRho3D(pf, [=](int _i, int _j, int _k) { return _i == lx - 1 && pow(_j, 2.0) + pow(_k, 2.0) < pow(0.15*lx, 2.0); });
+        ANS::iBoundaryConditionSetRho3D(pf, [=](int _i, int _j, int _k) { return _i == lx - 1 && pow(_j, 2.0) + pow(_k, 2.0) < pow(0.15*lx, 2.0); });
         pf.SmoothCorner();
     }
 
@@ -134,7 +134,6 @@ int main(int argc, char** argv) {
     );
     file.AddPointScaler("alpha", [&](int _i, int _j, int _k) { return alpha[pf.Index(_i, _j, _k)]; });
     file.AddPointScaler("s", [&](int _i, int _j, int _k) { return s[pf.Index(_i, _j, _k)]; });
-    file.AddPointScaler("bctype", [&](int _i, int _j, int _k) { return pf.GetBoundary(_i, _j, _k); });
     
     delete[] rho, ux, uy, uz, irho, iux, iuy, iuz, imx, imy, imz, s, alpha, dfds;
 #ifdef _USE_MPI_DEFINES

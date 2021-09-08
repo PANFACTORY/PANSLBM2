@@ -577,43 +577,52 @@ namespace PANSLBM2 {
         //  Function of setting boundary condition set iT of AAD for D2Q9
         template<class T, template<class>class Q, class Ff>
         void iBoundaryConditionSetT(Q<T>& _q, const T *_ux, const T *_uy, Ff _bctype) {
-            for (int j = 0; j < _q.ny; ++j) {
-                //  On xmin
-                if (_bctype(0 + _q.offsetx, j + _q.offsety)) {
-                    int idx = _q.Index(0, j);
-                    T rho0 = -(4.0*(1.0 + 3.0*_ux[idx])*_q.f[Q<T>::IndexF(idx, 1)] + (1.0 + 3.0*_ux[idx] + 3.0*_uy[idx])*_q.f[Q<T>::IndexF(idx, 5)] + (1.0 + 3.0*_ux[idx] - 3.0*_uy[idx])*_q.f[Q<T>::IndexF(idx, 8)])/(6.0*(1.0 + 3.0*_ux[idx]));
-                    _q.f[Q<T>::IndexF(idx, 3)] = rho0;
-                    _q.f[Q<T>::IndexF(idx, 6)] = rho0;
-                    _q.f[Q<T>::IndexF(idx, 7)] = rho0;
-                }
-
-                //  On xmax
-                if (_bctype((_q.nx - 1) + _q.offsetx, j + _q.offsety)) {
-                    int idx = _q.Index(_q.nx - 1, j);
-                    T rho0 = -(4.0*(1.0 - 3.0*_ux[idx])*_q.f[Q<T>::IndexF(idx, 3)] + (1.0 - 3.0*_ux[idx] + 3.0*_uy[idx])*_q.f[Q<T>::IndexF(idx, 6)] + (1.0 - 3.0*_ux[idx] - 3.0*_uy[idx])*_q.f[Q<T>::IndexF(idx, 7)])/(6.0*(1.0 - 3.0*_ux[idx]));
-                    _q.f[Q<T>::IndexF(idx, 1)] = rho0;
-                    _q.f[Q<T>::IndexF(idx, 5)] = rho0;
-                    _q.f[Q<T>::IndexF(idx, 8)] = rho0;
+            //  On xmin
+            if (_q.PEx == 0) {
+                for (int j = 0; j < _q.ny; ++j) {
+                    if (_bctype(0 + _q.offsetx, j + _q.offsety)) {
+                        int idx = _q.Index(0, j);
+                        T rho0 = -(4.0*(1.0 + 3.0*_ux[idx])*_q.f[Q<T>::IndexF(idx, 1)] + (1.0 + 3.0*_ux[idx] + 3.0*_uy[idx])*_q.f[Q<T>::IndexF(idx, 5)] + (1.0 + 3.0*_ux[idx] - 3.0*_uy[idx])*_q.f[Q<T>::IndexF(idx, 8)])/(6.0*(1.0 + 3.0*_ux[idx]));
+                        _q.f[Q<T>::IndexF(idx, 3)] = rho0;
+                        _q.f[Q<T>::IndexF(idx, 6)] = rho0;
+                        _q.f[Q<T>::IndexF(idx, 7)] = rho0;
+                    }
                 }
             }
-
-            for (int i = 0; i < _q.nx; ++i) {
-                //  On ymin
-                if (_bctype(i + _q.offsetx, 0 + _q.offsety)) {
-                    int idx = _q.Index(i, 0);
-                    T rho0 = -(4.0*(1.0 + 3.0*_uy[idx])*_q.f[Q<T>::IndexF(idx, 2)] + (1.0 + 3.0*_ux[idx] + 3.0*_uy[idx])*_q.f[Q<T>::IndexF(idx, 5)] + (1.0 - 3.0*_ux[idx] + 3.0*_uy[idx])*_q.f[Q<T>::IndexF(idx, 6)])/(6.0*(1.0 + 3.0*_uy[idx]));
-                    _q.f[Q<T>::IndexF(idx, 4)] = rho0;
-                    _q.f[Q<T>::IndexF(idx, 7)] = rho0;
-                    _q.f[Q<T>::IndexF(idx, 8)] = rho0;
+            //  On xmax
+            if (_q.PEx == _q.mx - 1) {
+                for (int j = 0; j < _q.ny; ++j) {                    
+                    if (_bctype((_q.nx - 1) + _q.offsetx, j + _q.offsety)) {
+                        int idx = _q.Index(_q.nx - 1, j);
+                        T rho0 = -(4.0*(1.0 - 3.0*_ux[idx])*_q.f[Q<T>::IndexF(idx, 3)] + (1.0 - 3.0*_ux[idx] + 3.0*_uy[idx])*_q.f[Q<T>::IndexF(idx, 6)] + (1.0 - 3.0*_ux[idx] - 3.0*_uy[idx])*_q.f[Q<T>::IndexF(idx, 7)])/(6.0*(1.0 - 3.0*_ux[idx]));
+                        _q.f[Q<T>::IndexF(idx, 1)] = rho0;
+                        _q.f[Q<T>::IndexF(idx, 5)] = rho0;
+                        _q.f[Q<T>::IndexF(idx, 8)] = rho0;
+                    }
                 }
-
-                //  On ymax
-                if (_bctype(i + _q.offsetx, (_q.ny - 1) + _q.offsety)) {
-                    int idx = _q.Index(i, _q.ny - 1);
-                    T rho0 = -(4.0*(1.0 - 3.0*_uy[idx])*_q.f[Q<T>::IndexF(idx, 4)] + (1.0 - 3.0*_ux[idx] - 3.0*_uy[idx])*_q.f[Q<T>::IndexF(idx, 7)] + (1.0 + 3.0*_ux[idx] - 3.0*_uy[idx])*_q.f[Q<T>::IndexF(idx, 8)])/(6.0*(1.0 - 3.0*_uy[idx]));
-                    _q.f[Q<T>::IndexF(idx, 2)] = rho0;
-                    _q.f[Q<T>::IndexF(idx, 5)] = rho0;
-                    _q.f[Q<T>::IndexF(idx, 6)] = rho0;
+            }
+            //  On ymin
+            if (_q.PEy == 0) {
+                for (int i = 0; i < _q.nx; ++i) {
+                    if (_bctype(i + _q.offsetx, 0 + _q.offsety)) {
+                        int idx = _q.Index(i, 0);
+                        T rho0 = -(4.0*(1.0 + 3.0*_uy[idx])*_q.f[Q<T>::IndexF(idx, 2)] + (1.0 + 3.0*_ux[idx] + 3.0*_uy[idx])*_q.f[Q<T>::IndexF(idx, 5)] + (1.0 - 3.0*_ux[idx] + 3.0*_uy[idx])*_q.f[Q<T>::IndexF(idx, 6)])/(6.0*(1.0 + 3.0*_uy[idx]));
+                        _q.f[Q<T>::IndexF(idx, 4)] = rho0;
+                        _q.f[Q<T>::IndexF(idx, 7)] = rho0;
+                        _q.f[Q<T>::IndexF(idx, 8)] = rho0;
+                    }
+                }
+            }
+            //  On ymax
+            if (_q.PEy == _q.my - 1) {
+                for (int i = 0; i < _q.nx; ++i) {
+                    if (_bctype(i + _q.offsetx, (_q.ny - 1) + _q.offsety)) {
+                        int idx = _q.Index(i, _q.ny - 1);
+                        T rho0 = -(4.0*(1.0 - 3.0*_uy[idx])*_q.f[Q<T>::IndexF(idx, 4)] + (1.0 - 3.0*_ux[idx] - 3.0*_uy[idx])*_q.f[Q<T>::IndexF(idx, 7)] + (1.0 + 3.0*_ux[idx] - 3.0*_uy[idx])*_q.f[Q<T>::IndexF(idx, 8)])/(6.0*(1.0 - 3.0*_uy[idx]));
+                        _q.f[Q<T>::IndexF(idx, 2)] = rho0;
+                        _q.f[Q<T>::IndexF(idx, 5)] = rho0;
+                        _q.f[Q<T>::IndexF(idx, 6)] = rho0;
+                    }
                 }
             }
         }
@@ -621,151 +630,181 @@ namespace PANSLBM2 {
         //  Function of setting boundary condition set iT of AAD for D3Q15
         template<class T, template<class>class Q, class Ff>
         void iBoundaryConditionSetT(Q<T>& _q, const T *_ux, const T *_uy, const T *_uz, Ff _bctype) {
-            for (int j = 0; j < _q.ny; ++j) {
-                for (int k = 0; k < _q.nz; ++k) {
-                    //  On xmin
-                    if (_bctype(0 + _q.offsetx, j + _q.offsety, k + _q.offsetz)) {
-                        int idx = _q.Index(0, j, k);
-                        T rho0 = -(8.0*_q.f[Q<T>::IndexF(idx, 1)] + _q.f[Q<T>::IndexF(idx, 7)] + _q.f[Q<T>::IndexF(idx, 9)] + _q.f[Q<T>::IndexF(idx, 10)] + _q.f[Q<T>::IndexF(idx, 12)])/12.0
-                            -_uy[idx]*(_q.f[Q<T>::IndexF(idx, 7)] - _q.f[Q<T>::IndexF(idx, 9)] + _q.f[Q<T>::IndexF(idx, 10)] - _q.f[Q<T>::IndexF(idx, 12)])/(4.0*(1.0 + 3.0*_ux[idx]))
-                            -_uz[idx]*(_q.f[Q<T>::IndexF(idx, 7)] + _q.f[Q<T>::IndexF(idx, 9)] - _q.f[Q<T>::IndexF(idx, 10)] - _q.f[Q<T>::IndexF(idx, 12)])/(4.0*(1.0 + 3.0*_ux[idx]));
-                        _q.f[Q<T>::IndexF(idx, 4)] = rho0;
-                        _q.f[Q<T>::IndexF(idx, 8)] = rho0;
-                        _q.f[Q<T>::IndexF(idx, 11)] = rho0;
-                        _q.f[Q<T>::IndexF(idx, 13)] = rho0;
-                        _q.f[Q<T>::IndexF(idx, 14)] = rho0;
-                    }
-
-                    //  On xmax
-                    if (_bctype((_q.nx - 1) + _q.offsetx, j + _q.offsety, k + _q.offsetz)) {
-                        int idx = _q.Index(_q.nx - 1, j, k);
-                        T rho0 = -(8.0*_q.f[Q<T>::IndexF(idx, 4)] + _q.f[Q<T>::IndexF(idx, 8)] + _q.f[Q<T>::IndexF(idx, 11)] + _q.f[Q<T>::IndexF(idx, 13)] + _q.f[Q<T>::IndexF(idx, 14)])/12.0
-                            -_uy[idx]*(_q.f[Q<T>::IndexF(idx, 8)] - _q.f[Q<T>::IndexF(idx, 11)] + _q.f[Q<T>::IndexF(idx, 13)] - _q.f[Q<T>::IndexF(idx, 14)])/(4.0*(1.0 - 3.0*_ux[idx]))
-                            -_uz[idx]*(_q.f[Q<T>::IndexF(idx, 8)] - _q.f[Q<T>::IndexF(idx, 11)] - _q.f[Q<T>::IndexF(idx, 13)] + _q.f[Q<T>::IndexF(idx, 14)])/(4.0*(1.0 - 3.0*_ux[idx]));
-                        _q.f[Q<T>::IndexF(idx, 1)] = rho0;
-                        _q.f[Q<T>::IndexF(idx, 7)] = rho0;
-                        _q.f[Q<T>::IndexF(idx, 9)] = rho0;
-                        _q.f[Q<T>::IndexF(idx, 10)] = rho0;
-                        _q.f[Q<T>::IndexF(idx, 12)] = rho0;
-                    }
-                }
-            }
-            for (int k = 0; k < _q.nz; ++k) {
-                for (int i = 0; i < _q.nx; ++i) {
-                    //  On ymin
-                    if (_bctype(i + _q.offsetx, 0 + _q.offsety, k + _q.offsetz)) {
-                        int idx = _q.Index(i, 0, k);
-                        T rho0 = -(8.0*_q.f[Q<T>::IndexF(idx, 2)] + _q.f[Q<T>::IndexF(idx, 7)] + _q.f[Q<T>::IndexF(idx, 8)] + _q.f[Q<T>::IndexF(idx, 10)] + _q.f[Q<T>::IndexF(idx, 13)])/12.0
-                            -_uz[idx]*(_q.f[Q<T>::IndexF(idx, 7)] + _q.f[Q<T>::IndexF(idx, 8)] - _q.f[Q<T>::IndexF(idx, 10)] - _q.f[Q<T>::IndexF(idx, 13)])/(4.0*(1.0 + 3.0*_uy[idx]))
-                            -_ux[idx]*(_q.f[Q<T>::IndexF(idx, 7)] - _q.f[Q<T>::IndexF(idx, 8)] + _q.f[Q<T>::IndexF(idx, 10)] - _q.f[Q<T>::IndexF(idx, 13)])/(4.0*(1.0 + 3.0*_uy[idx]));
-                        _q.f[Q<T>::IndexF(idx, 5)] = rho0;
-                        _q.f[Q<T>::IndexF(idx, 9)] = rho0;
-                        _q.f[Q<T>::IndexF(idx, 11)] = rho0;
-                        _q.f[Q<T>::IndexF(idx, 12)] = rho0;
-                        _q.f[Q<T>::IndexF(idx, 14)] = rho0;
-                    }
-
-                    //  On ymax
-                    if (_bctype(i + _q.offsetx, (_q.ny - 1) + _q.offsety, k + _q.offsetz)) {
-                        int idx = _q.Index(i, _q.ny - 1, k);
-                        T rho0 = -(8.0*_q.f[Q<T>::IndexF(idx, 5)] + _q.f[Q<T>::IndexF(idx, 9)] + _q.f[Q<T>::IndexF(idx, 11)] + _q.f[Q<T>::IndexF(idx, 12)] + _q.f[Q<T>::IndexF(idx, 14)])/12.0
-                            -_uz[idx]*(_q.f[Q<T>::IndexF(idx, 9)] - _q.f[Q<T>::IndexF(idx, 11)] - _q.f[Q<T>::IndexF(idx, 12)] + _q.f[Q<T>::IndexF(idx, 14)])/(4.0*(1.0 - 3.0*_uy[idx]))
-                            -_ux[idx]*(_q.f[Q<T>::IndexF(idx, 9)] - _q.f[Q<T>::IndexF(idx, 11)] + _q.f[Q<T>::IndexF(idx, 12)] - _q.f[Q<T>::IndexF(idx, 14)])/(4.0*(1.0 - 3.0*_uy[idx]));
-                        _q.f[Q<T>::IndexF(idx, 2)] = rho0;
-                        _q.f[Q<T>::IndexF(idx, 7)] = rho0;
-                        _q.f[Q<T>::IndexF(idx, 8)] = rho0;
-                        _q.f[Q<T>::IndexF(idx, 10)] = rho0;
-                        _q.f[Q<T>::IndexF(idx, 13)] = rho0;
-                    }
-                }
-            }
-            for (int i = 0; i < _q.nx; ++i) {
+            //  On xmin
+            if (_q.PEx == 0) {
                 for (int j = 0; j < _q.ny; ++j) {
-                    //  On zmin
-                    if (_bctype(i + _q.offsetx, j + _q.offsety, 0 + _q.offsetz)) {
-                        int idx = _q.Index(i, j, 0);
-                        T rho0 = -(8.0*_q.f[Q<T>::IndexF(idx, 3)] + _q.f[Q<T>::IndexF(idx, 7)] + _q.f[Q<T>::IndexF(idx, 8)] + _q.f[Q<T>::IndexF(idx, 9)] + _q.f[Q<T>::IndexF(idx, 14)])/12.0
-                            -_ux[idx]*(_q.f[Q<T>::IndexF(idx, 7)] - _q.f[Q<T>::IndexF(idx, 8)] + _q.f[Q<T>::IndexF(idx, 9)] - _q.f[Q<T>::IndexF(idx, 14)])/(4.0*(1.0 + 3.0*_uz[idx]))
-                            -_uy[idx]*(_q.f[Q<T>::IndexF(idx, 7)] + _q.f[Q<T>::IndexF(idx, 8)] - _q.f[Q<T>::IndexF(idx, 9)] - _q.f[Q<T>::IndexF(idx, 14)])/(4.0*(1.0 + 3.0*_uz[idx]));
-                        _q.f[Q<T>::IndexF(idx, 6)] = rho0;
-                        _q.f[Q<T>::IndexF(idx, 10)] = rho0;
-                        _q.f[Q<T>::IndexF(idx, 11)] = rho0;
-                        _q.f[Q<T>::IndexF(idx, 12)] = rho0;
-                        _q.f[Q<T>::IndexF(idx, 13)] = rho0;
-                    }
-
-                    //  On zmax
-                    if (_bctype(i + _q.offsetx, j + _q.offsety, (_q.nz - 1) + _q.offsetz)) {
-                        int idx = _q.Index(i, j, _q.nz - 1);
-                        T rho0 = -(8.0*_q.f[Q<T>::IndexF(idx, 6)] + _q.f[Q<T>::IndexF(idx, 10)] + _q.f[Q<T>::IndexF(idx, 11)] + _q.f[Q<T>::IndexF(idx, 12)] + _q.f[Q<T>::IndexF(idx, 13)])/12.0
-                            -_ux[idx]*(_q.f[Q<T>::IndexF(idx, 10)] - _q.f[Q<T>::IndexF(idx, 11)] + _q.f[Q<T>::IndexF(idx, 12)] - _q.f[Q<T>::IndexF(idx, 13)])/(4.0*(1.0 - 3.0*_uz[idx]))
-                            -_uy[idx]*(_q.f[Q<T>::IndexF(idx, 10)] - _q.f[Q<T>::IndexF(idx, 11)] - _q.f[Q<T>::IndexF(idx, 12)] + _q.f[Q<T>::IndexF(idx, 13)])/(4.0*(1.0 - 3.0*_uz[idx]));
-                        _q.f[Q<T>::IndexF(idx, 3)] = rho0;
-                        _q.f[Q<T>::IndexF(idx, 7)] = rho0;
-                        _q.f[Q<T>::IndexF(idx, 8)] = rho0;
-                        _q.f[Q<T>::IndexF(idx, 9)] = rho0;
-                        _q.f[Q<T>::IndexF(idx, 14)] = rho0;
+                    for (int k = 0; k < _q.nz; ++k) {
+                        if (_bctype(0 + _q.offsetx, j + _q.offsety, k + _q.offsetz)) {
+                            int idx = _q.Index(0, j, k);
+                            T rho0 = -(8.0*_q.f[Q<T>::IndexF(idx, 1)] + _q.f[Q<T>::IndexF(idx, 7)] + _q.f[Q<T>::IndexF(idx, 9)] + _q.f[Q<T>::IndexF(idx, 10)] + _q.f[Q<T>::IndexF(idx, 12)])/12.0
+                                -_uy[idx]*(_q.f[Q<T>::IndexF(idx, 7)] - _q.f[Q<T>::IndexF(idx, 9)] + _q.f[Q<T>::IndexF(idx, 10)] - _q.f[Q<T>::IndexF(idx, 12)])/(4.0*(1.0 + 3.0*_ux[idx]))
+                                -_uz[idx]*(_q.f[Q<T>::IndexF(idx, 7)] + _q.f[Q<T>::IndexF(idx, 9)] - _q.f[Q<T>::IndexF(idx, 10)] - _q.f[Q<T>::IndexF(idx, 12)])/(4.0*(1.0 + 3.0*_ux[idx]));
+                            _q.f[Q<T>::IndexF(idx, 4)] = rho0;
+                            _q.f[Q<T>::IndexF(idx, 8)] = rho0;
+                            _q.f[Q<T>::IndexF(idx, 11)] = rho0;
+                            _q.f[Q<T>::IndexF(idx, 13)] = rho0;
+                            _q.f[Q<T>::IndexF(idx, 14)] = rho0;
+                        }
                     }
                 }
             }
+            //  On xmax
+            if (_q.PEx == _q.mx - 1) {
+                for (int j = 0; j < _q.ny; ++j) {
+                    for (int k = 0; k < _q.nz; ++k) {            
+                        if (_bctype((_q.nx - 1) + _q.offsetx, j + _q.offsety, k + _q.offsetz)) {
+                            int idx = _q.Index(_q.nx - 1, j, k);
+                            T rho0 = -(8.0*_q.f[Q<T>::IndexF(idx, 4)] + _q.f[Q<T>::IndexF(idx, 8)] + _q.f[Q<T>::IndexF(idx, 11)] + _q.f[Q<T>::IndexF(idx, 13)] + _q.f[Q<T>::IndexF(idx, 14)])/12.0
+                                -_uy[idx]*(_q.f[Q<T>::IndexF(idx, 8)] - _q.f[Q<T>::IndexF(idx, 11)] + _q.f[Q<T>::IndexF(idx, 13)] - _q.f[Q<T>::IndexF(idx, 14)])/(4.0*(1.0 - 3.0*_ux[idx]))
+                                -_uz[idx]*(_q.f[Q<T>::IndexF(idx, 8)] - _q.f[Q<T>::IndexF(idx, 11)] - _q.f[Q<T>::IndexF(idx, 13)] + _q.f[Q<T>::IndexF(idx, 14)])/(4.0*(1.0 - 3.0*_ux[idx]));
+                            _q.f[Q<T>::IndexF(idx, 1)] = rho0;
+                            _q.f[Q<T>::IndexF(idx, 7)] = rho0;
+                            _q.f[Q<T>::IndexF(idx, 9)] = rho0;
+                            _q.f[Q<T>::IndexF(idx, 10)] = rho0;
+                            _q.f[Q<T>::IndexF(idx, 12)] = rho0;
+                        }
+                    }
+                }
+            }
+            //  On ymin
+            if (_q.PEy == 0) {
+                for (int k = 0; k < _q.nz; ++k) {
+                    for (int i = 0; i < _q.nx; ++i) {
+                        if (_bctype(i + _q.offsetx, 0 + _q.offsety, k + _q.offsetz)) {
+                            int idx = _q.Index(i, 0, k);
+                            T rho0 = -(8.0*_q.f[Q<T>::IndexF(idx, 2)] + _q.f[Q<T>::IndexF(idx, 7)] + _q.f[Q<T>::IndexF(idx, 8)] + _q.f[Q<T>::IndexF(idx, 10)] + _q.f[Q<T>::IndexF(idx, 13)])/12.0
+                                -_uz[idx]*(_q.f[Q<T>::IndexF(idx, 7)] + _q.f[Q<T>::IndexF(idx, 8)] - _q.f[Q<T>::IndexF(idx, 10)] - _q.f[Q<T>::IndexF(idx, 13)])/(4.0*(1.0 + 3.0*_uy[idx]))
+                                -_ux[idx]*(_q.f[Q<T>::IndexF(idx, 7)] - _q.f[Q<T>::IndexF(idx, 8)] + _q.f[Q<T>::IndexF(idx, 10)] - _q.f[Q<T>::IndexF(idx, 13)])/(4.0*(1.0 + 3.0*_uy[idx]));
+                            _q.f[Q<T>::IndexF(idx, 5)] = rho0;
+                            _q.f[Q<T>::IndexF(idx, 9)] = rho0;
+                            _q.f[Q<T>::IndexF(idx, 11)] = rho0;
+                            _q.f[Q<T>::IndexF(idx, 12)] = rho0;
+                            _q.f[Q<T>::IndexF(idx, 14)] = rho0;
+                        }
+                    }
+                }
+            }
+            //  On ymax
+            if (_q.PEy == _q.my - 1) {
+                for (int k = 0; k < _q.nz; ++k) {
+                    for (int i = 0; i < _q.nx; ++i) {
+                        if (_bctype(i + _q.offsetx, (_q.ny - 1) + _q.offsety, k + _q.offsetz)) {
+                            int idx = _q.Index(i, _q.ny - 1, k);
+                            T rho0 = -(8.0*_q.f[Q<T>::IndexF(idx, 5)] + _q.f[Q<T>::IndexF(idx, 9)] + _q.f[Q<T>::IndexF(idx, 11)] + _q.f[Q<T>::IndexF(idx, 12)] + _q.f[Q<T>::IndexF(idx, 14)])/12.0
+                                -_uz[idx]*(_q.f[Q<T>::IndexF(idx, 9)] - _q.f[Q<T>::IndexF(idx, 11)] - _q.f[Q<T>::IndexF(idx, 12)] + _q.f[Q<T>::IndexF(idx, 14)])/(4.0*(1.0 - 3.0*_uy[idx]))
+                                -_ux[idx]*(_q.f[Q<T>::IndexF(idx, 9)] - _q.f[Q<T>::IndexF(idx, 11)] + _q.f[Q<T>::IndexF(idx, 12)] - _q.f[Q<T>::IndexF(idx, 14)])/(4.0*(1.0 - 3.0*_uy[idx]));
+                            _q.f[Q<T>::IndexF(idx, 2)] = rho0;
+                            _q.f[Q<T>::IndexF(idx, 7)] = rho0;
+                            _q.f[Q<T>::IndexF(idx, 8)] = rho0;
+                            _q.f[Q<T>::IndexF(idx, 10)] = rho0;
+                            _q.f[Q<T>::IndexF(idx, 13)] = rho0;
+                        }
+                    }
+                }
+            }
+            //  On zmin
+            if (_q.PEz == 0) {
+                for (int i = 0; i < _q.nx; ++i) {
+                    for (int j = 0; j < _q.ny; ++j) {
+                        if (_bctype(i + _q.offsetx, j + _q.offsety, 0 + _q.offsetz)) {
+                            int idx = _q.Index(i, j, 0);
+                            T rho0 = -(8.0*_q.f[Q<T>::IndexF(idx, 3)] + _q.f[Q<T>::IndexF(idx, 7)] + _q.f[Q<T>::IndexF(idx, 8)] + _q.f[Q<T>::IndexF(idx, 9)] + _q.f[Q<T>::IndexF(idx, 14)])/12.0
+                                -_ux[idx]*(_q.f[Q<T>::IndexF(idx, 7)] - _q.f[Q<T>::IndexF(idx, 8)] + _q.f[Q<T>::IndexF(idx, 9)] - _q.f[Q<T>::IndexF(idx, 14)])/(4.0*(1.0 + 3.0*_uz[idx]))
+                                -_uy[idx]*(_q.f[Q<T>::IndexF(idx, 7)] + _q.f[Q<T>::IndexF(idx, 8)] - _q.f[Q<T>::IndexF(idx, 9)] - _q.f[Q<T>::IndexF(idx, 14)])/(4.0*(1.0 + 3.0*_uz[idx]));
+                            _q.f[Q<T>::IndexF(idx, 6)] = rho0;
+                            _q.f[Q<T>::IndexF(idx, 10)] = rho0;
+                            _q.f[Q<T>::IndexF(idx, 11)] = rho0;
+                            _q.f[Q<T>::IndexF(idx, 12)] = rho0;
+                            _q.f[Q<T>::IndexF(idx, 13)] = rho0;
+                        }
+                    }
+                }
+            }
+            //  On zmax
+            if (_q.PEz == _q.mz - 1) {
+                for (int i = 0; i < _q.nx; ++i) {
+                    for (int j = 0; j < _q.ny; ++j) {
+                        if (_bctype(i + _q.offsetx, j + _q.offsety, (_q.nz - 1) + _q.offsetz)) {
+                            int idx = _q.Index(i, j, _q.nz - 1);
+                            T rho0 = -(8.0*_q.f[Q<T>::IndexF(idx, 6)] + _q.f[Q<T>::IndexF(idx, 10)] + _q.f[Q<T>::IndexF(idx, 11)] + _q.f[Q<T>::IndexF(idx, 12)] + _q.f[Q<T>::IndexF(idx, 13)])/12.0
+                                -_ux[idx]*(_q.f[Q<T>::IndexF(idx, 10)] - _q.f[Q<T>::IndexF(idx, 11)] + _q.f[Q<T>::IndexF(idx, 12)] - _q.f[Q<T>::IndexF(idx, 13)])/(4.0*(1.0 - 3.0*_uz[idx]))
+                                -_uy[idx]*(_q.f[Q<T>::IndexF(idx, 10)] - _q.f[Q<T>::IndexF(idx, 11)] - _q.f[Q<T>::IndexF(idx, 12)] + _q.f[Q<T>::IndexF(idx, 13)])/(4.0*(1.0 - 3.0*_uz[idx]));
+                            _q.f[Q<T>::IndexF(idx, 3)] = rho0;
+                            _q.f[Q<T>::IndexF(idx, 7)] = rho0;
+                            _q.f[Q<T>::IndexF(idx, 8)] = rho0;
+                            _q.f[Q<T>::IndexF(idx, 9)] = rho0;
+                            _q.f[Q<T>::IndexF(idx, 14)] = rho0;
+                        }
+                    }
+                }
+            }   
         }
     
         //  Function of setting boundary condition set iQ of AAD for D2Q9
         template<class T, template<class>class Q, class Ff>
         void iBoundaryConditionSetQ(Q<T>& _q, const T *_ux, const T *_uy, Ff _bctype, T _eps = T()) {
-            for (int j = 0; j < _q.ny; ++j) {
-                //  On xmin
-                if (_bctype(0 + _q.offsetx, j + _q.offsety)) {
-                    int idx = _q.Index(0, j);
-                    T rho0 = (
-                        (1.0 + 3.0*_ux[idx])*(4.0*_q.f[Q<T>::IndexF(idx, 1)] + _q.f[Q<T>::IndexF(idx, 5)] + _q.f[Q<T>::IndexF(idx, 8)])
-                        + 3.0*_uy[idx]*(_q.f[Q<T>::IndexF(idx, 5)] - _q.f[Q<T>::IndexF(idx, 8)])
-                        - 12.0*_eps
-                    )/(6.0*(1.0 - 3.0*_ux[idx]));
-                    _q.f[Q<T>::IndexF(idx, 3)] = rho0;
-                    _q.f[Q<T>::IndexF(idx, 6)] = rho0;
-                    _q.f[Q<T>::IndexF(idx, 7)] = rho0;
-                }
-
-                //  On xmax
-                if (_bctype((_q.nx - 1) + _q.offsetx, j + _q.offsety)) {
-                    int idx = _q.Index(_q.nx - 1, j);
-                    T rho0 = (
-                        (1.0 - 3.0*_ux[idx])*(4.0*_q.f[Q<T>::IndexF(idx, 3)] + _q.f[Q<T>::IndexF(idx, 6)] + _q.f[Q<T>::IndexF(idx, 7)])
-                        + 3.0*_uy[idx]*(_q.f[Q<T>::IndexF(idx, 6)] - _q.f[Q<T>::IndexF(idx, 7)])
-                        - 12.0*_eps
-                    )/(6.0*(1.0 + 3.0*_ux[idx]));
-                    _q.f[Q<T>::IndexF(idx, 1)] = rho0;
-                    _q.f[Q<T>::IndexF(idx, 5)] = rho0;
-                    _q.f[Q<T>::IndexF(idx, 8)] = rho0;
+            //  On xmin
+            if (_q.PEx == 0) {
+                for (int j = 0; j < _q.ny; ++j) {
+                    if (_bctype(0 + _q.offsetx, j + _q.offsety)) {
+                        int idx = _q.Index(0, j);
+                        T rho0 = (
+                            (1.0 + 3.0*_ux[idx])*(4.0*_q.f[Q<T>::IndexF(idx, 1)] + _q.f[Q<T>::IndexF(idx, 5)] + _q.f[Q<T>::IndexF(idx, 8)])
+                            + 3.0*_uy[idx]*(_q.f[Q<T>::IndexF(idx, 5)] - _q.f[Q<T>::IndexF(idx, 8)])
+                            - 12.0*_eps
+                        )/(6.0*(1.0 - 3.0*_ux[idx]));
+                        _q.f[Q<T>::IndexF(idx, 3)] = rho0;
+                        _q.f[Q<T>::IndexF(idx, 6)] = rho0;
+                        _q.f[Q<T>::IndexF(idx, 7)] = rho0;
+                    }
                 }
             }
-
-            for (int i = 0; i < _q.nx; ++i) {
-                //  On ymin
-                if (_bctype(i + _q.offsetx, 0 + _q.offsety)) {
-                    int idx = _q.Index(i, 0);
-                    T rho0 = (
-                        (1.0 + 3.0*_uy[idx])*(4.0*_q.f[Q<T>::IndexF(idx, 2)] + _q.f[Q<T>::IndexF(idx, 5)] + _q.f[Q<T>::IndexF(idx, 6)])
-                        + 3.0*_ux[idx]*(_q.f[Q<T>::IndexF(idx, 5)] - _q.f[Q<T>::IndexF(idx, 6)])
-                        - 12.0*_eps
-                    )/(6.0*(1.0 - 3.0*_uy[idx]));
-                    _q.f[Q<T>::IndexF(idx, 4)] = rho0;
-                    _q.f[Q<T>::IndexF(idx, 7)] = rho0;
-                    _q.f[Q<T>::IndexF(idx, 8)] = rho0;
+            //  On xmax
+            if (_q.PEx == _q.mx - 1) {
+                for (int j = 0; j < _q.ny; ++j) {
+                    if (_bctype((_q.nx - 1) + _q.offsetx, j + _q.offsety)) {
+                        int idx = _q.Index(_q.nx - 1, j);
+                        T rho0 = (
+                            (1.0 - 3.0*_ux[idx])*(4.0*_q.f[Q<T>::IndexF(idx, 3)] + _q.f[Q<T>::IndexF(idx, 6)] + _q.f[Q<T>::IndexF(idx, 7)])
+                            + 3.0*_uy[idx]*(_q.f[Q<T>::IndexF(idx, 6)] - _q.f[Q<T>::IndexF(idx, 7)])
+                            - 12.0*_eps
+                        )/(6.0*(1.0 + 3.0*_ux[idx]));
+                        _q.f[Q<T>::IndexF(idx, 1)] = rho0;
+                        _q.f[Q<T>::IndexF(idx, 5)] = rho0;
+                        _q.f[Q<T>::IndexF(idx, 8)] = rho0;
+                    }
                 }
-
-                //  On ymax
-                if (_bctype(i + _q.offsetx, (_q.ny - 1) + _q.offsety)) {
-                    int idx = _q.Index(i, _q.ny - 1);
-                    T rho0 = (
-                        (1.0 - 3.0*_uy[idx])*(4.0*_q.f[Q<T>::IndexF(idx, 4)] + _q.f[Q<T>::IndexF(idx, 7)] + _q.f[Q<T>::IndexF(idx, 8)])
-                        + 3.0*_ux[idx]*(_q.f[Q<T>::IndexF(idx, 8)] - _q.f[Q<T>::IndexF(idx, 7)])
-                        - 12.0*_eps
-                    )/(6.0*(1.0 + 3.0*_uy[idx]));
-                    _q.f[Q<T>::IndexF(idx, 2)] = rho0;
-                    _q.f[Q<T>::IndexF(idx, 5)] = rho0;
-                    _q.f[Q<T>::IndexF(idx, 6)] = rho0;
+            }
+            //  On ymin
+            if (_q.PEy == 0) {
+                for (int i = 0; i < _q.nx; ++i) {
+                    if (_bctype(i + _q.offsetx, 0 + _q.offsety)) {
+                        int idx = _q.Index(i, 0);
+                        T rho0 = (
+                            (1.0 + 3.0*_uy[idx])*(4.0*_q.f[Q<T>::IndexF(idx, 2)] + _q.f[Q<T>::IndexF(idx, 5)] + _q.f[Q<T>::IndexF(idx, 6)])
+                            + 3.0*_ux[idx]*(_q.f[Q<T>::IndexF(idx, 5)] - _q.f[Q<T>::IndexF(idx, 6)])
+                            - 12.0*_eps
+                        )/(6.0*(1.0 - 3.0*_uy[idx]));
+                        _q.f[Q<T>::IndexF(idx, 4)] = rho0;
+                        _q.f[Q<T>::IndexF(idx, 7)] = rho0;
+                        _q.f[Q<T>::IndexF(idx, 8)] = rho0;
+                    }
+                }
+            }
+            //  On ymax
+            if (_q.PEy == _q.my - 1) {
+                for (int i = 0; i < _q.nx; ++i) {
+                    if (_bctype(i + _q.offsetx, (_q.ny - 1) + _q.offsety)) {
+                        int idx = _q.Index(i, _q.ny - 1);
+                        T rho0 = (
+                            (1.0 - 3.0*_uy[idx])*(4.0*_q.f[Q<T>::IndexF(idx, 4)] + _q.f[Q<T>::IndexF(idx, 7)] + _q.f[Q<T>::IndexF(idx, 8)])
+                            + 3.0*_ux[idx]*(_q.f[Q<T>::IndexF(idx, 8)] - _q.f[Q<T>::IndexF(idx, 7)])
+                            - 12.0*_eps
+                        )/(6.0*(1.0 + 3.0*_uy[idx]));
+                        _q.f[Q<T>::IndexF(idx, 2)] = rho0;
+                        _q.f[Q<T>::IndexF(idx, 5)] = rho0;
+                        _q.f[Q<T>::IndexF(idx, 6)] = rho0;
+                    }
                 }
             }
         }
@@ -773,108 +812,129 @@ namespace PANSLBM2 {
         //  Function of setting boundary condition set iQ of AAD for D3Q15
         template<class T, template<class>class Q, class Ff>
         void iBoundaryConditionSetQ(Q<T>& _q, const T *_ux, const T *_uy, const T *_uz, Ff _bctype, T _eps = T()) {
-            for (int j = 0; j < _q.ny; ++j) {
-                for (int k = 0; k < _q.nz; ++k) {
-                    //  On xmin
-                    if (_bctype(0 + _q.offsetx, j + _q.offsety, k + _q.offsetz)) {
-                        int idx = _q.Index(0, j, k);
-                        T rho0 = (
-                            (1.0 + 3.0*_ux[idx])*(8.0*_q.f[Q<T>::IndexF(idx, 1)] + _q.f[Q<T>::IndexF(idx, 7)] + _q.f[Q<T>::IndexF(idx, 9)] + _q.f[Q<T>::IndexF(idx, 10)] + _q.f[Q<T>::IndexF(idx, 12)])
-                            + 3.0*_uy[idx]*(_q.f[Q<T>::IndexF(idx, 7)] - _q.f[Q<T>::IndexF(idx, 9)] + _q.f[Q<T>::IndexF(idx, 10)] - _q.f[Q<T>::IndexF(idx, 12)])
-                            + 3.0*_uz[idx]*(_q.f[Q<T>::IndexF(idx, 7)] + _q.f[Q<T>::IndexF(idx, 9)] - _q.f[Q<T>::IndexF(idx, 10)] - _q.f[Q<T>::IndexF(idx, 12)])
-                            - 24.0*_eps
-                        )/(12.0*(1.0 - 3.0*_ux[idx]));
-                        _q.f[Q<T>::IndexF(idx, 4)] = rho0;
-                        _q.f[Q<T>::IndexF(idx, 8)] = rho0;
-                        _q.f[Q<T>::IndexF(idx, 11)] = rho0;
-                        _q.f[Q<T>::IndexF(idx, 13)] = rho0;
-                        _q.f[Q<T>::IndexF(idx, 14)] = rho0;
-                    }
-
-                    //  On xmax
-                    if (_bctype((_q.nx - 1) + _q.offsetx, j + _q.offsety, k + _q.offsetz)) {
-                        int idx = _q.Index(_q.nx - 1, j, k);
-                        T rho0 = (
-                            (1.0 - 3.0*_ux[idx])*(8.0*_q.f[Q<T>::IndexF(idx, 4)] + _q.f[Q<T>::IndexF(idx, 8)] + _q.f[Q<T>::IndexF(idx, 11)] + _q.f[Q<T>::IndexF(idx, 13)] + _q.f[Q<T>::IndexF(idx, 14)])
-                            + 3.0*_uy[idx]*(_q.f[Q<T>::IndexF(idx, 8)] - _q.f[Q<T>::IndexF(idx, 11)] + _q.f[Q<T>::IndexF(idx, 13)] - _q.f[Q<T>::IndexF(idx, 14)])
-                            + 3.0*_uz[idx]*(_q.f[Q<T>::IndexF(idx, 8)] - _q.f[Q<T>::IndexF(idx, 11)] - _q.f[Q<T>::IndexF(idx, 13)] + _q.f[Q<T>::IndexF(idx, 14)])
-                            - 24.0*_eps
-                        )/(12.0*(1.0 + 3.0*_ux[idx]));
-                        _q.f[Q<T>::IndexF(idx, 1)] = rho0;
-                        _q.f[Q<T>::IndexF(idx, 7)] = rho0;
-                        _q.f[Q<T>::IndexF(idx, 9)] = rho0;
-                        _q.f[Q<T>::IndexF(idx, 10)] = rho0;
-                        _q.f[Q<T>::IndexF(idx, 12)] = rho0;
-                    }
-                }
-            }
-            for (int k = 0; k < _q.nz; ++k) {
-                for (int i = 0; i < _q.nx; ++i) {
-                    //  On ymin
-                    if (_bctype(i + _q.offsetx, 0 + _q.offsety, k + _q.offsetz)) {
-                        int idx = _q.Index(i, 0, k);
-                        T rho0 = (
-                            (1.0 + 3.0*_uy[idx])*(8.0*_q.f[Q<T>::IndexF(idx, 2)] + _q.f[Q<T>::IndexF(idx, 7)] + _q.f[Q<T>::IndexF(idx, 8)] + _q.f[Q<T>::IndexF(idx, 10)] + _q.f[Q<T>::IndexF(idx, 13)])
-                            + 3.0*_uz[idx]*(_q.f[Q<T>::IndexF(idx, 7)] + _q.f[Q<T>::IndexF(idx, 8)] - _q.f[Q<T>::IndexF(idx, 10)] - _q.f[Q<T>::IndexF(idx, 13)])
-                            + 3.0*_ux[idx]*(_q.f[Q<T>::IndexF(idx, 7)] - _q.f[Q<T>::IndexF(idx, 8)] + _q.f[Q<T>::IndexF(idx, 10)] - _q.f[Q<T>::IndexF(idx, 13)])
-                            - 24.0*_eps
-                        )/(12.0*(1.0 - 3.0*_uy[idx]));
-                        _q.f[Q<T>::IndexF(idx, 5)] = rho0;
-                        _q.f[Q<T>::IndexF(idx, 9)] = rho0;
-                        _q.f[Q<T>::IndexF(idx, 11)] = rho0;
-                        _q.f[Q<T>::IndexF(idx, 12)] = rho0;
-                        _q.f[Q<T>::IndexF(idx, 14)] = rho0;
-                    }
-
-                    //  On ymax
-                    if (_bctype(i + _q.offsetx, (_q.ny - 1) + _q.offsety, k + _q.offsetz)) {
-                        int idx = _q.Index(i, _q.ny - 1, k);
-                        T rho0 = (
-                            (1.0 - 3.0*_uy[idx])*(8.0*_q.f[Q<T>::IndexF(idx, 5)] + _q.f[Q<T>::IndexF(idx, 9)] + _q.f[Q<T>::IndexF(idx, 11)] + _q.f[Q<T>::IndexF(idx, 12)] + _q.f[Q<T>::IndexF(idx, 14)])
-                            + _uz[idx]*(_q.f[Q<T>::IndexF(idx, 9)] - _q.f[Q<T>::IndexF(idx, 11)] - _q.f[Q<T>::IndexF(idx, 12)] + _q.f[Q<T>::IndexF(idx, 14)])
-                            + _ux[idx]*(_q.f[Q<T>::IndexF(idx, 9)] - _q.f[Q<T>::IndexF(idx, 11)] + _q.f[Q<T>::IndexF(idx, 12)] - _q.f[Q<T>::IndexF(idx, 14)])
-                            - 24.0*_eps
-                        )/(12.0*(1.0 + 3.0*_uy[idx]));
-                        _q.f[Q<T>::IndexF(idx, 2)] = rho0;
-                        _q.f[Q<T>::IndexF(idx, 7)] = rho0;
-                        _q.f[Q<T>::IndexF(idx, 8)] = rho0;
-                        _q.f[Q<T>::IndexF(idx, 10)] = rho0;
-                        _q.f[Q<T>::IndexF(idx, 13)] = rho0;
-                    }
-                }
-            }
-            for (int i = 0; i < _q.nx; ++i) {
+            //  On xmin
+            if (_q.PEx == 0) {
                 for (int j = 0; j < _q.ny; ++j) {
-                    //  On zmin
-                    if (_bctype(i + _q.offsetx, j + _q.offsety, 0 + _q.offsetz)) {
-                        int idx = _q.Index(i, j, 0);
-                        T rho0 = (
-                            (1.0 + 3.0*_uz[idx])*(8.0*_q.f[Q<T>::IndexF(idx, 3)] + _q.f[Q<T>::IndexF(idx, 7)] + _q.f[Q<T>::IndexF(idx, 8)] + _q.f[Q<T>::IndexF(idx, 9)] + _q.f[Q<T>::IndexF(idx, 14)])
-                            + _ux[idx]*(_q.f[Q<T>::IndexF(idx, 7)] - _q.f[Q<T>::IndexF(idx, 8)] + _q.f[Q<T>::IndexF(idx, 9)] - _q.f[Q<T>::IndexF(idx, 14)])
-                            + _uy[idx]*(_q.f[Q<T>::IndexF(idx, 7)] + _q.f[Q<T>::IndexF(idx, 8)] - _q.f[Q<T>::IndexF(idx, 9)] - _q.f[Q<T>::IndexF(idx, 14)])
-                            - 24.0*_eps
-                        )/(12.0*(1.0 - 3.0*_uz[idx]));
-                        _q.f[Q<T>::IndexF(idx, 6)] = rho0;
-                        _q.f[Q<T>::IndexF(idx, 10)] = rho0;
-                        _q.f[Q<T>::IndexF(idx, 11)] = rho0;
-                        _q.f[Q<T>::IndexF(idx, 12)] = rho0;
-                        _q.f[Q<T>::IndexF(idx, 13)] = rho0;
+                    for (int k = 0; k < _q.nz; ++k) {
+                        if (_bctype(0 + _q.offsetx, j + _q.offsety, k + _q.offsetz)) {
+                            int idx = _q.Index(0, j, k);
+                            T rho0 = (
+                                (1.0 + 3.0*_ux[idx])*(8.0*_q.f[Q<T>::IndexF(idx, 1)] + _q.f[Q<T>::IndexF(idx, 7)] + _q.f[Q<T>::IndexF(idx, 9)] + _q.f[Q<T>::IndexF(idx, 10)] + _q.f[Q<T>::IndexF(idx, 12)])
+                                + 3.0*_uy[idx]*(_q.f[Q<T>::IndexF(idx, 7)] - _q.f[Q<T>::IndexF(idx, 9)] + _q.f[Q<T>::IndexF(idx, 10)] - _q.f[Q<T>::IndexF(idx, 12)])
+                                + 3.0*_uz[idx]*(_q.f[Q<T>::IndexF(idx, 7)] + _q.f[Q<T>::IndexF(idx, 9)] - _q.f[Q<T>::IndexF(idx, 10)] - _q.f[Q<T>::IndexF(idx, 12)])
+                                - 24.0*_eps
+                            )/(12.0*(1.0 - 3.0*_ux[idx]));
+                            _q.f[Q<T>::IndexF(idx, 4)] = rho0;
+                            _q.f[Q<T>::IndexF(idx, 8)] = rho0;
+                            _q.f[Q<T>::IndexF(idx, 11)] = rho0;
+                            _q.f[Q<T>::IndexF(idx, 13)] = rho0;
+                            _q.f[Q<T>::IndexF(idx, 14)] = rho0;
+                        }
                     }
-
-                    //  On zmax
-                    if (_bctype(i + _q.offsetx, j + _q.offsety, (_q.nz - 1) + _q.offsetz)) {
-                        int idx = _q.Index(i, j, _q.nz - 1);
-                        T rho0 = (
-                            (1.0 - 3.0*_uz[idx])*(8.0*_q.f[Q<T>::IndexF(idx, 6)] + _q.f[Q<T>::IndexF(idx, 10)] + _q.f[Q<T>::IndexF(idx, 11)] + _q.f[Q<T>::IndexF(idx, 12)] + _q.f[Q<T>::IndexF(idx, 13)])
-                            + _ux[idx]*(_q.f[Q<T>::IndexF(idx, 10)] - _q.f[Q<T>::IndexF(idx, 11)] + _q.f[Q<T>::IndexF(idx, 12)] - _q.f[Q<T>::IndexF(idx, 13)])
-                            + _uy[idx]*(_q.f[Q<T>::IndexF(idx, 10)] - _q.f[Q<T>::IndexF(idx, 11)] - _q.f[Q<T>::IndexF(idx, 12)] + _q.f[Q<T>::IndexF(idx, 13)])
-                            - 24.0*_eps
-                        )/(12.0*(1.0 + 3.0*_uz[idx]));
-                        _q.f[Q<T>::IndexF(idx, 3)] = rho0;
-                        _q.f[Q<T>::IndexF(idx, 7)] = rho0;
-                        _q.f[Q<T>::IndexF(idx, 8)] = rho0;
-                        _q.f[Q<T>::IndexF(idx, 9)] = rho0;
-                        _q.f[Q<T>::IndexF(idx, 14)] = rho0;
+                }
+            }
+            //  On xmax
+            if (_q.PEx == _q.mx - 1) {
+                for (int j = 0; j < _q.ny; ++j) {
+                    for (int k = 0; k < _q.nz; ++k) {
+                        if (_bctype((_q.nx - 1) + _q.offsetx, j + _q.offsety, k + _q.offsetz)) {
+                            int idx = _q.Index(_q.nx - 1, j, k);
+                            T rho0 = (
+                                (1.0 - 3.0*_ux[idx])*(8.0*_q.f[Q<T>::IndexF(idx, 4)] + _q.f[Q<T>::IndexF(idx, 8)] + _q.f[Q<T>::IndexF(idx, 11)] + _q.f[Q<T>::IndexF(idx, 13)] + _q.f[Q<T>::IndexF(idx, 14)])
+                                + 3.0*_uy[idx]*(_q.f[Q<T>::IndexF(idx, 8)] - _q.f[Q<T>::IndexF(idx, 11)] + _q.f[Q<T>::IndexF(idx, 13)] - _q.f[Q<T>::IndexF(idx, 14)])
+                                + 3.0*_uz[idx]*(_q.f[Q<T>::IndexF(idx, 8)] - _q.f[Q<T>::IndexF(idx, 11)] - _q.f[Q<T>::IndexF(idx, 13)] + _q.f[Q<T>::IndexF(idx, 14)])
+                                - 24.0*_eps
+                            )/(12.0*(1.0 + 3.0*_ux[idx]));
+                            _q.f[Q<T>::IndexF(idx, 1)] = rho0;
+                            _q.f[Q<T>::IndexF(idx, 7)] = rho0;
+                            _q.f[Q<T>::IndexF(idx, 9)] = rho0;
+                            _q.f[Q<T>::IndexF(idx, 10)] = rho0;
+                            _q.f[Q<T>::IndexF(idx, 12)] = rho0;
+                        }
+                    }
+                }
+            }
+            //  On ymin
+            if (_q.PEy == 0) {
+                for (int k = 0; k < _q.nz; ++k) {
+                    for (int i = 0; i < _q.nx; ++i) {
+                        if (_bctype(i + _q.offsetx, 0 + _q.offsety, k + _q.offsetz)) {
+                            int idx = _q.Index(i, 0, k);
+                            T rho0 = (
+                                (1.0 + 3.0*_uy[idx])*(8.0*_q.f[Q<T>::IndexF(idx, 2)] + _q.f[Q<T>::IndexF(idx, 7)] + _q.f[Q<T>::IndexF(idx, 8)] + _q.f[Q<T>::IndexF(idx, 10)] + _q.f[Q<T>::IndexF(idx, 13)])
+                                + 3.0*_uz[idx]*(_q.f[Q<T>::IndexF(idx, 7)] + _q.f[Q<T>::IndexF(idx, 8)] - _q.f[Q<T>::IndexF(idx, 10)] - _q.f[Q<T>::IndexF(idx, 13)])
+                                + 3.0*_ux[idx]*(_q.f[Q<T>::IndexF(idx, 7)] - _q.f[Q<T>::IndexF(idx, 8)] + _q.f[Q<T>::IndexF(idx, 10)] - _q.f[Q<T>::IndexF(idx, 13)])
+                                - 24.0*_eps
+                            )/(12.0*(1.0 - 3.0*_uy[idx]));
+                            _q.f[Q<T>::IndexF(idx, 5)] = rho0;
+                            _q.f[Q<T>::IndexF(idx, 9)] = rho0;
+                            _q.f[Q<T>::IndexF(idx, 11)] = rho0;
+                            _q.f[Q<T>::IndexF(idx, 12)] = rho0;
+                            _q.f[Q<T>::IndexF(idx, 14)] = rho0;
+                        }
+                    }
+                }
+            }
+            //  On ymax
+            if (_q.PEy == _q.my - 1) {
+                for (int k = 0; k < _q.nz; ++k) {
+                    for (int i = 0; i < _q.nx; ++i) {
+                        if (_bctype(i + _q.offsetx, (_q.ny - 1) + _q.offsety, k + _q.offsetz)) {
+                            int idx = _q.Index(i, _q.ny - 1, k);
+                            T rho0 = (
+                                (1.0 - 3.0*_uy[idx])*(8.0*_q.f[Q<T>::IndexF(idx, 5)] + _q.f[Q<T>::IndexF(idx, 9)] + _q.f[Q<T>::IndexF(idx, 11)] + _q.f[Q<T>::IndexF(idx, 12)] + _q.f[Q<T>::IndexF(idx, 14)])
+                                + _uz[idx]*(_q.f[Q<T>::IndexF(idx, 9)] - _q.f[Q<T>::IndexF(idx, 11)] - _q.f[Q<T>::IndexF(idx, 12)] + _q.f[Q<T>::IndexF(idx, 14)])
+                                + _ux[idx]*(_q.f[Q<T>::IndexF(idx, 9)] - _q.f[Q<T>::IndexF(idx, 11)] + _q.f[Q<T>::IndexF(idx, 12)] - _q.f[Q<T>::IndexF(idx, 14)])
+                                - 24.0*_eps
+                            )/(12.0*(1.0 + 3.0*_uy[idx]));
+                            _q.f[Q<T>::IndexF(idx, 2)] = rho0;
+                            _q.f[Q<T>::IndexF(idx, 7)] = rho0;
+                            _q.f[Q<T>::IndexF(idx, 8)] = rho0;
+                            _q.f[Q<T>::IndexF(idx, 10)] = rho0;
+                            _q.f[Q<T>::IndexF(idx, 13)] = rho0;
+                        }
+                    }
+                }
+            }
+            //  On zmin
+            if (_q.PEz == 0) {
+                for (int i = 0; i < _q.nx; ++i) {
+                    for (int j = 0; j < _q.ny; ++j) {
+                        if (_bctype(i + _q.offsetx, j + _q.offsety, 0 + _q.offsetz)) {
+                            int idx = _q.Index(i, j, 0);
+                            T rho0 = (
+                                (1.0 + 3.0*_uz[idx])*(8.0*_q.f[Q<T>::IndexF(idx, 3)] + _q.f[Q<T>::IndexF(idx, 7)] + _q.f[Q<T>::IndexF(idx, 8)] + _q.f[Q<T>::IndexF(idx, 9)] + _q.f[Q<T>::IndexF(idx, 14)])
+                                + _ux[idx]*(_q.f[Q<T>::IndexF(idx, 7)] - _q.f[Q<T>::IndexF(idx, 8)] + _q.f[Q<T>::IndexF(idx, 9)] - _q.f[Q<T>::IndexF(idx, 14)])
+                                + _uy[idx]*(_q.f[Q<T>::IndexF(idx, 7)] + _q.f[Q<T>::IndexF(idx, 8)] - _q.f[Q<T>::IndexF(idx, 9)] - _q.f[Q<T>::IndexF(idx, 14)])
+                                - 24.0*_eps
+                            )/(12.0*(1.0 - 3.0*_uz[idx]));
+                            _q.f[Q<T>::IndexF(idx, 6)] = rho0;
+                            _q.f[Q<T>::IndexF(idx, 10)] = rho0;
+                            _q.f[Q<T>::IndexF(idx, 11)] = rho0;
+                            _q.f[Q<T>::IndexF(idx, 12)] = rho0;
+                            _q.f[Q<T>::IndexF(idx, 13)] = rho0;
+                        }
+                    }
+                }
+            }
+            //  On zmax
+            if (_q.PEz == _q.mz - 1) {
+                for (int i = 0; i < _q.nx; ++i) {
+                    for (int j = 0; j < _q.ny; ++j) {
+                        if (_bctype(i + _q.offsetx, j + _q.offsety, (_q.nz - 1) + _q.offsetz)) {
+                            int idx = _q.Index(i, j, _q.nz - 1);
+                            T rho0 = (
+                                (1.0 - 3.0*_uz[idx])*(8.0*_q.f[Q<T>::IndexF(idx, 6)] + _q.f[Q<T>::IndexF(idx, 10)] + _q.f[Q<T>::IndexF(idx, 11)] + _q.f[Q<T>::IndexF(idx, 12)] + _q.f[Q<T>::IndexF(idx, 13)])
+                                + _ux[idx]*(_q.f[Q<T>::IndexF(idx, 10)] - _q.f[Q<T>::IndexF(idx, 11)] + _q.f[Q<T>::IndexF(idx, 12)] - _q.f[Q<T>::IndexF(idx, 13)])
+                                + _uy[idx]*(_q.f[Q<T>::IndexF(idx, 10)] - _q.f[Q<T>::IndexF(idx, 11)] - _q.f[Q<T>::IndexF(idx, 12)] + _q.f[Q<T>::IndexF(idx, 13)])
+                                - 24.0*_eps
+                            )/(12.0*(1.0 + 3.0*_uz[idx]));
+                            _q.f[Q<T>::IndexF(idx, 3)] = rho0;
+                            _q.f[Q<T>::IndexF(idx, 7)] = rho0;
+                            _q.f[Q<T>::IndexF(idx, 8)] = rho0;
+                            _q.f[Q<T>::IndexF(idx, 9)] = rho0;
+                            _q.f[Q<T>::IndexF(idx, 14)] = rho0;
+                        }
                     }
                 }
             }
@@ -883,83 +943,92 @@ namespace PANSLBM2 {
         //  Function of setting boundary condition set iRho and iT or iQ of AAD for D2Q9
         template<class T, template<class>class P, template<class>class Q, class Ff>
         void iBoundaryConditionSetRho(P<T>& _p, Q<T>& _q, const T *_rho, const T *_ux, const T *_uy, const T *_tem, Ff _bctype, T _eps = T()) { 
-            for (int j = 0; j < _q.ny; ++j) {
-                //  On xmin
-                if (_bctype(0 + _p.offsetx, j + _p.offsety)) {
-                    int idx = _q.Index(0, j);
-                    T rho0 = -(4.0*_p.f[P<T>::IndexF(idx, 1)] + _p.f[P<T>::IndexF(idx, 5)] + _p.f[P<T>::IndexF(idx, 8)])/3.0;
-                    T flux0 = T();
-                    if (_bctype(0 + _p.offsetx, j + _p.offsety) == SetT) {
-                        flux0 = _tem[idx]*_uy[idx]*(_q.f[Q<T>::IndexF(idx, 5)] - _q.f[Q<T>::IndexF(idx, 8)])/(2.0*(1.0 + 3.0*_ux[idx])*_rho[idx]);
-                    } else if (_bctype(0 + _p.offsetx, j + _p.offsety) == SetQ) {
-                        flux0 = -_tem[idx]*(
-                            (4.0*_q.f[Q<T>::IndexF(idx, 1)] + _q.f[Q<T>::IndexF(idx, 5)] + _q.f[Q<T>::IndexF(idx, 8)])/3.0
-                            + _uy[idx]*(_q.f[Q<T>::IndexF(idx, 5)] - _q.f[Q<T>::IndexF(idx, 8)])/2.0
-                        )/((1.0 - 3.0*_ux[idx])*_rho[idx]);
+            //  On xmin
+            if (_p.PEx == 0) {
+                for (int j = 0; j < _q.ny; ++j) {
+                    if (_bctype(0 + _p.offsetx, j + _p.offsety)) {
+                        int idx = _q.Index(0, j);
+                        T rho0 = -(4.0*_p.f[P<T>::IndexF(idx, 1)] + _p.f[P<T>::IndexF(idx, 5)] + _p.f[P<T>::IndexF(idx, 8)])/3.0;
+                        T flux0 = T();
+                        if (_bctype(0 + _p.offsetx, j + _p.offsety) == SetT) {
+                            flux0 = _tem[idx]*_uy[idx]*(_q.f[Q<T>::IndexF(idx, 5)] - _q.f[Q<T>::IndexF(idx, 8)])/(2.0*(1.0 + 3.0*_ux[idx])*_rho[idx]);
+                        } else if (_bctype(0 + _p.offsetx, j + _p.offsety) == SetQ) {
+                            flux0 = -_tem[idx]*(
+                                (4.0*_q.f[Q<T>::IndexF(idx, 1)] + _q.f[Q<T>::IndexF(idx, 5)] + _q.f[Q<T>::IndexF(idx, 8)])/3.0
+                                + _uy[idx]*(_q.f[Q<T>::IndexF(idx, 5)] - _q.f[Q<T>::IndexF(idx, 8)])/2.0
+                            )/((1.0 - 3.0*_ux[idx])*_rho[idx]);
+                        }
+                        T obj0 = _eps*2.0*_tem[idx]/((1.0 - 3.0*_ux[idx])*_rho[idx]);
+                        _p.f[P<T>::IndexF(idx, 3)] = _p.f[P<T>::IndexF(idx, 1)] + rho0 + flux0 + obj0;
+                        _p.f[P<T>::IndexF(idx, 6)] = _p.f[P<T>::IndexF(idx, 8)] + rho0 + flux0 + obj0;
+                        _p.f[P<T>::IndexF(idx, 7)] = _p.f[P<T>::IndexF(idx, 5)] + rho0 + flux0 + obj0;
                     }
-                    T obj0 = _eps*2.0*_tem[idx]/((1.0 - 3.0*_ux[idx])*_rho[idx]);
-                    _p.f[P<T>::IndexF(idx, 3)] = _p.f[P<T>::IndexF(idx, 1)] + rho0 + flux0 + obj0;
-                    _p.f[P<T>::IndexF(idx, 6)] = _p.f[P<T>::IndexF(idx, 8)] + rho0 + flux0 + obj0;
-                    _p.f[P<T>::IndexF(idx, 7)] = _p.f[P<T>::IndexF(idx, 5)] + rho0 + flux0 + obj0;
-                }
-
-                //  On xmax
-                if (_bctype((_p.nx - 1) + _p.offsetx, j + _p.offsety)) { 
-                    int idx = _q.Index(_q.nx - 1, j);    
-                    T rho0 = -(4.0*_p.f[P<T>::IndexF(idx, 3)] + _p.f[P<T>::IndexF(idx, 6)] + _p.f[P<T>::IndexF(idx, 7)])/3.0;
-                    T flux0 = T();
-                    if (_bctype((_p.nx - 1) + _p.offsetx, j + _p.offsety) == SetT) {
-                        flux0 = _tem[idx]*_uy[idx]*(_q.f[Q<T>::IndexF(idx, 6)] - _q.f[Q<T>::IndexF(idx, 7)])/(2.0*(1.0 - 3.0*_ux[idx])*_rho[idx]);
-                    } else if (_bctype((_p.nx - 1) + _p.offsetx, j + _p.offsety) == SetQ) {
-                        flux0 = -_tem[idx]*(
-                            (4.0*_q.f[Q<T>::IndexF(idx, 3)] + _q.f[Q<T>::IndexF(idx, 6)] + _q.f[Q<T>::IndexF(idx, 7)])/3.0
-                             + _uy[idx]*(_q.f[Q<T>::IndexF(idx, 6)] - _q.f[Q<T>::IndexF(idx, 7)])/2.0
-                        )/((1.0 + 3.0*_ux[idx])*_rho[idx]);
-                    }
-                    T obj0 = _eps*2.0*_tem[idx]/((1.0 + 3.0*_ux[idx])*_rho[idx]);
-                    _p.f[P<T>::IndexF(idx, 1)] = _p.f[P<T>::IndexF(idx, 3)] + rho0 + flux0 + obj0;
-                    _p.f[P<T>::IndexF(idx, 5)] = _p.f[P<T>::IndexF(idx, 7)] + rho0 + flux0 + obj0;
-                    _p.f[P<T>::IndexF(idx, 8)] = _p.f[P<T>::IndexF(idx, 6)] + rho0 + flux0 + obj0;
                 }
             }
-
-            for (int i = 0; i < _q.nx; ++i) {
-                //  On ymin
-                if (_bctype(i + _p.offsetx, 0 + _p.offsety)) { 
-                    int idx = _q.Index(i, 0);
-                    T rho0 = -(4.0*_p.f[P<T>::IndexF(idx, 2)] + _p.f[P<T>::IndexF(idx, 5)] + _p.f[P<T>::IndexF(idx, 6)])/3.0;
-                    T flux0 = T();
-                    if (_bctype(i + _p.offsetx, 0 + _p.offsety) == SetT) {
-                        flux0 = _tem[idx]*_ux[idx]*(_q.f[Q<T>::IndexF(idx, 5)] - _q.f[Q<T>::IndexF(idx, 6)])/(2.0*(1.0 + 3.0*_uy[idx])*_rho[idx]);
-                    } else if (_bctype(i + _p.offsetx, 0 + _p.offsety) == SetQ) {
-                        flux0 = -_tem[idx]*(
-                            (4.0*_q.f[Q<T>::IndexF(idx, 2)] + _q.f[Q<T>::IndexF(idx, 5)] + _q.f[Q<T>::IndexF(idx, 6)])/3.0
-                            + _ux[idx]*(_q.f[Q<T>::IndexF(idx, 5)] - _q.f[Q<T>::IndexF(idx, 6)])/2.0
-                        )/((1.0 - 3.0*_uy[idx])*_rho[idx]);
+            //  On xmax
+            if (_p.PEx == _p.mx - 1) {
+                for (int j = 0; j < _q.ny; ++j) {
+                    if (_bctype((_p.nx - 1) + _p.offsetx, j + _p.offsety)) { 
+                        int idx = _q.Index(_q.nx - 1, j);    
+                        T rho0 = -(4.0*_p.f[P<T>::IndexF(idx, 3)] + _p.f[P<T>::IndexF(idx, 6)] + _p.f[P<T>::IndexF(idx, 7)])/3.0;
+                        T flux0 = T();
+                        if (_bctype((_p.nx - 1) + _p.offsetx, j + _p.offsety) == SetT) {
+                            flux0 = _tem[idx]*_uy[idx]*(_q.f[Q<T>::IndexF(idx, 6)] - _q.f[Q<T>::IndexF(idx, 7)])/(2.0*(1.0 - 3.0*_ux[idx])*_rho[idx]);
+                        } else if (_bctype((_p.nx - 1) + _p.offsetx, j + _p.offsety) == SetQ) {
+                            flux0 = -_tem[idx]*(
+                                (4.0*_q.f[Q<T>::IndexF(idx, 3)] + _q.f[Q<T>::IndexF(idx, 6)] + _q.f[Q<T>::IndexF(idx, 7)])/3.0
+                                + _uy[idx]*(_q.f[Q<T>::IndexF(idx, 6)] - _q.f[Q<T>::IndexF(idx, 7)])/2.0
+                            )/((1.0 + 3.0*_ux[idx])*_rho[idx]);
+                        }
+                        T obj0 = _eps*2.0*_tem[idx]/((1.0 + 3.0*_ux[idx])*_rho[idx]);
+                        _p.f[P<T>::IndexF(idx, 1)] = _p.f[P<T>::IndexF(idx, 3)] + rho0 + flux0 + obj0;
+                        _p.f[P<T>::IndexF(idx, 5)] = _p.f[P<T>::IndexF(idx, 7)] + rho0 + flux0 + obj0;
+                        _p.f[P<T>::IndexF(idx, 8)] = _p.f[P<T>::IndexF(idx, 6)] + rho0 + flux0 + obj0;
                     }
-                    T obj0 = _eps*2.0*_tem[idx]/((1.0 - 3.0*_uy[idx])*_rho[idx]);
-                    _p.f[P<T>::IndexF(idx, 4)] = _p.f[P<T>::IndexF(idx, 2)] + rho0 + flux0 + obj0;
-                    _p.f[P<T>::IndexF(idx, 7)] = _p.f[P<T>::IndexF(idx, 5)] + rho0 + flux0 + obj0;
-                    _p.f[P<T>::IndexF(idx, 8)] = _p.f[P<T>::IndexF(idx, 6)] + rho0 + flux0 + obj0;
                 }
-
-                //  On ymax
-                if (_bctype(i + _p.offsetx, (_p.ny - 1) + _p.offsety)) {  
-                    int idx = _q.Index(i, _q.ny - 1);  
-                    T rho0 = -(4.0*_p.f[P<T>::IndexF(idx, 4)] + _p.f[P<T>::IndexF(idx, 7)] + _p.f[P<T>::IndexF(idx, 8)])/3.0;
-                    T flux0 = T();
-                    if (_bctype(i + _p.offsetx, (_p.ny - 1) + _p.offsety) == SetT) {
-                        flux0 = _tem[idx]*_ux[idx]*(_q.f[Q<T>::IndexF(idx, 8)] - _q.f[Q<T>::IndexF(idx, 7)])/(2.0*(1.0 - 3.0*_uy[idx])*_rho[idx]);
-                    } else if (_bctype(i + _p.offsetx, (_p.ny - 1) + _p.offsety) == SetQ) {
-                        flux0 = -_tem[idx]*(
-                            (4.0*_q.f[Q<T>::IndexF(idx, 4)] + _q.f[Q<T>::IndexF(idx, 7)] + _q.f[Q<T>::IndexF(idx, 8)])/3.0 
-                            + _ux[idx]*(_q.f[Q<T>::IndexF(idx, 8)] - _q.f[Q<T>::IndexF(idx, 7)])/2.0
-                        )/((1.0 + 3.0*_uy[idx])*_rho[idx]);
+            }
+            //  On ymin
+            if (_p.PEy == 0) {
+                for (int i = 0; i < _q.nx; ++i) {
+                    if (_bctype(i + _p.offsetx, 0 + _p.offsety)) { 
+                        int idx = _q.Index(i, 0);
+                        T rho0 = -(4.0*_p.f[P<T>::IndexF(idx, 2)] + _p.f[P<T>::IndexF(idx, 5)] + _p.f[P<T>::IndexF(idx, 6)])/3.0;
+                        T flux0 = T();
+                        if (_bctype(i + _p.offsetx, 0 + _p.offsety) == SetT) {
+                            flux0 = _tem[idx]*_ux[idx]*(_q.f[Q<T>::IndexF(idx, 5)] - _q.f[Q<T>::IndexF(idx, 6)])/(2.0*(1.0 + 3.0*_uy[idx])*_rho[idx]);
+                        } else if (_bctype(i + _p.offsetx, 0 + _p.offsety) == SetQ) {
+                            flux0 = -_tem[idx]*(
+                                (4.0*_q.f[Q<T>::IndexF(idx, 2)] + _q.f[Q<T>::IndexF(idx, 5)] + _q.f[Q<T>::IndexF(idx, 6)])/3.0
+                                + _ux[idx]*(_q.f[Q<T>::IndexF(idx, 5)] - _q.f[Q<T>::IndexF(idx, 6)])/2.0
+                            )/((1.0 - 3.0*_uy[idx])*_rho[idx]);
+                        }
+                        T obj0 = _eps*2.0*_tem[idx]/((1.0 - 3.0*_uy[idx])*_rho[idx]);
+                        _p.f[P<T>::IndexF(idx, 4)] = _p.f[P<T>::IndexF(idx, 2)] + rho0 + flux0 + obj0;
+                        _p.f[P<T>::IndexF(idx, 7)] = _p.f[P<T>::IndexF(idx, 5)] + rho0 + flux0 + obj0;
+                        _p.f[P<T>::IndexF(idx, 8)] = _p.f[P<T>::IndexF(idx, 6)] + rho0 + flux0 + obj0;
                     }
-                    T obj0 = _eps*2.0*_tem[idx]/((1.0 + 3.0*_uy[idx])*_rho[idx]);
-                    _p.f[P<T>::IndexF(idx, 2)] = _p.f[P<T>::IndexF(idx, 4)] + rho0 + flux0 + obj0;
-                    _p.f[P<T>::IndexF(idx, 5)] = _p.f[P<T>::IndexF(idx, 7)] + rho0 + flux0 + obj0;
-                    _p.f[P<T>::IndexF(idx, 6)] = _p.f[P<T>::IndexF(idx, 8)] + rho0 + flux0 + obj0;
+                }
+            }
+            //  On ymax
+            if (_p.PEy == _p.my - 1) {
+                for (int i = 0; i < _q.nx; ++i) {
+                    if (_bctype(i + _p.offsetx, (_p.ny - 1) + _p.offsety)) {  
+                        int idx = _q.Index(i, _q.ny - 1);  
+                        T rho0 = -(4.0*_p.f[P<T>::IndexF(idx, 4)] + _p.f[P<T>::IndexF(idx, 7)] + _p.f[P<T>::IndexF(idx, 8)])/3.0;
+                        T flux0 = T();
+                        if (_bctype(i + _p.offsetx, (_p.ny - 1) + _p.offsety) == SetT) {
+                            flux0 = _tem[idx]*_ux[idx]*(_q.f[Q<T>::IndexF(idx, 8)] - _q.f[Q<T>::IndexF(idx, 7)])/(2.0*(1.0 - 3.0*_uy[idx])*_rho[idx]);
+                        } else if (_bctype(i + _p.offsetx, (_p.ny - 1) + _p.offsety) == SetQ) {
+                            flux0 = -_tem[idx]*(
+                                (4.0*_q.f[Q<T>::IndexF(idx, 4)] + _q.f[Q<T>::IndexF(idx, 7)] + _q.f[Q<T>::IndexF(idx, 8)])/3.0 
+                                + _ux[idx]*(_q.f[Q<T>::IndexF(idx, 8)] - _q.f[Q<T>::IndexF(idx, 7)])/2.0
+                            )/((1.0 + 3.0*_uy[idx])*_rho[idx]);
+                        }
+                        T obj0 = _eps*2.0*_tem[idx]/((1.0 + 3.0*_uy[idx])*_rho[idx]);
+                        _p.f[P<T>::IndexF(idx, 2)] = _p.f[P<T>::IndexF(idx, 4)] + rho0 + flux0 + obj0;
+                        _p.f[P<T>::IndexF(idx, 5)] = _p.f[P<T>::IndexF(idx, 7)] + rho0 + flux0 + obj0;
+                        _p.f[P<T>::IndexF(idx, 6)] = _p.f[P<T>::IndexF(idx, 8)] + rho0 + flux0 + obj0;
+                    }
                 }
             }
         }
@@ -967,162 +1036,183 @@ namespace PANSLBM2 {
         //  Function of setting boundary condition set iRho and iT or iQ of AAD for D3Q15
         template<class T, template<class>class P, template<class>class Q, class Ff>
         void iBoundaryConditionSetRho(P<T>& _p, Q<T>& _q, const T *_rho, const T *_ux, const T *_uy, const T *_uz, const T *_tem, Ff _bctypeg, T _eps = T()) {
-            for (int j = 0; j < _p.ny; ++j) {
-                for (int k = 0; k < _p.nz; ++k) {
-                    //  On xmin
-                    if (_bctype(0 + _p.offsetx, j + _p.offsety, k + _p.offsetz)) {
-                        int idx = _p.Index(0, j, k);
-                        T rho0 = -(8.0*_p.f[P<T>::IndexF(idx, 1)] + _p.f[P<T>::IndexF(idx, 7)] + _p.f[P<T>::IndexF(idx, 9)] + _p.f[P<T>::IndexF(idx, 10)] + _p.f[P<T>::IndexF(idx, 12)])/6.0;
-                        T flux0 = T();
-                        if (_bctype(0 + _p.offsetx, j + _p.offsety, k + _p.offsetz) == SetT) {
-                            flux0 = _tem[idx]*(
-                                _uy[idx]*(_q.f[Q<T>::IndexF(idx, 7)] - _q.f[Q<T>::IndexF(idx, 9)] + _q.f[Q<T>::IndexF(idx, 10)] - _q.f[Q<T>::IndexF(idx, 12)])/4.0
-                                + _uz[idx]*(_q.f[Q<T>::IndexF(idx, 7)] + _q.f[Q<T>::IndexF(idx, 9)] - _q.f[Q<T>::IndexF(idx, 10)] - _q.f[Q<T>::IndexF(idx, 12)])/4.0
-                            )/(_rho[idx]*(1.0 + 3.0*_ux[idx]));
-                        } else if (_bctype(0 + _p.offsetx, j + _p.offsety, k + _p.offsetz) == SetQ) {
-                            flux0 = -_tem[idx]*(
-                                (8.0*_q.f[Q<T>::IndexF(idx, 1)] + _q.f[Q<T>::IndexF(idx, 7)] + _q.f[Q<T>::IndexF(idx, 9)] + _q.f[Q<T>::IndexF(idx, 10)] + _q.f[Q<T>::IndexF(idx, 12)])/6.0
-                                + _uy[idx]*(_q.f[Q<T>::IndexF(idx, 7)] - _q.f[Q<T>::IndexF(idx, 9)] + _q.f[Q<T>::IndexF(idx, 10)] - _q.f[Q<T>::IndexF(idx, 12)])/4.0
-                                + _uz[idx]*(_q.f[Q<T>::IndexF(idx, 7)] + _q.f[Q<T>::IndexF(idx, 9)] - _q.f[Q<T>::IndexF(idx, 10)] - _q.f[Q<T>::IndexF(idx, 12)])/4.0
-                            )/(_rho[idx]*(1.0 - 3.0*_ux[idx]));
-                        }
-                        T obj0 = _eps*2.0*_tem[idx]/((1.0 - 3.0*_ux[idx])*_rho[idx]);
-                        _p.f[P<T>::IndexF(idx, 4)] = _p.f[P<T>::IndexF(idx, 1)] + rho0 + flux0 + obj0;
-                        _p.f[P<T>::IndexF(idx, 8)] = _p.f[P<T>::IndexF(idx, 12)] + rho0 + flux0 + obj0;
-                        _p.f[P<T>::IndexF(idx, 11)] = _p.f[P<T>::IndexF(idx, 7)] + rho0 + flux0 + obj0;
-                        _p.f[P<T>::IndexF(idx, 13)] = _p.f[P<T>::IndexF(idx, 9)] + rho0 + flux0 + obj0;
-                        _p.f[P<T>::IndexF(idx, 14)] = _p.f[P<T>::IndexF(idx, 10)] + rho0 + flux0 + obj0;
-                    }
-
-                    //  On xmax
-                    if (_bctype((_p.nx - 1) + _p.offsetx, j + _p.offsety, k + _p.offsetz)) {
-                        int idx = _p.Index(_p.nx - 1, j, k);
-                        T rho0 = -(8.0*_p.f[P<T>::IndexF(idx, 4)] + _p.f[P<T>::IndexF(idx, 8)] + _p.f[P<T>::IndexF(idx, 11)] + _p.f[P<T>::IndexF(idx, 13)] + _p.f[P<T>::IndexF(idx, 14)])/6.0;
-                        T flux0 = T();
-                        if (_bctype((_p.nx - 1) + _p.offsetx, j + _p.offsety, k + _p.offsetz) == SetT) {
-                            flux0 = _tem[idx]*(
-                                _uy[idx]*(_q.f[Q<T>::IndexF(idx, 8)] - _q.f[Q<T>::IndexF(idx, 11)] + _q.f[Q<T>::IndexF(idx, 13)] - _q.f[Q<T>::IndexF(idx, 14)])/4.0
-                                + _uz[idx]*(_q.f[Q<T>::IndexF(idx, 8)] - _q.f[Q<T>::IndexF(idx, 11)] - _q.f[Q<T>::IndexF(idx, 13)] + _q.f[Q<T>::IndexF(idx, 14)])/4.0
-                            )/(_rho[idx]*(1.0 - 3.0*_ux[idx]));
-                        } else if (_bctype((_p.nx - 1) + _p.offsetx, j + _p.offsety, k + _p.offsetz) == SetQ) {
-                            flux0 = -_tem[idx]*(
-                                (8.0*_q.f[Q<T>::IndexF(idx, 4)] + _q.f[Q<T>::IndexF(idx, 8)] + _q.f[Q<T>::IndexF(idx, 11)] + _q.f[Q<T>::IndexF(idx, 13)] + _q.f[Q<T>::IndexF(idx, 14)])/6.0
-                                + _uy[idx]*(_q.f[Q<T>::IndexF(idx, 8)] - _q.f[Q<T>::IndexF(idx, 11)] + _q.f[Q<T>::IndexF(idx, 13)] - _q.f[Q<T>::IndexF(idx, 14)])/4.0
-                                + _uz[idx]*(_q.f[Q<T>::IndexF(idx, 8)] - _q.f[Q<T>::IndexF(idx, 11)] - _q.f[Q<T>::IndexF(idx, 13)] + _q.f[Q<T>::IndexF(idx, 14)])/4.0
-                            )/(_rho[idx]*(1.0 + 3.0*_ux[idx]));
-                        }
-                        T obj0 = _eps*2.0*_tem[idx]/((1.0 + 3.0*_ux[idx])*_rho[idx]);
-                        _p.f[P<T>::IndexF(idx, 1)] = _p.f[P<T>::IndexF(idx, 4)] + rho0 + flux0 + obj0;
-                        _p.f[P<T>::IndexF(idx, 7)] = _p.f[P<T>::IndexF(idx, 11)] + rho0 + flux0 + obj0;
-                        _p.f[P<T>::IndexF(idx, 9)] = _p.f[P<T>::IndexF(idx, 13)] + rho0 + flux0 + obj0;
-                        _p.f[P<T>::IndexF(idx, 10)] = _p.f[P<T>::IndexF(idx, 14)] + rho0 + flux0 + obj0;
-                        _p.f[P<T>::IndexF(idx, 12)] = _p.f[P<T>::IndexF(idx, 8)] + rho0 + flux0 + obj0;
-                    }
-                }
-            }
-            for (int k = 0; k < _p.nz; ++k) {
-                for (int i = 0; i < _p.nx; ++i) {
-                    //  On ymin
-                    if (_bctype(i + _p.offsetx, 0 + _p.offsety, k + _p.offsetz)) {
-                        int idx = _p.Index(i, 0, k);
-                        T rho0 = -(8.0*_p.f[P<T>::IndexF(idx, 2)] + _p.f[P<T>::IndexF(idx, 7)] + _p.f[P<T>::IndexF(idx, 8)] + _p.f[P<T>::IndexF(idx, 10)] + _p.f[P<T>::IndexF(idx, 13)])/6.0;
-                        T flux0 = T();
-                        if (_bctype(i + _p.offsetx, 0 + _p.offsety, k + _p.offsetz) == SetT) {
-                            flux0 = _tem[idx]*(
-                                _uz[idx]*(_q.f[Q<T>::IndexF(idx, 7)] + _q.f[Q<T>::IndexF(idx, 8)] - _q.f[Q<T>::IndexF(idx, 10)] - _q.f[Q<T>::IndexF(idx, 13)])/4.0
-                                + _ux[idx]*(_q.f[Q<T>::IndexF(idx, 7)] - _q.f[Q<T>::IndexF(idx, 8)] + _q.f[Q<T>::IndexF(idx, 10)] - _q.f[Q<T>::IndexF(idx, 13)])/4.0
-                            )/(_rho[idx]*(1.0 + 3.0*_uy[idx]));
-                        } else if (_bctype(i + _p.offsetx, 0 + _p.offsety, k + _p.offsetz) == SetQ) {
-                            flux0 = -_tem[idx]*(
-                                (8.0*_q.f[Q<T>::IndexF(idx, 2)] + _q.f[Q<T>::IndexF(idx, 7)] + _q.f[Q<T>::IndexF(idx, 8)] + _q.f[Q<T>::IndexF(idx, 10)] + _q.f[Q<T>::IndexF(idx, 13)])/6.0
-                                + _uz[idx]*(_q.f[Q<T>::IndexF(idx, 7)] + _q.f[Q<T>::IndexF(idx, 8)] - _q.f[Q<T>::IndexF(idx, 10)] - _q.f[Q<T>::IndexF(idx, 13)])/4.0
-                                + _ux[idx]*(_q.f[Q<T>::IndexF(idx, 7)] - _q.f[Q<T>::IndexF(idx, 8)] + _q.f[Q<T>::IndexF(idx, 10)] - _q.f[Q<T>::IndexF(idx, 13)])/4.0
-                            )/(_rho[idx]*(1.0 - 3.0*_uy[idx]));
-                        }
-                        T obj0 = _eps*2.0*_tem[idx]/((1.0 - 3.0*_uy[idx])*_rho[idx]);
-                        _p.f[P<T>::IndexF(idx, 5)] = _p.f[P<T>::IndexF(idx, 2)] + rho0 + flux0 + obj0;
-                        _p.f[P<T>::IndexF(idx, 9)] = _p.f[P<T>::IndexF(idx, 13)] + rho0 + flux0 + obj0;
-                        _p.f[P<T>::IndexF(idx, 11)] = _p.f[P<T>::IndexF(idx, 7)] + rho0 + flux0 + obj0;
-                        _p.f[P<T>::IndexF(idx, 12)] = _p.f[P<T>::IndexF(idx, 8)] + rho0 + flux0 + obj0;
-                        _p.f[P<T>::IndexF(idx, 14)] = _p.f[P<T>::IndexF(idx, 10)] + rho0 + flux0 + obj0;
-                    }
-
-                    //  On ymax
-                    if (_bctype(i + _p.offsetx, (_p.ny - 1) + _p.offsety, k + _p.offsetz)) {
-                        int idx = _p.Index(i, _p.ny - 1, k);
-                        T rho0 = -(8.0*_p.f[P<T>::IndexF(idx, 5)] + _p.f[P<T>::IndexF(idx, 9)] + _p.f[P<T>::IndexF(idx, 11)] + _p.f[P<T>::IndexF(idx, 12)] + _p.f[P<T>::IndexF(idx, 14)])/6.0;
-                        T flux0 = T();
-                        if (_bctype(i + _p.offsetx, (_p.ny - 1) + _p.offsety, k + _p.offsetz) == SetT) {
-                            flux0 = _tem[idx]*(
-                                _uz[idx]*(_q.f[Q<T>::IndexF(idx, 9)] - _q.f[Q<T>::IndexF(idx, 11)] - _q.f[Q<T>::IndexF(idx, 12)] + _q.f[Q<T>::IndexF(idx, 14)])/4.0
-                                + _ux[idx]*(_q.f[Q<T>::IndexF(idx, 9)] - _q.f[Q<T>::IndexF(idx, 11)] + _q.f[Q<T>::IndexF(idx, 12)] - _q.f[Q<T>::IndexF(idx, 14)])/4.0
-                            )/(_rho[idx]*(1.0 - 3.0*_uy[idx]));
-                        } else if (_bctype(i + _p.offsetx, (_p.ny - 1) + _p.offsety, k + _p.offsetz) == SetQ) {
-                            flux0 = -_tem[idx]*(
-                                (8.0*_q.f[Q<T>::IndexF(idx, 5)] + _q.f[Q<T>::IndexF(idx, 9)] + _q.f[Q<T>::IndexF(idx, 11)] + _q.f[Q<T>::IndexF(idx, 12)] + _q.f[Q<T>::IndexF(idx, 14)])/6.0
-                                + _uz[idx]*(_q.f[Q<T>::IndexF(idx, 9)] - _q.f[Q<T>::IndexF(idx, 11)] - _q.f[Q<T>::IndexF(idx, 12)] + _q.f[Q<T>::IndexF(idx, 14)])/4.0
-                                + _ux[idx]*(_q.f[Q<T>::IndexF(idx, 9)] - _q.f[Q<T>::IndexF(idx, 11)] + _q.f[Q<T>::IndexF(idx, 12)] - _q.f[Q<T>::IndexF(idx, 14)])/4.0
-                            )/(_rho[idx]*(1.0 + 3.0*_uy[idx]));
-                        }
-                        T obj0 = _eps*2.0*_tem[idx]/((1.0 + 3.0*_uy[idx])*_rho[idx]);
-                        _p.f[P<T>::IndexF(idx, 2)] = _p.f[P<T>::IndexF(idx, 5)] + rho0 + flux0 + obj0;
-                        _p.f[P<T>::IndexF(idx, 7)] = _p.f[P<T>::IndexF(idx, 11)] + rho0 + flux0 + obj0;
-                        _p.f[P<T>::IndexF(idx, 8)] = _p.f[P<T>::IndexF(idx, 12)] + rho0 + flux0 + obj0;
-                        _p.f[P<T>::IndexF(idx, 10)] = _p.f[P<T>::IndexF(idx, 14)] + rho0 + flux0 + obj0;
-                        _p.f[P<T>::IndexF(idx, 13)] = _p.f[P<T>::IndexF(idx, 9)] + rho0 + flux0 + obj0;
-                    }
-                }
-            }
-            for (int i = 0; i < _p.nx; ++i) {
+            //  On xmin
+            if (_p.PEx == 0) {
                 for (int j = 0; j < _p.ny; ++j) {
-                    //  On zmin
-                    if (_bctype(i + _p.offsetx, j + _p.offsety, 0 + _p.offsetz)) {
-                        int idx = _p.Index(i, j, 0);
-                        T rho0 = -(8.0*_p.f[P<T>::IndexF(idx, 3)] + _p.f[P<T>::IndexF(idx, 7)] + _p.f[P<T>::IndexF(idx, 8)] + _p.f[P<T>::IndexF(idx, 9)] + _p.f[P<T>::IndexF(idx, 14)])/6.0;
-                        T flux0 = T();
-                        if (_bctype(i + _p.offsetx, j + _p.offsety, 0 + _p.offsetz) == SetT) {
-                            flux0 = _tem[idx]*(
-                                _ux[idx]*(_q.f[Q<T>::IndexF(idx, 7)] - _q.f[Q<T>::IndexF(idx, 8)] + _q.f[Q<T>::IndexF(idx, 9)] - _q.f[Q<T>::IndexF(idx, 14)])/4.0
-                                + _uy[idx]*(_q.f[Q<T>::IndexF(idx, 7)] + _q.f[Q<T>::IndexF(idx, 8)] - _q.f[Q<T>::IndexF(idx, 9)] - _q.f[Q<T>::IndexF(idx, 14)])/4.0
-                            )/(_rho[idx]*(1.0 + 3.0*_uz[idx]));
-                        } else if (_bctype(i + _p.offsetx, j + _p.offsety, 0 + _p.offsetz) == SetQ) {
-                            flux0 = -_tem[idx]*(
-                                (8.0*_q.f[Q<T>::IndexF(idx, 3)] + _q.f[Q<T>::IndexF(idx, 7)] + _q.f[Q<T>::IndexF(idx, 8)] + _q.f[Q<T>::IndexF(idx, 9)] + _q.f[Q<T>::IndexF(idx, 14)])/6.0
-                                + _ux[idx]*(_q.f[Q<T>::IndexF(idx, 7)] - _q.f[Q<T>::IndexF(idx, 8)] + _q.f[Q<T>::IndexF(idx, 9)] - _q.f[Q<T>::IndexF(idx, 14)])/4.0
-                                + _uy[idx]*(_q.f[Q<T>::IndexF(idx, 7)] + _q.f[Q<T>::IndexF(idx, 8)] - _q.f[Q<T>::IndexF(idx, 9)] - _q.f[Q<T>::IndexF(idx, 14)])/4.0
-                            )/(_rho[idx]*(1.0 - 3.0*_uz[idx]));
+                    for (int k = 0; k < _p.nz; ++k) {
+                        if (_bctype(0 + _p.offsetx, j + _p.offsety, k + _p.offsetz)) {
+                            int idx = _p.Index(0, j, k);
+                            T rho0 = -(8.0*_p.f[P<T>::IndexF(idx, 1)] + _p.f[P<T>::IndexF(idx, 7)] + _p.f[P<T>::IndexF(idx, 9)] + _p.f[P<T>::IndexF(idx, 10)] + _p.f[P<T>::IndexF(idx, 12)])/6.0;
+                            T flux0 = T();
+                            if (_bctype(0 + _p.offsetx, j + _p.offsety, k + _p.offsetz) == SetT) {
+                                flux0 = _tem[idx]*(
+                                    _uy[idx]*(_q.f[Q<T>::IndexF(idx, 7)] - _q.f[Q<T>::IndexF(idx, 9)] + _q.f[Q<T>::IndexF(idx, 10)] - _q.f[Q<T>::IndexF(idx, 12)])/4.0
+                                    + _uz[idx]*(_q.f[Q<T>::IndexF(idx, 7)] + _q.f[Q<T>::IndexF(idx, 9)] - _q.f[Q<T>::IndexF(idx, 10)] - _q.f[Q<T>::IndexF(idx, 12)])/4.0
+                                )/(_rho[idx]*(1.0 + 3.0*_ux[idx]));
+                            } else if (_bctype(0 + _p.offsetx, j + _p.offsety, k + _p.offsetz) == SetQ) {
+                                flux0 = -_tem[idx]*(
+                                    (8.0*_q.f[Q<T>::IndexF(idx, 1)] + _q.f[Q<T>::IndexF(idx, 7)] + _q.f[Q<T>::IndexF(idx, 9)] + _q.f[Q<T>::IndexF(idx, 10)] + _q.f[Q<T>::IndexF(idx, 12)])/6.0
+                                    + _uy[idx]*(_q.f[Q<T>::IndexF(idx, 7)] - _q.f[Q<T>::IndexF(idx, 9)] + _q.f[Q<T>::IndexF(idx, 10)] - _q.f[Q<T>::IndexF(idx, 12)])/4.0
+                                    + _uz[idx]*(_q.f[Q<T>::IndexF(idx, 7)] + _q.f[Q<T>::IndexF(idx, 9)] - _q.f[Q<T>::IndexF(idx, 10)] - _q.f[Q<T>::IndexF(idx, 12)])/4.0
+                                )/(_rho[idx]*(1.0 - 3.0*_ux[idx]));
+                            }
+                            T obj0 = _eps*2.0*_tem[idx]/((1.0 - 3.0*_ux[idx])*_rho[idx]);
+                            _p.f[P<T>::IndexF(idx, 4)] = _p.f[P<T>::IndexF(idx, 1)] + rho0 + flux0 + obj0;
+                            _p.f[P<T>::IndexF(idx, 8)] = _p.f[P<T>::IndexF(idx, 12)] + rho0 + flux0 + obj0;
+                            _p.f[P<T>::IndexF(idx, 11)] = _p.f[P<T>::IndexF(idx, 7)] + rho0 + flux0 + obj0;
+                            _p.f[P<T>::IndexF(idx, 13)] = _p.f[P<T>::IndexF(idx, 9)] + rho0 + flux0 + obj0;
+                            _p.f[P<T>::IndexF(idx, 14)] = _p.f[P<T>::IndexF(idx, 10)] + rho0 + flux0 + obj0;
                         }
-                        T obj0 = _eps*2.0*_tem[idx]/((1.0 - 3.0*_uz[idx])*_rho[idx]);
-                        _p.f[P<T>::IndexF(idx, 6)] = _p.f[P<T>::IndexF(idx, 3)] + rho0 + flux0 + obj0;
-                        _p.f[P<T>::IndexF(idx, 10)] = _p.f[P<T>::IndexF(idx, 14)] + rho0 + flux0 + obj0;
-                        _p.f[P<T>::IndexF(idx, 11)] = _p.f[P<T>::IndexF(idx, 7)] + rho0 + flux0 + obj0;
-                        _p.f[P<T>::IndexF(idx, 12)] = _p.f[P<T>::IndexF(idx, 8)] + rho0 + flux0 + obj0;
-                        _p.f[P<T>::IndexF(idx, 13)] = _p.f[P<T>::IndexF(idx, 9)] + rho0 + flux0 + obj0;
                     }
-
-                    //  On zmax
-                    if (_bctype(i + _p.offsetx, j + _p.offsety, (_p.nz - 1) + _p.offsetz)) {
-                        int idx = _p.Index(i, j, _p.nz - 1);
-                        T rho0 = -(8.0*_p.f[P<T>::IndexF(idx, 6)] + _p.f[P<T>::IndexF(idx, 10)] + _p.f[P<T>::IndexF(idx, 11)] + _p.f[P<T>::IndexF(idx, 12)] + _p.f[P<T>::IndexF(idx, 13)])/6.0;
-                        T flux0 = T();
-                        if (_bctype(i + _p.offsetx, j + _p.offsety, (_p.nz - 1) + _p.offsetz) == SetT) {
-                            flux0 = _tem[idx]*(
-                                _ux[idx]*(_q.f[Q<T>::IndexF(idx, 10)] - _q.f[Q<T>::IndexF(idx, 11)] + _q.f[Q<T>::IndexF(idx, 12)] - _q.f[Q<T>::IndexF(idx, 13)])/4.0
-                                + _uy[idx]*(_q.f[Q<T>::IndexF(idx, 10)] - _q.f[Q<T>::IndexF(idx, 11)] - _q.f[Q<T>::IndexF(idx, 12)] + _q.f[Q<T>::IndexF(idx, 13)])/4.0
-                            )/(_rho[idx]*(1.0 - 3.0*_uz[idx]));
-                        } else if (_bctype(i + _p.offsetx, j + _p.offsety, (_p.nz - 1) + _p.offsetz) == SetQ) {
-                            flux0 = -_tem[idx]*(
-                                (8.0*_q.f[Q<T>::IndexF(idx, 6)] + _q.f[Q<T>::IndexF(idx, 10)] + _q.f[Q<T>::IndexF(idx, 11)] + _q.f[Q<T>::IndexF(idx, 12)] + _q.f[Q<T>::IndexF(idx, 13)])/6.0
-                                + _ux[idx]*(_q.f[Q<T>::IndexF(idx, 10)] - _q.f[Q<T>::IndexF(idx, 11)] + _q.f[Q<T>::IndexF(idx, 12)] - _q.f[Q<T>::IndexF(idx, 13)])/4.0
-                                + _uy[idx]*(_q.f[Q<T>::IndexF(idx, 10)] - _q.f[Q<T>::IndexF(idx, 11)] - _q.f[Q<T>::IndexF(idx, 12)] + _q.f[Q<T>::IndexF(idx, 13)])/4.0
-                            )/(_rho[idx]*(1.0 + 3.0*_uz[idx]));
+                }
+            }
+            //  On xmax
+            if (_p.PEx == _p.mx - 1) {
+                for (int j = 0; j < _p.ny; ++j) {
+                    for (int k = 0; k < _p.nz; ++k) {
+                        if (_bctype((_p.nx - 1) + _p.offsetx, j + _p.offsety, k + _p.offsetz)) {
+                            int idx = _p.Index(_p.nx - 1, j, k);
+                            T rho0 = -(8.0*_p.f[P<T>::IndexF(idx, 4)] + _p.f[P<T>::IndexF(idx, 8)] + _p.f[P<T>::IndexF(idx, 11)] + _p.f[P<T>::IndexF(idx, 13)] + _p.f[P<T>::IndexF(idx, 14)])/6.0;
+                            T flux0 = T();
+                            if (_bctype((_p.nx - 1) + _p.offsetx, j + _p.offsety, k + _p.offsetz) == SetT) {
+                                flux0 = _tem[idx]*(
+                                    _uy[idx]*(_q.f[Q<T>::IndexF(idx, 8)] - _q.f[Q<T>::IndexF(idx, 11)] + _q.f[Q<T>::IndexF(idx, 13)] - _q.f[Q<T>::IndexF(idx, 14)])/4.0
+                                    + _uz[idx]*(_q.f[Q<T>::IndexF(idx, 8)] - _q.f[Q<T>::IndexF(idx, 11)] - _q.f[Q<T>::IndexF(idx, 13)] + _q.f[Q<T>::IndexF(idx, 14)])/4.0
+                                )/(_rho[idx]*(1.0 - 3.0*_ux[idx]));
+                            } else if (_bctype((_p.nx - 1) + _p.offsetx, j + _p.offsety, k + _p.offsetz) == SetQ) {
+                                flux0 = -_tem[idx]*(
+                                    (8.0*_q.f[Q<T>::IndexF(idx, 4)] + _q.f[Q<T>::IndexF(idx, 8)] + _q.f[Q<T>::IndexF(idx, 11)] + _q.f[Q<T>::IndexF(idx, 13)] + _q.f[Q<T>::IndexF(idx, 14)])/6.0
+                                    + _uy[idx]*(_q.f[Q<T>::IndexF(idx, 8)] - _q.f[Q<T>::IndexF(idx, 11)] + _q.f[Q<T>::IndexF(idx, 13)] - _q.f[Q<T>::IndexF(idx, 14)])/4.0
+                                    + _uz[idx]*(_q.f[Q<T>::IndexF(idx, 8)] - _q.f[Q<T>::IndexF(idx, 11)] - _q.f[Q<T>::IndexF(idx, 13)] + _q.f[Q<T>::IndexF(idx, 14)])/4.0
+                                )/(_rho[idx]*(1.0 + 3.0*_ux[idx]));
+                            }
+                            T obj0 = _eps*2.0*_tem[idx]/((1.0 + 3.0*_ux[idx])*_rho[idx]);
+                            _p.f[P<T>::IndexF(idx, 1)] = _p.f[P<T>::IndexF(idx, 4)] + rho0 + flux0 + obj0;
+                            _p.f[P<T>::IndexF(idx, 7)] = _p.f[P<T>::IndexF(idx, 11)] + rho0 + flux0 + obj0;
+                            _p.f[P<T>::IndexF(idx, 9)] = _p.f[P<T>::IndexF(idx, 13)] + rho0 + flux0 + obj0;
+                            _p.f[P<T>::IndexF(idx, 10)] = _p.f[P<T>::IndexF(idx, 14)] + rho0 + flux0 + obj0;
+                            _p.f[P<T>::IndexF(idx, 12)] = _p.f[P<T>::IndexF(idx, 8)] + rho0 + flux0 + obj0;
                         }
-                        T obj0 = _eps*2.0*_tem[idx]/((1.0 + 3.0*_uz[idx])*_rho[idx]);
-                        _p.f[P<T>::IndexF(idx, 3)] = _p.f[P<T>::IndexF(idx, 6)] + rho0 + flux0 + obj0;
-                        _p.f[P<T>::IndexF(idx, 7)] = _p.f[P<T>::IndexF(idx, 11)] + rho0 + flux0 + obj0;
-                        _p.f[P<T>::IndexF(idx, 8)] = _p.f[P<T>::IndexF(idx, 12)] + rho0 + flux0 + obj0;
-                        _p.f[P<T>::IndexF(idx, 9)] = _p.f[P<T>::IndexF(idx, 13)] + rho0 + flux0 + obj0;
-                        _p.f[P<T>::IndexF(idx, 14)] = _p.f[P<T>::IndexF(idx, 10)] + rho0 + flux0 + obj0;
+                    }
+                }
+            }
+            //  On ymin
+            if (_p.PEy == 0) {
+                for (int k = 0; k < _p.nz; ++k) {
+                    for (int i = 0; i < _p.nx; ++i) {
+                        if (_bctype(i + _p.offsetx, 0 + _p.offsety, k + _p.offsetz)) {
+                            int idx = _p.Index(i, 0, k);
+                            T rho0 = -(8.0*_p.f[P<T>::IndexF(idx, 2)] + _p.f[P<T>::IndexF(idx, 7)] + _p.f[P<T>::IndexF(idx, 8)] + _p.f[P<T>::IndexF(idx, 10)] + _p.f[P<T>::IndexF(idx, 13)])/6.0;
+                            T flux0 = T();
+                            if (_bctype(i + _p.offsetx, 0 + _p.offsety, k + _p.offsetz) == SetT) {
+                                flux0 = _tem[idx]*(
+                                    _uz[idx]*(_q.f[Q<T>::IndexF(idx, 7)] + _q.f[Q<T>::IndexF(idx, 8)] - _q.f[Q<T>::IndexF(idx, 10)] - _q.f[Q<T>::IndexF(idx, 13)])/4.0
+                                    + _ux[idx]*(_q.f[Q<T>::IndexF(idx, 7)] - _q.f[Q<T>::IndexF(idx, 8)] + _q.f[Q<T>::IndexF(idx, 10)] - _q.f[Q<T>::IndexF(idx, 13)])/4.0
+                                )/(_rho[idx]*(1.0 + 3.0*_uy[idx]));
+                            } else if (_bctype(i + _p.offsetx, 0 + _p.offsety, k + _p.offsetz) == SetQ) {
+                                flux0 = -_tem[idx]*(
+                                    (8.0*_q.f[Q<T>::IndexF(idx, 2)] + _q.f[Q<T>::IndexF(idx, 7)] + _q.f[Q<T>::IndexF(idx, 8)] + _q.f[Q<T>::IndexF(idx, 10)] + _q.f[Q<T>::IndexF(idx, 13)])/6.0
+                                    + _uz[idx]*(_q.f[Q<T>::IndexF(idx, 7)] + _q.f[Q<T>::IndexF(idx, 8)] - _q.f[Q<T>::IndexF(idx, 10)] - _q.f[Q<T>::IndexF(idx, 13)])/4.0
+                                    + _ux[idx]*(_q.f[Q<T>::IndexF(idx, 7)] - _q.f[Q<T>::IndexF(idx, 8)] + _q.f[Q<T>::IndexF(idx, 10)] - _q.f[Q<T>::IndexF(idx, 13)])/4.0
+                                )/(_rho[idx]*(1.0 - 3.0*_uy[idx]));
+                            }
+                            T obj0 = _eps*2.0*_tem[idx]/((1.0 - 3.0*_uy[idx])*_rho[idx]);
+                            _p.f[P<T>::IndexF(idx, 5)] = _p.f[P<T>::IndexF(idx, 2)] + rho0 + flux0 + obj0;
+                            _p.f[P<T>::IndexF(idx, 9)] = _p.f[P<T>::IndexF(idx, 13)] + rho0 + flux0 + obj0;
+                            _p.f[P<T>::IndexF(idx, 11)] = _p.f[P<T>::IndexF(idx, 7)] + rho0 + flux0 + obj0;
+                            _p.f[P<T>::IndexF(idx, 12)] = _p.f[P<T>::IndexF(idx, 8)] + rho0 + flux0 + obj0;
+                            _p.f[P<T>::IndexF(idx, 14)] = _p.f[P<T>::IndexF(idx, 10)] + rho0 + flux0 + obj0;
+                        }
+                    }
+                }
+            }
+            //  On ymax
+            if (_p.PEy == _p.my - 1) {
+                for (int k = 0; k < _p.nz; ++k) {
+                    for (int i = 0; i < _p.nx; ++i) {
+                        if (_bctype(i + _p.offsetx, (_p.ny - 1) + _p.offsety, k + _p.offsetz)) {
+                            int idx = _p.Index(i, _p.ny - 1, k);
+                            T rho0 = -(8.0*_p.f[P<T>::IndexF(idx, 5)] + _p.f[P<T>::IndexF(idx, 9)] + _p.f[P<T>::IndexF(idx, 11)] + _p.f[P<T>::IndexF(idx, 12)] + _p.f[P<T>::IndexF(idx, 14)])/6.0;
+                            T flux0 = T();
+                            if (_bctype(i + _p.offsetx, (_p.ny - 1) + _p.offsety, k + _p.offsetz) == SetT) {
+                                flux0 = _tem[idx]*(
+                                    _uz[idx]*(_q.f[Q<T>::IndexF(idx, 9)] - _q.f[Q<T>::IndexF(idx, 11)] - _q.f[Q<T>::IndexF(idx, 12)] + _q.f[Q<T>::IndexF(idx, 14)])/4.0
+                                    + _ux[idx]*(_q.f[Q<T>::IndexF(idx, 9)] - _q.f[Q<T>::IndexF(idx, 11)] + _q.f[Q<T>::IndexF(idx, 12)] - _q.f[Q<T>::IndexF(idx, 14)])/4.0
+                                )/(_rho[idx]*(1.0 - 3.0*_uy[idx]));
+                            } else if (_bctype(i + _p.offsetx, (_p.ny - 1) + _p.offsety, k + _p.offsetz) == SetQ) {
+                                flux0 = -_tem[idx]*(
+                                    (8.0*_q.f[Q<T>::IndexF(idx, 5)] + _q.f[Q<T>::IndexF(idx, 9)] + _q.f[Q<T>::IndexF(idx, 11)] + _q.f[Q<T>::IndexF(idx, 12)] + _q.f[Q<T>::IndexF(idx, 14)])/6.0
+                                    + _uz[idx]*(_q.f[Q<T>::IndexF(idx, 9)] - _q.f[Q<T>::IndexF(idx, 11)] - _q.f[Q<T>::IndexF(idx, 12)] + _q.f[Q<T>::IndexF(idx, 14)])/4.0
+                                    + _ux[idx]*(_q.f[Q<T>::IndexF(idx, 9)] - _q.f[Q<T>::IndexF(idx, 11)] + _q.f[Q<T>::IndexF(idx, 12)] - _q.f[Q<T>::IndexF(idx, 14)])/4.0
+                                )/(_rho[idx]*(1.0 + 3.0*_uy[idx]));
+                            }
+                            T obj0 = _eps*2.0*_tem[idx]/((1.0 + 3.0*_uy[idx])*_rho[idx]);
+                            _p.f[P<T>::IndexF(idx, 2)] = _p.f[P<T>::IndexF(idx, 5)] + rho0 + flux0 + obj0;
+                            _p.f[P<T>::IndexF(idx, 7)] = _p.f[P<T>::IndexF(idx, 11)] + rho0 + flux0 + obj0;
+                            _p.f[P<T>::IndexF(idx, 8)] = _p.f[P<T>::IndexF(idx, 12)] + rho0 + flux0 + obj0;
+                            _p.f[P<T>::IndexF(idx, 10)] = _p.f[P<T>::IndexF(idx, 14)] + rho0 + flux0 + obj0;
+                            _p.f[P<T>::IndexF(idx, 13)] = _p.f[P<T>::IndexF(idx, 9)] + rho0 + flux0 + obj0;
+                        }
+                    }
+                }
+            }
+            //  On zmin
+            if (_p.PEz == 0) {
+                for (int i = 0; i < _p.nx; ++i) {
+                    for (int j = 0; j < _p.ny; ++j) {
+                        if (_bctype(i + _p.offsetx, j + _p.offsety, 0 + _p.offsetz)) {
+                            int idx = _p.Index(i, j, 0);
+                            T rho0 = -(8.0*_p.f[P<T>::IndexF(idx, 3)] + _p.f[P<T>::IndexF(idx, 7)] + _p.f[P<T>::IndexF(idx, 8)] + _p.f[P<T>::IndexF(idx, 9)] + _p.f[P<T>::IndexF(idx, 14)])/6.0;
+                            T flux0 = T();
+                            if (_bctype(i + _p.offsetx, j + _p.offsety, 0 + _p.offsetz) == SetT) {
+                                flux0 = _tem[idx]*(
+                                    _ux[idx]*(_q.f[Q<T>::IndexF(idx, 7)] - _q.f[Q<T>::IndexF(idx, 8)] + _q.f[Q<T>::IndexF(idx, 9)] - _q.f[Q<T>::IndexF(idx, 14)])/4.0
+                                    + _uy[idx]*(_q.f[Q<T>::IndexF(idx, 7)] + _q.f[Q<T>::IndexF(idx, 8)] - _q.f[Q<T>::IndexF(idx, 9)] - _q.f[Q<T>::IndexF(idx, 14)])/4.0
+                                )/(_rho[idx]*(1.0 + 3.0*_uz[idx]));
+                            } else if (_bctype(i + _p.offsetx, j + _p.offsety, 0 + _p.offsetz) == SetQ) {
+                                flux0 = -_tem[idx]*(
+                                    (8.0*_q.f[Q<T>::IndexF(idx, 3)] + _q.f[Q<T>::IndexF(idx, 7)] + _q.f[Q<T>::IndexF(idx, 8)] + _q.f[Q<T>::IndexF(idx, 9)] + _q.f[Q<T>::IndexF(idx, 14)])/6.0
+                                    + _ux[idx]*(_q.f[Q<T>::IndexF(idx, 7)] - _q.f[Q<T>::IndexF(idx, 8)] + _q.f[Q<T>::IndexF(idx, 9)] - _q.f[Q<T>::IndexF(idx, 14)])/4.0
+                                    + _uy[idx]*(_q.f[Q<T>::IndexF(idx, 7)] + _q.f[Q<T>::IndexF(idx, 8)] - _q.f[Q<T>::IndexF(idx, 9)] - _q.f[Q<T>::IndexF(idx, 14)])/4.0
+                                )/(_rho[idx]*(1.0 - 3.0*_uz[idx]));
+                            }
+                            T obj0 = _eps*2.0*_tem[idx]/((1.0 - 3.0*_uz[idx])*_rho[idx]);
+                            _p.f[P<T>::IndexF(idx, 6)] = _p.f[P<T>::IndexF(idx, 3)] + rho0 + flux0 + obj0;
+                            _p.f[P<T>::IndexF(idx, 10)] = _p.f[P<T>::IndexF(idx, 14)] + rho0 + flux0 + obj0;
+                            _p.f[P<T>::IndexF(idx, 11)] = _p.f[P<T>::IndexF(idx, 7)] + rho0 + flux0 + obj0;
+                            _p.f[P<T>::IndexF(idx, 12)] = _p.f[P<T>::IndexF(idx, 8)] + rho0 + flux0 + obj0;
+                            _p.f[P<T>::IndexF(idx, 13)] = _p.f[P<T>::IndexF(idx, 9)] + rho0 + flux0 + obj0;
+                        }
+                    }
+                }
+            }
+            //  On zmax
+            if (_p.PEz == _p.mz - 1) {
+                for (int i = 0; i < _p.nx; ++i) {
+                    for (int j = 0; j < _p.ny; ++j) {
+                        if (_bctype(i + _p.offsetx, j + _p.offsety, (_p.nz - 1) + _p.offsetz)) {
+                            int idx = _p.Index(i, j, _p.nz - 1);
+                            T rho0 = -(8.0*_p.f[P<T>::IndexF(idx, 6)] + _p.f[P<T>::IndexF(idx, 10)] + _p.f[P<T>::IndexF(idx, 11)] + _p.f[P<T>::IndexF(idx, 12)] + _p.f[P<T>::IndexF(idx, 13)])/6.0;
+                            T flux0 = T();
+                            if (_bctype(i + _p.offsetx, j + _p.offsety, (_p.nz - 1) + _p.offsetz) == SetT) {
+                                flux0 = _tem[idx]*(
+                                    _ux[idx]*(_q.f[Q<T>::IndexF(idx, 10)] - _q.f[Q<T>::IndexF(idx, 11)] + _q.f[Q<T>::IndexF(idx, 12)] - _q.f[Q<T>::IndexF(idx, 13)])/4.0
+                                    + _uy[idx]*(_q.f[Q<T>::IndexF(idx, 10)] - _q.f[Q<T>::IndexF(idx, 11)] - _q.f[Q<T>::IndexF(idx, 12)] + _q.f[Q<T>::IndexF(idx, 13)])/4.0
+                                )/(_rho[idx]*(1.0 - 3.0*_uz[idx]));
+                            } else if (_bctype(i + _p.offsetx, j + _p.offsety, (_p.nz - 1) + _p.offsetz) == SetQ) {
+                                flux0 = -_tem[idx]*(
+                                    (8.0*_q.f[Q<T>::IndexF(idx, 6)] + _q.f[Q<T>::IndexF(idx, 10)] + _q.f[Q<T>::IndexF(idx, 11)] + _q.f[Q<T>::IndexF(idx, 12)] + _q.f[Q<T>::IndexF(idx, 13)])/6.0
+                                    + _ux[idx]*(_q.f[Q<T>::IndexF(idx, 10)] - _q.f[Q<T>::IndexF(idx, 11)] + _q.f[Q<T>::IndexF(idx, 12)] - _q.f[Q<T>::IndexF(idx, 13)])/4.0
+                                    + _uy[idx]*(_q.f[Q<T>::IndexF(idx, 10)] - _q.f[Q<T>::IndexF(idx, 11)] - _q.f[Q<T>::IndexF(idx, 12)] + _q.f[Q<T>::IndexF(idx, 13)])/4.0
+                                )/(_rho[idx]*(1.0 + 3.0*_uz[idx]));
+                            }
+                            T obj0 = _eps*2.0*_tem[idx]/((1.0 + 3.0*_uz[idx])*_rho[idx]);
+                            _p.f[P<T>::IndexF(idx, 3)] = _p.f[P<T>::IndexF(idx, 6)] + rho0 + flux0 + obj0;
+                            _p.f[P<T>::IndexF(idx, 7)] = _p.f[P<T>::IndexF(idx, 11)] + rho0 + flux0 + obj0;
+                            _p.f[P<T>::IndexF(idx, 8)] = _p.f[P<T>::IndexF(idx, 12)] + rho0 + flux0 + obj0;
+                            _p.f[P<T>::IndexF(idx, 9)] = _p.f[P<T>::IndexF(idx, 13)] + rho0 + flux0 + obj0;
+                            _p.f[P<T>::IndexF(idx, 14)] = _p.f[P<T>::IndexF(idx, 10)] + rho0 + flux0 + obj0;
+                        }
                     }
                 }
             }
@@ -1148,43 +1238,52 @@ namespace PANSLBM2 {
                 }
             }
 
-            //  Boundary term 
-            for (int j = 0; j < _q.ny; ++j) {
-                //  Along xmin
-                if (_bctype(0 + _q.offsetx, j + _q.offsety)) {
-                    int idx = _q.Index(0, j);
-                    _dfds[idx] += _qnbc(0 + _q.offsetx, j + _q.offsety)*_dkds[idx]*(
-                        (1.0 + 3.0*_ux[idx])*(-6.0 + 4.0*_ig[Q<T>::IndexF(idx, 1)] + _ig[Q<T>::IndexF(idx, 5)] + _ig[Q<T>::IndexF(idx, 8)])
-                        + 3.0*_uy[idx]*(_ig[Q<T>::IndexF(idx, 5)] - _ig[Q<T>::IndexF(idx, 8)])
-                    )/(36.0*(1.0 - 3.0*_ux[idx])*pow(_diffusivity[idx], 2.0));
-                }
-
-                //  Along xmax
-                if (_bctype((_q.nx - 1) + _q.offsetx, j + _q.offsety)) {
-                    int idx = _q.Index(_q.nx - 1, j);
-                    _dfds[idx] += _qnbc((_q.nx - 1) + _q.offsetx, j + _q.offsety)*_dkds[idx]*(
-                        (1.0 - 3.0*_ux[idx])*(-6.0 + 4.0*_ig[Q<T>::IndexF(idx, 3)] + _ig[Q<T>::IndexF(idx, 6)] + _ig[Q<T>::IndexF(idx, 7)])
-                        + 3.0*_uy[idx]*(_ig[Q<T>::IndexF(idx, 6)] - _ig[Q<T>::IndexF(idx, 7)])
-                    )/(36.0*(1.0 + 3.0*_ux[idx])*pow(_diffusivity[idx], 2.0));
+            //  Boundary term along xmin
+            if (_q.PEx == 0) {
+                for (int j = 0; j < _q.ny; ++j) {
+                    if (_bctype(0 + _q.offsetx, j + _q.offsety)) {
+                        int idx = _q.Index(0, j);
+                        _dfds[idx] += _qnbc(0 + _q.offsetx, j + _q.offsety)*_dkds[idx]*(
+                            (1.0 + 3.0*_ux[idx])*(-6.0 + 4.0*_ig[Q<T>::IndexF(idx, 1)] + _ig[Q<T>::IndexF(idx, 5)] + _ig[Q<T>::IndexF(idx, 8)])
+                            + 3.0*_uy[idx]*(_ig[Q<T>::IndexF(idx, 5)] - _ig[Q<T>::IndexF(idx, 8)])
+                        )/(36.0*(1.0 - 3.0*_ux[idx])*pow(_diffusivity[idx], 2.0));
+                    }
                 }
             }
-            for (int i = 0; i < _q.nx; ++i) {
-                //  Along ymin
-                if (_bctype(i + _q.offsetx, 0 + _q.offsety)) {
-                    int idx = _q.Index(i, 0);
-                    _dfds[idx] += _qnbc(i + _q.offsetx, 0 + _q.offsety)*_dkds[idx]*(
-                        (1.0 + 3.0*_uy[idx])*(-6.0 + 4.0*_ig[Q<T>::IndexF(idx, 2)] + _ig[Q<T>::IndexF(idx, 5)] + _ig[Q<T>::IndexF(idx, 6)])
-                        + 3.0*_ux[idx]*(_ig[Q<T>::IndexF(idx, 5)] - _ig[Q<T>::IndexF(idx, 6)])
-                    )/(36.0*(1.0 - 3.0*_uy[idx])*pow(_diffusivity[idx], 2.0));
+            //  Boundary term along xmax
+            if (_q.PEx == _q.mx - 1) {
+                for (int j = 0; j < _q.ny; ++j) {
+                    if (_bctype((_q.nx - 1) + _q.offsetx, j + _q.offsety)) {
+                        int idx = _q.Index(_q.nx - 1, j);
+                        _dfds[idx] += _qnbc((_q.nx - 1) + _q.offsetx, j + _q.offsety)*_dkds[idx]*(
+                            (1.0 - 3.0*_ux[idx])*(-6.0 + 4.0*_ig[Q<T>::IndexF(idx, 3)] + _ig[Q<T>::IndexF(idx, 6)] + _ig[Q<T>::IndexF(idx, 7)])
+                            + 3.0*_uy[idx]*(_ig[Q<T>::IndexF(idx, 6)] - _ig[Q<T>::IndexF(idx, 7)])
+                        )/(36.0*(1.0 + 3.0*_ux[idx])*pow(_diffusivity[idx], 2.0));
+                    }
                 }
-
-                //  Along ymax
-                if (_bctype(i + _q.offsetx, (_q.ny - 1) + _q.offsety)) {
-                    int idx = _q.Index(i, _q.ny - 1);
-                    _dfds[idx] += _qnbc(i + _q.offsetx, (_q.ny - 1) + _q.offsety)*_dkds[idx]*(
-                        (1.0 - 3.0*_uy[idx])*(-6.0 + 4.0*_ig[Q<T>::IndexF(idx, 4)] + _ig[Q<T>::IndexF(idx, 7)] + _ig[Q<T>::IndexF(idx, 8)])
-                        + 3.0*_ux[idx]*(_ig[Q<T>::IndexF(idx, 8)] - _ig[Q<T>::IndexF(idx, 7)])
-                    )/(36.0*(1.0 + 3.0*_uy[idx])*pow(_diffusivity[idx], 2.0));
+            }
+            //  Boundary term along ymin
+            if (_q.PEy == 0) {
+                for (int i = 0; i < _q.nx; ++i) {
+                    if (_bctype(i + _q.offsetx, 0 + _q.offsety)) {
+                        int idx = _q.Index(i, 0);
+                        _dfds[idx] += _qnbc(i + _q.offsetx, 0 + _q.offsety)*_dkds[idx]*(
+                            (1.0 + 3.0*_uy[idx])*(-6.0 + 4.0*_ig[Q<T>::IndexF(idx, 2)] + _ig[Q<T>::IndexF(idx, 5)] + _ig[Q<T>::IndexF(idx, 6)])
+                            + 3.0*_ux[idx]*(_ig[Q<T>::IndexF(idx, 5)] - _ig[Q<T>::IndexF(idx, 6)])
+                        )/(36.0*(1.0 - 3.0*_uy[idx])*pow(_diffusivity[idx], 2.0));
+                    }
+                }
+            }
+            //  Boundary term along ymax
+            if (_q.PEy == _q.my - 1) {
+                for (int i = 0; i < _q.nx; ++i) {
+                    if (_bctype(i + _q.offsetx, (_q.ny - 1) + _q.offsety)) {
+                        int idx = _q.Index(i, _q.ny - 1);
+                        _dfds[idx] += _qnbc(i + _q.offsetx, (_q.ny - 1) + _q.offsety)*_dkds[idx]*(
+                            (1.0 - 3.0*_uy[idx])*(-6.0 + 4.0*_ig[Q<T>::IndexF(idx, 4)] + _ig[Q<T>::IndexF(idx, 7)] + _ig[Q<T>::IndexF(idx, 8)])
+                            + 3.0*_ux[idx]*(_ig[Q<T>::IndexF(idx, 8)] - _ig[Q<T>::IndexF(idx, 7)])
+                        )/(36.0*(1.0 + 3.0*_uy[idx])*pow(_diffusivity[idx], 2.0));
+                    }
                 }
             }
         }
@@ -1211,73 +1310,93 @@ namespace PANSLBM2 {
                 }
             }
 
-            //  Boundary term 
-            for (int j = 0; j < _q.ny; ++j) {
-                for (int k = 0; k < _q.nz; ++k) {
-                    //  Along xmin
-                    if (_bctype(0 + _q.offsetx, j + _q.offsety, k + _q.offsetz)) {
-                        int idx = _q.Index(0, j, k);
-                        _dfds[idx] += _qnbc_bctype(0 + _q.offsetx, j + _q.offsety, k + _q.offsetz)*_dkds[idx]*(
-                            (1.0 + 3.0*_ux[idx])*(-12.0 + 8.0*_ig[Q<T>::IndexF(idx, 1)] + _ig[Q<T>::IndexF(idx, 7)] + _ig[Q<T>::IndexF(idx, 9)] + _ig[Q<T>::IndexF(idx, 10)] + _ig[Q<T>::IndexF(idx, 12)])
-                            + 3.0*_uy[idx]*(_ig[Q<T>::IndexF(idx, 7)] - _ig[Q<T>::IndexF(idx, 9)] + _ig[Q<T>::IndexF(idx, 10)] - _ig[Q<T>::IndexF(idx, 12)])
-                            + 3.0*_uz[idx]*(_ig[Q<T>::IndexF(idx, 7)] + _ig[Q<T>::IndexF(idx, 9)] - _ig[Q<T>::IndexF(idx, 10)] - _ig[Q<T>::IndexF(idx, 12)])
-                        )/(72.0*(1.0 - 3.0*_ux[idx])*pow(_diffusivity[idx], 2.0));
-                    }
-
-                    //  Along xmax
-                    if (_bctype((_q.nx - 1) + _q.offsetx, j + _q.offsety, k + _q.offsetz)) {
-                        int idx = _q.Index(_q.nx - 1, j, k);
-                        _dfds[idx] += _qnbc((_q.nx - 1) + _q.offsetx, j + _q.offsety, k + _q.offsetz)*_dkds[idx]*(
-                            (1.0 - 3.0*_ux[idx])*(-12.0 + 8.0*_ig[Q<T>::IndexF(idx, 4)] + _ig[Q<T>::IndexF(idx, 8)] + _ig[Q<T>::IndexF(idx, 11)] + _ig[Q<T>::IndexF(idx, 13)] + _ig[Q<T>::IndexF(idx, 14)])
-                            + 3.0*_uy[idx]*(_ig[Q<T>::IndexF(idx, 8)] - _ig[Q<T>::IndexF(idx, 11)] + _ig[Q<T>::IndexF(idx, 13)] - _ig[Q<T>::IndexF(idx, 14)])
-                            + 3.0*_uz[idx]*(_ig[Q<T>::IndexF(idx, 8)] - _ig[Q<T>::IndexF(idx, 11)] - _ig[Q<T>::IndexF(idx, 13)] + _ig[Q<T>::IndexF(idx, 14)])
-                        )/(72.0*(1.0 + 3.0*_ux[idx])*pow(_diffusivity[idx], 2.0));
-                    }
-                }
-            }
-            for (int k = 0; k < _q.nz; ++k) {
-                for (int i = 0; i < _q.nx; ++i) {
-                    //  Along ymin
-                    if (_bctype(i + _q.offsetx, 0 + _q.offsety, k + _q.offsetz)) {
-                        int idx = _q.Index(i, 0, k);
-                        _dfds[idx] += _qnbc(i + _q.offsetx, 0 + _q.offsety, k + _q.offsetz)*_dkds[idx]*(
-                            (1.0 + 3.0*_uy[idx])*(-12.0 + 8.0*_ig[Q<T>::IndexF(idx, 2)] + _ig[Q<T>::IndexF(idx, 7)] + _ig[Q<T>::IndexF(idx, 8)] + _ig[Q<T>::IndexF(idx, 10)] + _ig[Q<T>::IndexF(idx, 13)])
-                            + 3.0*_uz[idx]*(_ig[Q<T>::IndexF(idx, 7)] + _ig[Q<T>::IndexF(idx, 8)] - _ig[Q<T>::IndexF(idx, 10)] - _ig[Q<T>::IndexF(idx, 13)])
-                            + 3.0*_ux[idx]*(_ig[Q<T>::IndexF(idx, 7)] - _ig[Q<T>::IndexF(idx, 8)] + _ig[Q<T>::IndexF(idx, 10)] - _ig[Q<T>::IndexF(idx, 13)])
-                        )/(72.0*(1.0 - 3.0*_uy[idx])*pow(_diffusivity[idx], 2.0));
-                    }
-
-                    //  Along ymax
-                    if (_bctype(i + _q.offsetx, (_q.ny - 1) + _q.offsety, k + _q.offsetz)) {
-                        int idx = _q.Index(i, _q.ny - 1, k);
-                        _dfds[idx] += _qnbc(i + _q.offsetx, (_q.ny - 1) + _q.offsety, k + _q.offsetz)*_dkds[idx]*(
-                            (1.0 - 3.0*_uy[idx])*(-12.0 + 8.0*_ig[Q<T>::IndexF(idx, 5)] + _ig[Q<T>::IndexF(idx, 9)] + _ig[Q<T>::IndexF(idx, 11)] + _ig[Q<T>::IndexF(idx, 12)] + _ig[Q<T>::IndexF(idx, 14)])
-                            + _uz[idx]*(_ig[Q<T>::IndexF(idx, 9)] - _ig[Q<T>::IndexF(idx, 11)] - _ig[Q<T>::IndexF(idx, 12)] + _ig[Q<T>::IndexF(idx, 14)])
-                            + _ux[idx]*(_ig[Q<T>::IndexF(idx, 9)] - _ig[Q<T>::IndexF(idx, 11)] + _ig[Q<T>::IndexF(idx, 12)] - _ig[Q<T>::IndexF(idx, 14)])
-                        )/(72.0*(1.0 + 3.0*_uy[idx])*pow(_diffusivity[idx], 2.0));
-                    }
-                }
-            }
-            for (int i = 0; i < _q.nx; ++i) {
+            //  Boundary term along xmin
+            if (_q.PEx == 0) {
                 for (int j = 0; j < _q.ny; ++j) {
-                    //  Along zmin
-                    if (_bctype(i + _q.offsetx, j + _q.offsety, 0 + _q.offsetz)) {
-                        int idx = _q.Index(i, j, 0);
-                        _dfds[idx] += _qnbc(i + _q.offsetx, j + _q.offsety, 0 + _q.offsetz)*_dkds[idx]*(
-                            (1.0 + 3.0*_uz[idx])*(-12.0 + 8.0*_ig[Q<T>::IndexF(idx, 3)] + _ig[Q<T>::IndexF(idx, 7)] + _ig[Q<T>::IndexF(idx, 8)] + _ig[Q<T>::IndexF(idx, 9)] + _ig[Q<T>::IndexF(idx, 14)])
-                            + _ux[idx]*(_ig[Q<T>::IndexF(idx, 7)] - _ig[Q<T>::IndexF(idx, 8)] + _ig[Q<T>::IndexF(idx, 9)] - _ig[Q<T>::IndexF(idx, 14)])
-                            + _uy[idx]*(_ig[Q<T>::IndexF(idx, 7)] + _ig[Q<T>::IndexF(idx, 8)] - _ig[Q<T>::IndexF(idx, 9)] - _ig[Q<T>::IndexF(idx, 14)])
-                        )/(72.0*(1.0 - 3.0*_uz[idx])*pow(_diffusivity[idx], 2.0));
+                    for (int k = 0; k < _q.nz; ++k) {
+                        if (_bctype(0 + _q.offsetx, j + _q.offsety, k + _q.offsetz)) {
+                            int idx = _q.Index(0, j, k);
+                            _dfds[idx] += _qnbc_bctype(0 + _q.offsetx, j + _q.offsety, k + _q.offsetz)*_dkds[idx]*(
+                                (1.0 + 3.0*_ux[idx])*(-12.0 + 8.0*_ig[Q<T>::IndexF(idx, 1)] + _ig[Q<T>::IndexF(idx, 7)] + _ig[Q<T>::IndexF(idx, 9)] + _ig[Q<T>::IndexF(idx, 10)] + _ig[Q<T>::IndexF(idx, 12)])
+                                + 3.0*_uy[idx]*(_ig[Q<T>::IndexF(idx, 7)] - _ig[Q<T>::IndexF(idx, 9)] + _ig[Q<T>::IndexF(idx, 10)] - _ig[Q<T>::IndexF(idx, 12)])
+                                + 3.0*_uz[idx]*(_ig[Q<T>::IndexF(idx, 7)] + _ig[Q<T>::IndexF(idx, 9)] - _ig[Q<T>::IndexF(idx, 10)] - _ig[Q<T>::IndexF(idx, 12)])
+                            )/(72.0*(1.0 - 3.0*_ux[idx])*pow(_diffusivity[idx], 2.0));
+                        }
                     }
-
-                    //  Along zmax
-                    if (_bctype(i + _q.offsetx, j + _q.offsety, (_q.nz - 1) + _q.offsetz)) {
-                        int idx = _q.Index(i, j, _q.nz - 1);
-                        _dfds[idx] += _qnbc(i + _q.offsetx, j + _q.offsety, (_q.nz - 1) + _q.offsetz)*_dkds[idx]*(
-                            (1.0 - 3.0*_uz[idx])*(-12.0 + 8.0*_ig[Q<T>::IndexF(idx, 6)] + _ig[Q<T>::IndexF(idx, 10)] + _ig[Q<T>::IndexF(idx, 11)] + _ig[Q<T>::IndexF(idx, 12)] + _ig[Q<T>::IndexF(idx, 13)])
-                            + _ux[idx]*(_ig[Q<T>::IndexF(idx, 10)] - _ig[Q<T>::IndexF(idx, 11)] + _ig[Q<T>::IndexF(idx, 12)] - _ig[Q<T>::IndexF(idx, 13)])
-                            + _uy[idx]*(_ig[Q<T>::IndexF(idx, 10)] - _ig[Q<T>::IndexF(idx, 11)] - _ig[Q<T>::IndexF(idx, 12)] + _ig[Q<T>::IndexF(idx, 13)])
-                        )/(72.0*(1.0 + 3.0*_uz[idx])*pow(_diffusivity[idx], 2.0));
+                }
+            }
+            //  Boundary term along xmax
+            if (_q.PEx == _q.mx - 1) {
+                for (int j = 0; j < _q.ny; ++j) {
+                    for (int k = 0; k < _q.nz; ++k) {
+                        if (_bctype((_q.nx - 1) + _q.offsetx, j + _q.offsety, k + _q.offsetz)) {
+                            int idx = _q.Index(_q.nx - 1, j, k);
+                            _dfds[idx] += _qnbc((_q.nx - 1) + _q.offsetx, j + _q.offsety, k + _q.offsetz)*_dkds[idx]*(
+                                (1.0 - 3.0*_ux[idx])*(-12.0 + 8.0*_ig[Q<T>::IndexF(idx, 4)] + _ig[Q<T>::IndexF(idx, 8)] + _ig[Q<T>::IndexF(idx, 11)] + _ig[Q<T>::IndexF(idx, 13)] + _ig[Q<T>::IndexF(idx, 14)])
+                                + 3.0*_uy[idx]*(_ig[Q<T>::IndexF(idx, 8)] - _ig[Q<T>::IndexF(idx, 11)] + _ig[Q<T>::IndexF(idx, 13)] - _ig[Q<T>::IndexF(idx, 14)])
+                                + 3.0*_uz[idx]*(_ig[Q<T>::IndexF(idx, 8)] - _ig[Q<T>::IndexF(idx, 11)] - _ig[Q<T>::IndexF(idx, 13)] + _ig[Q<T>::IndexF(idx, 14)])
+                            )/(72.0*(1.0 + 3.0*_ux[idx])*pow(_diffusivity[idx], 2.0));
+                        }
+                    }
+                }
+            }
+            //  Boundary term along ymin
+            if (_q.PEy == 0) {
+                for (int k = 0; k < _q.nz; ++k) {
+                    for (int i = 0; i < _q.nx; ++i) {
+                        if (_bctype(i + _q.offsetx, 0 + _q.offsety, k + _q.offsetz)) {
+                            int idx = _q.Index(i, 0, k);
+                            _dfds[idx] += _qnbc(i + _q.offsetx, 0 + _q.offsety, k + _q.offsetz)*_dkds[idx]*(
+                                (1.0 + 3.0*_uy[idx])*(-12.0 + 8.0*_ig[Q<T>::IndexF(idx, 2)] + _ig[Q<T>::IndexF(idx, 7)] + _ig[Q<T>::IndexF(idx, 8)] + _ig[Q<T>::IndexF(idx, 10)] + _ig[Q<T>::IndexF(idx, 13)])
+                                + 3.0*_uz[idx]*(_ig[Q<T>::IndexF(idx, 7)] + _ig[Q<T>::IndexF(idx, 8)] - _ig[Q<T>::IndexF(idx, 10)] - _ig[Q<T>::IndexF(idx, 13)])
+                                + 3.0*_ux[idx]*(_ig[Q<T>::IndexF(idx, 7)] - _ig[Q<T>::IndexF(idx, 8)] + _ig[Q<T>::IndexF(idx, 10)] - _ig[Q<T>::IndexF(idx, 13)])
+                            )/(72.0*(1.0 - 3.0*_uy[idx])*pow(_diffusivity[idx], 2.0));
+                        }
+                    }
+                }
+            }
+            //  Boundary term along ymax
+            if (_q.PEy == _q.my - 1) {
+                for (int k = 0; k < _q.nz; ++k) {
+                    for (int i = 0; i < _q.nx; ++i) {
+                        if (_bctype(i + _q.offsetx, (_q.ny - 1) + _q.offsety, k + _q.offsetz)) {
+                            int idx = _q.Index(i, _q.ny - 1, k);
+                            _dfds[idx] += _qnbc(i + _q.offsetx, (_q.ny - 1) + _q.offsety, k + _q.offsetz)*_dkds[idx]*(
+                                (1.0 - 3.0*_uy[idx])*(-12.0 + 8.0*_ig[Q<T>::IndexF(idx, 5)] + _ig[Q<T>::IndexF(idx, 9)] + _ig[Q<T>::IndexF(idx, 11)] + _ig[Q<T>::IndexF(idx, 12)] + _ig[Q<T>::IndexF(idx, 14)])
+                                + _uz[idx]*(_ig[Q<T>::IndexF(idx, 9)] - _ig[Q<T>::IndexF(idx, 11)] - _ig[Q<T>::IndexF(idx, 12)] + _ig[Q<T>::IndexF(idx, 14)])
+                                + _ux[idx]*(_ig[Q<T>::IndexF(idx, 9)] - _ig[Q<T>::IndexF(idx, 11)] + _ig[Q<T>::IndexF(idx, 12)] - _ig[Q<T>::IndexF(idx, 14)])
+                            )/(72.0*(1.0 + 3.0*_uy[idx])*pow(_diffusivity[idx], 2.0));
+                        }
+                    }
+                }
+            }
+            //  Boundary term along zmin
+            if (_q.PEz == 0) {
+                for (int i = 0; i < _q.nx; ++i) {
+                    for (int j = 0; j < _q.ny; ++j) {
+                        if (_bctype(i + _q.offsetx, j + _q.offsety, 0 + _q.offsetz)) {
+                            int idx = _q.Index(i, j, 0);
+                            _dfds[idx] += _qnbc(i + _q.offsetx, j + _q.offsety, 0 + _q.offsetz)*_dkds[idx]*(
+                                (1.0 + 3.0*_uz[idx])*(-12.0 + 8.0*_ig[Q<T>::IndexF(idx, 3)] + _ig[Q<T>::IndexF(idx, 7)] + _ig[Q<T>::IndexF(idx, 8)] + _ig[Q<T>::IndexF(idx, 9)] + _ig[Q<T>::IndexF(idx, 14)])
+                                + _ux[idx]*(_ig[Q<T>::IndexF(idx, 7)] - _ig[Q<T>::IndexF(idx, 8)] + _ig[Q<T>::IndexF(idx, 9)] - _ig[Q<T>::IndexF(idx, 14)])
+                                + _uy[idx]*(_ig[Q<T>::IndexF(idx, 7)] + _ig[Q<T>::IndexF(idx, 8)] - _ig[Q<T>::IndexF(idx, 9)] - _ig[Q<T>::IndexF(idx, 14)])
+                            )/(72.0*(1.0 - 3.0*_uz[idx])*pow(_diffusivity[idx], 2.0));
+                        }
+                    }
+                }
+            }
+            //  Boundary term along zmax
+            if (_q.PEz == _q.mz - 1) {
+                for (int i = 0; i < _q.nx; ++i) {
+                    for (int j = 0; j < _q.ny; ++j) {
+                        if (_bctype(i + _q.offsetx, j + _q.offsety, (_q.nz - 1) + _q.offsetz)) {
+                            int idx = _q.Index(i, j, _q.nz - 1);
+                            _dfds[idx] += _qnbc(i + _q.offsetx, j + _q.offsety, (_q.nz - 1) + _q.offsetz)*_dkds[idx]*(
+                                (1.0 - 3.0*_uz[idx])*(-12.0 + 8.0*_ig[Q<T>::IndexF(idx, 6)] + _ig[Q<T>::IndexF(idx, 10)] + _ig[Q<T>::IndexF(idx, 11)] + _ig[Q<T>::IndexF(idx, 12)] + _ig[Q<T>::IndexF(idx, 13)])
+                                + _ux[idx]*(_ig[Q<T>::IndexF(idx, 10)] - _ig[Q<T>::IndexF(idx, 11)] + _ig[Q<T>::IndexF(idx, 12)] - _ig[Q<T>::IndexF(idx, 13)])
+                                + _uy[idx]*(_ig[Q<T>::IndexF(idx, 10)] - _ig[Q<T>::IndexF(idx, 11)] - _ig[Q<T>::IndexF(idx, 12)] + _ig[Q<T>::IndexF(idx, 13)])
+                            )/(72.0*(1.0 + 3.0*_uz[idx])*pow(_diffusivity[idx], 2.0));
+                        }
                     }
                 }
             }

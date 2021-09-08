@@ -101,59 +101,68 @@ private:
     template<class T>
     template<class Ff>
     void D2Q9<T>::BoundaryCondition(Ff _bctype) {
-        for (int j = 0; j < this->ny; ++j) {
-            //  On xmin
-            if (_bctype(0 + this->offsetx, j + this->offsety) == BARRIER) {
-                int idx = this->Index(0, j);
-                this->f[D2Q9<T>::IndexF(idx, 1)] = this->f[D2Q9<T>::IndexF(idx, 3)];
-                this->f[D2Q9<T>::IndexF(idx, 5)] = this->f[D2Q9<T>::IndexF(idx, 7)];
-                this->f[D2Q9<T>::IndexF(idx, 8)] = this->f[D2Q9<T>::IndexF(idx, 6)];
-            } else if (_bctype(0 + this->offsetx, j + this->offsety) == MIRROR) {
-                int idx = this->Index(0, j);
-                this->f[D2Q9<T>::IndexF(idx, 1)] = this->f[D2Q9<T>::IndexF(idx, 3)];
-                this->f[D2Q9<T>::IndexF(idx, 5)] = this->f[D2Q9<T>::IndexF(idx, 6)];
-                this->f[D2Q9<T>::IndexF(idx, 8)] = this->f[D2Q9<T>::IndexF(idx, 7)];
-            }
-
-            //  On xmax
-            if (_bctype((this->nx - 1) + this->offsetx, j + this->offsety) == BARRIER) {
-                int idx = this->Index(this->nx - 1, j);
-                this->f[D2Q9<T>::IndexF(idx, 3)] = this->f[D2Q9<T>::IndexF(idx, 1)];
-                this->f[D2Q9<T>::IndexF(idx, 7)] = this->f[D2Q9<T>::IndexF(idx, 5)];
-                this->f[D2Q9<T>::IndexF(idx, 6)] = this->f[D2Q9<T>::IndexF(idx, 8)];
-            } else if (_bctype((this->nx - 1) + this->offsetx, j + this->offsety) == MIRROR) {
-                int idx = this->Index(this->nx - 1, j);
-                this->f[D2Q9<T>::IndexF(idx, 3)] = this->f[D2Q9<T>::IndexF(idx, 1)];
-                this->f[D2Q9<T>::IndexF(idx, 7)] = this->f[D2Q9<T>::IndexF(idx, 8)];
-                this->f[D2Q9<T>::IndexF(idx, 6)] = this->f[D2Q9<T>::IndexF(idx, 5)];
+        //  On xmin
+        if (this->PEx == 0) {
+            for (int j = 0; j < this->ny; ++j) {
+                if (_bctype(0 + this->offsetx, j + this->offsety) == BARRIER) {
+                    int idx = this->Index(0, j);
+                    this->f[D2Q9<T>::IndexF(idx, 1)] = this->f[D2Q9<T>::IndexF(idx, 3)];
+                    this->f[D2Q9<T>::IndexF(idx, 5)] = this->f[D2Q9<T>::IndexF(idx, 7)];
+                    this->f[D2Q9<T>::IndexF(idx, 8)] = this->f[D2Q9<T>::IndexF(idx, 6)];
+                } else if (_bctype(0 + this->offsetx, j + this->offsety) == MIRROR) {
+                    int idx = this->Index(0, j);
+                    this->f[D2Q9<T>::IndexF(idx, 1)] = this->f[D2Q9<T>::IndexF(idx, 3)];
+                    this->f[D2Q9<T>::IndexF(idx, 5)] = this->f[D2Q9<T>::IndexF(idx, 6)];
+                    this->f[D2Q9<T>::IndexF(idx, 8)] = this->f[D2Q9<T>::IndexF(idx, 7)];
+                }
             }
         }
-
-        for (int i = 0; i < this->nx; ++i) {
-            //  On ymin
-            if (_bctype(i + this->offsetx, 0 + this->offsety) == BARRIER) {
-                int idx = this->Index(i, 0);
-                this->f[D2Q9<T>::IndexF(idx, 2)] = this->f[D2Q9<T>::IndexF(idx, 4)];
-                this->f[D2Q9<T>::IndexF(idx, 5)] = this->f[D2Q9<T>::IndexF(idx, 7)];
-                this->f[D2Q9<T>::IndexF(idx, 6)] = this->f[D2Q9<T>::IndexF(idx, 8)];
-            } else if (_bctype(i + this->offsetx, 0 + this->offsety) == MIRROR) {
-                int idx = this->Index(i, 0);
-                this->f[D2Q9<T>::IndexF(idx, 2)] = this->f[D2Q9<T>::IndexF(idx, 4)];
-                this->f[D2Q9<T>::IndexF(idx, 5)] = this->f[D2Q9<T>::IndexF(idx, 8)];
-                this->f[D2Q9<T>::IndexF(idx, 6)] = this->f[D2Q9<T>::IndexF(idx, 7)];
+        //  On xmax
+        if (this->PEx == this->mx - 1) {
+            for (int j = 0; j < this->ny; ++j) {
+                if (_bctype((this->nx - 1) + this->offsetx, j + this->offsety) == BARRIER) {
+                    int idx = this->Index(this->nx - 1, j);
+                    this->f[D2Q9<T>::IndexF(idx, 3)] = this->f[D2Q9<T>::IndexF(idx, 1)];
+                    this->f[D2Q9<T>::IndexF(idx, 7)] = this->f[D2Q9<T>::IndexF(idx, 5)];
+                    this->f[D2Q9<T>::IndexF(idx, 6)] = this->f[D2Q9<T>::IndexF(idx, 8)];
+                } else if (_bctype((this->nx - 1) + this->offsetx, j + this->offsety) == MIRROR) {
+                    int idx = this->Index(this->nx - 1, j);
+                    this->f[D2Q9<T>::IndexF(idx, 3)] = this->f[D2Q9<T>::IndexF(idx, 1)];
+                    this->f[D2Q9<T>::IndexF(idx, 7)] = this->f[D2Q9<T>::IndexF(idx, 8)];
+                    this->f[D2Q9<T>::IndexF(idx, 6)] = this->f[D2Q9<T>::IndexF(idx, 5)];
+                }
             }
-
-            //  On ymax
-            if (_bctype(i + this->offsetx, (this->ny - 1) + this->offsety) == BARRIER) {
-                int idx = this->Index(i, this->ny - 1);
-                this->f[D2Q9<T>::IndexF(idx, 4)] = this->f[D2Q9<T>::IndexF(idx, 2)];
-                this->f[D2Q9<T>::IndexF(idx, 7)] = this->f[D2Q9<T>::IndexF(idx, 5)];
-                this->f[D2Q9<T>::IndexF(idx, 8)] = this->f[D2Q9<T>::IndexF(idx, 6)];
-            } else if (_bctype(i + this->offsetx, (this->ny - 1) + this->offsety) == MIRROR) {
-                int idx = this->Index(i, this->ny - 1);
-                this->f[D2Q9<T>::IndexF(idx, 4)] = this->f[D2Q9<T>::IndexF(idx, 2)];
-                this->f[D2Q9<T>::IndexF(idx, 7)] = this->f[D2Q9<T>::IndexF(idx, 6)];
-                this->f[D2Q9<T>::IndexF(idx, 8)] = this->f[D2Q9<T>::IndexF(idx, 5)];
+        }
+        //  On ymin
+        if (this->PEy == 0) {
+            for (int i = 0; i < this->nx; ++i) {
+                if (_bctype(i + this->offsetx, 0 + this->offsety) == BARRIER) {
+                    int idx = this->Index(i, 0);
+                    this->f[D2Q9<T>::IndexF(idx, 2)] = this->f[D2Q9<T>::IndexF(idx, 4)];
+                    this->f[D2Q9<T>::IndexF(idx, 5)] = this->f[D2Q9<T>::IndexF(idx, 7)];
+                    this->f[D2Q9<T>::IndexF(idx, 6)] = this->f[D2Q9<T>::IndexF(idx, 8)];
+                } else if (_bctype(i + this->offsetx, 0 + this->offsety) == MIRROR) {
+                    int idx = this->Index(i, 0);
+                    this->f[D2Q9<T>::IndexF(idx, 2)] = this->f[D2Q9<T>::IndexF(idx, 4)];
+                    this->f[D2Q9<T>::IndexF(idx, 5)] = this->f[D2Q9<T>::IndexF(idx, 8)];
+                    this->f[D2Q9<T>::IndexF(idx, 6)] = this->f[D2Q9<T>::IndexF(idx, 7)];
+                }
+            }
+        }
+        //  On ymax
+        if (this->PEy == this->my - 1) {
+            for (int i = 0; i < this->nx; ++i) {
+                if (_bctype(i + this->offsetx, (this->ny - 1) + this->offsety) == BARRIER) {
+                    int idx = this->Index(i, this->ny - 1);
+                    this->f[D2Q9<T>::IndexF(idx, 4)] = this->f[D2Q9<T>::IndexF(idx, 2)];
+                    this->f[D2Q9<T>::IndexF(idx, 7)] = this->f[D2Q9<T>::IndexF(idx, 5)];
+                    this->f[D2Q9<T>::IndexF(idx, 8)] = this->f[D2Q9<T>::IndexF(idx, 6)];
+                } else if (_bctype(i + this->offsetx, (this->ny - 1) + this->offsety) == MIRROR) {
+                    int idx = this->Index(i, this->ny - 1);
+                    this->f[D2Q9<T>::IndexF(idx, 4)] = this->f[D2Q9<T>::IndexF(idx, 2)];
+                    this->f[D2Q9<T>::IndexF(idx, 7)] = this->f[D2Q9<T>::IndexF(idx, 6)];
+                    this->f[D2Q9<T>::IndexF(idx, 8)] = this->f[D2Q9<T>::IndexF(idx, 5)];
+                }
             }
         }
     }
@@ -161,59 +170,68 @@ private:
     template<class T>
     template<class Ff>
     void D2Q9<T>::iBoundaryCondition(Ff _bctype) {
-        for (int j = 0; j < this->ny; ++j) {
-            //  On xmin
-            if (_bctype(0 + this->offsetx, j + this->offsety) == BARRIER) {
-                int idx = this->Index(0, j);
-                this->f[D2Q9<T>::IndexF(idx, 3)] = this->f[D2Q9<T>::IndexF(idx, 1)];
-                this->f[D2Q9<T>::IndexF(idx, 7)] = this->f[D2Q9<T>::IndexF(idx, 5)];
-                this->f[D2Q9<T>::IndexF(idx, 6)] = this->f[D2Q9<T>::IndexF(idx, 8)];
-            } else if (_bctype(0 + this->offsetx, j + this->offsety) == MIRROR) {
-                int idx = this->Index(0, j);
-                this->f[D2Q9<T>::IndexF(idx, 3)] = this->f[D2Q9<T>::IndexF(idx, 1)];
-                this->f[D2Q9<T>::IndexF(idx, 6)] = this->f[D2Q9<T>::IndexF(idx, 5)];
-                this->f[D2Q9<T>::IndexF(idx, 7)] = this->f[D2Q9<T>::IndexF(idx, 8)];
-            }
-
-            //  On xmax
-            if (_bctype((this->nx - 1) + this->offsetx, j + this->offsety) == BARRIER) {
-                int idx = this->Index(this->nx - 1, j);
-                this->f[D2Q9<T>::IndexF(idx, 1)] = this->f[D2Q9<T>::IndexF(idx, 3)];
-                this->f[D2Q9<T>::IndexF(idx, 5)] = this->f[D2Q9<T>::IndexF(idx, 7)];
-                this->f[D2Q9<T>::IndexF(idx, 8)] = this->f[D2Q9<T>::IndexF(idx, 6)];
-            } else if (_bctype((this->nx - 1) + this->offsetx, j + this->offsety) == MIRROR) {
-                int idx = this->Index(this->nx - 1, j);
-                this->f[D2Q9<T>::IndexF(idx, 1)] = this->f[D2Q9<T>::IndexF(idx, 3)];
-                this->f[D2Q9<T>::IndexF(idx, 8)] = this->f[D2Q9<T>::IndexF(idx, 7)];
-                this->f[D2Q9<T>::IndexF(idx, 5)] = this->f[D2Q9<T>::IndexF(idx, 6)];
+        //  On xmin
+        if (this->PEx == 0) {
+            for (int j = 0; j < this->ny; ++j) {
+                if (_bctype(0 + this->offsetx, j + this->offsety) == BARRIER) {
+                    int idx = this->Index(0, j);
+                    this->f[D2Q9<T>::IndexF(idx, 3)] = this->f[D2Q9<T>::IndexF(idx, 1)];
+                    this->f[D2Q9<T>::IndexF(idx, 7)] = this->f[D2Q9<T>::IndexF(idx, 5)];
+                    this->f[D2Q9<T>::IndexF(idx, 6)] = this->f[D2Q9<T>::IndexF(idx, 8)];
+                } else if (_bctype(0 + this->offsetx, j + this->offsety) == MIRROR) {
+                    int idx = this->Index(0, j);
+                    this->f[D2Q9<T>::IndexF(idx, 3)] = this->f[D2Q9<T>::IndexF(idx, 1)];
+                    this->f[D2Q9<T>::IndexF(idx, 6)] = this->f[D2Q9<T>::IndexF(idx, 5)];
+                    this->f[D2Q9<T>::IndexF(idx, 7)] = this->f[D2Q9<T>::IndexF(idx, 8)];
+                }
             }
         }
-
-        for (int i = 0; i < this->nx; ++i) {
-            //  On ymin
-            if (_bctype(i + this->offsetx, 0 + this->offsety) == BARRIER) {
-                int idx = this->Index(i, 0);
-                this->f[D2Q9<T>::IndexF(idx, 4)] = this->f[D2Q9<T>::IndexF(idx, 2)];
-                this->f[D2Q9<T>::IndexF(idx, 7)] = this->f[D2Q9<T>::IndexF(idx, 5)];
-                this->f[D2Q9<T>::IndexF(idx, 8)] = this->f[D2Q9<T>::IndexF(idx, 6)];
-            } else if (_bctype(i + this->offsetx, 0 + this->offsety) == MIRROR) {
-                int idx = this->Index(i, 0);
-                this->f[D2Q9<T>::IndexF(idx, 4)] = this->f[D2Q9<T>::IndexF(idx, 2)];
-                this->f[D2Q9<T>::IndexF(idx, 8)] = this->f[D2Q9<T>::IndexF(idx, 5)];
-                this->f[D2Q9<T>::IndexF(idx, 7)] = this->f[D2Q9<T>::IndexF(idx, 6)];
+        //  On xmax
+        if (this->PEx == this->mx - 1) {
+            for (int j = 0; j < this->ny; ++j) {
+                if (_bctype((this->nx - 1) + this->offsetx, j + this->offsety) == BARRIER) {
+                    int idx = this->Index(this->nx - 1, j);
+                    this->f[D2Q9<T>::IndexF(idx, 1)] = this->f[D2Q9<T>::IndexF(idx, 3)];
+                    this->f[D2Q9<T>::IndexF(idx, 5)] = this->f[D2Q9<T>::IndexF(idx, 7)];
+                    this->f[D2Q9<T>::IndexF(idx, 8)] = this->f[D2Q9<T>::IndexF(idx, 6)];
+                } else if (_bctype((this->nx - 1) + this->offsetx, j + this->offsety) == MIRROR) {
+                    int idx = this->Index(this->nx - 1, j);
+                    this->f[D2Q9<T>::IndexF(idx, 1)] = this->f[D2Q9<T>::IndexF(idx, 3)];
+                    this->f[D2Q9<T>::IndexF(idx, 8)] = this->f[D2Q9<T>::IndexF(idx, 7)];
+                    this->f[D2Q9<T>::IndexF(idx, 5)] = this->f[D2Q9<T>::IndexF(idx, 6)];
+                }
             }
-
-            //  On ymax
-            if (_bctype(i + this->offsetx, (this->ny - 1) + this->offsety) == BARRIER) {
-                int idx = this->Index(i, this->ny - 1);
-                this->f[D2Q9<T>::IndexF(idx, 2)] = this->f[D2Q9<T>::IndexF(idx, 4)];
-                this->f[D2Q9<T>::IndexF(idx, 5)] = this->f[D2Q9<T>::IndexF(idx, 7)];
-                this->f[D2Q9<T>::IndexF(idx, 6)] = this->f[D2Q9<T>::IndexF(idx, 8)];
-            } else if (_bctype(i + this->offsetx, (this->ny - 1) + this->offsety) == MIRROR) {
-                int idx = this->Index(i, this->ny - 1);
-                this->f[D2Q9<T>::IndexF(idx, 2)] = this->f[D2Q9<T>::IndexF(idx, 4)];
-                this->f[D2Q9<T>::IndexF(idx, 6)] = this->f[D2Q9<T>::IndexF(idx, 7)];
-                this->f[D2Q9<T>::IndexF(idx, 5)] = this->f[D2Q9<T>::IndexF(idx, 8)];
+        }
+        //  On ymin
+        if (this->PEy == 0) {
+            for (int i = 0; i < this->nx; ++i) {
+                if (_bctype(i + this->offsetx, 0 + this->offsety) == BARRIER) {
+                    int idx = this->Index(i, 0);
+                    this->f[D2Q9<T>::IndexF(idx, 4)] = this->f[D2Q9<T>::IndexF(idx, 2)];
+                    this->f[D2Q9<T>::IndexF(idx, 7)] = this->f[D2Q9<T>::IndexF(idx, 5)];
+                    this->f[D2Q9<T>::IndexF(idx, 8)] = this->f[D2Q9<T>::IndexF(idx, 6)];
+                } else if (_bctype(i + this->offsetx, 0 + this->offsety) == MIRROR) {
+                    int idx = this->Index(i, 0);
+                    this->f[D2Q9<T>::IndexF(idx, 4)] = this->f[D2Q9<T>::IndexF(idx, 2)];
+                    this->f[D2Q9<T>::IndexF(idx, 8)] = this->f[D2Q9<T>::IndexF(idx, 5)];
+                    this->f[D2Q9<T>::IndexF(idx, 7)] = this->f[D2Q9<T>::IndexF(idx, 6)];
+                }
+            }
+        }
+        //  On ymax
+        if ( this->PEy == this->my - 1) {
+            for (int i = 0; i < this->nx; ++i) {
+                if (_bctype(i + this->offsetx, (this->ny - 1) + this->offsety) == BARRIER) {
+                    int idx = this->Index(i, this->ny - 1);
+                    this->f[D2Q9<T>::IndexF(idx, 2)] = this->f[D2Q9<T>::IndexF(idx, 4)];
+                    this->f[D2Q9<T>::IndexF(idx, 5)] = this->f[D2Q9<T>::IndexF(idx, 7)];
+                    this->f[D2Q9<T>::IndexF(idx, 6)] = this->f[D2Q9<T>::IndexF(idx, 8)];
+                } else if (_bctype(i + this->offsetx, (this->ny - 1) + this->offsety) == MIRROR) {
+                    int idx = this->Index(i, this->ny - 1);
+                    this->f[D2Q9<T>::IndexF(idx, 2)] = this->f[D2Q9<T>::IndexF(idx, 4)];
+                    this->f[D2Q9<T>::IndexF(idx, 6)] = this->f[D2Q9<T>::IndexF(idx, 7)];
+                    this->f[D2Q9<T>::IndexF(idx, 5)] = this->f[D2Q9<T>::IndexF(idx, 8)];
+                }
             }
         }
     }

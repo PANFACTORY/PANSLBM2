@@ -128,39 +128,48 @@ namespace PANSLBM2 {
         //  Function of setting boundary condition of EL set Stress for 2D
         template<class T, template<class>class P, class Fv0, class Fv1, class Ff>
         void BoundaryConditionSetStress(P<T>& _p, Fv0 _txbc, Fv1 _tybc, Ff _bctype) {
-            for (int j = 0; j < _p.ny; ++j) {
-                //  On xmin
-                if (_bctype(0 + _p.offsetx, j + _p.offsety)) {
-                    int idx = _p.Index(0, j);
-                    _p.f[P<T>::IndexF(idx, 1)] = _p.f[P<T>::IndexF(idx, 3)] - 4.0*(_p.f[P<T>::IndexF(idx, 3)] + _p.f[P<T>::IndexF(idx, 6)] + _p.f[P<T>::IndexF(idx, 7)])/3.0 + 2.0*_txbc(0 + _p.offsetx, j + _p.offsety)/3.0;
-                    _p.f[P<T>::IndexF(idx, 5)] = _p.f[P<T>::IndexF(idx, 6)] - (_p.f[P<T>::IndexF(idx, 3)] + _p.f[P<T>::IndexF(idx, 6)] + _p.f[P<T>::IndexF(idx, 7)])/3.0 + (_txbc(0 + _p.offsetx, j + _p.offsety) + 3.0*_tybc(0 + _p.offsetx, j + _p.offsety))/6.0;
-                    _p.f[P<T>::IndexF(idx, 8)] = _p.f[P<T>::IndexF(idx, 7)] - (_p.f[P<T>::IndexF(idx, 3)] + _p.f[P<T>::IndexF(idx, 6)] + _p.f[P<T>::IndexF(idx, 7)])/3.0 + (_txbc(0 + _p.offsetx, j + _p.offsety) - 3.0*_tybc(0 + _p.offsetx, j + _p.offsety))/6.0;
-                }
-
-                //  On xmax
-                if (_bctype((_p.nx - 1) + _p.offsetx, j + _p.offsety)) {
-                    int idx = _p.Index(_p.nx - 1, j);
-                    _p.f[P<T>::IndexF(idx, 3)] = _p.f[P<T>::IndexF(idx, 1)] - 4.0*(_p.f[P<T>::IndexF(idx, 1)] + _p.f[P<T>::IndexF(idx, 5)] + _p.f[P<T>::IndexF(idx, 8)])/3.0 - 2.0*_txbc((_p.nx - 1) + _p.offsetx, j + _p.offsety)/3.0;
-                    _p.f[P<T>::IndexF(idx, 6)] = _p.f[P<T>::IndexF(idx, 5)] - (_p.f[P<T>::IndexF(idx, 1)] + _p.f[P<T>::IndexF(idx, 5)] + _p.f[P<T>::IndexF(idx, 8)])/3.0 - (_txbc((_p.nx - 1) + _p.offsetx, j + _p.offsety) - 3.0*_tybc((_p.nx - 1) + _p.offsetx, j + _p.offsety))/6.0;
-                    _p.f[P<T>::IndexF(idx, 7)] = _p.f[P<T>::IndexF(idx, 8)] - (_p.f[P<T>::IndexF(idx, 1)] + _p.f[P<T>::IndexF(idx, 5)] + _p.f[P<T>::IndexF(idx, 8)])/3.0 - (_txbc((_p.nx - 1) + _p.offsetx, j + _p.offsety) + 3.0*_tybc((_p.nx - 1) + _p.offsetx, j + _p.offsety))/6.0;
+            //  On xmin
+            if (_p.PEx == 0) {
+                for (int j = 0; j < _p.ny; ++j) {
+                    if (_bctype(0 + _p.offsetx, j + _p.offsety)) {
+                        int idx = _p.Index(0, j);
+                        _p.f[P<T>::IndexF(idx, 1)] = _p.f[P<T>::IndexF(idx, 3)] - 4.0*(_p.f[P<T>::IndexF(idx, 3)] + _p.f[P<T>::IndexF(idx, 6)] + _p.f[P<T>::IndexF(idx, 7)])/3.0 + 2.0*_txbc(0 + _p.offsetx, j + _p.offsety)/3.0;
+                        _p.f[P<T>::IndexF(idx, 5)] = _p.f[P<T>::IndexF(idx, 6)] - (_p.f[P<T>::IndexF(idx, 3)] + _p.f[P<T>::IndexF(idx, 6)] + _p.f[P<T>::IndexF(idx, 7)])/3.0 + (_txbc(0 + _p.offsetx, j + _p.offsety) + 3.0*_tybc(0 + _p.offsetx, j + _p.offsety))/6.0;
+                        _p.f[P<T>::IndexF(idx, 8)] = _p.f[P<T>::IndexF(idx, 7)] - (_p.f[P<T>::IndexF(idx, 3)] + _p.f[P<T>::IndexF(idx, 6)] + _p.f[P<T>::IndexF(idx, 7)])/3.0 + (_txbc(0 + _p.offsetx, j + _p.offsety) - 3.0*_tybc(0 + _p.offsetx, j + _p.offsety))/6.0;
+                    }
                 }
             }
-
-            for (int i = 0; i < _p.nx; ++i) {
-                //  On ymin
-                if (_bctype(i + _p.offsetx, 0 + _p.offsety)) {
-                    int idx = _p.Index(i, 0);
-                    _p.f[P<T>::IndexF(idx, 2)] = _p.f[P<T>::IndexF(idx, 4)] - 4.0*(_p.f[P<T>::IndexF(idx, 4)] + _p.f[P<T>::IndexF(idx, 7)] + _p.f[P<T>::IndexF(idx, 8)])/3.0 + 2.0*_tybc(i + _p.offsetx, 0 + _p.offsety)/3.0;
-                    _p.f[P<T>::IndexF(idx, 5)] = _p.f[P<T>::IndexF(idx, 8)] - (_p.f[P<T>::IndexF(idx, 4)] + _p.f[P<T>::IndexF(idx, 7)] + _p.f[P<T>::IndexF(idx, 8)])/3.0 + (_tybc(i + _p.offsetx, 0 + _p.offsety) + 3.0*_txbc(i + _p.offsetx, 0 + _p.offsety))/6.0;
-                    _p.f[P<T>::IndexF(idx, 6)] = _p.f[P<T>::IndexF(idx, 7)] - (_p.f[P<T>::IndexF(idx, 4)] + _p.f[P<T>::IndexF(idx, 7)] + _p.f[P<T>::IndexF(idx, 8)])/3.0 + (_tybc(i + _p.offsetx, 0 + _p.offsety) - 3.0*_txbc(i + _p.offsetx, 0 + _p.offsety))/6.0;
+            //  On xmax
+            if (_p.PEx == _p.mx - 1) {
+                for (int j = 0; j < _p.ny; ++j) {
+                    if (_bctype((_p.nx - 1) + _p.offsetx, j + _p.offsety)) {
+                        int idx = _p.Index(_p.nx - 1, j);
+                        _p.f[P<T>::IndexF(idx, 3)] = _p.f[P<T>::IndexF(idx, 1)] - 4.0*(_p.f[P<T>::IndexF(idx, 1)] + _p.f[P<T>::IndexF(idx, 5)] + _p.f[P<T>::IndexF(idx, 8)])/3.0 - 2.0*_txbc((_p.nx - 1) + _p.offsetx, j + _p.offsety)/3.0;
+                        _p.f[P<T>::IndexF(idx, 6)] = _p.f[P<T>::IndexF(idx, 5)] - (_p.f[P<T>::IndexF(idx, 1)] + _p.f[P<T>::IndexF(idx, 5)] + _p.f[P<T>::IndexF(idx, 8)])/3.0 - (_txbc((_p.nx - 1) + _p.offsetx, j + _p.offsety) - 3.0*_tybc((_p.nx - 1) + _p.offsetx, j + _p.offsety))/6.0;
+                        _p.f[P<T>::IndexF(idx, 7)] = _p.f[P<T>::IndexF(idx, 8)] - (_p.f[P<T>::IndexF(idx, 1)] + _p.f[P<T>::IndexF(idx, 5)] + _p.f[P<T>::IndexF(idx, 8)])/3.0 - (_txbc((_p.nx - 1) + _p.offsetx, j + _p.offsety) + 3.0*_tybc((_p.nx - 1) + _p.offsetx, j + _p.offsety))/6.0;
+                    }
                 }
-
-                //  On ymax
-                if (_bctype(i + _p.offsetx, (_p.ny - 1) + _p.offsety)) {
-                    int idx = _p.Index(i, _p.ny - 1);
-                    _p.f[P<T>::IndexF(idx, 4)] = _p.f[P<T>::IndexF(idx, 2)] - 4.0*(_p.f[P<T>::IndexF(idx, 2)] + _p.f[P<T>::IndexF(idx, 5)] + _p.f[P<T>::IndexF(idx, 6)])/3.0 - 2.0*_tybc(i + _p.offsetx, (_p.ny - 1) + _p.offsety)/3.0;
-                    _p.f[P<T>::IndexF(idx, 7)] = _p.f[P<T>::IndexF(idx, 6)] - (_p.f[P<T>::IndexF(idx, 2)] + _p.f[P<T>::IndexF(idx, 5)] + _p.f[P<T>::IndexF(idx, 6)])/3.0 - (_tybc(i + _p.offsetx, (_p.ny - 1) + _p.offsety) + 3.0*_txbc(i + _p.offsetx, (_p.ny - 1) + _p.offsety))/6.0;
-                    _p.f[P<T>::IndexF(idx, 8)] = _p.f[P<T>::IndexF(idx, 5)] - (_p.f[P<T>::IndexF(idx, 2)] + _p.f[P<T>::IndexF(idx, 5)] + _p.f[P<T>::IndexF(idx, 6)])/3.0 - (_tybc(i + _p.offsetx, (_p.ny - 1) + _p.offsety) - 3.0*_txbc(i + _p.offsetx, (_p.ny - 1) + _p.offsety))/6.0;
+            }
+            //  On ymin
+            if (_p.PEy == 0) {
+                for (int i = 0; i < _p.nx; ++i) {
+                    if (_bctype(i + _p.offsetx, 0 + _p.offsety)) {
+                        int idx = _p.Index(i, 0);
+                        _p.f[P<T>::IndexF(idx, 2)] = _p.f[P<T>::IndexF(idx, 4)] - 4.0*(_p.f[P<T>::IndexF(idx, 4)] + _p.f[P<T>::IndexF(idx, 7)] + _p.f[P<T>::IndexF(idx, 8)])/3.0 + 2.0*_tybc(i + _p.offsetx, 0 + _p.offsety)/3.0;
+                        _p.f[P<T>::IndexF(idx, 5)] = _p.f[P<T>::IndexF(idx, 8)] - (_p.f[P<T>::IndexF(idx, 4)] + _p.f[P<T>::IndexF(idx, 7)] + _p.f[P<T>::IndexF(idx, 8)])/3.0 + (_tybc(i + _p.offsetx, 0 + _p.offsety) + 3.0*_txbc(i + _p.offsetx, 0 + _p.offsety))/6.0;
+                        _p.f[P<T>::IndexF(idx, 6)] = _p.f[P<T>::IndexF(idx, 7)] - (_p.f[P<T>::IndexF(idx, 4)] + _p.f[P<T>::IndexF(idx, 7)] + _p.f[P<T>::IndexF(idx, 8)])/3.0 + (_tybc(i + _p.offsetx, 0 + _p.offsety) - 3.0*_txbc(i + _p.offsetx, 0 + _p.offsety))/6.0;
+                    }
+                }
+            }
+            //  On ymax
+            if (_p.PEy == _p.my - 1) {
+                for (int i = 0; i < _p.nx; ++i) {
+                    if (_bctype(i + _p.offsetx, (_p.ny - 1) + _p.offsety)) {
+                        int idx = _p.Index(i, _p.ny - 1);
+                        _p.f[P<T>::IndexF(idx, 4)] = _p.f[P<T>::IndexF(idx, 2)] - 4.0*(_p.f[P<T>::IndexF(idx, 2)] + _p.f[P<T>::IndexF(idx, 5)] + _p.f[P<T>::IndexF(idx, 6)])/3.0 - 2.0*_tybc(i + _p.offsetx, (_p.ny - 1) + _p.offsety)/3.0;
+                        _p.f[P<T>::IndexF(idx, 7)] = _p.f[P<T>::IndexF(idx, 6)] - (_p.f[P<T>::IndexF(idx, 2)] + _p.f[P<T>::IndexF(idx, 5)] + _p.f[P<T>::IndexF(idx, 6)])/3.0 - (_tybc(i + _p.offsetx, (_p.ny - 1) + _p.offsety) + 3.0*_txbc(i + _p.offsetx, (_p.ny - 1) + _p.offsety))/6.0;
+                        _p.f[P<T>::IndexF(idx, 8)] = _p.f[P<T>::IndexF(idx, 5)] - (_p.f[P<T>::IndexF(idx, 2)] + _p.f[P<T>::IndexF(idx, 5)] + _p.f[P<T>::IndexF(idx, 6)])/3.0 - (_tybc(i + _p.offsetx, (_p.ny - 1) + _p.offsety) - 3.0*_txbc(i + _p.offsetx, (_p.ny - 1) + _p.offsety))/6.0;
+                    }
                 }
             }
         }

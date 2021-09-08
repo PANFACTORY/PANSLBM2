@@ -1,5 +1,5 @@
 #define _USE_MATH_DEFINES
-//#define _USE_MPI_DEFINES
+#define _USE_MPI_DEFINES
 #include <cmath>
 #include <iostream>
 #ifdef _USE_MPI_DEFINES

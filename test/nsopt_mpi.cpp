@@ -1,10 +1,12 @@
+#define _USE_MPI_DEFINES
 #include <iostream>
 #include <vector>
 #include <cmath>
 #include <iomanip>
-#include "mpi.h"
+#ifdef _USE_MPI_DEFINES
+    #include "mpi.h"
+#endif
 
-#define _USE_MPI_DEFINES
 #include "../src/particle/d2q9.h"
 #include "../src/equation/navierstokes.h"
 #include "../src/equation/adjointnavierstokes.h"
@@ -15,6 +17,7 @@
 using namespace PANSLBM2;
 
 int main(int argc, char** argv) {
+#ifdef _USE_MPI_DEFINES
     int PeTot, MyRank;
     MPI_Init(&argc, &argv);
     MPI_Comm_size(MPI_COMM_WORLD, &PeTot);
@@ -23,9 +26,12 @@ int main(int argc, char** argv) {
     assert(argc == 3);
     int mx = atoi(argv[1]), my = atoi(argv[2]);
     assert(mx*my == PeTot);
+#else
+    int MyRank = 0, mx = 1, my = 1;
+#endif
 
     //********************Set parameters********************
-    int lx = 100, ly = 100, nt = 10000, dt = 100, nk = 100;
+    int lx = 101, ly = 101, nt = 10000, dt = 100, nk = 100;
     double nu = 0.1, u0 = 0.01, rho0 = 1.0, q = 0.01, amax = 2e2, scale0 = 1.0e0, weightlimit = 0.25, movelimit = 0.5, epsu = 1.0e-4;
     D2Q9<double> pf(lx, ly, MyRank, mx, my);
     double *rho = new double[pf.nxy], *ux = new double[pf.nxy], *uy = new double[pf.nxy], *uxp = new double[pf.nxy], *uyp = new double[pf.nxy];
@@ -34,38 +40,6 @@ int main(int argc, char** argv) {
     for (int idx = 0; idx < pf.nxy; ++idx) {
         rho[idx] = 1.0; ux[idx] = 0.0;  uy[idx] = 0.0;  uxp[idx] = 0.0; uyp[idx] = 0.0;
         irho[idx] = 0.0;    iux[idx] = 0.0; iuy[idx] = 0.0; imx[idx] = 0.0; imy[idx] = 0.0; iuxp[idx] = 0.0;    iuyp[idx] = 0.0;
-    }
-
-    pf.SetBoundary([&](int _i, int _j) {
-        if ((_i == 0 && 0.7*ly < _j && _j < 0.9*ly) || (_j == 0 && 0.7*lx < _i && _i < 0.9*lx)) {
-            return 0;
-        } else {
-            return 1;
-        }
-    });
-    int *boundaryup = new int[pf.nbc];
-    pf.SetBoundary(boundaryup, [&](int _i, int _j) {
-        if (_i == 0 && 0.7*ly < _j && _j < 0.9*ly) {
-            return 1;
-        } else if (_j == 0 && 0.7*lx < _i && _i < 0.9*lx) {
-            return 2;
-        } else {
-            return 0;
-        }
-    });
-    double *uxbc = new double[pf.nbc], *uybc = new double[pf.nbc], *rhobc = new double[pf.nbc], *usbc = new double[pf.nbc];
-    for (int j = 0; j < pf.ny; ++j) {
-        if (0.7*ly < j + pf.offsety && j + pf.offsety < 0.9*ly) {
-            uxbc[j + pf.offsetxmin] = -u0*((j + pf.offsety) - 0.7*pf.ly)*((j + pf.offsety) - 0.9*pf.ly)/(0.1*pf.ly*0.1*pf.ly);
-        } else {
-            uxbc[j + pf.offsetxmin] = 0.0;
-        }
-        uybc[j + pf.offsetxmin] = 0.0;  rhobc[j + pf.offsetxmin] = 1.0; usbc[j + pf.offsetxmin] = 0.0;
-        uxbc[j + pf.offsetxmax] = 0.0;  uybc[j + pf.offsetxmax] = 0.0;  rhobc[j + pf.offsetxmax] = 1.0; usbc[j + pf.offsetxmax] = 0.0;
-    }
-    for (int i = 0; i < pf.nx; ++i) {
-        uxbc[i + pf.offsetymin] = 0.0;  uybc[i + pf.offsetymin] = 0.0;  rhobc[i + pf.offsetymin] = 1.0; usbc[i + pf.offsetymin] = 0.0;
-        uxbc[i + pf.offsetymax] = 0.0;  uybc[i + pf.offsetymax] = 0.0;  rhobc[i + pf.offsetymax] = 1.0; usbc[i + pf.offsetymax] = 0.0;
     }
 
     std::vector<double> s(pf.nxy, 1.0);
@@ -90,7 +64,11 @@ int main(int argc, char** argv) {
             g_buffer += s[idx]/(weightlimit*(double)(lx*ly));
             dgds[idx] = 1.0/(weightlimit*(double)(lx*ly)); 
         }
+#ifdef _USE_MPI_DEFINES
         MPI_Allreduce(&g_buffer, &g, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+#else
+        g = g_buffer;
+#endif
         g -= 1.0;
 
         //********************Direct Analyse********************
@@ -103,9 +81,17 @@ int main(int argc, char** argv) {
             }
             pf.Swap();
             pf.Synchronize();
-            pf.BoundaryCondition();
-            NS::BoundaryConditionSetU(pf, uxbc, uybc, boundaryup);
-            NS::BoundaryConditionSetRho(pf, rhobc, usbc, boundaryup);
+            pf.BoundaryCondition([=](int _i, int _j) { return ((_i == 0 && 0.7*ly < _j && _j < 0.9*ly) || (_j == 0 && 0.7*lx < _i && _i < 0.9*lx)) ? 0 : 1; });
+            NS::BoundaryConditionSetU(pf, 
+                [=](int _i, int _j) { return -u0*(_j - 0.7*ly)*(_j - 0.9*ly)/(0.1*ly*0.1*ly); }, 
+                [=](int _i, int _j) { return 0.0; }, 
+                [=](int _i, int _j) { return _i == 0 && 0.7*ly < _j && _j < 0.9*ly; }
+            );
+            NS::BoundaryConditionSetRho(pf, 
+                [=](int _i, int _j) { return 1.0; }, 
+                [=](int _i, int _j) { return 0.0; }, 
+                [=](int _i, int _j) { return _j == 0 && 0.7*lx < _i && _i < 0.9*lx; }
+            );
             pf.SmoothCorner();
 
             std::swap(ux, uxp);
@@ -122,9 +108,14 @@ int main(int argc, char** argv) {
             }
             pf.Swap();
             pf.iSynchronize();
-            pf.iBoundaryCondition();
-            ANS::BoundaryConditionSetiU(pf, uxbc, uybc, boundaryup);
-            ANS::BoundaryConditionSetiRho<double>(pf, boundaryup);
+            pf.iBoundaryCondition([=](int _i, int _j) { return ((_i == 0 && 0.7*ly < _j && _j < 0.9*ly) || (_j == 0 && 0.7*lx < _i && _i < 0.9*lx)) ? 0 : 1; });
+            ANS::BoundaryConditionSetiU(pf, 
+                [=](int _i, int _j) { return -u0*(_j - 0.7*ly)*(_j - 0.9*ly)/(0.1*ly*0.1*ly); }, 
+                [=](int _i, int _j) { return 0.0; }, 
+                [=](int _i, int _j) { return _i == 0 && 0.7*ly < _j && _j < 0.9*ly; },
+                1.0
+            );
+            ANS::BoundaryConditionSetiRho(pf, [=](int _i, int _j) { return _j == 0 && 0.7*lx < _i && _i < 0.9*lx; });
             pf.SmoothCorner();
 
             std::swap(iux, iuxp);
@@ -143,7 +134,11 @@ int main(int argc, char** argv) {
                 f_buffer -= rho[pf.Index(i, 0)]/3.0;
             }
         }
+#ifdef _USE_MPI_DEFINES
         MPI_Allreduce(&f_buffer, &f, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+#else
+        f = f_buffer;
+#endif
         double dfdsmax_buffer = 0.0, dfdsmax;
         std::vector<double> dfds(s.size(), 0.0);
         for (int idx = 0; idx < pf.nxy; ++idx) {
@@ -152,7 +147,11 @@ int main(int argc, char** argv) {
                 dfdsmax_buffer = fabs(dfds[idx]);
             }
         }
+#ifdef _USE_MPI_DEFINES
         MPI_Allreduce(&dfdsmax_buffer, &dfdsmax, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+#else
+        dfdsmax = dfdsmax_buffer;
+#endif
         for (int idx = 0; idx < pf.nxy; ++idx) {  
             dfds[idx] /= dfdsmax;
         }
@@ -191,8 +190,8 @@ int main(int argc, char** argv) {
     file.AddPointScaler("s", [&](int _i, int _j, int _k) { return s[pf.Index(_i, _j)]; });
 
     delete[] rho, ux, uy, uxp, uyp, irho, iux, iuy, imx, imy, iuxp, iuyp, alpha, dads, boundaryup, uxbc, uybc, rhobc, usbc;
-
+#ifdef _USE_MPI_DEFINES
     MPI_Finalize();
-
+#endif
     return 0;
 }

@@ -109,13 +109,13 @@ int main(int argc, char** argv) {
             pf.Swap();
             pf.iSynchronize();
             pf.iBoundaryCondition([=](int _i, int _j) { return ((_i == 0 && 0.7*ly < _j && _j < 0.9*ly) || (_j == 0 && 0.7*lx < _i && _i < 0.9*lx)) ? 0 : 1; });
-            ANS::BoundaryConditionSetiU(pf, 
+            ANS::iBoundaryConditionSetU(pf, 
                 [=](int _i, int _j) { return -u0*(_j - 0.7*ly)*(_j - 0.9*ly)/(0.1*ly*0.1*ly); }, 
                 [=](int _i, int _j) { return 0.0; }, 
                 [=](int _i, int _j) { return _i == 0 && 0.7*ly < _j && _j < 0.9*ly; },
                 1.0
             );
-            ANS::BoundaryConditionSetiRho(pf, [=](int _i, int _j) { return _j == 0 && 0.7*lx < _i && _i < 0.9*lx; });
+            ANS::iBoundaryConditionSetRho2D(pf, [=](int _i, int _j) { return _j == 0 && 0.7*lx < _i && _i < 0.9*lx; });
             pf.SmoothCorner();
 
             std::swap(iux, iuxp);
@@ -189,7 +189,7 @@ int main(int argc, char** argv) {
     file.AddPointScaler("alpha", [&](int _i, int _j, int _k) { return alpha[pf.Index(_i, _j)]; });
     file.AddPointScaler("s", [&](int _i, int _j, int _k) { return s[pf.Index(_i, _j)]; });
 
-    delete[] rho, ux, uy, uxp, uyp, irho, iux, iuy, imx, imy, iuxp, iuyp, alpha, dads, boundaryup, uxbc, uybc, rhobc, usbc;
+    delete[] rho, ux, uy, uxp, uyp, irho, iux, iuy, imx, imy, iuxp, iuyp, alpha, dads;
 #ifdef _USE_MPI_DEFINES
     MPI_Finalize();
 #endif

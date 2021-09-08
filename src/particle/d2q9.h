@@ -288,9 +288,9 @@ private:
 
                 //  Edge along ymax
                 idx = this->Index(i, 0);
-                this->fsend_ymin[i*3 + 0] = this->f[D2Q9<T>::IndexF(idx, 2)];
-                this->fsend_ymin[i*3 + 1] = this->f[D2Q9<T>::IndexF(idx, 5)];
-                this->fsend_ymin[i*3 + 2] = this->f[D2Q9<T>::IndexF(idx, 6)];
+                this->fsend_ymax[i*3 + 0] = this->f[D2Q9<T>::IndexF(idx, 2)];
+                this->fsend_ymax[i*3 + 1] = this->f[D2Q9<T>::IndexF(idx, 5)];
+                this->fsend_ymax[i*3 + 2] = this->f[D2Q9<T>::IndexF(idx, 6)];
             }
         }
         if (this->mx != 1 || this->my != 1) {

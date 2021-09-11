@@ -28,56 +28,56 @@ namespace PANSLBM2 {
             if (_p.PEx != 0) {
                 for (int ii = 0; ii < nR; ++ii) {
                     for (int j = 0; j < _p.ny; ++j) {
-                        send_xmin[IndexX(ii, j)] = _v[_p.Index(0 + ii, j)];  //  Edge along xmin 
+                        send_xmin[IndexX(ii, j)] = _v[_p.Index(0 + ii, j)];                                     //  Edge along xmin 
                     }
                 }
             }
             if (_p.PEx != _p.mx - 1) {
                 for (int ii = 0; ii < nR; ++ii) {
                     for (int j = 0; j < _p.ny; ++j) {
-                        send_xmax[IndexX(ii, j)] = _v[_p.Index((_p.nx - nR) + ii, j)];    //  Edge along xmax
+                        send_xmax[IndexX(ii, j)] = _v[_p.Index((_p.nx - nR) + ii, j)];                          //  Edge along xmax
                     }
                 }
             }
             if (_p.PEy != 0) {
                 for (int i = 0; i < _p.nx; ++i) {
                     for (int jj = 0; jj < nR; ++jj) {
-                        send_ymin[IndexY(i, jj)] = _v[_p.Index(i, 0 + jj)];  //  Edge along ymin 
+                        send_ymin[IndexY(i, jj)] = _v[_p.Index(i, 0 + jj)];                                     //  Edge along ymin 
                     }
                 }
             }
             if (_p.PEy != _p.my - 1) {
                 for (int i = 0; i < _p.nx; ++i) {
                     for (int jj = 0; jj < nR; ++jj) {
-                        send_ymax[IndexY(i, jj)] = _v[_p.Index(i, (_p.ny - nR) + jj)];    //  Edge along ymax
+                        send_ymax[IndexY(i, jj)] = _v[_p.Index(i, (_p.ny - nR) + jj)];                          //  Edge along ymax
                     }
                 }
             }
             if (_p.PEx != 0 && _p.PEy != 0) {
                 for (int ii = 0; ii < nR; ++ii) {
                     for (int jj = 0; jj < nR; ++jj) {
-                        send_xmin_ymin[IndexCorner(ii, jj)] = _v[_p.Index(0 + ii, 0 + jj)];    //  Corner at xmin and ymin
+                        send_xmin_ymin[IndexC(ii, jj)] = _v[_p.Index(0 + ii, 0 + jj)];                          //  Corner at xmin and ymin
                     }
                 }
             }
             if (_p.PEx != _p.mx - 1 && _p.PEy != 0) {
                 for (int ii = 0; ii < nR; ++ii) {
                     for (int jj = 0; jj < nR; ++jj) {
-                        send_xmax_ymin[IndexCorner(ii, jj)] = _v[_p.Index((_p.nx - nR) + ii, 0 + jj)];    //  Corner at xmax and ymin
+                        send_xmax_ymin[IndexC(ii, jj)] = _v[_p.Index((_p.nx - nR) + ii, 0 + jj)];               //  Corner at xmax and ymin
                     }
                 }
             }
             if (_p.PEx != 0 && _p.PEy != _p.my - 1) {
                 for (int ii = 0; ii < nR; ++ii) {
                     for (int jj = 0; jj < nR; ++jj) {
-                        send_xmin_ymax[IndexCorner(ii, jj)] = _v[_p.Index(0 + ii, (_p.ny - nR) + jj)];    //  Corner at xmin and ymax
+                        send_xmin_ymax[IndexC(ii, jj)] = _v[_p.Index(0 + ii, (_p.ny - nR) + jj)];               //  Corner at xmin and ymax
                     }
                 }
             }
             if (_p.PEx != _p.mx - 1 && _p.PEy != _p.my - 1) {
                 for (int ii = 0; ii < nR; ++ii) {
                     for (int jj = 0; jj < nR; ++jj) {
-                        send_xmax_ymax[IndexCorner(ii, jj)] = _v[_p.Index((_p.nx - nR) + ii, (_p.ny - nR) + jj)];    //  Corner at xmax and ymax
+                        send_xmax_ymax[IndexC(ii, jj)] = _v[_p.Index((_p.nx - nR) + ii, (_p.ny - nR) + jj)];    //  Corner at xmax and ymax
                     }
                 }
             }

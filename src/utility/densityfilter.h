@@ -144,17 +144,17 @@ namespace PANSLBM2 {
                                     if (0 <= j2 && j2 <= _p.ny - 1) {
                                         fv[idx] += weight*recv_xmin[IndexX(nR + i2, 0 + j2)];               //  In xmin PE
                                     } else if (j2 < 0 && _p.PEy != 0) {
-                                        fv[idx] += weight*recv_xmin_ymin[IndexX(nR + i2, nR + j2)];         //  In xmin ymin PE
+                                        fv[idx] += weight*recv_xmin_ymin[IndexC(nR + i2, nR + j2)];         //  In xmin ymin PE
                                     } else if (_p.ny - 1 < j2 && _p.PEy != _p.my - 1) {
-                                        fv[idx] += weight*recv_xmin_ymax[IndexX(nR + i2, j2 - _p.ny)];      //  In xmin ymax PE
+                                        fv[idx] += weight*recv_xmin_ymax[IndexC(nR + i2, j2 - _p.ny)];      //  In xmin ymax PE
                                     }
                                 } else if (_p.nx - 1 < i2 && this-PEx != _p.mx - 1) {
                                     if (0 <= j2 && j2 <= _p.ny - 1) {
                                         fv[idx] += weight*recv_xmax[IndexX(i2 - _p.nx, 0 + j2)];            //  In xmax PE
                                     } else if (j2 < 0 && _p.PEy != 0) {
-                                        fv[idx] += weight*recv_xmax_ymin[IndexX(i2 - _p.nx, nR + j2)];      //  In xmax ymin PE
+                                        fv[idx] += weight*recv_xmax_ymin[IndexC(i2 - _p.nx, nR + j2)];      //  In xmax ymin PE
                                     } else if (_p.ny - 1 < j2 && _p.PEy != _p.my - 1) {
-                                        fv[idx] += weight*recv_xmax_ymax[IndexX(i2 - _p.nx, j2 - _p.nx)];   //  In xmax ymax PE
+                                        fv[idx] += weight*recv_xmax_ymax[IndexC(i2 - _p.nx, j2 - _p.nx)];   //  In xmax ymax PE
                                     }
                                 }
                             }

@@ -10,8 +10,8 @@ namespace PANSLBM2 {
             assert(_R > T());
             int nR = (int)_R;
 
-            auto IndexX = [&](int _i, int _j) { return _j + _p.ny*_i; };
-            auto IndexY = [&](int _i, int _j) { return _i + _p.nx*_j; };
+            auto IndexFX = [&](int _i, int _j) { return _j + _p.ny*_i; };
+            auto IndexFY = [&](int _i, int _j) { return _i + _p.nx*_j; };
             auto IndexC = [&](int _i, int _j) { return _i + nR*_j; };
 
             T *send_xmin = new T[nR*_p.ny], *send_xmax = new T[nR*_p.ny];
@@ -28,28 +28,28 @@ namespace PANSLBM2 {
             if (_p.PEx != 0) {
                 for (int ii = 0; ii < nR; ++ii) {
                     for (int j = 0; j < _p.ny; ++j) {
-                        send_xmin[IndexX(ii, j)] = _v[_p.Index(0 + ii, j)];                                     //  Edge along xmin 
+                        send_xmin[IndexFX(ii, j)] = _v[_p.Index(0 + ii, j)];                                     //  Edge along xmin 
                     }
                 }
             }
             if (_p.PEx != _p.mx - 1) {
                 for (int ii = 0; ii < nR; ++ii) {
                     for (int j = 0; j < _p.ny; ++j) {
-                        send_xmax[IndexX(ii, j)] = _v[_p.Index((_p.nx - nR) + ii, j)];                          //  Edge along xmax
+                        send_xmax[IndexFX(ii, j)] = _v[_p.Index((_p.nx - nR) + ii, j)];                          //  Edge along xmax
                     }
                 }
             }
             if (_p.PEy != 0) {
                 for (int i = 0; i < _p.nx; ++i) {
                     for (int jj = 0; jj < nR; ++jj) {
-                        send_ymin[IndexY(i, jj)] = _v[_p.Index(i, 0 + jj)];                                     //  Edge along ymin 
+                        send_ymin[IndexFY(i, jj)] = _v[_p.Index(i, 0 + jj)];                                     //  Edge along ymin 
                     }
                 }
             }
             if (_p.PEy != _p.my - 1) {
                 for (int i = 0; i < _p.nx; ++i) {
                     for (int jj = 0; jj < nR; ++jj) {
-                        send_ymax[IndexY(i, jj)] = _v[_p.Index(i, (_p.ny - nR) + jj)];                          //  Edge along ymax
+                        send_ymax[IndexFY(i, jj)] = _v[_p.Index(i, (_p.ny - nR) + jj)];                          //  Edge along ymax
                     }
                 }
             }
@@ -117,7 +117,7 @@ namespace PANSLBM2 {
                 MPI_Irecv(recv_xmax_ymax, nR*nR, MPI_DOUBLE, _p.IndexPE(_p.PEx + 1, _p.PEy + 1), 4, MPI_COMM_WORLD, &_p.request[neib++]);   //  Corner at xmax and ymax
             }
             if (neib > 0) {
-                MPI_Waitall(neib, _p.request, _p.status);
+                MPI_Waitall(neib, request, status);
             }
 
             //  Filter value
@@ -136,13 +136,13 @@ namespace PANSLBM2 {
                                     if (0 <= j2 && j2 <= _p.ny - 1) {
                                         fv[idx] += weight*_v[_p.Index(i2, j2)];                             //  In self PE
                                     } else if (j2 < 0 && _p.PEy != 0) {
-                                        fv[idx] += weight*recv_ymin[IndexX(0 + i2, nR + j2)];               //  In ymin PE 
+                                        fv[idx] += weight*recv_ymin[IndexFY(0 + i2, nR + j2)];               //  In ymin PE 
                                     } else if (_p.ny - 1 < j2 && _p.PEy != _p.my - 1) {
-                                        fv[idx] += weight*recv_ymax[IndexX(0 + i2, j2 - _p.ny)];            //  In ymax PE
+                                        fv[idx] += weight*recv_ymax[IndexFY(0 + i2, j2 - _p.ny)];            //  In ymax PE
                                     }
                                 } else if (i2 < 0 && _p.PEx != 0) {
                                     if (0 <= j2 && j2 <= _p.ny - 1) {
-                                        fv[idx] += weight*recv_xmin[IndexX(nR + i2, 0 + j2)];               //  In xmin PE
+                                        fv[idx] += weight*recv_xmin[IndexFX(nR + i2, 0 + j2)];               //  In xmin PE
                                     } else if (j2 < 0 && _p.PEy != 0) {
                                         fv[idx] += weight*recv_xmin_ymin[IndexC(nR + i2, nR + j2)];         //  In xmin ymin PE
                                     } else if (_p.ny - 1 < j2 && _p.PEy != _p.my - 1) {
@@ -150,7 +150,7 @@ namespace PANSLBM2 {
                                     }
                                 } else if (_p.nx - 1 < i2 && this-PEx != _p.mx - 1) {
                                     if (0 <= j2 && j2 <= _p.ny - 1) {
-                                        fv[idx] += weight*recv_xmax[IndexX(i2 - _p.nx, 0 + j2)];            //  In xmax PE
+                                        fv[idx] += weight*recv_xmax[IndexFX(i2 - _p.nx, 0 + j2)];            //  In xmax PE
                                     } else if (j2 < 0 && _p.PEy != 0) {
                                         fv[idx] += weight*recv_xmax_ymin[IndexC(i2 - _p.nx, nR + j2)];      //  In xmax ymin PE
                                     } else if (_p.ny - 1 < j2 && _p.PEy != _p.my - 1) {

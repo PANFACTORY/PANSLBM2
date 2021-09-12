@@ -22,12 +22,13 @@ namespace PANSLBM2 {
 public:
         D2Q9() = delete;
         D2Q9(int _lx, int _ly, int _PEid = 0, int _mx = 1, int _my = 1) :
-            lx(_lx), ly(_ly), PEid(_PEid), mx(_mx), my(_my), 
-            PEx(this->PEid%this->mx), PEy(this->PEid/this->mx),
-            nx((this->lx + this->PEx)/this->mx), ny((this->ly + this->PEy)/this->my),
-            nxy(this->nx*this->ny),
+            lx(_lx), ly(_ly), lz(1), PEid(_PEid), mx(_mx), my(_my), mz(1), 
+            PEx(this->PEid%this->mx), PEy(this->PEid/this->mx), PEz(0),
+            nx((this->lx + this->PEx)/this->mx), ny((this->ly + this->PEy)/this->my), nz(1),
+            nxyz(this->nx*this->ny),
             offsetx(this->mx - this->PEx > this->lx%this->mx ? this->PEx*this->nx : this->lx - (this->mx - this->PEx)*this->nx),
-            offsety(this->my - this->PEy > this->ly%this->my ? this->PEy*this->ny : this->ly - (this->my - this->PEy)*this->ny)
+            offsety(this->my - this->PEy > this->ly%this->my ? this->PEy*this->ny : this->ly - (this->my - this->PEy)*this->ny),
+            offsetz(0)
         {
             assert(0 < _lx && 0 < _ly && 0 <= _PEid && 0 < _mx && 0 < _my);
 
@@ -54,6 +55,9 @@ public:
             int j = _j == -1 ? this->ny - 1 : (_j == this->ny ? 0 : _j);
             return i + this->nx*j;
         }
+        int Index(int _i, int _j, int _k) const {
+            return this->Index(_i, _j);
+        }
         static int IndexF(int _idx, int _c) {
             return D2Q9<T>::nc*_idx + _c;
         }
@@ -61,6 +65,9 @@ public:
             int i = _i == -1 ? this->mx - 1 : (_i == this->mx ? 0 : _i);
             int j = _j == -1 ? this->my - 1 : (_j == this->my ? 0 : _j);
             return i + this->mx*j;
+        }
+        int IndexPE(int _i, int _j, int _k) const {
+            return this->IndexPE(_i, _j);
         }
 
         void Swap();
@@ -73,8 +80,8 @@ public:
         void Synchronize();
         void iSynchronize();
         
-        const int lx, ly, PEid, mx, my, PEx, PEy, nx, ny, nxy, offsetx, offsety;
-        static const int nc = 9, nd = 2, cx[nc], cy[nc];
+        const int lx, ly, lz, PEid, mx, my, mz, PEx, PEy, PEz, nx, ny, nz, nxyz, offsetx, offsety, offsetz;
+        static const int nc = 9, nd = 2, cx[nc], cy[nc], cz[nc];
         static const T ei[nc];
         T *f, *fnext;
         
@@ -89,6 +96,7 @@ private:
 
     template<class T>const int D2Q9<T>::cx[D2Q9<T>::nc] = { 0, 1, 0, -1, 0, 1, -1, -1, 1 };
     template<class T>const int D2Q9<T>::cy[D2Q9<T>::nc] = { 0, 0, 1, 0, -1, 1, 1, -1, -1 };
+    template<class T>const int D2Q9<T>::cz[D2Q9<T>::nc] = { 0, 0, 0, 0, 0, 0, 0, 0, 0 };
     template<class T>const T D2Q9<T>::ei[D2Q9<T>::nc] = { 4.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/36.0, 1.0/36.0, 1.0/36.0, 1.0/36.0 };
 
     template<class T>

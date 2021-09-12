@@ -28,7 +28,7 @@ int main() {
             s[idx] = pow(i - 0.5*pf.nx, 2.0) + pow(j, 2.0) < pow(0.15*pf.nx, 2.0) ? smin : smax;
         }
     }
-    for (int idx = 0; idx < pf.nxy; ++idx) {
+    for (int idx = 0; idx < pf.nxyz; ++idx) {
         rho[idx] = 1.0; ux[idx] = 0.0;  uy[idx] = 0.0;
         tem[idx] = 1.0; qx[idx] = 0.0;  qy[idx] = 0.0;
         irho[idx] = 0.0;    iux[idx] = 0.0; iuy[idx] = 0.0; imx[idx] = 0.0; imy[idx] = 0.0;
@@ -101,7 +101,7 @@ int main() {
 
     //--------------------Get sensitivity--------------------
     double sensitivitymax = 0.0;
-    for (int idx = 0; idx < pf.nxy; ++idx) {
+    for (int idx = 0; idx < pf.nxyz; ++idx) {
         sensitivity[idx] = 3.0*(imx[idx]*ux[idx] + imy[idx]*uy[idx])*(-amax/(double)(pf.nx - 1)*qa*(qa + 1.0)/pow(qa + s[idx], 2.0)) - (1.0 - tem[idx])*(1.0 + item[idx])*(-bmax/(double)(pg.nx - 1)*qb*(qb + 1.0)/pow(qb + s[idx], 2.0));
         if (sensitivitymax < fabs(sensitivity[idx])) {
             sensitivitymax = fabs(sensitivity[idx]);

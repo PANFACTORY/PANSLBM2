@@ -12,8 +12,8 @@ int main() {
     int nx = 201, ny = 21, nt = 100000, dt = 1000;
     double rho0 = 1e6, stress0 = -1.0;
     D2Q9<double> pf(nx, ny);
-    double rho[pf.nxy], ux[pf.nxy], uy[pf.nxy], rx[pf.nxy], ry[pf.nxy], sxx[pf.nxy], sxy[pf.nxy], syx[pf.nxy], syy[pf.nxy];
-    for (int idx = 0; idx < pf.nxy; ++idx) {
+    double rho[pf.nxyz], ux[pf.nxyz], uy[pf.nxyz], rx[pf.nxyz], ry[pf.nxyz], sxx[pf.nxyz], sxy[pf.nxyz], syx[pf.nxyz], syy[pf.nxyz];
+    for (int idx = 0; idx < pf.nxyz; ++idx) {
         rho[idx] = rho0;
         ux[idx] = 0.0;  uy[idx] = 0.0;
         rx[idx] = 0.0;  ry[idx] = 0.0;
@@ -64,7 +64,7 @@ int main() {
         );
         pf.SmoothCorner();
 
-        for (int idx = 0; idx < pf.nxy; ++idx) {
+        for (int idx = 0; idx < pf.nxyz; ++idx) {
             rx[idx] += ux[idx]; ry[idx] += uy[idx];
         }
     }

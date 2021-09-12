@@ -30,16 +30,16 @@ int main(int argc, char** argv) {
     int lx = 101, ly = 51, nt = 10000, dt = 100;
     double nu = 0.1, u0 = 0.0109, rho0 = 1.0, epsdu = 1.0e-4, q = 1e-2, amax = 50.0, smin = 0.1, smax = 0.9;
     D2Q9<double> pf(lx, ly, MyRank, mx, my);
-    double *rho = new double[pf.nxy], *ux = new double[pf.nxy], *uy = new double[pf.nxy];
-    double *irho = new double[pf.nxy], *iux = new double[pf.nxy], *iuy = new double[pf.nxy], *imx = new double[pf.nxy], *imy = new double[pf.nxy];
-    double *s = new double[pf.nxy], *alpha = new double[pf.nxy], *dfds = new double[pf.nxy];
+    double *rho = new double[pf.nxyz], *ux = new double[pf.nxyz], *uy = new double[pf.nxyz];
+    double *irho = new double[pf.nxyz], *iux = new double[pf.nxyz], *iuy = new double[pf.nxyz], *imx = new double[pf.nxyz], *imy = new double[pf.nxyz];
+    double *s = new double[pf.nxyz], *alpha = new double[pf.nxyz], *dfds = new double[pf.nxyz];
     for (int i = 0; i < pf.nx; ++i) {
         for (int j = 0; j < pf.ny; ++j) {
             int idx = pf.Index(i, j);
             s[idx] = pow((i + pf.offsetx) - 0.5*pf.lx, 2.0) + pow((j + pf.offsety), 2.0) < pow(0.15*pf.lx, 2.0) ? smin : smax;
         }
     }
-    for (int idx = 0; idx < pf.nxy; ++idx) {
+    for (int idx = 0; idx < pf.nxyz; ++idx) {
         rho[idx] = 1.0; ux[idx] = 0.0;  uy[idx] = 0.0;
         irho[idx] = 0.0;    iux[idx] = 0.0; iuy[idx] = 0.0; imx[idx] = 0.0; imy[idx] = 0.0;
         alpha[idx] = amax/(double)(pf.lx - 1)*q*(1.0 - s[idx])/(s[idx] + q);
@@ -90,7 +90,7 @@ int main(int argc, char** argv) {
 
     //--------------------Get sensitivity--------------------
     double dfdsmax = 0.0, dfdsmaxall;
-    for (int idx = 0; idx < pf.nxy; ++idx) {
+    for (int idx = 0; idx < pf.nxyz; ++idx) {
         dfds[idx] = 3.0*(imx[idx]*ux[idx] + imy[idx]*uy[idx])*(-amax/(double)(pf.lx - 1)*q*(q + 1.0)/pow(q + s[idx], 2.0));
         if (dfdsmax < fabs(dfds[idx])) {
             dfdsmax = fabs(dfds[idx]);
@@ -101,7 +101,7 @@ int main(int argc, char** argv) {
 #else
     dfdsmaxall = dfdsmax;
 #endif
-    for (int idx = 0; idx < pf.nxy; ++idx) {  
+    for (int idx = 0; idx < pf.nxyz; ++idx) {  
         dfds[idx] /= dfdsmaxall;
     }
 

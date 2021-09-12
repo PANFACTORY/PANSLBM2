@@ -385,7 +385,7 @@ namespace PANSLBM2 {
             }
 
             //  Filter value
-            std::vector<T> fv(_p.nxy, T());
+            std::vector<T> fv(_p.nxyz, T());
             for(int i1 = 0; i1 < _p.nx; ++i1){
                 for(int j1 = 0; j1 < _p.ny; ++j1){
                     for(int k1 = 0; k1 < _p.nz; ++k1){

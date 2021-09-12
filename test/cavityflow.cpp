@@ -30,8 +30,8 @@ int main(int argc, char** argv) {
     int lx = 101, ly = 101, nt = 10, dt = 1;
     double nu = 0.1, u0 = 0.1, Re = u0*(lx - 1)/nu;
     D2Q9<double> pf(lx, ly, MyRank, mx, my);
-    double rho[pf.nxy], ux[pf.nxy], uy[pf.nxy];
-    for (int idx = 0; idx < pf.nxy; ++idx) {
+    double rho[pf.nxyz], ux[pf.nxyz], uy[pf.nxyz];
+    for (int idx = 0; idx < pf.nxyz; ++idx) {
         rho[idx] = 1.0;
         ux[idx] = 0.0;
         uy[idx] = 0.0;

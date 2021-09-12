@@ -29,8 +29,8 @@ int main(int argc, char** argv) {
     int lx = 101, ly = 51, nt = 100000, dt = 1000;
     double nu = 0.02, alpha = 0.02, Th = 2.0, Tl = 1.0;
     D2Q9<double> pf(lx, ly, MyRank, mx, my), pg(lx, ly, MyRank, mx, my);
-    double rho[pf.nxy], ux[pf.nxy], uy[pf.nxy], tem[pg.nxy], qx[pg.nxy], qy[pg.nxy];
-    for (int idx = 0; idx < pf.nxy; ++ idx) {
+    double rho[pf.nxyz], ux[pf.nxyz], uy[pf.nxyz], tem[pg.nxyz], qx[pg.nxyz], qy[pg.nxyz];
+    for (int idx = 0; idx < pf.nxyz; ++ idx) {
         rho[idx] = 1.0; ux[idx] = 0.0;  uy[idx] = 0.0;
         tem[idx] = 0.5*(Th + Tl);   qx[idx] = 0.0;  qy[idx] = 0.0;
     }

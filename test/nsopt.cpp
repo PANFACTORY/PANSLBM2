@@ -34,15 +34,15 @@ int main(int argc, char** argv) {
     int lx = 101, ly = 101, nt = 10000, dt = 100, nk = 100;
     double nu = 0.1, u0 = 0.01, rho0 = 1.0, q = 0.01, amax = 2e2, scale0 = 1.0e0, weightlimit = 0.25, movelimit = 0.5, epsu = 1.0e-4;
     D2Q9<double> pf(lx, ly, MyRank, mx, my);
-    double *rho = new double[pf.nxy], *ux = new double[pf.nxy], *uy = new double[pf.nxy], *uxp = new double[pf.nxy], *uyp = new double[pf.nxy];
-    double *irho = new double[pf.nxy], *iux = new double[pf.nxy], *iuy = new double[pf.nxy], *imx = new double[pf.nxy], *imy = new double[pf.nxy], *iuxp = new double[pf.nxy], *iuyp = new double[pf.nxy];
-    double *alpha = new double[pf.nxy], *dads = new double[pf.nxy];
-    for (int idx = 0; idx < pf.nxy; ++idx) {
+    double *rho = new double[pf.nxyz], *ux = new double[pf.nxyz], *uy = new double[pf.nxyz], *uxp = new double[pf.nxyz], *uyp = new double[pf.nxyz];
+    double *irho = new double[pf.nxyz], *iux = new double[pf.nxyz], *iuy = new double[pf.nxyz], *imx = new double[pf.nxyz], *imy = new double[pf.nxyz], *iuxp = new double[pf.nxyz], *iuyp = new double[pf.nxyz];
+    double *alpha = new double[pf.nxyz], *dads = new double[pf.nxyz];
+    for (int idx = 0; idx < pf.nxyz; ++idx) {
         rho[idx] = 1.0; ux[idx] = 0.0;  uy[idx] = 0.0;  uxp[idx] = 0.0; uyp[idx] = 0.0;
         irho[idx] = 0.0;    iux[idx] = 0.0; iuy[idx] = 0.0; imx[idx] = 0.0; imy[idx] = 0.0; iuxp[idx] = 0.0;    iuyp[idx] = 0.0;
     }
 
-    std::vector<double> s(pf.nxy, 1.0);
+    std::vector<double> s(pf.nxyz, 1.0);
     MMA<double> optimizer(s.size(), 1, 1.0,
 		std::vector<double>(1, 0.0),
 		std::vector<double>(1, 10000.0),
@@ -60,7 +60,7 @@ int main(int argc, char** argv) {
         //********************Get weight********************
         double g_buffer = 0.0, g;
         std::vector<double> dgds(s.size(), 0.0);
-        for(int idx = 0; idx < pf.nxy; idx++){
+        for(int idx = 0; idx < pf.nxyz; idx++){
             g_buffer += s[idx]/(weightlimit*(double)(lx*ly));
             dgds[idx] = 1.0/(weightlimit*(double)(lx*ly)); 
         }
@@ -76,7 +76,7 @@ int main(int argc, char** argv) {
         int td;
         for (td = 1; td <= nt; ++td) {
             NS::Macro_Brinkman_Collide_Stream(pf, rho, ux, uy, nu, alpha, true);
-            if (residual(ux, uy, uxp, uyp, pf.nxy) < epsu) {
+            if (residual(ux, uy, uxp, uyp, pf.nxyz) < epsu) {
                 break;
             }
             pf.Swap();
@@ -103,7 +103,7 @@ int main(int argc, char** argv) {
         int ti;
         for (ti = 1; ti <= nt; ++ti) {
             ANS::Macro_Brinkman_Collide_Stream(pf, rho, ux, uy, irho, iux, iuy, imx, imy, nu, alpha, true);
-            if (residual(iux, iuy, iuxp, iuyp, pf.nxy) < epsu) {
+            if (residual(iux, iuy, iuxp, iuyp, pf.nxyz) < epsu) {
                 break;
             }
             pf.Swap();
@@ -141,7 +141,7 @@ int main(int argc, char** argv) {
 #endif
         double dfdsmax_buffer = 0.0, dfdsmax;
         std::vector<double> dfds(s.size(), 0.0);
-        for (int idx = 0; idx < pf.nxy; ++idx) {
+        for (int idx = 0; idx < pf.nxyz; ++idx) {
             dfds[idx] = 3.0*(imx[idx]*ux[idx] + imy[idx]*uy[idx])*dads[idx];
             if (dfdsmax_buffer < fabs(dfds[idx])) {
                 dfdsmax_buffer = fabs(dfds[idx]);
@@ -152,7 +152,7 @@ int main(int argc, char** argv) {
 #else
         dfdsmax = dfdsmax_buffer;
 #endif
-        for (int idx = 0; idx < pf.nxy; ++idx) {  
+        for (int idx = 0; idx < pf.nxyz; ++idx) {  
             dfds[idx] /= dfdsmax;
         }
         if (MyRank == 0) {

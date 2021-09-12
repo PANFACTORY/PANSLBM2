@@ -557,7 +557,7 @@ namespace PANSLBM2 {
         //  Function of setting initial condition of AAD for 2D
         template<class T, template<class>class Q>
         void InitialCondition(Q<T>& _q, const T *_ux, const T *_uy, const T *_item, const T *_iqx, const T *_iqy) {
-            for (int idx = 0; idx < _q.nxy; ++idx) {
+            for (int idx = 0; idx < _q.nxyz; ++idx) {
                 for (int c = 0; c < Q<T>::nc; ++c) {
                     _q.f[Q<T>::IndexF(idx, c)] = Equilibrium<T, Q>(_item[idx], _iqx[idx], _iqy[idx], _ux[idx], _uy[idx], c);
                 }

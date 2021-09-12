@@ -14,16 +14,16 @@ int main() {
     int nx = 81, ny = 61, nt = 10000, dt = 1000;
     double rho0 = 1e6, stress0 = -1.0, p = 0.25, smin = 0.1, smax = 0.9;
     D2Q9<double> pf(nx, ny);
-    double rho[pf.nxy], ux[pf.nxy], uy[pf.nxy], rx[pf.nxy], ry[pf.nxy], sxx[pf.nxy], sxy[pf.nxy], syx[pf.nxy], syy[pf.nxy];
-    double irho[pf.nxy], imx[pf.nxy], imy[pf.nxy], isxx[pf.nxy], isxy[pf.nxy], isyx[pf.nxy], isyy[pf.nxy];
-    double s[pf.nxy], gamma[pf.nxy], sensitivity[pf.nxy];
+    double rho[pf.nxyz], ux[pf.nxyz], uy[pf.nxyz], rx[pf.nxyz], ry[pf.nxyz], sxx[pf.nxyz], sxy[pf.nxyz], syx[pf.nxyz], syy[pf.nxyz];
+    double irho[pf.nxyz], imx[pf.nxyz], imy[pf.nxyz], isxx[pf.nxyz], isxy[pf.nxyz], isyx[pf.nxyz], isyy[pf.nxyz];
+    double s[pf.nxyz], gamma[pf.nxyz], sensitivity[pf.nxyz];
     for (int i = 0; i < pf.nx; ++i) {
         for (int j = 0; j < pf.ny; ++j) {
             int idx = pf.Index(i, j);
             s[idx] = pow(i - 0.5*pf.nx, 2.0) + pow(j, 2.0) < pow(0.15*pf.nx, 2.0) ? smin : smax;
         }
     }
-    for (int idx = 0; idx < pf.nxy; ++idx) {
+    for (int idx = 0; idx < pf.nxyz; ++idx) {
         rho[idx] = rho0;    
         ux[idx] = 0.0;  uy[idx] = 0.0;
         rx[idx] = 0.0;  ry[idx] = 0.0;
@@ -49,7 +49,7 @@ int main() {
         );
         pf.SmoothCorner();
 
-        for (int idx = 0; idx < pf.nxy; ++idx) {
+        for (int idx = 0; idx < pf.nxyz; ++idx) {
             rx[idx] += ux[idx]; ry[idx] += uy[idx];
         }
     }
@@ -71,13 +71,13 @@ int main() {
 
     //--------------------Get sensitivity--------------------
     double sensitivitymax = 0.0;
-    for (int idx = 0; idx < pf.nxy; ++idx) {
+    for (int idx = 0; idx < pf.nxyz; ++idx) {
         sensitivity[idx] = (4.5*(sxx[idx]*isxx[idx] + sxy[idx]*isxy[idx] + syx[idx]*isyx[idx] + syy[idx]*isyy[idx]) - 1.5*irho[idx]*(sxx[idx] + syy[idx]));
         if (sensitivitymax < fabs(sensitivity[idx])) {
             sensitivitymax = fabs(sensitivity[idx]);
         }
     }
-    for (int idx = 0; idx < pf.nxy; ++idx) {  
+    for (int idx = 0; idx < pf.nxyz; ++idx) {  
         sensitivity[idx] /= sensitivitymax;
     }
 

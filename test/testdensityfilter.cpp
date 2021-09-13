@@ -40,7 +40,7 @@ int main(int argc, char** argv) {
             
         }
     }
-    std::vector<double> fv = DensityFilter::GetFilteredValue(pf, 1.5, v);
+    std::vector<double> fv = DensityFilter::GetFilteredValue(pf, R, v);
     VTKXMLExport file("result/densityfilter", MyRank, lx, ly, lz, mx, my, mz);
     file.AddPointScaler("v", [&](int _i, int _j, int _k) { return v[pf.Index(_i, _j, _k)]; });
     file.AddPointScaler("fv", [&](int _i, int _j, int _k) { return fv[pf.Index(_i, _j, _k)]; });

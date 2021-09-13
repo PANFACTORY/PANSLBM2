@@ -1,7 +1,6 @@
 #pragma once
 #include <vector>
 #include <cassert>
-#include <iostream>
 #include "mpi.h"
 
 namespace PANSLBM2 {
@@ -398,67 +397,92 @@ namespace PANSLBM2 {
                                     double distance = sqrt(pow(i1 - i2, 2.0) + pow(j1 - j2, 2.0) + pow(k1 - k2, 2.0));
                                     if (distance <= _R) {
                                         T weight = 1.0;//(_R - distance)/_R;
-                                        wsum += weight;
                                         if ((0 <= i2 && i2 < _p.nx) && (0 <= j2 && j2 < _p.ny) && (0 <= k2 && k2 < _p.nz)) {                                                //  In self PE
+                                            wsum += weight;
                                             fv[idx] += weight*_v[_p.Index(i2, j2, k2)];                             
                                         } else if ((i2 < 0 && _p.PEx != 0) && (0 <= j2 && j2 < _p.ny) && (0 <= k2 && k2 < _p.nz)) {                                         //  In xmin PE
+                                            wsum += weight;
                                             fv[idx] += weight*recv_xmin[IndexFX(nR + i2, j2, k2)];  
                                         } else if ((_p.nx <= i2 && _p.PEx != _p.mx - 1) && (0 <= j2 && j2 < _p.ny) && (0 <= k2 && k2 < _p.nz)) {                            //  In xmax PE
+                                            wsum += weight;
                                             fv[idx] += weight*recv_xmax[IndexFX(i2 - _p.nx, j2, k2)];
                                         } else if ((0 <= i2 && i2 < _p.nx) && (j2 < 0 && _p.PEy != 0) && (0 <= k2 && k2 < _p.nz)) {                                         //  In ymin PE
+                                            wsum += weight;
                                             fv[idx] += weight*recv_ymin[IndexFY(i2, nR + j2, k2)];
                                         } else if ((0 <= i2 && i2 < _p.nx) && (_p.ny <= j2 && _p.PEy != _p.my - 1) && (0 <= k2 && k2 < _p.nz)) {                            //  In ymax PE
+                                            wsum += weight;
                                             fv[idx] += weight*recv_ymax[IndexFY(i2, j2 - _p.ny, k2)];
                                         } else if ((0 <= i2 && i2 < _p.nx) && (0 <= j2 && j2 < _p.ny) && (k2 < 0 && _p.PEz != 0)) {                                         //  In zmin PE
+                                            wsum += weight;
                                             fv[idx] += weight*recv_zmin[IndexFZ(i2, j2, nR + k2)];
                                         } else if ((0 <= i2 && i2 < _p.nx) && (0 <= j2 && j2 < _p.ny) && (_p.nz <= k2 && _p.PEz != _p.mz - 1)) {                            //  In zmax PE
+                                            wsum += weight;
                                             fv[idx] += weight*recv_zmax[IndexFZ(i2, j2, k2 - _p.nz)];
                                         } else if ((0 <= i2 && i2 < _p.nx) && (j2 < 0 && _p.PEy != 0) && (k2 < 0 && _p.PEz != 0)) {                                         //  In ymin zmin PE
+                                            wsum += weight;
                                             fv[idx] += weight*recv_ymin_zmin[IndexEX(i2, nR + j2, nR + k2)];
                                         } else if ((0 <= i2 && i2 < _p.nx) && (_p.ny <= j2 && _p.PEy != _p.my - 1) && (k2 < 0 && _p.PEz != 0)) {                            //  In ymax zmin PE
+                                            wsum += weight;
                                             fv[idx] += weight*recv_ymax_zmin[IndexEX(i2, j2 - _p.ny, nR + k2)];
                                         } else if ((0 <= i2 && i2 < _p.nx) && (j2 < 0 && _p.PEy != 0) && (_p.nz <= k2 && _p.PEz != _p.mz - 1)) {                            //  In ymin zmax PE
+                                            wsum += weight;
                                             fv[idx] += weight*recv_ymin_zmax[IndexEX(i2, nR + j2, k2 - _p.nz)];
                                         } else if ((0 <= i2 && i2 < _p.nx) && (_p.ny <= j2 && _p.PEy != _p.my - 1) && (_p.nz <= k2 && _p.PEz != _p.mz - 1)) {               //  In ymax zmax PE
+                                            wsum += weight;
                                             fv[idx] += weight*recv_ymax_zmax[IndexEX(i2, j2 - _p.ny, k2 - _p.nz)];
                                         } else if ((i2 < 0 && _p.PEx != 0) && (0 <= j2 && j2 < _p.ny) && (k2 < 0 && _p.PEz != 0)) {                                         //  In zmin xmin PE
+                                            wsum += weight;
                                             fv[idx] += weight*recv_zmin_xmin[IndexEY(nR + i2, j2, nR + k2)];
                                         } else if ((i2 < 0 && _p.PEx != 0) && (0 <= j2 && j2 < _p.ny) && (_p.nz <= k2 && _p.PEz != _p.mz - 1)) {                            //  In zmax xmin PE
+                                            wsum += weight;
                                             fv[idx] += weight*recv_zmax_xmin[IndexEY(nR + i2, j2, k2 - _p.nz)];
                                         } else if ((_p.nx <= i2 && _p.PEx != _p.mx - 1) && (0 <= j2 && j2 < _p.ny) && (k2 < 0 && _p.PEz != 0)) {                            //  In zmin xmax PE
+                                            wsum += weight;
                                             fv[idx] += weight*recv_zmin_xmax[IndexEY(i2 - _p.nx, j2, nR + k2)];
                                         } else if ((_p.nx <= i2 && _p.PEx != _p.mx - 1) && (0 <= j2 && j2 < _p.ny) && (_p.nz <= k2 && _p.PEz != _p.mz - 1)) {               //  In zmax xmax PE
+                                            wsum += weight;
                                             fv[idx] += weight*recv_zmax_xmax[IndexEY(i2 - _p.nx, j2, k2 - _p.nz)];
                                         } else if ((i2 < 0 && _p.PEx != 0) && (j2 < 0 && _p.PEy != 0) && (0 <= k2 && k2 < _p.nz)) {                                         //  In xmin ymin PE
+                                            wsum += weight;
                                             fv[idx] += weight*recv_xmin_ymin[IndexEZ(nR + i2, nR + j2, k2)];
                                         } else if ((_p.nx <= i2 && _p.PEx != _p.mx - 1) && (j2 < 0 && _p.PEy != 0) && (0 <= k2 && k2 < _p.nz)) {                            //  In xmax ymin PE
+                                            wsum += weight;
                                             fv[idx] += weight*recv_xmax_ymin[IndexEZ(i2 - _p.nx, nR + j2, k2)];
                                         } else if ((i2 < 0 && _p.PEx != 0) && (_p.ny <= j2 && _p.PEy != _p.my - 1) && (0 <= k2 && k2 < _p.nz)) {                            //  In xmin ymax PE
+                                            wsum += weight;
                                             fv[idx] += weight*recv_xmin_ymax[IndexEZ(nR + i2, j2 - _p.ny, k2)];
                                         } else if ((_p.nx <= i2 && _p.PEx != _p.mx - 1) && (_p.ny <= j2 && _p.PEy != _p.my - 1) && (0 <= k2 && k2 < _p.nz)) {               //  In xmax ymax PE
+                                            wsum += weight;
                                             fv[idx] += weight*recv_xmax_ymax[IndexEZ(i2 - _p.nx, j2 - _p.ny, k2)];
                                         } else if ((i2 < 0 && _p.PEx != 0) && (j2 < 0 && _p.PEy != 0) && (k2 < 0 && _p.PEz != 0)) {                                         //  In xmin ymin zmin PE
+                                            wsum += weight;
                                             fv[idx] += weight*recv_xmin_ymin_zmin[IndexCC(nR + i2, nR + j2, nR + k2)];
                                         } else if ((_p.nx <= i2 && _p.PEx != _p.mx - 1) && (j2 < 0 && _p.PEy != 0) && (k2 < 0 && _p.PEz != 0)) {                            //  In xmax ymin zmin PE
+                                            wsum += weight;
                                             fv[idx] += weight*recv_xmax_ymin_zmin[IndexCC(i2 - _p.nx, nR + j2, nR + k2)];
                                         } else if ((i2 < 0 && _p.PEx != 0) && (_p.ny <= j2 && _p.PEy != _p.my - 1) && (k2 < 0 && _p.PEz != 0)) {                            //  In xmin ymax zmin PE
+                                            wsum += weight;
                                             fv[idx] += weight*recv_xmin_ymax_zmin[IndexCC(nR + i2, j2 - _p.ny, nR + k2)];
                                         } else if ((_p.nx <= i2 && _p.PEx != _p.mx - 1) && (_p.ny <= j2 && _p.PEy != _p.my - 1) && (k2 < 0 && _p.PEz != 0)) {               //  In xmax ymax zmin PE
+                                            wsum += weight;
                                             fv[idx] += weight*recv_xmax_ymax_zmin[IndexCC(i2 - _p.nx, j2 - _p.ny, nR + k2)];
                                         } else if ((i2 < 0 && _p.PEx != 0) && (j2 < 0 && _p.PEy != 0) && (_p.nz <= k2 && _p.PEz != _p.mz - 1)) {                            //  In xmin ymin zmax PE
+                                            wsum += weight;
                                             fv[idx] += weight*recv_xmin_ymin_zmax[IndexCC(nR + i2, nR + j2, k2 - _p.nz)];
                                         } else if ((_p.nx <= i2 && _p.PEx != _p.mx - 1) && (j2 < 0 && _p.PEy != 0) && (_p.nz <= k2 && _p.PEz != _p.mz - 1)) {               //  In xmax ymin zmax PE
+                                            wsum += weight;
                                             fv[idx] += weight*recv_xmax_ymin_zmax[IndexCC(i2 - _p.nx, nR + j2, k2 - _p.nz)];
                                         } else if ((i2 < 0 && _p.PEx != 0) && (_p.ny <= j2 && _p.PEy != _p.my - 1) && (_p.nz <= k2 && _p.PEz != _p.mz - 1)) {               //  In xmin ymax zmax PE
+                                            wsum += weight;
                                             fv[idx] += weight*recv_xmin_ymax_zmax[IndexCC(nR + i2, j2 - _p.ny, k2 - _p.nz)];
                                         } else if ((_p.nx <= i2 && _p.PEx != _p.mx - 1) && (_p.ny <= j2 && _p.PEy != _p.my - 1) && (_p.nz <= k2 && _p.PEz != _p.mz - 1)) {  //  In xmax ymax zmax PE
+                                            wsum += weight;
                                             fv[idx] += weight*recv_xmax_ymax_zmax[IndexCC(i2 - _p.nx, j2 - _p.ny, k2 - _p.nz)];
                                         }
                                     }
                                 }
                             }
                         }
-                        std::cout << wsum << std::endl;
                         fv[idx] /= wsum;
                     }
                 }

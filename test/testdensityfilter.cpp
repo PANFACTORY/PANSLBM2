@@ -28,7 +28,7 @@ int main(int argc, char** argv) {
 #endif
 
     int lx = 51, ly = 51, lz = 51;
-    double R = 1.5;
+    double R = 1.8;
     D3Q15<double> pf(lx, ly, lz, MyRank, mx, my, mz);
     std::vector<double> v(pf.nxyz);
     for (int i = 0; i < pf.nx; ++i) {

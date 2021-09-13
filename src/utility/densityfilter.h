@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include <cassert>
+#include <iostream>
 #include "mpi.h"
 
 namespace PANSLBM2 {
@@ -483,6 +484,7 @@ namespace PANSLBM2 {
                                 }
                             }
                         }
+                        std::cout << wsum << std::endl;
                         fv[idx] /= wsum;
                     }
                 }

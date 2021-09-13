@@ -88,7 +88,7 @@ namespace PANSLBM2 {
                 for (int i = 0; i < _p.nx; ++i) {
                     for (int j = 0; j < _p.ny; ++j) {
                         for (int rk = 0; rk < nR; ++rk) {
-                            send_zmax[IndexFZ(i, j, rk)] = _v[_p.Index(i, j, (_p.nz - nR) + rk];                            //  Face on zmax
+                            send_zmax[IndexFZ(i, j, rk)] = _v[_p.Index(i, j, (_p.nz - nR) + rk)];                            //  Face on zmax
                         }
                     }
                 }

@@ -36,8 +36,8 @@ int main(int argc, char** argv) {
             v[idx] = (i + pf.offsetx)%2 == (j + pf.offsety)%2 ? 1.0 : 0.0;
         }
     }
-    std::vector<T> fv = DensityFilter::GetFilteredValue(pf, 1.5, v);
-    VTKXMLExport file("result/cavity_" + std::to_string(t/dt), MyRank, lx, ly, 1, mx, my, 1);
+    std::vector<double> fv = DensityFilter::GetFilteredValue(pf, 1.5, v);
+    VTKXMLExport file("result/densityfilter", MyRank, lx, ly, 1, mx, my, 1);
     file.AddPointScaler("v", [&](int _i, int _j, int _k) { return v[pf.Index(_i, _j)]; });
     file.AddPointScaler("fv", [&](int _i, int _j, int _k) { return fv[pf.Index(_i, _j)]; });
 #ifdef _USE_MPI_DEFINES

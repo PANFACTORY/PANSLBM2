@@ -484,7 +484,9 @@ namespace PANSLBM2 {
                                 }
                             }
                         }
-                        std::cout << wsum << std::endl;
+                        if (wsum > 26) {
+                            std::cout << wsum << std::endl;
+                        } 
                         fv[idx] /= wsum;
                     }
                 }

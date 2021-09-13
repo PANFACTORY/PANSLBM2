@@ -391,9 +391,9 @@ namespace PANSLBM2 {
                     for(int k1 = 0; k1 < _p.nz; ++k1){
                         int idx = _p.Index(i1, j1, k1);
                         T wsum = T();
-                        for (int i2 = i1 - nR, i2max = i1 + nR; i2 <= i2max; ++i2) {
-                            for (int j2 = j1 - nR, j2max = j1 + nR; j2 <= j2max; ++j2) {
-                                for (int k2 = k1 - nR, k2max = k1 + nR; k2 <= k2max; ++k2) {                     
+                        for (int i2 = i1 - nR, i2max = i1 + nR; i2 < i2max; ++i2) {
+                            for (int j2 = j1 - nR, j2max = j1 + nR; j2 < j2max; ++j2) {
+                                for (int k2 = k1 - nR, k2max = k1 + nR; k2 < k2max; ++k2) {                     
                                     double distance = sqrt(pow(i1 - i2, 2.0) + pow(j1 - j2, 2.0) + pow(k1 - k2, 2.0));
                                     if (distance <= _R) {
                                         T weight = 1.0;//(_R - distance)/_R;

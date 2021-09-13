@@ -32,8 +32,8 @@ public:
         {
             assert(0 < _lx && 0 < _ly && 0 <= _PEid && 0 < _mx && 0 < _my);
 
-            this->f = new T[this->nxy*D2Q9<T>::nc];
-            this->fnext = new T[this->nxy*D2Q9<T>::nc];
+            this->f = new T[this->nxyz*D2Q9<T>::nc];
+            this->fnext = new T[this->nxyz*D2Q9<T>::nc];
             this->fsend_xmin = new T[this->ny*3];
             this->fsend_xmax = new T[this->ny*3];
             this->fsend_ymin = new T[this->nx*3];

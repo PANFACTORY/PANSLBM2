@@ -396,7 +396,7 @@ namespace PANSLBM2 {
                                 for (int k2 = k1 - nR, k2max = k1 + nR; k2 < k2max; ++k2) {                     
                                     double distance = sqrt(pow(i1 - i2, 2.0) + pow(j1 - j2, 2.0) + pow(k1 - k2, 2.0));
                                     if (distance <= _R) {
-                                        T weight = (_R - distance)/_R;
+                                        T weight = 1.0;//(_R - distance)/_R;
                                         wsum += weight;
                                         if ((0 <= i2 && i2 < _p.nx) && (0 <= j2 && j2 < _p.ny) && (0 <= k2 && k2 < _p.nz)) {                                                //  In self PE
                                             fv[idx] += weight*_v[_p.Index(i2, j2, k2)];                             

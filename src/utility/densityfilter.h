@@ -69,7 +69,7 @@ namespace PANSLBM2 {
             if (_p.PEy != _p.my - 1) {
                 for (int i = 0; i < _p.nx; ++i) {
                     for (int rj = 0; rj < nR; ++rj) {
-                        for (int k = 0; k < _p.nk; ++k) {
+                        for (int k = 0; k < _p.nz; ++k) {
                             send_ymax[IndexFY(i, rj, k)] = _v[_p.Index(i, (_p.ny - nR) + rj, k)];                          //  Face on ymax
                         }
                     }

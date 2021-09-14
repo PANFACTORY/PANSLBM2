@@ -79,7 +79,7 @@ int main(int argc, char** argv) {
         pf.BoundaryCondition([=](int _i, int _j) { return _i == 0 ? 1 : 0; });
         EL::BoundaryConditionSetStress(pf, 
             [=](int _i, int _j) { return 0.0; }, 
-            [=](int _i, int _j) { return _i == nx - 1 ? stress0 : 0.0; }, 
+            [=](int _i, int _j) { return _i == lx - 1 ? stress0 : 0.0; }, 
             [=](int _i, int _j) { return _i != 0; }
         );
         pf.SmoothCorner();

@@ -56,9 +56,9 @@ int main(int argc, char** argv) {
     }
 
     //--------------------Export result--------------------
-    VTKXMLExport file("result/cavity3D", MyRank, lx, ly, lz, mx, my, mz);
-    file.AddPointScaler("rho", [&](int _i, int _j, int _k) { return rho[pf.Index(_i, _j, _k)]; });
-    file.AddPointVector("u", 
+    VTKXMLExport file(pf, "result/cavity3D");
+    file.AddPointData(pf, "rho", [&](int _i, int _j, int _k) { return rho[pf.Index(_i, _j, _k)]; });
+    file.AddPointData(pf, "u", 
         [&](int _i, int _j, int _k) { return ux[pf.Index(_i, _j, _k)]; },
         [&](int _i, int _j, int _k) { return uy[pf.Index(_i, _j, _k)]; },
         [&](int _i, int _j, int _k) { return uz[pf.Index(_i, _j, _k)]; }

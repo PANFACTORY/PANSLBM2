@@ -5,21 +5,10 @@
     #include "mpi.h"
 #endif
 
-namespace {
-    auto weight = [&](int _i1, int _j1, int _k1, int _i2, int _j2, int _k2) {
-        return 1.0;//(_R - distance)/_R
-    };
-}
-
 namespace PANSLBM2 {
     namespace DensityFilter {
-        template<class T, template<class>class P, class Fv>
-        std::vector<T> GetFilteredValue(
-            P<T>& _p, T _R, const std::vector<T> &_v, 
-            Fv _weight = [](int _i1, int _j1, int _k1, int _i2, int _j2, int _k2)->T {
-                return 1.0;//(_R - distance)/_R
-            };
-        ) {
+        template<class T, template<class>class P>
+        std::vector<T> GetFilteredValue(P<T>& _p, T _R, const std::vector<T> &_v) {
             assert(_R > T());
             int nR = (int)_R;
 #ifdef _USE_MPI_DEFINES
@@ -409,7 +398,7 @@ namespace PANSLBM2 {
                                 for (int k2 = k1 - nR, k2max = k1 + nR; k2 <= k2max; ++k2) {                     
                                     double distance = sqrt(pow(i1 - i2, 2.0) + pow(j1 - j2, 2.0) + pow(k1 - k2, 2.0));
                                     if (distance <= _R) {
-                                        T weight = _weight(i1, j1, k1, i2, j2, k2);
+                                        T weight = 1.0;//(_R - distance)/_R;
                                         if ((0 <= i2 && i2 < _p.nx) && (0 <= j2 && j2 < _p.ny) && (0 <= k2 && k2 < _p.nz)) {                                                //  In self PE
                                             wsum += weight;
                                             fv[idx] += weight*_v[_p.Index(i2, j2, k2)];                             

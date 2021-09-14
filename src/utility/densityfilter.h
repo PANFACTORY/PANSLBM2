@@ -13,7 +13,7 @@ namespace {
 
 namespace PANSLBM2 {
     namespace DensityFilter {
-        template<class T, template<class>class P, class Fv>
+        template<class T, template<class>class P, class Fv = []{}>
         std::vector<T> GetFilteredValue(
             P<T>& _p, T _R, const std::vector<T> &_v, 
             Fv _weight = weight

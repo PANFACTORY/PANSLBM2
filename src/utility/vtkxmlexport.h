@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include <fstream>
+#include <cassert>
 
 namespace PANSLBM2 {
     class VTKXMLExport {
@@ -83,13 +84,9 @@ public:
         VTKXMLExport(const VTKXMLExport&) = delete;
         ~VTKXMLExport() {}
 
-        template<class F>
-        void AddPointScaler(std::string _label, F _value);
-        template<class F0, class F1, class F2>
-        void AddPointVector(std::string _label, F0 _value0, F1 _value1, F2 _value2);
-        template<class F00, class F01, class F02, class F10, class F11, class F12, class F20, class F21, class F22>
-        void AddPointTensor(std::string _label, F00 _v00, F01 _v01, F02 _v02, F10 _v10, F11 _v11, F12 _v12, F20 _v20, F21 _v21, F22 _v22);
-
+        template<class... Fs>
+        void AddPointData(std::string _label, Fs ..._values);
+        
 private:
         std::ofstream fout0, fout;
         const int lx, ly, lz, mx, my, mz, PEid, PEx, PEy, PEz, nx, ny, nz, offsetx, offsety, offsetz;
@@ -127,54 +124,74 @@ private:
             this->fout << "\t</StructuredGrid>" << std::endl;
             this->fout << "</VTKFile>";
         }
+    
+        void Values(int _i, int _j, int _k) {}
+        template <class F, class... Fs>
+        void Values(int _i, int _j, int _k, F _value, Fs... _values) {
+            this->fout << _value(_i, _j, _k) << " ";
+            this->Values(_i, _j, _k, _values...);
+        }
+
+        //void Synchronize();
     };
 
-    template<class F>
-    void VTKXMLExport::AddPointScaler(std::string _label, F _value) {
-        this->AddHeader();
+    /*void VTKXMLExport::Synchronize() {
+        int cmp;
+        T *send_xmin = new T[this->ny*this->nz*cmp];
+        T *send_ymin = new T[this->nz*this->nx*cmp];
+        T *send_zmin = new T[this->nx*this->ny*cmp];
+        T *send_ymin_zmin = new T[this->nx*cmp];
+        T *send_zmin_xmin = new T[this->ny*cmp];
+        T *send_xmin_ymin = new T[this->nx*cmp];
+        T *send_xmin_ymin_zmin = new T[cmp];
+        T *recv_xmax = new T[this->ny*this->nz*cmp];
+        T *recv_ymax = new T[this->nz*this->nx*cmp];
+        T *recv_zmax = new T[this->nx*this->ny*cmp];
+        T *recv_ymax_zmax = new T[this->nx*cmp];
+        T *recv_zmax_xmax = new T[this->ny*cmp];
+        T *recv_xmax_ymax = new T[this->nx*cmp];
+        T *recv_xmax_ymax_zmax = new T[cmp];
 
-        //  Export .pvts file
-        if (this->PEid == 0) {
-            this->fout0.seekp(this->addpos0);
-            this->fout0 << "\t\t\t<DataArray type=\"Float64\" Name=\"" << _label << "\" format=\"ascii\"/>" << std::endl;
-            this->addpos0 = this->fout0.tellp();
-        }
+        MPI_Status status[14];
+        MPI_Request request[14];
 
-        //  Export .vts file
-        int nnx = this->nx + (this->PEx != this->mx - 1 ? 1 : 0);
-        int nny = this->ny + (this->PEy != this->my - 1 ? 1 : 0);
-        int nnz = this->nz + (this->PEz != this->mz - 1 ? 1 : 0);
-        this->fout.seekp(this->addpos);
-        this->fout << "\t\t\t\t<DataArray type=\"Float64\" Name=\"" << _label << "\" format=\"ascii\">" << std::endl;
-        for (int k = 0; k < nnz; ++k) {
-            for (int j = 0; j < nny; ++j) {
-                for (int i = 0; i < nnx; ++i) {
-                    if (
-                        (this->PEx != this->mx - 1 && i == nnx - 1) || 
-                        (this->PEy != this->my - 1 && j == nny - 1) || 
-                        (this->PEz != this->mz - 1 && k == nnz - 1)
-                    ) {
-                        this->fout << "\t\t\t\t\t" << 0 << std::endl;
-                    } else {
-                        this->fout << "\t\t\t\t\t" << _value(i, j, k) << std::endl;
+        //  Copy from _value to send buffer along edge or at corner
+        if (this->PEx != 0) {
+            for (int j = 0; j < this->ny; ++j) {
+                for (int k = 0; k < this->nz; ++k) {
+                    for (int c = 0; c < cmp; ++c) {
+                        send_xmin[] = F(0, j, k);
                     }
                 }
             }
         }
-        this->fout << "\t\t\t\t</DataArray>" << std::endl;
-        this->addpos = this->fout.tellp();
 
-        this->AddFooter();
-    }
+        //  Communicate with other PE
+        int neib = 0;
+        if (this->PEx != 0) {
+            MPI_Isend(send_xmin, this->ny*this->nz*cmp, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy, this->PEz), 0, MPI_COMM_WORLD, &request[neib++]);
+        }
+        if (this->PEx != this->mx - 1) {
+            MPI_Irecv(recv_xmax, this->ny*this->nz*cmp, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy, this->PEz), 0, MPI_COMM_WORLD, &request[neib++]);
+        }
 
-    template<class F0, class F1, class F2>
-    void VTKXMLExport::AddPointVector(std::string _label, F0 _value0, F1 _value1, F2 _value2) {
+        //  
+
+    }*/
+
+    
+
+    template<class... Fs>
+    void VTKXMLExport::AddPointData(std::string _label, Fs ..._values) {
+        int cmp = sizeof...(Fs);
+        assert(cmp == 1 || cmp == 3 || cmp == 9);
+        
         this->AddHeader();
 
         //  Export .pvts file
         if (this->PEid == 0) {
             this->fout0.seekp(this->addpos0);
-            this->fout0 << "\t\t\t<DataArray type=\"Float64\" Name=\"" << _label << "\" NumberOfComponents=\"3\" format=\"ascii\"/>" << std::endl;
+            this->fout0 << "\t\t\t<DataArray type=\"Float64\" Name=\"" << _label << "\" NumberOfComponents=\"" << cmp << "\" format=\"ascii\"/>" << std::endl;
             this->addpos0 = this->fout0.tellp();
         }
 
@@ -183,7 +200,7 @@ private:
         int nny = this->ny + (this->PEy != this->my - 1 ? 1 : 0);
         int nnz = this->nz + (this->PEz != this->mz - 1 ? 1 : 0);
         this->fout.seekp(this->addpos);
-        this->fout << "\t\t\t\t<DataArray type=\"Float64\" Name=\"" << _label << "\" NumberOfComponents=\"3\" format=\"ascii\">" << std::endl;
+        this->fout << "\t\t\t\t<DataArray type=\"Float64\" Name=\"" << _label << "\" NumberOfComponents=\"" << cmp << "\" format=\"ascii\">" << std::endl;
         for (int k = 0; k < nnz; ++k) {
             for (int j = 0; j < nny; ++j) {
                 for (int i = 0; i < nnx; ++i) {
@@ -192,50 +209,15 @@ private:
                         (this->PEy != this->my - 1 && j == nny - 1) || 
                         (this->PEz != this->mz - 1 && k == nnz - 1)
                     ) {
-                        this->fout << "\t\t\t\t\t" << 0 << " " << 0 << " " << 0 << std::endl;
+                        this->fout << "\t\t\t\t\t";
+                        for (int c = 0; c < cmp; ++c) {
+                            this->fout << 0 << " ";
+                        }
+                        this->fout << std::endl;
                     } else {
-                        this->fout << "\t\t\t\t\t" << _value0(i, j, k) << " " << _value1(i, j, k) << " " << _value2(i, j, k) << std::endl;
-                    }
-                }
-            }
-        }
-        this->fout << "\t\t\t\t</DataArray>" << std::endl;
-        this->addpos = this->fout.tellp();
-
-        this->AddFooter();
-    }
-
-    template<class F00, class F01, class F02, class F10, class F11, class F12, class F20, class F21, class F22>
-    void VTKXMLExport::AddPointTensor(std::string _label, F00 _v00, F01 _v01, F02 _v02, F10 _v10, F11 _v11, F12 _v12, F20 _v20, F21 _v21, F22 _v22) {
-        this->AddHeader();
-
-        //  Export .pvts file
-        if (this->PEid == 0) {
-            this->fout0.seekp(this->addpos0);
-            this->fout0 << "\t\t\t<DataArray type=\"Float64\" Name=\"" << _label << "\" NumberOfComponents=\"9\" format=\"ascii\"/>" << std::endl;
-            this->addpos0 = this->fout0.tellp();
-        }
-
-        //  Export .vts file
-        int nnx = this->nx + (this->PEx != this->mx - 1 ? 1 : 0);
-        int nny = this->ny + (this->PEy != this->my - 1 ? 1 : 0);
-        int nnz = this->nz + (this->PEz != this->mz - 1 ? 1 : 0);
-        this->fout.seekp(this->addpos);
-        this->fout << "\t\t\t\t<DataArray type=\"Float64\" Name=\"" << _label << "\" NumberOfComponents=\"9\" format=\"ascii\">" << std::endl;
-        for (int k = 0; k < nnz; ++k) {
-            for (int j = 0; j < nny; ++j) {
-                for (int i = 0; i < nnx; ++i) {
-                    if (
-                        (this->PEx != this->mx - 1 && i == nnx - 1) || 
-                        (this->PEy != this->my - 1 && j == nny - 1) || 
-                        (this->PEz != this->mz - 1 && k == nnz - 1)
-                    ) {
-                        this->fout << "\t\t\t\t\t" << 0 << " " << 0 << " " << 0 << " " << 0 << " " << 0 << " " << 0 << " " << 0 << " " << 0 << " " << 0 << std::endl;
-                    } else {
-                        this->fout << "\t\t\t\t\t" 
-                            << _v00(i, j, k) << " " << _v01(i, j, k) << " " << _v02(i, j, k) << " "
-                            << _v10(i, j, k) << " " << _v11(i, j, k) << " " << _v12(i, j, k) << " "
-                            << _v20(i, j, k) << " " << _v21(i, j, k) << " " << _v22(i, j, k) << std::endl;
+                        this->fout << "\t\t\t\t\t";
+                        this->Values(i, j, k, _values...);
+                        this->fout << std::endl;
                     }
                 }
             }

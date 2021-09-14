@@ -105,9 +105,9 @@ private:
         T values[9] = { T() };
 
 #ifdef _USE_MPI_DEFINES
-        auto IndexFX = [&](int _j, int _k, int _c) { return _c + cmp*(_j + this->ny*_k); };
-        auto IndexFY = [&](int _k, int _i, int _c) { return _c + cmp*(_k + this->nz*_i); };
-        auto IndexFZ = [&](int _i, int _j, int _c) { return _c + cmp*(_i + this->nx*_j); };
+        auto IndexFX = [&](int _j, int _k, int _c) { return _c + cmp*(_j + _p.ny*_k); };
+        auto IndexFY = [&](int _k, int _i, int _c) { return _c + cmp*(_k + _p.nz*_i); };
+        auto IndexFZ = [&](int _i, int _j, int _c) { return _c + cmp*(_i + _p.nx*_j); };
         auto IndexEX = [&](int _i, int _c) { return _c + cmp*_i; };
         auto IndexEY = [&](int _j, int _c) { return _c + cmp*_j; };
         auto IndexEZ = [&](int _k, int _c) { return _c + cmp*_k; };

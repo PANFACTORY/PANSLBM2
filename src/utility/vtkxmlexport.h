@@ -22,7 +22,7 @@ public:
                 (_p.nz - 1) + _p.offsetz + (_p.PEz != _p.mz - 1 ? 1 : 0)
             };
             int *recv_buffer = new int[6*mxyz];
-            MPI_Gather(send_buffer, 6, MPI_INT, recv_buffer, 6*mxyz, MPI_INT, 0, MPI_COMM_WORLD);
+            MPI_Gather(send_buffer, 6, MPI_INT, recv_buffer, 6, MPI_INT, 0, MPI_COMM_WORLD);
 
             //  Export .pvts file (Only host process)
             if (_p.PEid == 0) {

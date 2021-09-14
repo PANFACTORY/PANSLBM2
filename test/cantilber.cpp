@@ -1,17 +1,35 @@
+#define _USE_MPI_DEFINES
 #include <iostream>
 #include <chrono>
+#include <cassert>
+#ifdef _USE_MPI_DEFINES
+    #include "mpi.h"
+#endif
 
 #include "../src/particle/d2q9.h"
 #include "../src/equation/elastic.h"
-#include "../src/utility/vtkexport.h"
+#include "../src/utility/vtkxmlexport.h"
 
 using namespace PANSLBM2;
 
-int main() {
+int main(int argc, char** argv) {
+#ifdef _USE_MPI_DEFINES
+    int PeTot, MyRank;
+    MPI_Init(&argc, &argv);
+    MPI_Comm_size(MPI_COMM_WORLD, &PeTot);
+    MPI_Comm_rank(MPI_COMM_WORLD, &MyRank);
+
+    assert(argc == 3);
+    int mx = atoi(argv[1]), my = atoi(argv[2]);
+    assert(mx*my == PeTot);
+#else
+    int MyRank = 0, mx = 1, my = 1; 
+#endif
+
     //--------------------Set parameters--------------------
-    int nx = 201, ny = 21, nt = 100000, dt = 1000;
+    int lx = 201, ly = 21, nt = 100000, dt = 1000;
     double rho0 = 1e6, stress0 = -1.0;
-    D2Q9<double> pf(nx, ny);
+    D2Q9<double> pf(lx, ly, MyRank, mx, my);
     double rho[pf.nxyz], ux[pf.nxyz], uy[pf.nxyz], rx[pf.nxyz], ry[pf.nxyz], sxx[pf.nxyz], sxy[pf.nxyz], syx[pf.nxyz], syy[pf.nxyz];
     for (int idx = 0; idx < pf.nxyz; ++idx) {
         rho[idx] = rho0;
@@ -30,19 +48,21 @@ int main() {
         } else {
             EL::Macro_Collide_Stream(pf, rho, ux, uy, sxx, sxy, syx, syy, 0.8, true);
 
-            std::cout << "t = " << t/dt << std::endl;
-            VTKExport file("result/elastic" + std::to_string(t/dt) + ".vtk", nx, ny);
-            file.AddPointVector("u", 
+            if (MyRank == 0) {
+                std::cout << "t = " << t/dt << std::endl;
+            }
+            VTKXMLExport file(pf, "result/elastic_" + std::to_string(t/dt));
+            file.AddPointData(pf, "u", 
                 [&](int _i, int _j, int _k) { return ux[pf.Index(_i, _j)]; },
                 [&](int _i, int _j, int _k) { return uy[pf.Index(_i, _j)]; },
                 [](int _i, int _j, int _k) { return 0.0; }
             );
-            file.AddPointVector("r", 
+            file.AddPointData(pf, "r", 
                 [&](int _i, int _j, int _k) { return rx[pf.Index(_i, _j)]; },
                 [&](int _i, int _j, int _k) { return ry[pf.Index(_i, _j)]; },
                 [](int _i, int _j, int _k) { return 0.0; }
             );
-            file.AddPointTensor("stress", 
+            file.AddPointData(pf, "stress", 
                 [&](int _i, int _j, int _k) { return sxx[pf.Index(_i, _j)]; },
                 [&](int _i, int _j, int _k) { return sxy[pf.Index(_i, _j)]; },
                 [](int _i, int _j, int _k) { return 0.0; },
@@ -70,5 +90,10 @@ int main() {
     }
 
     std::chrono::system_clock::time_point end = std::chrono::system_clock::now();
-    std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count() << std::endl;
+    if (MyRank == 0) {
+        std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count() << std::endl;
+    }
+#ifdef _USE_MPI_DEFINES
+    MPI_Finalize();
+#endif
 }

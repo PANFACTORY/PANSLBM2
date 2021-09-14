@@ -20,8 +20,12 @@ public:
                 0 + _p.offsety, (_p.ny - 1) + _p.offsety + (_p.PEy != _p.my - 1 ? 1 : 0),
                 0 + _p.offsetz, (_p.nz - 1) + _p.offsetz + (_p.PEz != _p.mz - 1 ? 1 : 0)
             };
+#ifdef _USE_MPI_DEFINES
             int *recv_buffer = new int[6*mxyz];
             MPI_Gather(send_buffer, 6, MPI_INT, recv_buffer, 6, MPI_INT, 0, MPI_COMM_WORLD);
+#else
+            int *recv_buffer = send_buffer;
+#endif
 
             //  Export .pvts file (Only host process)
             if (_p.PEid == 0) {
@@ -72,8 +76,9 @@ public:
             this->fout << "\t\t</Piece>" << std::endl;
             this->fout << "\t</StructuredGrid>" << std::endl;
             this->fout << "</VTKFile>";
-
+#ifdef _USE_MPI_DEFINES
             delete[] recv_buffer;
+#endif
         }
         VTKXMLExport(const VTKXMLExport&) = delete;
         ~VTKXMLExport() {}

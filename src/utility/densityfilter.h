@@ -5,14 +5,18 @@
     #include "mpi.h"
 #endif
 
+namespace {
+    auto weight = [&](int _i1, int _j1, int _k1, int _i2, int _j2, int _k2) {
+        return 1.0;//(_R - distance)/_R
+    };
+}
+
 namespace PANSLBM2 {
     namespace DensityFilter {
         template<class T, template<class>class P, class Fv>
         std::vector<T> GetFilteredValue(
             P<T>& _p, T _R, const std::vector<T> &_v, 
-            Fv _weight = [&](int _i1, int _j1, int _k1, int _i2, int _j2, int _k2) {
-                return 1.0;//(_R - distance)/_R
-            }
+            Fv _weight = weight
         ) {
             assert(_R > T());
             int nR = (int)_R;

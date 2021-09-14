@@ -17,9 +17,9 @@ public:
             int mxyz = _p.mx*_p.my*_p.mz;
             int send_buffer[6] = {
                 0 + _p.offsetx, 0 + _p.offsety, 0 + _p.offsetz,
-                _p.nx + _p.offsetx + (_p.PEx != _p.mx - 1 ? 1 : 0),
-                _p.ny + _p.offsety + (_p.PEy != _p.my - 1 ? 1 : 0),
-                _p.nz + _p.offsetz + (_p.PEz != _p.mz - 1 ? 1 : 0)
+                (_p.nx - 1) + _p.offsetx + (_p.PEx != _p.mx - 1 ? 1 : 0),
+                (_p.ny - 1) + _p.offsety + (_p.PEy != _p.my - 1 ? 1 : 0),
+                (_p.nz - 1) + _p.offsetz + (_p.PEz != _p.mz - 1 ? 1 : 0)
             };
             int *recv_buffer = new int[6*mxyz];
             MPI_Gather(send_buffer, 6, MPI_INT, recv_buffer, 6*mxyz, MPI_INT, 0, MPI_COMM_WORLD);

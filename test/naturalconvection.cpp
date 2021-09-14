@@ -65,17 +65,17 @@ int main(int argc, char** argv) {
     }
 
     //--------------------Export result--------------------
-    VTKXMLExport file("result/naturalconvection", MyRank, lx, ly, 1, mx, my, 1);
-    file.AddPointScaler("p", [&](int _i, int _j, int _k) { return rho[pf.Index(_i, _j)]/3.0; });
-    file.AddPointVector("u", 
+    VTKXMLExport file(pf, "result/naturalconvection");
+    file.AddPointData(pf, "p", [&](int _i, int _j, int _k) { return rho[pf.Index(_i, _j)]/3.0; });
+    file.AddPointData(pf, "u", 
         [&](int _i, int _j, int _k) { return ux[pf.Index(_i, _j)]; },
         [&](int _i, int _j, int _k) { return uy[pf.Index(_i, _j)]; },
         [](int _i, int _j, int _k) { return 0.0; }
     );
-    file.AddPointScaler("T", [&](int _i, int _j, int _k) { return tem[pg.Index(_i, _j)]; });
-    file.AddPointVector("q", 
-        [&](int _i, int _j, int _k) { return qx[pf.Index(_i, _j)]; },
-        [&](int _i, int _j, int _k) { return qy[pf.Index(_i, _j)]; },
+    file.AddPointData(pg, "T", [&](int _i, int _j, int _k) { return tem[pg.Index(_i, _j)]; });
+    file.AddPointData(pg, "q", 
+        [&](int _i, int _j, int _k) { return qx[pg.Index(_i, _j)]; },
+        [&](int _i, int _j, int _k) { return qy[pg.Index(_i, _j)]; },
         [](int _i, int _j, int _k) { return 0.0; }
     );
 

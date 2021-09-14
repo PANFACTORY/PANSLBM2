@@ -118,22 +118,22 @@ int main(int argc, char** argv) {
     }
 
     //--------------------Export result--------------------
-    VTKXMLExport file("result/adjoint3D", MyRank, lx, ly, lz, mx, my, mz);
-    file.AddPointScaler("p", [&](int _i, int _j, int _k) { return rho[pf.Index(_i, _j, _k)]/3.0; });
-    file.AddPointVector("u", 
+    VTKXMLExport file(pf, "result/adjoint3D");
+    file.AddPointData(pf, "p", [&](int _i, int _j, int _k) { return rho[pf.Index(_i, _j, _k)]/3.0; });
+    file.AddPointData(pf, "u", 
         [&](int _i, int _j, int _k) { return ux[pf.Index(_i, _j, _k)]; },
         [&](int _i, int _j, int _k) { return uy[pf.Index(_i, _j, _k)]; },
         [&](int _i, int _j, int _k) { return uz[pf.Index(_i, _j, _k)]; }
     );
-    file.AddPointScaler("dfds", [&](int _i, int _j, int _k) {   return dfds[pf.Index(_i, _j, _k)];  });
-    file.AddPointScaler("ip", [&](int _i, int _j, int _k) { return irho[pf.Index(_i, _j, _k)]; });
-    file.AddPointVector("iu", 
+    file.AddPointData(pf, "dfds", [&](int _i, int _j, int _k) {   return dfds[pf.Index(_i, _j, _k)];  });
+    file.AddPointData(pf, "ip", [&](int _i, int _j, int _k) { return irho[pf.Index(_i, _j, _k)]; });
+    file.AddPointData(pf, "iu", 
         [&](int _i, int _j, int _k) { return iux[pf.Index(_i, _j, _k)]; },
         [&](int _i, int _j, int _k) { return iuy[pf.Index(_i, _j, _k)]; },
         [&](int _i, int _j, int _k) { return iuz[pf.Index(_i, _j, _k)]; }
     );
-    file.AddPointScaler("alpha", [&](int _i, int _j, int _k) { return alpha[pf.Index(_i, _j, _k)]; });
-    file.AddPointScaler("s", [&](int _i, int _j, int _k) { return s[pf.Index(_i, _j, _k)]; });
+    file.AddPointData(pf, "alpha", [&](int _i, int _j, int _k) { return alpha[pf.Index(_i, _j, _k)]; });
+    file.AddPointData(pf, "s", [&](int _i, int _j, int _k) { return s[pf.Index(_i, _j, _k)]; });
     
     delete[] rho, ux, uy, uz, irho, iux, iuy, iuz, imx, imy, imz, s, alpha, dfds;
 #ifdef _USE_MPI_DEFINES

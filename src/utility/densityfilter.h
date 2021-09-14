@@ -1,16 +1,22 @@
 #pragma once
 #include <vector>
 #include <cassert>
-#include <iostream>
-#include "mpi.h"
+#ifdef _USE_MPI_DEFINES
+    #include "mpi.h"
+#endif
 
 namespace PANSLBM2 {
     namespace DensityFilter {
-        template<class T, template<class>class P>
-        std::vector<T> GetFilteredValue(P<T>& _p, T _R, const std::vector<T> &_v) {
+        template<class T, template<class>class P, class Fv>
+        std::vector<T> GetFilteredValue(
+            P<T>& _p, T _R, const std::vector<T> &_v, 
+            Fv _weight = [&](int _i1, int _j1, int _k1, int _i2, int _j2, int _k2) {
+                return 1.0;//(_R - distance)/_R
+            }
+        ) {
             assert(_R > T());
             int nR = (int)_R;
-
+#ifdef _USE_MPI_DEFINES
             auto IndexFX = [&](int _i, int _j, int _k) { return _j + _p.ny*_k + _p.ny*_p.nz*_i; };
             auto IndexFY = [&](int _i, int _j, int _k) { return _k + _p.nz*_i + _p.nz*_p.nx*_j; };
             auto IndexFZ = [&](int _i, int _j, int _k) { return _i + _p.nx*_j + _p.nx*_p.ny*_k; };
@@ -384,7 +390,7 @@ namespace PANSLBM2 {
             if (neib > 0) {
                 MPI_Waitall(neib, request, status);
             }
-
+#endif
             //  Filter value
             std::vector<T> fv(_p.nxyz, T());
             for(int i1 = 0; i1 < _p.nx; ++i1){
@@ -397,11 +403,13 @@ namespace PANSLBM2 {
                                 for (int k2 = k1 - nR, k2max = k1 + nR; k2 <= k2max; ++k2) {                     
                                     double distance = sqrt(pow(i1 - i2, 2.0) + pow(j1 - j2, 2.0) + pow(k1 - k2, 2.0));
                                     if (distance <= _R) {
-                                        T weight = 1.0;//(_R - distance)/_R;
+                                        T weight = _weight(i1, j1, k1, i2, j2, k2);
                                         if ((0 <= i2 && i2 < _p.nx) && (0 <= j2 && j2 < _p.ny) && (0 <= k2 && k2 < _p.nz)) {                                                //  In self PE
                                             wsum += weight;
                                             fv[idx] += weight*_v[_p.Index(i2, j2, k2)];                             
-                                        } else if ((i2 < 0 && _p.PEx != 0) && (0 <= j2 && j2 < _p.ny) && (0 <= k2 && k2 < _p.nz)) {                                         //  In xmin PE
+                                        } 
+#ifdef _USE_MPI_DEFINES
+                                        else if ((i2 < 0 && _p.PEx != 0) && (0 <= j2 && j2 < _p.ny) && (0 <= k2 && k2 < _p.nz)) {                                         //  In xmin PE
                                             wsum += weight;
                                             fv[idx] += weight*recv_xmin[IndexFX(nR + i2, j2, k2)];  
                                         } else if ((_p.nx <= i2 && _p.PEx != _p.mx - 1) && (0 <= j2 && j2 < _p.ny) && (0 <= k2 && k2 < _p.nz)) {                            //  In xmax PE
@@ -480,18 +488,16 @@ namespace PANSLBM2 {
                                             wsum += weight;
                                             fv[idx] += weight*recv_xmax_ymax_zmax[IndexCC(i2 - _p.nx, j2 - _p.ny, k2 - _p.nz)];
                                         }
+#endif
                                     }
                                 }
                             }
                         }
-                        if (wsum > 26) {
-                            std::cout << wsum << std::endl;
-                        } 
                         fv[idx] /= wsum;
                     }
                 }
             }
-
+#ifdef _USE_MPI_DEFINES
             delete[] send_xmin, send_xmax, send_ymin, send_ymax, send_zmin, send_zmax;
             delete[] send_ymin_zmin, send_ymax_zmin, send_ymin_zmax, send_ymax_zmax; 
             delete[] send_zmin_xmin, send_zmax_xmin, send_zmin_xmax, send_zmax_xmax;
@@ -502,7 +508,7 @@ namespace PANSLBM2 {
             delete[] recv_zmin_xmin, recv_zmax_xmin, recv_zmin_xmax, recv_zmax_xmax;
             delete[] recv_xmin_ymin, recv_xmax_ymin, recv_xmin_ymax, recv_xmax_ymax;
             delete[] recv_xmin_ymin_zmin, recv_xmax_ymin_zmin, recv_xmin_ymax_zmin, recv_xmax_ymax_zmin, recv_xmin_ymin_zmax, recv_xmax_ymin_zmax, recv_xmin_ymax_zmax, recv_xmax_ymax_zmax; 
-
+#endif
             return fv;
         }
     }

@@ -14,6 +14,16 @@ public:
         VTKXMLExport(P<T>& _p, std::string _fname) {
             this->isaddpointdata = false;
 
+            int mxyz = _p.mx*_p.my*_p.mz;
+            int send_buffer[6] = {
+                0 + _p.offsetx, 0 + _p.offsety, 0 + _p.offsetz,
+                _p.nx + _p.offsetx + (_p.PEx != _p.mx - 1 ? 1 : 0),
+                _p.ny + _p.offsety + (_p.PEy != _p.my - 1 ? 1 : 0),
+                _p.nz + _p.offsetz + (_p.PEz != _p.mz - 1 ? 1 : 0)
+            };
+            int *recv_buffer = new int[6*mxyz];
+            MPI_Gather(send_buffer, 6, MPI_INT, recv_buffer, 6*mxyz, MPI_INT, 0, MPI_COMM_WORLD);
+
             //  Export .pvts file (Only host process)
             if (_p.PEid == 0) {
                 int pos = std::max((int)_fname.rfind('\\'), (int)_fname.rfind('/'));
@@ -25,26 +35,12 @@ public:
                 this->fout0 << "\t\t<PPoints>" << std::endl;
                 this->fout0 << "\t\t\t<DataArray type=\"Float64\" NumberOfComponents=\"3\" format=\"ascii\"/>" << std::endl;
                 this->fout0 << "\t\t</PPoints>" << std::endl;
-                for (int k = 0; k < _p.mz; ++k) {
-                    for (int j = 0; j < _p.my; ++j) {
-                        for (int i = 0; i < _p.mx; ++i) {
-                            int peid = i + _p.mx*j + _p.mx*_p.my*k;
-                            int nnx = (_p.lx + i)/_p.mx;
-                            int nny = (_p.ly + j)/_p.my;
-                            int nnz = (_p.lz + k)/_p.mz;
-                            int osx = _p.mx - i > _p.lx%_p.mx ? i*nnx : _p.lx - (_p.mx - i)*nnx;
-                            int osy = _p.my - j > _p.ly%_p.my ? j*nny : _p.ly - (_p.my - j)*nny;
-                            int osz = _p.mz - k > _p.lz%_p.mz ? k*nnz : _p.lz - (_p.mz - k)*nnz;
-                            nnx += i != _p.mx - 1 ? 1 : 0;
-                            nny += j != _p.my - 1 ? 1 : 0;
-                            nnz += k != _p.mz - 1 ? 1 : 0;
-                            this->fout0 << "\t\t<Piece Extent=\"" 
-                                << 0 + osx << " " << (nnx - 1) + osx << " " 
-                                << 0 + osy << " " << (nny - 1) + osy << " " 
-                                << 0 + osz << " " << (nnz - 1) + osz 
-                                << "\" Source=\"" << fname + "_" + std::to_string(peid) + ".vts" << "\"/>" << std::endl;
-                        }
-                    }
+                for (int peid = 0; peid < mxyz; ++peid) {
+                    this->fout0 << "\t\t<Piece Extent=\"" 
+                        << send_buffer[6*peid + 0] << " " << send_buffer[6*peid + 1] << " " 
+                        << send_buffer[6*peid + 2] << " " << send_buffer[6*peid + 3] << " " 
+                        << send_buffer[6*peid + 4] << " " << send_buffer[6*peid + 5] 
+                        << "\" Source=\"" << fname + "_" + std::to_string(peid) + ".vts" << "\"/>" << std::endl;
                 }
                 this->addpos0 = this->fout0.tellp();
                 this->fout0 << "\t</PStructuredGrid>" << std::endl;
@@ -77,6 +73,8 @@ public:
             this->fout << "\t\t</Piece>" << std::endl;
             this->fout << "\t</StructuredGrid>" << std::endl;
             this->fout << "</VTKFile>";
+
+            delete[] recv_buffer;
         }
         VTKXMLExport(const VTKXMLExport&) = delete;
         ~VTKXMLExport() {}

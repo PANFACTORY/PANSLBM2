@@ -146,17 +146,17 @@ private:
         }
         if (_p.PEy != 0 && _p.PEz != 0) {
             for (int i = 0; i < _p.nx; ++i) {
-                this->Values(&send_ymin_zmin[IndexEX(i, c)], i, 0, 0, _values...);
+                this->Values(&send_ymin_zmin[IndexEX(i, 0)], i, 0, 0, _values...);
             }
         }
         if (_p.PEz != 0 && _p.PEx != 0) {
             for (int j = 0; j < _p.ny; ++j) {
-                this->Values(&send_zmin_xmin[IndexEY(j, c)], 0, j, 0, _values...);
+                this->Values(&send_zmin_xmin[IndexEY(j, 0)], 0, j, 0, _values...);
             }
         }
         if (_p.PEx != 0 && _p.PEy != 0) {
             for (int k = 0; k < _p.nz; ++k) {
-                this->Values(&send_xmin_ymin[IndexEZ(k, c)], 0, 0, k, _values...);
+                this->Values(&send_xmin_ymin[IndexEZ(k, 0)], 0, 0, k, _values...);
             }
         }
         if (_p.PEx != 0 && _p.PEy != 0 && _p.PEz != 0) {

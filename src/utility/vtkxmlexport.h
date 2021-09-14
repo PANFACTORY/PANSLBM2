@@ -37,9 +37,9 @@ public:
                 this->fout0 << "\t\t</PPoints>" << std::endl;
                 for (int peid = 0; peid < mxyz; ++peid) {
                     this->fout0 << "\t\t<Piece Extent=\"" 
-                        << send_buffer[6*peid + 0] << " " << send_buffer[6*peid + 1] << " " 
-                        << send_buffer[6*peid + 2] << " " << send_buffer[6*peid + 3] << " " 
-                        << send_buffer[6*peid + 4] << " " << send_buffer[6*peid + 5] 
+                        << recv_buffer[6*peid + 0] << " " << recv_buffer[6*peid + 1] << " " 
+                        << recv_buffer[6*peid + 2] << " " << recv_buffer[6*peid + 3] << " " 
+                        << recv_buffer[6*peid + 4] << " " << recv_buffer[6*peid + 5] 
                         << "\" Source=\"" << fname + "_" + std::to_string(peid) + ".vts" << "\"/>" << std::endl;
                 }
                 this->addpos0 = this->fout0.tellp();

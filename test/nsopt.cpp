@@ -76,7 +76,7 @@ int main(int argc, char** argv) {
         int td;
         for (td = 1; td <= nt; ++td) {
             NS::Macro_Brinkman_Collide_Stream(pf, rho, ux, uy, nu, alpha, true);
-            if (residual(ux, uy, uxp, uyp, pf.nxyz) < epsu) {
+            if (Residual(ux, uy, uxp, uyp, pf.nxyz) < epsu) {
                 break;
             }
             pf.Swap();
@@ -103,7 +103,7 @@ int main(int argc, char** argv) {
         int ti;
         for (ti = 1; ti <= nt; ++ti) {
             ANS::Macro_Brinkman_Collide_Stream(pf, rho, ux, uy, irho, iux, iuy, imx, imy, nu, alpha, true);
-            if (residual(iux, iuy, iuxp, iuyp, pf.nxyz) < epsu) {
+            if (Residual(iux, iuy, iuxp, iuyp, pf.nxyz) < epsu) {
                 break;
             }
             pf.Swap();

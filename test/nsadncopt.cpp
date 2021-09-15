@@ -146,9 +146,8 @@ int main(int argc, char** argv) {
             );
             AD::BoundaryConditionSetQ(pg, 
                 [=](int _i, int _j) { return (_j == 0 && _i < L) ? qn : 0.0; }, 
-                ux, uy, 
-                [=](int _i, int _j) { return _j == 0; }, 
-                diffusivity
+                ux, uy, diffusivity,
+                [=](int _i, int _j) { return _j == 0; } 
             );
             pg.BoundaryCondition([=](int _i, int _j) { return _i == 0 ? 2 : 0; });
             pf.SmoothCorner();

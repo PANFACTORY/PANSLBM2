@@ -1089,7 +1089,7 @@ namespace PANSLBM2 {
 
         //  Function of setting boundary condition set q of AD for D2Q9 (diffusivity heterogenious)
         template<class T, template<class>class Q, class Fv, class Ff>
-        void BoundaryConditionSetQ(Q<T>& _q, Fv _qnbc, const T *_ux, const T *_uy, Ff _diffusivity, const int *_bctype) {
+        void BoundaryConditionSetQ(Q<T>& _q, Fv _qnbc, const T *_ux, const T *_uy, const T *_diffusivity, Ff _bctype) {
             //  On xmin
             if (_q.PEx == 0) {
                 for (int j = 0; j < _q.ny; ++j) {
@@ -1142,7 +1142,7 @@ namespace PANSLBM2 {
 
         //  Function of setting boundary condition set q of AD for D3Q15 (diffusivity heterogenious)
         template<class T, template<class>class Q, class Fv, class Ff>
-        void BoundaryConditionSetQ(Q<T>& _q, Fv _qnbc, const T *_ux, const T *_uy, const T *_uz, Ff _diffusivity, const int *_bctype) {
+        void BoundaryConditionSetQ(Q<T>& _q, Fv _qnbc, const T *_ux, const T *_uy, const T *_uz, const T *_diffusivity, Ff _bctype) {
             //  On xmin
             if (_q.PEx == 0) {
                 for (int j = 0; j < _q.ny; ++j) {

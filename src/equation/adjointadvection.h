@@ -370,7 +370,7 @@ namespace PANSLBM2 {
                     //  External force with Brinkman model
                     ExternalForceBrinkman<T, P>(_rho, _ux, _uy, imx, imy, _tem, iqx, iqy, omegag, _p.f, _alpha, idx);
                     ANS::Macro<T, P>(ip, iux, iuy, imx, imy, _rho, _ux, _uy, _p.f, idx);
-                    ExternalForceNaturalConvection(imx, imy, _gx, _gy, _q.f, idx);
+                    ExternalForceNaturalConvection<T, Q>(imx, imy, _gx, _gy, _q.f, idx);
                     Macro<T, Q>(item, iqx, iqy, _q.f, idx);
 
                     //  Save macro if need
@@ -419,7 +419,7 @@ namespace PANSLBM2 {
                         //  External force with Brinkman model
                         ExternalForceBrinkman<T, P>(_rho, _ux, _uy, _uz, imx, imy, imz, _tem, iqx, iqy, iqz, omegag, _p.f, _alpha, idx);
                         ANS::Macro<T, P>(ip, iux, iuy, iuz, imx, imy, imz, _rho, _ux, _uy, _uz, _p.f, idx);
-                        ExternalForceNaturalConvection(imx, imy, imz, _gx, _gy, _gz, _q.f, idx);
+                        ExternalForceNaturalConvection<T, Q>(imx, imy, imz, _gx, _gy, _gz, _q.f, idx);
                         Macro<T, Q>(item, iqx, iqy, iqz, _q.f, idx);
 
                         //  Save macro if need
@@ -472,7 +472,7 @@ namespace PANSLBM2 {
                     //  External force with Brinkman model
                     ExternalForceBrinkman<T, P>(_rho, _ux, _uy, imx, imy, _tem, iqx, iqy, omegag, _p.f, _alpha, idx);
                     ANS::Macro<T, P>(ip, iux, iuy, imx, imy, _rho, _ux, _uy, _p.f, idx);
-                    ExternalForceNaturalConvection(imx, imy, _gx, _gy, _q.f, idx);
+                    ExternalForceNaturalConvection<T, Q>(imx, imy, _gx, _gy, _q.f, idx);
                     Macro<T, Q>(item, iqx, iqy, _q.f, idx);
 
                     //  Save macro if need
@@ -522,7 +522,7 @@ namespace PANSLBM2 {
                         //  External force with Brinkman model
                         ExternalForceBrinkman<T, P>(_rho, _ux, _uy, _uz, imx, imy, imz, _tem, iqx, iqy, iqz, omegag, _p.f, _alpha, idx);
                         ANS::Macro<T, P>(ip, iux, iuy, iuz, imx, imy, imz, _rho, _ux, _uy, _uz, _p.f, idx);
-                        ExternalForceNaturalConvection(imx, imy, imz, _gx, _gy, _gz, _q.f, idx);
+                        ExternalForceNaturalConvection<T, Q>(imx, imy, imz, _gx, _gy, _gz, _q.f, idx);
                         Macro<T, Q>(item, iqx, iqy, iqz, _q.f, idx);
 
                         //  Save macro if need

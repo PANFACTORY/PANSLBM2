@@ -126,7 +126,7 @@ int main(int argc, char** argv) {
         NS::InitialCondition(pf, rho, ux, uy);
         AD::InitialCondition(pg, tem, ux, uy);
         for (int t = 1; t <= nt; t++) {
-            AD::Macro_Brinkman_Collide_Stream_NaturalConvection(pf, rho, ux, uy, alpha, pg, tem, qx, qy, gx, gy, tem0, nu, diffusivity, true);
+            AD::Macro_Brinkman_Collide_Stream_NaturalConvection(pf, rho, ux, uy, alpha, nu, pg, tem, qx, qy, diffusivity, gx, gy, tem0, true);
             if (t%dt == 0) {
                 if (MyRank == 0) {
                     std::cout << "\rDirect analyse t = " << t << std::string(10, ' ');
@@ -168,13 +168,13 @@ int main(int argc, char** argv) {
         if (MyRank == 0) {
             std::cout << "\rInverse analyse t = 0" << std::string(10, ' ');
         }
-        ANS::InitialCondition(pf, rho, ux, uy, irho, iux, iuy);
+        ANS::InitialCondition(pf, ux, uy, irho, iux, iuy);
         AAD::InitialCondition(pg, ux, uy, item, iqx, iqy);
         for (int t = 1; t <= nt; t++) {
             AAD::Macro_Brinkman_Collide_Stream_NaturalConvection(
-                pf, rho, ux, uy, irho, iux, iuy, imx, imy, alpha, 
-                pg, tem, item, iqx, iqy,
-                gx, gy, nu, diffusivity, true
+                pf, rho, ux, uy, irho, iux, iuy, imx, imy, alpha, nu, 
+                pg, tem, item, iqx, iqy, diffusivity,
+                gx, gy, true
             );
             if (t%dt == 0) {
                 if (MyRank == 0) {
@@ -218,9 +218,9 @@ int main(int argc, char** argv) {
 #endif
         f /= L;
         std::vector<double> dfdss(s.size(), 0.0);
-        AAD::SensitivityTemperatureAtHeatSource(pg, 
+        AAD::SensitivityTemperatureAtHeatSource(
+            ux, uy, imx, imy, pg, tem, item, iqx, iqy, gi, igi, dfdss.data(), diffusivity, dads, dkds,
             [=](int _i, int _j) { return (_j == 0 && _i < L) ? qn : 0.0; }, 
-            ux, uy, imx, imy, tem, item, iqx, iqy, gi, igi, dfdss, diffusivity, dads, dkds,
             [=](int _i, int _j) { return _j == 0 && _i < L; }
         );
         double dfdssmax_buffer = 0.0, dfdssmax;

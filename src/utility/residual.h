@@ -1,6 +1,8 @@
 #pragma once
 #include <cmath>
-#include "mpi.h"
+#ifdef _USE_MPI_DEFINES
+    #include "mpi.h"
+#endif
 
 namespace PANSLBM2 {
     template<class T>
@@ -10,7 +12,11 @@ namespace PANSLBM2 {
             norm_buffer[0] += pow(_ux[idx] - _uxp[idx], 2.0) + pow(_uy[idx] - _uyp[idx], 2.0);
             norm_buffer[1] += pow(_ux[idx], 2.0) + pow(_uy[idx], 2.0);
         }
+#ifdef _USE_MPI_DEFINES
         MPI_Allreduce(norm_buffer, norm, 2, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
         return sqrt(norm[0]/norm[1]);
+#else
+        return sqrt(norm_buffer[0]/norm_buffer[1]);
+#endif
     }
 }

@@ -125,12 +125,12 @@ int main(int argc, char** argv) {
         //********************Get sensitivity********************
         double f_buffer = 0.0, f;
         for (int j = 0; j < pf.ny; ++j) {
-            if (0.7*ly < j + pf.offsety && j + pf.offsety < 0.9*ly) {
+            if (0.7*ly < j + pf.offsety && j + pf.offsety < 0.9*ly && pf.PEx == 0) {
                 f_buffer += rho[pf.Index(0, j)]/3.0;
             }
         }
         for (int i = 0; i < pf.nx; i++) {
-            if (0.7*lx < i + pf.offsetx && i + pf.offsetx < 0.9*lx) {
+            if (0.7*lx < i + pf.offsetx && i + pf.offsetx < 0.9*lx && pf.PEy == 0) {
                 f_buffer -= rho[pf.Index(i, 0)]/3.0;
             }
         }

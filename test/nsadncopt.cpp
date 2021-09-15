@@ -210,7 +210,7 @@ int main(int argc, char** argv) {
         //  Get sensitivity
         double f_buffer = 0.0, f;
         for (int i = 0; i < pf.nx; ++i) {
-            if ((i + pf.offsetx) < L) {
+            if ((i + pf.offsetx) < L && pf.PEy == 0) {
                 f_buffer += tem[pf.Index(i, 0)];
             }
         }

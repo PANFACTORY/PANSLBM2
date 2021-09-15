@@ -1,4 +1,4 @@
-#define _USE_MPI_DEFINES
+//#define _USE_MPI_DEFINES
 #include <iostream>
 #include <chrono>
 #include <vector>
@@ -8,13 +8,13 @@
     #include "mpi.h"
 #endif
 
-#include "../src/particle/d2q9.cuh"
-#include "../src/equation/advection.cuh"
-#include "../src/equation/adjointadvection.cuh"
-#include "../src/prepost/vtkxmlexport.h"
-#include "../utility/residual.cuh"
-#include "../utility/mma.h"
-#include "../utility/densityfilter.h"
+#include "../src/particle/d2q9.h"
+#include "../src/equation/advection.h"
+#include "../src/equation/adjointadvection.h"
+#include "../src/utility/vtkxmlexport.h"
+#include "../src/utility/residual.h"
+#include "../src/utility/mma.h"
+#include "../src/utility/densityfilter.h"
 
 using namespace PANSLBM2;
 

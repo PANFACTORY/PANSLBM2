@@ -126,7 +126,7 @@ int main(int argc, char** argv) {
         NS::InitialCondition(pf, rho, ux, uy);
         AD::InitialCondition(pg, tem, ux, uy);
         for (int t = 1; t <= nt; t++) {
-            AD::MacroBrinkmanCollideStreamNaturalConvection(pf, rho, ux, uy, alpha, pg, tem, qx, qy, gx, gy, tem0, nu, diffusivity, true);
+            AD::Macro_Brinkman_Collide_Stream_NaturalConvection(pf, rho, ux, uy, alpha, pg, tem, qx, qy, gx, gy, tem0, nu, diffusivity, true);
             if (t%dt == 0) {
                 if (MyRank == 0) {
                     std::cout << "\rDirect analyse t = " << t << std::string(10, ' ');
@@ -144,7 +144,7 @@ int main(int argc, char** argv) {
                 ux, uy, 
                 [=](int _i, int _j) { return _i == lx - 1 || _j == ly - 1; }
             );
-            AD::BoundaryConditionSetFlux(pg, 
+            AD::BoundaryConditionSetQ(pg, 
                 [=](int _i, int _j) { return (_j == 0 && _i < L) ? qn : 0.0; }, 
                 ux, uy, 
                 [=](int _i, int _j) { return _j == 0; }, 
@@ -171,7 +171,7 @@ int main(int argc, char** argv) {
         ANS::InitialCondition(pf, rho, ux, uy, irho, iux, iuy);
         AAD::InitialCondition(pg, ux, uy, item, iqx, iqy);
         for (int t = 1; t <= nt; t++) {
-            AAD::MacroBrinkmanCollideStreamNaturalConvection(
+            AAD::Macro_Brinkman_Collide_Stream_NaturalConvection(
                 pf, rho, ux, uy, irho, iux, iuy, imx, imy, alpha, 
                 pg, tem, item, iqx, iqy,
                 gx, gy, nu, diffusivity, true
@@ -187,9 +187,9 @@ int main(int argc, char** argv) {
             }
             pf.Swap();
             pg.Swap();
-            AAD::BoundaryConditionSetiT(pg, ux, uy, [=](int _i, int _j) { return _i == lx - 1 || _j == ly - 1; });
-            AAD::BoundaryConditionSetiFlux(pg, ux, uy, [=](int _i, int _j) { return _j == 0; });
-            AAD::BoundaryConditionSetiFlux(pg, ux, uy, [=](int _i, int _j) { return _j == 0 && _i < L; }, 1.0);
+            AAD::iBoundaryConditionSetT(pg, ux, uy, [=](int _i, int _j) { return _i == lx - 1 || _j == ly - 1; });
+            AAD::iBoundaryConditionSetQ(pg, ux, uy, [=](int _i, int _j) { return _j == 0; });
+            AAD::iBoundaryConditionSetQ(pg, ux, uy, [=](int _i, int _j) { return _j == 0 && _i < L; }, 1.0);
             pg.iBoundaryCondition([=](int _i, int _j) { return _i == 0 ? 2 : 0; });
             pf.iBoundaryCondition([=](int _i, int _j) { return _i == 0 ? 2 : 1; });
             pf.SmoothCorner();

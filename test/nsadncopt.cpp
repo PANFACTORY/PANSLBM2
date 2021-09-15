@@ -138,6 +138,8 @@ int main(int argc, char** argv) {
             }
             pf.Swap();
             pg.Swap();
+            pf.Synchronize();
+            pg.Synchronize();
             pf.BoundaryCondition([=](int _i, int _j) { return _i == 0 ? 2 : 1; });
             AD::BoundaryConditionSetT(pg, 
                 [=](int _i, int _j) { return tem0; }, 
@@ -186,6 +188,8 @@ int main(int argc, char** argv) {
             }
             pf.Swap();
             pg.Swap();
+            pf.iSynchronize();
+            pg.iSynchronize();
             AAD::iBoundaryConditionSetT(pg, ux, uy, [=](int _i, int _j) { return _i == lx - 1 || _j == ly - 1; });
             AAD::iBoundaryConditionSetQ(pg, ux, uy, [=](int _i, int _j) { return _j == 0; });
             AAD::iBoundaryConditionSetQ(pg, ux, uy, [=](int _i, int _j) { return _j == 0 && _i < L; }, 1.0);

@@ -138,19 +138,19 @@ int main(int argc, char** argv) {
             }
             pf.Swap();
             pg.Swap();
-            pf.BoundaryCondition([=]__device__(int _i, int _j) { return _i == 0 ? 2 : 1; });
+            pf.BoundaryCondition([=](int _i, int _j) { return _i == 0 ? 2 : 1; });
             AD::BoundaryConditionSetT(pg, 
-                [=]__device__(int _i, int _j) { return tem0; }, 
+                [=](int _i, int _j) { return tem0; }, 
                 ux, uy, 
-                [=]__device__(int _i, int _j) { return _i == lx - 1 || _j == ly - 1; }
+                [=](int _i, int _j) { return _i == lx - 1 || _j == ly - 1; }
             );
             AD::BoundaryConditionSetFlux(pg, 
-                [=]__device__(int _i, int _j) { return (_j == 0 && _i < L) ? qn : 0.0; }, 
+                [=](int _i, int _j) { return (_j == 0 && _i < L) ? qn : 0.0; }, 
                 ux, uy, 
-                [=]__device__(int _i, int _j) { return _j == 0; }, 
+                [=](int _i, int _j) { return _j == 0; }, 
                 diffusivity
             );
-            pg.BoundaryCondition([=]__device__(int _i, int _j) { return _i == 0 ? 2 : 0; });
+            pg.BoundaryCondition([=](int _i, int _j) { return _i == 0 ? 2 : 0; });
             pf.SmoothCorner();
             pg.SmoothCorner();
 
@@ -187,11 +187,11 @@ int main(int argc, char** argv) {
             }
             pf.Swap();
             pg.Swap();
-            AAD::BoundaryConditionSetiT(pg, ux, uy, [=]__device__(int _i, int _j) { return _i == lx - 1 || _j == ly - 1; });
-            AAD::BoundaryConditionSetiFlux(pg, ux, uy, [=]__device__(int _i, int _j) { return _j == 0; });
-            AAD::BoundaryConditionSetiFlux(pg, ux, uy, [=]__device__(int _i, int _j) { return _j == 0 && _i < L; }, 1.0);
-            pg.iBoundaryCondition([=]__device__(int _i, int _j) { return _i == 0 ? 2 : 0; });
-            pf.iBoundaryCondition([=]__device__(int _i, int _j) { return _i == 0 ? 2 : 1; });
+            AAD::BoundaryConditionSetiT(pg, ux, uy, [=](int _i, int _j) { return _i == lx - 1 || _j == ly - 1; });
+            AAD::BoundaryConditionSetiFlux(pg, ux, uy, [=](int _i, int _j) { return _j == 0; });
+            AAD::BoundaryConditionSetiFlux(pg, ux, uy, [=](int _i, int _j) { return _j == 0 && _i < L; }, 1.0);
+            pg.iBoundaryCondition([=](int _i, int _j) { return _i == 0 ? 2 : 0; });
+            pf.iBoundaryCondition([=](int _i, int _j) { return _i == 0 ? 2 : 1; });
             pf.SmoothCorner();
             pg.SmoothCorner();
 
@@ -206,7 +206,7 @@ int main(int argc, char** argv) {
                
         //  Get sensitivity
         double f_buffer = 0.0, f;
-        for (int i = 0; i < nx; ++i) {
+        for (int i = 0; i < pf.nx; ++i) {
             if ((i + pf.offsetx) < L) {
                 f_buffer += tem[pf.Index(i, 0)];
             }
@@ -219,20 +219,20 @@ int main(int argc, char** argv) {
         f /= L;
         std::vector<double> dfdss(s.size(), 0.0);
         AAD::SensitivityTemperatureAtHeatSource(pg, 
-            [=]__device__(int _i, int _j) { return (_j == 0 && _i < L) ? qn : 0.0; }, 
-            ux, uy, imx, imy, tem, item, iqx, iqy, gi, igi, dfds, diffusivity, dads, dkds,
-            [=]__device__(int _i, int _j) { return _j == 0 && _i < L; }
+            [=](int _i, int _j) { return (_j == 0 && _i < L) ? qn : 0.0; }, 
+            ux, uy, imx, imy, tem, item, iqx, iqy, gi, igi, dfdss, diffusivity, dads, dkds,
+            [=](int _i, int _j) { return _j == 0 && _i < L; }
         );
-        double dfdsmax_buffer = 0.0, dfdsmax;
+        double dfdssmax_buffer = 0.0, dfdssmax;
         for (int idx = 0; idx < pf.nxyz; ++idx) {
             if (dfdssmax_buffer < fabs(dfdss[idx])) {
                 dfdssmax_buffer = fabs(dfdss[idx]);
             }
         }
 #ifdef _USE_MPI_DEFINES
-        MPI_Allreduce(&dfdsmax_buffer, &dfdsmax, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+        MPI_Allreduce(&dfdssmax_buffer, &dfdssmax, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
 #else
-        dfdsmax = dfdsmax_buffer;
+        dfdssmax = dfdssmax_buffer;
 #endif
         for (int idx = 0; idx < pf.nxyz; ++idx) {
             dfdss[idx] /= dfdssmax;
@@ -241,8 +241,8 @@ int main(int argc, char** argv) {
         //********************Filter sensitivities********************
         std::vector<double> dfds = DensityFilter::GetFilteredValue(pf, R, dfdss);
         std::vector<double> dgds = DensityFilter::GetFilteredValue(pf, R, dgdss);
-        for (int i = 0; i < nx; ++i) {
-            for (int j = 0; j < ny; ++j) {
+        for (int i = 0; i < pf.nx; ++i) {
+            for (int j = 0; j < pf.ny; ++j) {
                 int idx = pf.Index(i, j);
                 dfds[idx] = ((i + pf.offsetx) < mx && (j + pf.offsety) < my) ? dfds[idx] : 0.0;
                 dgds[idx] = ((i + pf.offsetx) < mx && (j + pf.offsety) < my) ? dgds[idx] : 0.0;
@@ -270,8 +270,8 @@ int main(int argc, char** argv) {
         optimizer.UpdateVariables(s, f, dfds, { g }, { dgds });
         double dsmax = 0.0;
         int imax = 0, jmax = 0;
-        for (int i = 0; i < nx; ++i) {
-            for (int j = 0; j < ny; ++j) {
+        for (int i = 0; i < pf.nx; ++i) {
+            for (int j = 0; j < pf.ny; ++j) {
                 int idx = pf.Index(i, j);
                 s[idx] = ((i + pf.offsetx) < mx && (j + pf.offsety) < my) ? s[idx] : 1.0;
                 double tmpds = fabs(s[idx] - snm1[idx]);
@@ -330,8 +330,8 @@ int main(int argc, char** argv) {
             file.AddPointData(pf, "dkds", [&](int _i, int _j, int _k) { return dkds[pf.Index(_i, _j)];    });
             file.AddPointData(pf, "dads", [&](int _i, int _j, int _k) { return dads[pf.Index(_i, _j)];    });
             
-            for (int i = 0; i < nx; ++i) {
-                for (int j = 0; j < ny; ++j) {
+            for (int i = 0; i < pf.nx; ++i) {
+                for (int j = 0; j < pf.ny; ++j) {
                     int idx = pf.Index(i, j);
                     ss[idx] = ((i + pf.offsetx) < mx && (j + pf.offsety) < my && ss[idx] < 0.1) ? 0.0 : 1.0;
                 }

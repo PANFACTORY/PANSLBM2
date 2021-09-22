@@ -1,4 +1,4 @@
-//#define _USE_MPI_DEFINES
+#define _USE_MPI_DEFINES
 #include <iostream>
 #include <chrono>
 #include <vector>
@@ -33,7 +33,7 @@ int main(int argc, char** argv) {
 #endif
 
     //********************Parameters********************
-    int lx = 81, ly = 161, lz = 81, mx = 61, my = 121, mz = 61, nt = 100000, dt = 100, nitr = 1, nb = 100;
+    int lx = 41, ly = 81, lz = 41, mx = 31, my = 61, mz = 31, nt = 10000, dt = 100, nitr = 1, nb = 100;
     double Pr = 6.0, Ra = 2.5e3, nu = 0.1, L = 8.0, tem0 = 0.0, qn0 = 1.0e-2, alphamax = 1.0e4;
     double qf = 1e-2, qg = 1e0, movelimit = 0.2, weightlimit = 0.5, R = 1.5, eps = 1.0e-4, s0 = 0.05;
 
@@ -377,6 +377,10 @@ int main(int argc, char** argv) {
     }
     
     delete[] rho, ux, uy, uz, uxp, uyp, uzp, tem, qx, qy, qz, qxp, qyp, qzp, diffusivity, alpha, dkds, dads, irho, iux, iuy, iuz, iuxp, iuyp, iuzp, imx, imy, imz, item, iqx, iqy, iqz, iqxp, iqyp, iqzp, gi, igi;
+    std::chrono::system_clock::time_point end = std::chrono::system_clock::now();
+    if (MyRank == 0) {
+        std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count() << std::endl;
+    }
 #ifdef _USE_MPI_DEFINES
     MPI_Finalize();
 #endif

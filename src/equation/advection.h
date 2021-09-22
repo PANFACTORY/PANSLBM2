@@ -84,7 +84,7 @@ namespace PANSLBM2 {
 
         //  Function of Update macro, Collide and Stream of force convection for 2D
         template<class T, template<class>class P, template<class>class Q>
-        void Macro_Collide_Stream_ForceConvection(
+        void MacroCollideStreamForceConvection(
             P<T>& _p, T *_rho, T *_ux, T *_uy, T _viscosity,
             Q<T>& _q, T *_tem, T *_qx, T *_qy, T _diffusivity, 
             bool _issave = false
@@ -125,7 +125,7 @@ namespace PANSLBM2 {
 
         //  Function of Update macro, Collide and Stream of force convection for 3D
         template<class T, template<class>class P, template<class>class Q>
-        void Macro_Collide_Stream_ForceConvection(
+        void MacroCollideStreamForceConvection(
             P<T>& _p, T *_rho, T *_ux, T *_uy, T *_uz, T _viscosity,
             Q<T>& _q, T *_tem, T *_qx, T *_qy, T *_qz, T _diffusivity, 
             bool _issave = false
@@ -170,7 +170,7 @@ namespace PANSLBM2 {
 
         //  Function of Update macro, Collide and Stream of natural convection for 2D
         template<class T, template<class>class P, template<class>class Q>
-        void Macro_Collide_Stream_NaturalConvection(
+        void MacroCollideStreamNaturalConvection(
             P<T>& _p, T *_rho, T *_ux, T *_uy, T _viscosity,
             Q<T>& _q, T *_tem, T *_qx, T *_qy, T _diffusivity, 
             T _gx, T _gy, T _tem0, bool _issave = false
@@ -215,7 +215,7 @@ namespace PANSLBM2 {
 
         //  Function of Update macro, Collide and Stream of natural convection for 3D
         template<class T, template<class>class P, template<class>class Q>
-        void Macro_Collide_Stream_NaturalConvection(
+        void MacroCollideStreamNaturalConvection(
             P<T>& _p, T *_rho, T *_ux, T *_uy, T *_uz, T _viscosity,
             Q<T>& _q, T *_tem, T *_qx, T *_qy, T *_qz, T _diffusivity, 
             T _gx, T _gy, T _gz, T _tem0, bool _issave = false
@@ -264,7 +264,7 @@ namespace PANSLBM2 {
     
         //  Function of Update macro, Collide and Stream of Brinkman and heat exchange for 2D
         template<class T, template<class>class P, template<class>class Q>
-        void Macro_Brinkman_Collide_Stream_HeatExchange(
+        void MacroBrinkmanCollideStreamHeatExchange(
             P<T>& _p, T *_rho, T *_ux, T *_uy, const T *_alpha, T _viscosity,
             Q<T>& _q, T *_tem, T *_qx, T *_qy, const T *_beta, T _diffusivity, bool _issave = false
         ) {
@@ -310,7 +310,7 @@ namespace PANSLBM2 {
 
         //  Function of Update macro, Collide and Stream of Brinkman and heat exchange for 3D
         template<class T, template<class>class P, template<class>class Q>
-        void Macro_Brinkman_Collide_Stream_HeatExchange(
+        void MacroBrinkmanCollideStreamHeatExchange(
             P<T>& _p, T *_rho, T *_ux, T *_uy, T *_uz, const T *_alpha, T _viscosity,
             Q<T>& _q, T *_tem, T *_qx, T *_qy, T *_qz, const T *_beta, T _diffusivity, bool _issave = false
         ) {
@@ -360,7 +360,7 @@ namespace PANSLBM2 {
 
         //  Function of Update macro, Collide and Stream of Brinkman and force convection for 2D (diffusivity constant)
         template<class T, template<class>class P, template<class>class Q>
-        void Macro_Brinkman_Collide_Stream_ForceConvection(
+        void MacroBrinkmanCollideStreamForceConvection(
             P<T>& _p, T *_rho, T *_ux, T *_uy, const T *_alpha, T _viscosity,
             Q<T>& _q, T *_tem, T *_qx, T *_qy, T _diffusivity, 
             bool _issave = false
@@ -406,7 +406,7 @@ namespace PANSLBM2 {
 
         //  Function of Update macro, Collide and Stream of Brinkman and force convection for 3D (diffusivity constant)
         template<class T, template<class>class P, template<class>class Q>
-        void Macro_Brinkman_Collide_Stream_ForceConvection(
+        void MacroBrinkmanCollideStreamForceConvection(
             P<T>& _p, T *_rho, T *_ux, T *_uy, T *_uz, const T *_alpha, T _viscosity,
             Q<T>& _q, T *_tem, T *_qx, T *_qy, T *_qz, T _diffusivity, 
             bool _issave = false
@@ -456,7 +456,7 @@ namespace PANSLBM2 {
 
         //  Function of Update macro, Collide and Stream of Brinkman and force convection for 2D (diffusivity heterogenious)
         template<class T, template<class>class P, template<class>class Q>
-        void Macro_Brinkman_Collide_Stream_ForceConvection(
+        void MacroBrinkmanCollideStreamForceConvection(
             P<T>& _p, T *_rho, T *_ux, T *_uy, const T *_alpha, T _viscosity,
             Q<T>& _q, T *_tem, T *_qx, T *_qy, const T *_diffusivity, 
             bool _issave = false
@@ -503,7 +503,7 @@ namespace PANSLBM2 {
 
         //  Function of Update macro, Collide and Stream of Brinkman and force convection for 3D (diffusivity heterogenious)
         template<class T, template<class>class P, template<class>class Q>
-        void Macro_Brinkman_Collide_Stream_ForceConvection(
+        void MacroBrinkmanCollideStreamForceConvection(
             P<T>& _p, T *_rho, T *_ux, T *_uy, T *_uz, const T *_alpha, T _viscosity,
             Q<T>& _q, T *_tem, T *_qx, T *_qy, T *_qz, const T *_diffusivity, 
             bool _issave = false
@@ -554,7 +554,7 @@ namespace PANSLBM2 {
 
         //  Function of Update macro, Collide and Stream of Brinkman and natural convection for 2D (diffusivity constant)
         template<class T, template<class>class P, template<class>class Q>
-        void Macro_Brinkman_Collide_Stream_NaturalConvection(
+        void MacroBrinkmanCollideStreamNaturalConvection(
             P<T>& _p, T *_rho, T *_ux, T *_uy, const T *_alpha, T _viscosity,
             Q<T>& _q, T *_tem, T *_qx, T *_qy, T _diffusivity, 
             T _gx, T _gy, T _tem0, bool _issave = false
@@ -601,7 +601,7 @@ namespace PANSLBM2 {
 
         //  Function of Update macro, Collide and Stream of Brinkman and natural convection for 3D (diffusivity constant)
         template<class T, template<class>class P, template<class>class Q>
-        void Macro_Brinkman_Collide_Stream_NaturalConvection(
+        void MacroBrinkmanCollideStreamNaturalConvection(
             P<T>& _p, T *_rho, T *_ux, T *_uy, T *_uz, const T *_alpha, T _viscosity,
             Q<T>& _q, T *_tem, T *_qx, T *_qy, T *_qz, T _diffusivity, 
             T _gx, T _gy, T _gz, T _tem0, bool _issave = false
@@ -652,7 +652,7 @@ namespace PANSLBM2 {
 
         //  Function of Update macro, Collide and Stream of Brinkman and natural convection for 2D (diffusivity heterogenious)
         template<class T, template<class>class P, template<class>class Q>
-        void Macro_Brinkman_Collide_Stream_NaturalConvection(
+        void MacroBrinkmanCollideStreamNaturalConvection(
             P<T>& _p, T *_rho, T *_ux, T *_uy, const T *_alpha, T _viscosity,
             Q<T>& _q, T *_tem, T *_qx, T *_qy, const T *_diffusivity, 
             T _gx, T _gy, T _tem0, bool _issave = false
@@ -700,7 +700,7 @@ namespace PANSLBM2 {
 
         //  Function of Update macro, Collide and Stream of Brinkman and natural convection for 3D (diffusivity heterogenious)
         template<class T, template<class>class P, template<class>class Q>
-        void Macro_Brinkman_Collide_Stream_NaturalConvection(
+        void MacroBrinkmanCollideStreamNaturalConvection(
             P<T>& _p, T *_rho, T *_ux, T *_uy, T *_uz, const T *_alpha, T _viscosity,
             Q<T>& _q, T *_tem, T *_qx, T *_qy, T *_qz, const T *_diffusivity, 
             T _gx, T _gy, T _gz, T _tem0, bool _issave = false

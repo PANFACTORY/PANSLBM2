@@ -52,7 +52,7 @@ namespace PANSLBM2 {
 
         //  Function of Update macro, Collide and Stream of EL for 2D
         template<class T, template<class>class P>
-        void Macro_Collide_Stream(P<T>& _p, T *_rho, T *_ux, T *_uy, T *_sxx, T *_sxy, T *_syx, T *_syy, T _tau, bool _issave = false) {
+        void MacroCollideStream(P<T>& _p, T *_rho, T *_ux, T *_uy, T *_sxx, T *_sxy, T *_syx, T *_syy, T _tau, bool _issave = false) {
             T omega = 1/_tau;
             for (int i = 0; i < _p.nx; ++i) {
                 for (int j = 0; j < _p.ny; ++j) {
@@ -83,7 +83,7 @@ namespace PANSLBM2 {
 
         //  Function of Update macro, Collide and Stream of EL with topology optimization for 2D
         template<class T, template<class>class P>
-        void MacroExtended_Collide_Stream(P<T>& _p, T *_rho, T *_ux, T *_uy, T *_sxx, T *_sxy, T *_syx, T *_syy, T _tau, const T *_gamma, bool _issave = false) {
+        void MacroExtendedCollideStream(P<T>& _p, T *_rho, T *_ux, T *_uy, T *_sxx, T *_sxy, T *_syx, T *_syy, T _tau, const T *_gamma, bool _issave = false) {
             T omega = 1/_tau;
             for (int i = 0; i < _p.nx; ++i) {
                 for (int j = 0; j < _p.ny; ++j) {

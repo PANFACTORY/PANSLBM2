@@ -97,7 +97,7 @@ namespace PANSLBM2 {
 
         //  Function of Update macro, External force(Brinkman model), Collide and Stream of ANS for 2D
         template<class T, template<class>class P>
-        void Macro_Brinkman_Collide_Stream(
+        void MacroBrinkmanCollideStream(
             P<T>& _p, const T *_rho, const T *_ux, const T *_uy, 
             T *_ip, T *_iux, T *_iuy, T *_imx, T *_imy, 
             T _viscosity, const T *_alpha, bool _issave = false
@@ -135,7 +135,7 @@ namespace PANSLBM2 {
 
         //  Function of Update macro, External force(Brinkman model), Collide and Stream of ANS for 3D
         template<class T, template<class>class P>
-        void Macro_Brinkman_Collide_Stream(
+        void MacroBrinkmanCollideStream(
             P<T>& _p, const T *_rho, const T *_ux, const T *_uy, const T *_uz, 
             T *_ip, T *_iux, T *_iuy, T *_iuz, T *_imx, T *_imy, T *_imz, 
             T _viscosity, const T *_alpha, bool _issave = false

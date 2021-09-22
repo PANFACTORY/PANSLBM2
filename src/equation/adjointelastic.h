@@ -42,7 +42,7 @@ namespace PANSLBM2 {
 
         //  Function of Update macro, Collide and Stream of AEL for 2D
         template<class T, template<class>class P>
-        void Macro_Collide_Stream(
+        void MacroCollideStream(
             P<T>& _p, T *_irho, T *_imx, T *_imy, T *_isxx, T *_isxy, T *_isyx, T *_isyy, T _tau, const T *_gamma, bool _issave = false
         ) {
             T omega = 1/_tau;
@@ -86,7 +86,7 @@ namespace PANSLBM2 {
 
         //  Function of setting boundary condition of AEL set iStress for 2D
         template<class T, template<class>class P, class Fv0, class Fv1, class Ff>
-        void BoundaryConditionSetiStress(P<T>& _p, Fv0 _txbc, Fv1 _tybc, const T *_rho, Ff _bctype) {
+        void iBoundaryConditionSetStress(P<T>& _p, Fv0 _txbc, Fv1 _tybc, const T *_rho, Ff _bctype) {
             //  On xmin
             if (_p.PEx == 0) {
                 for (int j = 0; j < _p.ny; ++j) {

@@ -77,7 +77,7 @@ namespace PANSLBM2 {
 
         //  Function of Update macro, Collide and Stream of NS for 2D
         template<class T, template<class>class P>
-        void Macro_Collide_Stream(P<T>& _p, T *_rho, T *_ux, T *_uy, T _viscosity, bool _issave = false) {
+        void MacroCollideStream(P<T>& _p, T *_rho, T *_ux, T *_uy, T _viscosity, bool _issave = false) {
             T omega = 1.0/(3.0*_viscosity + 0.5);
             for (int i = 0; i < _p.nx; ++i) {
                 for (int j = 0; j < _p.ny; ++j) {
@@ -105,7 +105,7 @@ namespace PANSLBM2 {
 
         //  Function of Update macro, Collide and Stream of NS for 3D
         template<class T, template<class>class P>
-        void Macro_Collide_Stream(P<T>& _p, T *_rho, T *_ux, T *_uy, T *_uz, T _viscosity, bool _issave = false) {
+        void MacroCollideStream(P<T>& _p, T *_rho, T *_ux, T *_uy, T *_uz, T _viscosity, bool _issave = false) {
             T omega = 1.0/(3.0*_viscosity + 0.5);
             for (int i = 0; i < _p.nx; ++i) {
                 for (int j = 0; j < _p.ny; ++j) {
@@ -136,7 +136,7 @@ namespace PANSLBM2 {
 
         //  Function of Update macro, External force(Brinkman model), Collide and Stream of NS for 2D
         template<class T, template<class>class P>
-        void Macro_Brinkman_Collide_Stream(P<T>& _p, T *_rho, T *_ux, T *_uy, T _viscosity, const T *_alpha, bool _issave = false) {
+        void MacroBrinkmanCollideStream(P<T>& _p, T *_rho, T *_ux, T *_uy, T _viscosity, const T *_alpha, bool _issave = false) {
             T omega = 1.0/(3.0*_viscosity + 0.5);
             for (int i = 0; i < _p.nx; ++i) {
                 for (int j = 0; j < _p.ny; ++j) {
@@ -168,7 +168,7 @@ namespace PANSLBM2 {
 
         //  Function of Update macro, External force(Brinkman model), Collide and Stream of NS for 3D
         template<class T, template<class>class P>
-        void Macro_Brinkman_Collide_Stream(P<T>& _p, T *_rho, T *_ux, T *_uy, T *_uz, T _viscosity, const T *_alpha, bool _issave = false) {
+        void MacroBrinkmanCollideStream(P<T>& _p, T *_rho, T *_ux, T *_uy, T *_uz, T _viscosity, const T *_alpha, bool _issave = false) {
             T omega = 1.0/(3.0*_viscosity + 0.5);
             for (int i = 0; i < _p.nx; ++i) {
                 for (int j = 0; j < _p.ny; ++j) {

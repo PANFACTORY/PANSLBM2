@@ -271,21 +271,30 @@ int main(int argc, char** argv) {
             std::cout << "\rUpdate design variable" << std::string(10, ' ');
         }
         optimizer.UpdateVariables(s, f, dfds, { g }, { dgds });
-        double dsmax = 0.0;
-        int imax = 0, jmax = 0;
+        double dsmax_buffer = 0.0, dsmax;
+        int imax_buffer = 0, imax, jmax_buffer = 0, jmax;
         for (int i = 0; i < pf.nx; ++i) {
             for (int j = 0; j < pf.ny; ++j) {
                 int idx = pf.Index(i, j);
                 s[idx] = ((i + pf.offsetx) < mx && (j + pf.offsety) < my) ? s[idx] : 1.0;
                 double tmpds = fabs(s[idx] - snm1[idx]);
-                if (dsmax < tmpds) {
-                    dsmax = tmpds;
-                    imax = i;
-                    jmax = j;
+                if (dsmax_buffer < tmpds) {
+                    dsmax_buffer = tmpds;
+                    imax_buffer = i;
+                    jmax_buffer = j;
                 }
                 snm1[idx] = s[idx];
             }
         }
+#ifdef _USE_MPI_DEFINES
+        MPI_Allreduce(&dsmax_buffer, &dsmax, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+        MPI_Allreduce(&imax_buffer, &imax, 1, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
+        MPI_Allreduce(&jmax_buffer, &jmax, 1, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
+#else
+        dsmax = dsmax_buffer;
+        imax = imax_buffer;
+        jmax = jmax_buffer;
+#endif
 
         //********************Check convergence********************
         if (MyRank == 0) {

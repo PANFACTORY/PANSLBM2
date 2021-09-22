@@ -56,7 +56,7 @@ int main(int argc, char** argv) {
     //--------------------Direct analyze--------------------
     EL::InitialCondition(pf, rho, ux, uy, sxx, sxy, syx, syy);
     for (int t = 1; t <= nt; ++t) {
-        EL::MacroExtended_Collide_Stream(pf, rho, ux, uy, sxx, sxy, syx, syy, 0.8, gamma, true);
+        EL::MacroExtendedCollideStream(pf, rho, ux, uy, sxx, sxy, syx, syy, 0.8, gamma, true);
         pf.Swap();
         pf.BoundaryCondition([=](int _i, int _j) { return _i == 0 ? 1 : 0; });
         EL::BoundaryConditionSetStress(pf, 
@@ -74,10 +74,10 @@ int main(int argc, char** argv) {
     //--------------------Invert analyze--------------------
     AEL::InitialCondition(pf, irho, imx, imy, isxx, isxy, isyx, isyy, gamma);
     for (int t = 1; t <= nt; ++t) {
-        AEL::Macro_Collide_Stream(pf, irho, imx, imy, isxx, isxy, isyx, isyy, 0.8, gamma, true);
+        AEL::MacroCollideStream(pf, irho, imx, imy, isxx, isxy, isyx, isyy, 0.8, gamma, true);
         pf.Swap();
         pf.iBoundaryCondition([=](int _i, int _j) { return _i == 0 ? 1 : 0; });
-        AEL::BoundaryConditionSetiStress(pf, 
+        AEL::iBoundaryConditionSetStress(pf, 
             [=](int _i, int _j) { return (_i == lx - 1 && fabs(_j - 0.5*ly) < 0.08*ly) ? stress0 : 0.0; }, 
             [=](int _i, int _j) { return 0.0; }, 
             rho, 

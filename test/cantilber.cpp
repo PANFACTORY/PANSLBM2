@@ -44,9 +44,9 @@ int main(int argc, char** argv) {
     EL::InitialCondition(pf, rho, ux, uy, sxx, sxy, syx, syy);
     for (int t = 1; t <= nt; ++t) {
         if (t%dt != 0) {
-            EL::Macro_Collide_Stream(pf, rho, ux, uy, sxx, sxy, syx, syy, 0.8);
+            EL::MacroCollideStream(pf, rho, ux, uy, sxx, sxy, syx, syy, 0.8);
         } else {
-            EL::Macro_Collide_Stream(pf, rho, ux, uy, sxx, sxy, syx, syy, 0.8, true);
+            EL::MacroCollideStream(pf, rho, ux, uy, sxx, sxy, syx, syy, 0.8, true);
 
             if (MyRank == 0) {
                 std::cout << "t = " << t/dt << std::endl;

@@ -43,9 +43,9 @@ int main(int argc, char** argv) {
     NS::InitialCondition(pf, rho, ux, uy);
     for (int t = 1; t <= nt; ++t) {
         if (t%dt != 0) {
-            NS::Macro_Collide_Stream(pf, rho, ux, uy, nu);
+            NS::MacroCollideStream(pf, rho, ux, uy, nu);
         } else {
-            NS::Macro_Collide_Stream(pf, rho, ux, uy, nu, true);
+            NS::MacroCollideStream(pf, rho, ux, uy, nu, true);
 
             if (MyRank == 0) {
                 std::cout << "t = " << t/dt << std::endl;

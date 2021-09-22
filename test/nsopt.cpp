@@ -75,7 +75,7 @@ int main(int argc, char** argv) {
         NS::InitialCondition(pf, rho, ux, uy);
         int td;
         for (td = 1; td <= nt; ++td) {
-            NS::Macro_Brinkman_Collide_Stream(pf, rho, ux, uy, nu, alpha, true);
+            NS::MacroBrinkmanCollideStream(pf, rho, ux, uy, nu, alpha, true);
             if (Residual(ux, uy, uxp, uyp, pf.nxyz) < epsu) {
                 break;
             }
@@ -102,7 +102,7 @@ int main(int argc, char** argv) {
         ANS::InitialCondition(pf, ux, uy, irho, iux, iuy);
         int ti;
         for (ti = 1; ti <= nt; ++ti) {
-            ANS::Macro_Brinkman_Collide_Stream(pf, rho, ux, uy, irho, iux, iuy, imx, imy, nu, alpha, true);
+            ANS::MacroBrinkmanCollideStream(pf, rho, ux, uy, irho, iux, iuy, imx, imy, nu, alpha, true);
             if (Residual(iux, iuy, iuxp, iuyp, pf.nxyz) < epsu) {
                 break;
             }

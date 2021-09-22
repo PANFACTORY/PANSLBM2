@@ -54,7 +54,7 @@ int main(int argc, char** argv) {
         if (MyRank == 0 && t%dt == 0) {
             std::cout << "t = " << t/dt << std::endl;
         }
-        NS::Macro_Brinkman_Collide_Stream(pf, rho, ux, uy, uz, nu, alpha, true);
+        NS::MacroBrinkmanCollideStream(pf, rho, ux, uy, uz, nu, alpha, true);
         pf.Swap();
         pf.Synchronize();
         pf.BoundaryCondition([=](int _i, int _j, int _k) { return (_j == 0 || _k == 0) ? 2 : (pow(_j, 2.0) + pow(_k, 2.0) >= pow(0.15*lx, 2.0) ? 1 : 0); });
@@ -82,7 +82,7 @@ int main(int argc, char** argv) {
         if (MyRank == 0 && t%dt == 0) {
             std::cout << "t = " << t/dt << std::endl;
         }
-        ANS::Macro_Brinkman_Collide_Stream(pf, rho, ux, uy, uz, irho, iux, iuy, iuz, imx, imy, imz, nu, alpha, true);
+        ANS::MacroBrinkmanCollideStream(pf, rho, ux, uy, uz, irho, iux, iuy, iuz, imx, imy, imz, nu, alpha, true);
         pf.Swap();
         pf.iSynchronize();
         pf.iBoundaryCondition([=](int _i, int _j, int _k) { return (_j == 0 || _k == 0) ? 2 : (pow(_j, 2.0) + pow(_k, 2.0) >= pow(0.15*lx, 2.0) ? 1 : 0); });

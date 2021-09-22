@@ -44,7 +44,7 @@ int main(int argc, char** argv) {
         if (t%dt == 0 && MyRank == 0) {
             std::cout << "t = " << t/dt << std::endl;
         }
-        AD::Macro_Collide_Stream_NaturalConvection(
+        AD::MacroCollideStreamNaturalConvection(
             pf, rho, ux, uy, nu,
             pg, tem, qx, qy, alpha, 
             0.0, 1.6e-5, 0.5*(Th + Tl), true

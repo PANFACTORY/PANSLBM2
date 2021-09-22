@@ -42,7 +42,7 @@ int main(int argc, char** argv) {
         if (t%dt == 0 && MyRank == 0) {
             std::cout << "t = " << t/dt << std::endl;
         }
-        NS::Macro_Collide_Stream(pf, rho, ux, uy, uz, nu, true);
+        NS::MacroCollideStream(pf, rho, ux, uy, uz, nu, true);
         pf.Swap();
         pf.Synchronize();
         pf.BoundaryCondition([=](int _i, int _j, int _k) { return (_i == 0 || _i == lx - 1 || _j == 0 || _j == ly - 1 || _k == 0) ? 1 : 0; });

@@ -148,14 +148,14 @@ int main(int argc, char** argv) {
             pg.Synchronize();
             pf.BoundaryCondition([=](int _i, int _j, int _k) { return (_i == 0 || _k == 0) ? 2 : 1; });
             AD::BoundaryConditionSetT(pg, 
-                [=]__device__(int _i, int _j, int _k) { return tem0; }, 
-                ux, uy, 
-                [=]__device__(int _i, int _j, int _k) { return _i == nx - 1 || _j == ny - 1 || _k == nz - 1; }
+                [=](int _i, int _j, int _k) { return tem0; }, 
+                ux, uy, uz,
+                [=](int _i, int _j, int _k) { return _i == lx - 1 || _j == ly - 1 || _k == lz - 1; }
             );
             AD::BoundaryConditionSetQ(pg, 
-                [=]__device__(int _i, int _j, int _k) { return (_j == 0 && _i < L && _k < L) ? qn0 : 0.0; }, 
-                ux, uy, diffusivity,
-                [=]__device__(int _i, int _j, int _k) { return _j == 0; }
+                [=](int _i, int _j, int _k) { return (_j == 0 && _i < L && _k < L) ? qn0 : 0.0; }, 
+                ux, uy, uz, diffusivity,
+                [=](int _i, int _j, int _k) { return _j == 0; }
             );
             pg.BoundaryCondition([=](int _i, int _j, int _k) { return (_i == 0 || _k == 0) ? 2 : 0; });
             pf.SmoothCorner();
@@ -198,9 +198,9 @@ int main(int argc, char** argv) {
             pg.Swap();
             pf.iSynchronize();
             pg.iSynchronize();
-            AAD::iBoundaryConditionSetT(pg, ux, uy, [=](int _i, int _j, int _k) { return _i == nx - 1 || _j == ny - 1 || _k == nz - 1; });
-            AAD::iBoundaryConditionSetQ(pg, ux, uy, [=](int _i, int _j, int _k) { return _j == 0; });
-            AAD::iBoundaryConditionSetQ(pg, ux, uy, [=](int _i, int _j, int _k) { return _j == 0 && _i < L && _k < L; }, 1.0);
+            AAD::iBoundaryConditionSetT(pg, ux, uy, uz, [=](int _i, int _j, int _k) { return _i == lx - 1 || _j == ly - 1 || _k == lz - 1; });
+            AAD::iBoundaryConditionSetQ(pg, ux, uy, uz, [=](int _i, int _j, int _k) { return _j == 0; });
+            AAD::iBoundaryConditionSetQ(pg, ux, uy, uz, [=](int _i, int _j, int _k) { return _j == 0 && _i < L && _k < L; }, 1.0);
             pg.iBoundaryCondition([=](int _i, int _j, int _k) { return (_i == 0 || _k == 0) ? 2 : 0; });
             pf.iBoundaryCondition([=](int _i, int _j, int _k) { return (_i == 0 || _k == 0) ? 2 : 1; });
             pf.SmoothCorner();
@@ -235,8 +235,8 @@ int main(int argc, char** argv) {
         std::vector<double> dfdss(s.size(), 0.0);
         AAD::SensitivityTemperatureAtHeatSource(
             ux, uy, uz, imx, imy, imz, pg, tem, item, iqx, iqy, iqz, gi, igi, dfdss.data(), diffusivity, dads, dkds,
-            [=]__device__(int _i, int _j, int _k) { return (_j == 0 && _i < L && _k < L) ? qn0 : 0.0; }, 
-            [=]__device__(int _i, int _j, int _k) { return _j == 0 && _i < L && _k < L; }
+            [=](int _i, int _j, int _k) { return (_j == 0 && _i < L && _k < L) ? qn0 : 0.0; }, 
+            [=](int _i, int _j, int _k) { return _j == 0 && _i < L && _k < L; }
         );
         double dfdssmax_buffer = 0.0, dfdssmax;
         for (int idx = 0; idx < pf.nxyz; ++idx) {

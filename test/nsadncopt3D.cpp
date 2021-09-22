@@ -33,7 +33,7 @@ int main(int argc, char** argv) {
 #endif
 
     //********************Parameters********************
-    int lx = 81, ly = 161, lz = 81, mx = 61, my = 121, mz = 61, nt = 100000, dt = 100, nitr = 5, nb = 100;
+    int lx = 81, ly = 161, lz = 81, mx = 61, my = 121, mz = 61, nt = 100000, dt = 100, nitr = 1, nb = 100;
     double Pr = 6.0, Ra = 2.5e3, nu = 0.1, L = 8.0, tem0 = 0.0, qn0 = 1.0e-2, alphamax = 1.0e4;
     double qf = 1e-2, qg = 1e0, movelimit = 0.2, weightlimit = 0.5, R = 1.5, eps = 1.0e-4, s0 = 0.05;
 
@@ -326,7 +326,7 @@ int main(int argc, char** argv) {
                 std::cout << "----------Convergence/Last step----------" << std::endl;
             }
 
-            VTKXMLExport file(pf, "result/nsadncopt");
+            VTKXMLExport file(pf, "result/nsadncopt3D");
             file.AddPointData(pf, "k", [&](int _i, int _j, int _k) { return diffusivity[pg.Index(_i, _j, _k)]; });
             file.AddPointData(pf, "rho", [&](int _i, int _j, int _k) { return rho[pf.Index(_i, _j, _k)]; });
             file.AddPointData(pf, "u", 

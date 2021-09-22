@@ -1316,7 +1316,7 @@ namespace PANSLBM2 {
                     for (int k = 0; k < _q.nz; ++k) {
                         if (_bctype(0 + _q.offsetx, j + _q.offsety, k + _q.offsetz)) {
                             int idx = _q.Index(0, j, k);
-                            _dfds[idx] += _qnbc_bctype(0 + _q.offsetx, j + _q.offsety, k + _q.offsetz)*_dkds[idx]*(
+                            _dfds[idx] += _qnbc(0 + _q.offsetx, j + _q.offsety, k + _q.offsetz)*_dkds[idx]*(
                                 (1.0 + 3.0*_ux[idx])*(-12.0 + 8.0*_ig[Q<T>::IndexF(idx, 1)] + _ig[Q<T>::IndexF(idx, 7)] + _ig[Q<T>::IndexF(idx, 9)] + _ig[Q<T>::IndexF(idx, 10)] + _ig[Q<T>::IndexF(idx, 12)])
                                 + 3.0*_uy[idx]*(_ig[Q<T>::IndexF(idx, 7)] - _ig[Q<T>::IndexF(idx, 9)] + _ig[Q<T>::IndexF(idx, 10)] - _ig[Q<T>::IndexF(idx, 12)])
                                 + 3.0*_uz[idx]*(_ig[Q<T>::IndexF(idx, 7)] + _ig[Q<T>::IndexF(idx, 9)] - _ig[Q<T>::IndexF(idx, 10)] - _ig[Q<T>::IndexF(idx, 12)])

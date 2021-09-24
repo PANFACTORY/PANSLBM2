@@ -1,5 +1,5 @@
 #define _USE_MATH_DEFINES
-#define _USE_MPI_DEFINES
+//#define _USE_MPI_DEFINES
 #include <cmath>
 #include <iostream>
 #ifdef _USE_MPI_DEFINES
@@ -27,7 +27,7 @@ int main(int argc, char** argv) {
 #endif
 
     //--------------------Set parameters--------------------
-    int lx = 30, ly = 30, lz = 30, nt = 10000, dt = 100;
+    int lx = 31, ly = 31, lz = 31, nt = 10000, dt = 100;
     double nu = 0.1, u0 = 0.1, theta = 90.0;
     D3Q15<double> pf(lx, ly, lz, MyRank, mx, my, mz);
     double *rho = new double[pf.nxyz], *ux = new double[pf.nxyz], *uy = new double[pf.nxyz], *uz = new double[pf.nxyz];
@@ -43,8 +43,7 @@ int main(int argc, char** argv) {
             std::cout << "t = " << t/dt << std::endl;
         }
         NS::MacroCollideStream(pf, rho, ux, uy, uz, nu, true);
-        pf.Swap();
-        pf.Synchronize();
+        pf.Stream();
         pf.BoundaryCondition([=](int _i, int _j, int _k) { return (_i == 0 || _i == lx - 1 || _j == 0 || _j == ly - 1 || _k == 0) ? 1 : 0; });
         NS::BoundaryConditionSetU(pf, 
             [=](int _i, int _j, int _k) { return u0*cos(theta*M_PI/180.0); }, 

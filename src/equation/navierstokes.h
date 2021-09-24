@@ -79,8 +79,9 @@ namespace PANSLBM2 {
         template<class T, template<class>class P>
         void MacroCollideStream(P<T>& _p, T *_rho, T *_ux, T *_uy, T _viscosity, bool _issave = false) {
             T omega = 1.0/(3.0*_viscosity + 0.5);
-            for (int i = 0; i < _p.nx; ++i) {
-                for (int j = 0; j < _p.ny; ++j) {
+#pragma omp parallel for
+            for (int j = 0; j < _p.ny; ++j) {
+                for (int i = 0; i < _p.nx; ++i) {
                     int idx = _p.Index(i, j);
 
                     //  Update macro
@@ -107,9 +108,10 @@ namespace PANSLBM2 {
         template<class T, template<class>class P>
         void MacroCollideStream(P<T>& _p, T *_rho, T *_ux, T *_uy, T *_uz, T _viscosity, bool _issave = false) {
             T omega = 1.0/(3.0*_viscosity + 0.5);
-            for (int i = 0; i < _p.nx; ++i) {
+#pragma omp parallel for
+            for (int k = 0; k < _p.nz; ++k) {
                 for (int j = 0; j < _p.ny; ++j) {
-                    for (int k = 0; k < _p.nz; ++k) {
+                    for (int i = 0; i < _p.nx; ++i) {
                         int idx = _p.Index(i, j, k);
 
                         //  Update macro
@@ -138,8 +140,9 @@ namespace PANSLBM2 {
         template<class T, template<class>class P>
         void MacroBrinkmanCollideStream(P<T>& _p, T *_rho, T *_ux, T *_uy, T _viscosity, const T *_alpha, bool _issave = false) {
             T omega = 1.0/(3.0*_viscosity + 0.5);
-            for (int i = 0; i < _p.nx; ++i) {
-                for (int j = 0; j < _p.ny; ++j) {
+#pragma omp parallel for
+            for (int j = 0; j < _p.ny; ++j) {
+                for (int i = 0; i < _p.nx; ++i) {
                     int idx = _p.Index(i, j);
 
                     //  Update macro
@@ -170,9 +173,10 @@ namespace PANSLBM2 {
         template<class T, template<class>class P>
         void MacroBrinkmanCollideStream(P<T>& _p, T *_rho, T *_ux, T *_uy, T *_uz, T _viscosity, const T *_alpha, bool _issave = false) {
             T omega = 1.0/(3.0*_viscosity + 0.5);
-            for (int i = 0; i < _p.nx; ++i) {
+#pragma omp parallel for
+            for (int k = 0; k < _p.nz; ++k) {
                 for (int j = 0; j < _p.ny; ++j) {
-                    for (int k = 0; k < _p.nz; ++k) {
+                    for (int i = 0; i < _p.nx; ++i) {
                         int idx = _p.Index(i, j, k);
 
                         //  Update macro

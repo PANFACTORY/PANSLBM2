@@ -20,7 +20,7 @@ namespace PANSLBM2 {
             T uu = _ux[_idx]*_ux[_idx] + _uy[_idx]*_uy[_idx];
             _ip = _f0[_idx]*P<T>::ei[0]*(1.0 - 1.5*uu);
             _iux = -_f0[_idx]*P<T>::ei[0]*_ux[_idx];
-            _iuy = -_f0[_idx]*P<T>::ei[0]*_uy[_idx];;
+            _iuy = -_f0[_idx]*P<T>::ei[0]*_uy[_idx];
             _imx = T();
             _imy = T();
             for (int c = 1; c < P<T>::nc; ++c) {
@@ -141,30 +141,29 @@ namespace PANSLBM2 {
             T omega = 1.0/(3.0*_viscosity + 0.5);
 #pragma omp parallel for
             for (int idx = 0; idx < _p.nxyz; ++idx) {
-                    //  Update macro
-                    T ip, iux, iuy, iuz, imx, imy, imz;
-                    Macro<T, P>(ip, iux, iuy, iuz, imx, imy, imz, _rho, _ux, _uy, _uz, _p.f0, _p.f, idx);
+                //  Update macro
+                T ip, iux, iuy, iuz, imx, imy, imz;
+                Macro<T, P>(ip, iux, iuy, iuz, imx, imy, imz, _rho, _ux, _uy, _uz, _p.f0, _p.f, idx);
 
-                    //  External force with Brinkman model
-                    ExternalForceBrinkman<T, P>(_rho, _ux, _uy, _uz, imx, imy, imz, _p.f0, _p.f, _alpha, idx);
-                    Macro<T, P>(ip, iux, iuy, iuz, imx, imy, imz, _rho, _ux, _uy, _uz, _p.f0, _p.f, idx);
+                //  External force with Brinkman model
+                ExternalForceBrinkman<T, P>(_rho, _ux, _uy, _uz, imx, imy, imz, _p.f0, _p.f, _alpha, idx);
+                Macro<T, P>(ip, iux, iuy, iuz, imx, imy, imz, _rho, _ux, _uy, _uz, _p.f0, _p.f, idx);
 
-                    //  Save macro if need
-                    if (_issave) {
-                        _ip[idx] = ip;
-                        _iux[idx] = iux;
-                        _iuy[idx] = iuy;
-                        _iuz[idx] = iuz;
-                        _imx[idx] = imx;
-                        _imy[idx] = imy;
-                        _imz[idx] = imz;
-                    }
+                //  Save macro if need
+                if (_issave) {
+                    _ip[idx] = ip;
+                    _iux[idx] = iux;
+                    _iuy[idx] = iuy;
+                    _iuz[idx] = iuz;
+                    _imx[idx] = imx;
+                    _imy[idx] = imy;
+                    _imz[idx] = imz;
+                }
 
-                    //  Collide and stream
-                    _p.f0[idx] = (1.0 - omega)*_p.f0[idx] + omega*Equilibrium<T, P>(_ux[idx], _uy[idx], _uz[idx], ip, iux, iuy, iuz, 0);
-                    for (int c = 1; c < P<T>::nc; ++c) {
-                        _p.f[P<T>::IndexF(idx, c)] = (1.0 - omega)*_p.f[P<T>::IndexF(idx, c)] + omega*Equilibrium<T, P>(_ux[idx], _uy[idx], _uz[idx], ip, iux, iuy, iuz, c);
-                    }
+                //  Collide and stream
+                _p.f0[idx] = (1.0 - omega)*_p.f0[idx] + omega*Equilibrium<T, P>(_ux[idx], _uy[idx], _uz[idx], ip, iux, iuy, iuz, 0);
+                for (int c = 1; c < P<T>::nc; ++c) {
+                    _p.f[P<T>::IndexF(idx, c)] = (1.0 - omega)*_p.f[P<T>::IndexF(idx, c)] + omega*Equilibrium<T, P>(_ux[idx], _uy[idx], _uz[idx], ip, iux, iuy, iuz, c);
                 }
             }
         } 

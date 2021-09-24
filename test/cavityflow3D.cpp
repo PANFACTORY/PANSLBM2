@@ -2,6 +2,7 @@
 //#define _USE_MPI_DEFINES
 #include <cmath>
 #include <iostream>
+#include <chrono>
 #ifdef _USE_MPI_DEFINES
     #include "mpi.h"
 #endif
@@ -36,6 +37,8 @@ int main(int argc, char** argv) {
         ux[idx] = 0.0;  uy[idx] = 0.0;  uz[idx] = 0.0;
     }
 
+    std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
+
     //--------------------Direct analyze--------------------
     NS::InitialCondition(pf, rho, ux, uy, uz);
     for (int t = 1; t <= nt; ++t) {
@@ -52,6 +55,11 @@ int main(int argc, char** argv) {
             [=](int _i, int _j, int _k) { return _k == lz - 1; }
         );
         pf.SmoothCorner();
+    }
+
+    std::chrono::system_clock::time_point end = std::chrono::system_clock::now();
+    if (MyRank == 0) {
+        std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count() << std::endl;
     }
 
     //--------------------Export result--------------------

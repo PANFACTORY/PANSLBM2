@@ -179,7 +179,7 @@ namespace PANSLBM2 {
 
                 //  Collide
                 _p.f0[idx] = (1.0 - omega)*_p.f0[idx] + omega*Equilibrium<T, P>(rho, ux, uy, uz, 0);
-                for (int c = 0; c < P<T>::nc; ++c) {
+                for (int c = 1; c < P<T>::nc; ++c) {
                     _p.f[P<T>::IndexF(idx, c)] = (1.0 - omega)*_p.f[P<T>::IndexF(idx, c)] + omega*Equilibrium<T, P>(rho, ux, uy, uz, c);
                 }
             }

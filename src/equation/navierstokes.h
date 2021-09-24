@@ -90,20 +90,9 @@ namespace PANSLBM2 {
                 _ux[idx] = ux;
                 _uy[idx] = uy;
 
-                //  Collide and stream
+                //  Collide
                 for (int c = 0; c < P<T>::nc; ++c) {
                     _p.f[P<T>::IndexF(idx, c)] = (1.0 - omega)*_p.f[P<T>::IndexF(idx, c)] + omega*Equilibrium<T, P>(rho, ux, uy, c);
-                }
-            }
-#pragma omp parallel for
-            for (int j = 0; j < _p.ny; ++j) {
-                for (int i = 0; i < _p.nx; ++i) {
-                    int idx = _p.Index(i, j);
-                    //  Collide and stream
-                    for (int c = 0; c < P<T>::nc; ++c) {
-                        int idxstream = _p.Index(i + P<T>::cx[c], j + P<T>::cy[c]);
-                        _p.fnext[P<T>::IndexF(idxstream, c)] = _p.f[P<T>::IndexF(idx, c)];
-                    }
                 }
             }
         }

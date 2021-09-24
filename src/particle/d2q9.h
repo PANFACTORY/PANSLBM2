@@ -70,6 +70,7 @@ public:
             return this->IndexPE(_i, _j);
         }
 
+        void Stream();
         void Swap();
         template<class Ff>
         void BoundaryCondition(Ff _bctype);
@@ -98,6 +99,25 @@ private:
     template<class T>const int D2Q9<T>::cy[D2Q9<T>::nc] = { 0, 0, 1, 0, -1, 1, 1, -1, -1 };
     template<class T>const int D2Q9<T>::cz[D2Q9<T>::nc] = { 0, 0, 0, 0, 0, 0, 0, 0, 0 };
     template<class T>const T D2Q9<T>::ei[D2Q9<T>::nc] = { 4.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/36.0, 1.0/36.0, 1.0/36.0, 1.0/36.0 };
+
+    template<class T>
+    void D2Q9<T>::Stream() {
+        //  Stream
+#pragma omp parallel for
+        for (int j = 0; j < this->ny; ++j) {
+            for (int i = 0; i < this->nx; ++i) {
+                for (int c = 0; c < D2Q9<T>::nc; ++c) {
+                    int idx = this->Index(i, j), idxstream = this->Index(i - D2Q9<T>::cx[c], j - D2Q9<T>::cy[c]);
+                    this->fnext[D2Q9<T>::IndexF(idx, c)] = this->f[D2Q9<T>::IndexF(idxstream, c)];
+                }
+            }
+        }
+
+        //  Swap
+        T *tmp = this->f;
+        this->f = this->fnext;
+        this->fnext = tmp;
+    }
 
     template<class T>
     void D2Q9<T>::Swap() {

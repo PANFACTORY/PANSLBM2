@@ -54,29 +54,26 @@ namespace PANSLBM2 {
         template<class T, template<class>class P>
         void MacroCollideStream(P<T>& _p, T *_rho, T *_ux, T *_uy, T *_sxx, T *_sxy, T *_syx, T *_syy, T _tau, bool _issave = false) {
             T omega = 1/_tau;
-            for (int i = 0; i < _p.nx; ++i) {
-                for (int j = 0; j < _p.ny; ++j) {
-                    int idx = _p.Index(i, j);
+#pragma omp parallel for
+            for (int idx = 0; idx < _p.nxyz; ++idx) {
+                //  Update macro
+                T ux, uy, sxx, sxy, syx, syy;
+                Macro<T, P>(_rho[idx], ux, uy, sxx, sxy, syx, syy, _p.f, idx);
 
-                    //  Update macro
-                    T ux, uy, sxx, sxy, syx, syy;
-                    Macro<T, P>(_rho[idx], ux, uy, sxx, sxy, syx, syy, _p.f, idx);
+                //  Save macro if need
+                if (_issave) {
+                    _ux[idx] = ux;
+                    _uy[idx] = uy;
+                    _sxx[idx] = sxx;
+                    _sxy[idx] = sxy;
+                    _syx[idx] = syx;
+                    _syy[idx] = syy;
+                }
 
-                    //  Save macro if need
-                    if (_issave) {
-                        _ux[idx] = ux;
-                        _uy[idx] = uy;
-                        _sxx[idx] = sxx;
-                        _sxy[idx] = sxy;
-                        _syx[idx] = syx;
-                        _syy[idx] = syy;
-                    }
-
-                    //  Collide and stream
-                    for (int c = 0; c < P<T>::nc; ++c) {
-                        int idxstream = _p.Index(i + P<T>::cx[c], j + P<T>::cy[c]);
-                        _p.fnext[P<T>::IndexF(idxstream, c)] = (1.0 - omega)*_p.f[P<T>::IndexF(idx, c)] + omega*Equilibrium<T, P>(_rho[idx], ux, uy, sxx, sxy, syx, syy, c);
-                    }
+                //  Collide
+                _p.f0[idx] = (1.0 - omega)*_p.f0[idx] + omega*Equilibrium<T, P>(_rho[idx], ux, uy, sxx, sxy, syx, syy, 0);
+                for (int c = 1; c < P<T>::nc; ++c) {
+                    _p.f[P<T>::IndexF(idx, c)] = (1.0 - omega)*_p.f[P<T>::IndexF(idx, c)] + omega*Equilibrium<T, P>(_rho[idx], ux, uy, sxx, sxy, syx, syy, c);
                 }
             }
         }
@@ -85,29 +82,26 @@ namespace PANSLBM2 {
         template<class T, template<class>class P>
         void MacroExtendedCollideStream(P<T>& _p, T *_rho, T *_ux, T *_uy, T *_sxx, T *_sxy, T *_syx, T *_syy, T _tau, const T *_gamma, bool _issave = false) {
             T omega = 1/_tau;
-            for (int i = 0; i < _p.nx; ++i) {
-                for (int j = 0; j < _p.ny; ++j) {
-                    int idx = _p.Index(i, j);
+#pragma omp parallel for
+            for (int idx = 0; idx < _p.nxyz; ++idx) {
+                //  Update macro
+                T ux, uy, sxx, sxy, syx, syy;
+                Macro<T, P>(_rho[idx], ux, uy, sxx, sxy, syx, syy, _p.f, _gamma, idx);
 
-                    //  Update macro
-                    T ux, uy, sxx, sxy, syx, syy;
-                    Macro<T, P>(_rho[idx], ux, uy, sxx, sxy, syx, syy, _p.f, _gamma, idx);
+                //  Save macro if need
+                if (_issave) {
+                    _ux[idx] = ux;
+                    _uy[idx] = uy;
+                    _sxx[idx] = sxx;
+                    _sxy[idx] = sxy;
+                    _syx[idx] = syx;
+                    _syy[idx] = syy;
+                }
 
-                    //  Save macro if need
-                    if (_issave) {
-                        _ux[idx] = ux;
-                        _uy[idx] = uy;
-                        _sxx[idx] = sxx;
-                        _sxy[idx] = sxy;
-                        _syx[idx] = syx;
-                        _syy[idx] = syy;
-                    }
-
-                    //  Collide and stream
-                    for (int c = 0; c < P<T>::nc; ++c) {
-                        int idxstream = _p.Index(i + P<T>::cx[c], j + P<T>::cy[c]);
-                        _p.fnext[P<T>::IndexF(idxstream, c)] = (1.0 - omega)*_p.f[P<T>::IndexF(idx, c)] + omega*Equilibrium<T, P>(_rho[idx], ux, uy, sxx, sxy, syx, syy, c);
-                    }
+                //  Collide
+                _p.f0[idx] = (1.0 - omega)*_p.f0[idx] + omega*Equilibrium<T, P>(_rho[idx], ux, uy, sxx, sxy, syx, syy, 0);
+                for (int c = 1; c < P<T>::nc; ++c) {
+                    _p.f[P<T>::IndexF(idx, c)] = (1.0 - omega)*_p.f[P<T>::IndexF(idx, c)] + omega*Equilibrium<T, P>(_rho[idx], ux, uy, sxx, sxy, syx, syy, c);
                 }
             }
         }
@@ -115,12 +109,10 @@ namespace PANSLBM2 {
         //  Function of setting initial condition of EL for 2D
         template<class T, template<class>class P>
         void InitialCondition(P<T>& _p, const T *_rho, const T *_ux, const T *_uy, const T *_sxx, const T *_sxy, const T *_syx, const T *_syy) {
-            for (int i = 0; i < _p.nx; ++i) {
-                for (int j = 0; j < _p.ny; ++j) {
-                    int idx = _p.Index(i, j);
-                    for (int c = 0; c < P<T>::nc; ++c) {
-                        _p.f[P<T>::IndexF(idx, c)] = Equilibrium<T, P>(_rho[idx], _ux[idx], _uy[idx], _sxx[idx], _sxy[idx], _syx[idx], _syy[idx], c);
-                    }
+            for (int idx = 0; idx < _p.nxyz; ++idx) {
+                _p.f0[idx] = Equilibrium<T, P>(_rho[idx], _ux[idx], _uy[idx], _sxx[idx], _sxy[idx], _syx[idx], _syy[idx], 0);
+                for (int c = 1; c < P<T>::nc; ++c) {
+                    _p.f[P<T>::IndexF(idx, c)] = Equilibrium<T, P>(_rho[idx], _ux[idx], _uy[idx], _sxx[idx], _sxy[idx], _syx[idx], _syy[idx], c);
                 }
             }
         }

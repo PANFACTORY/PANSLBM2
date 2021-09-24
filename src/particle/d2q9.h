@@ -118,7 +118,7 @@ private:
         this->fnext = tmp;
 
 #ifdef _USE_MPI_DEFINES
-        int idx, neib = 0;
+        int idx;
 
         //  Copy from f to fsend along edge or at corner
         if (this->mx != 1) {
@@ -159,6 +159,7 @@ private:
         }
         
         //  Communicate with other PE
+        int neib = 0;
         if (this->mx != 1) {
             //  Left
             MPI_Isend(this->fsend_xmin, this->ny*3, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy), 0, MPI_COMM_WORLD, &this->request[neib++]);
@@ -257,7 +258,7 @@ private:
         this->fnext = tmp;
 
 #ifdef _USE_MPI_DEFINES
-        int idx, neib = 0;
+        int idx;
 
         //  Copy from f to fsend along edge or at corner
         if (this->mx != 1) {
@@ -298,6 +299,7 @@ private:
         }
         
         //  Communicate with other PE
+        int neib = 0;
         if (this->mx != 1) {
             //  Left
             MPI_Isend(this->fsend_xmin, this->ny*3, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy), 0, MPI_COMM_WORLD, &this->request[neib++]);

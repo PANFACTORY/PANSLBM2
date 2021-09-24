@@ -80,25 +80,29 @@ namespace PANSLBM2 {
         void MacroCollideStream(P<T>& _p, T *_rho, T *_ux, T *_uy, T _viscosity, bool _issave = false) {
             T omega = 1.0/(3.0*_viscosity + 0.5);
 #pragma omp parallel for
+            for (int idx = 0; idx < _p.nxyz; ++idx) {
+                //  Update macro
+                T rho, ux, uy;
+                Macro<T, P>(rho, ux, uy, _p.f, idx);
+
+                //  Save macro if need
+                _rho[idx] = rho;
+                _ux[idx] = ux;
+                _uy[idx] = uy;
+
+                //  Collide and stream
+                for (int c = 0; c < P<T>::nc; ++c) {
+                    _p.f[P<T>::IndexF(idx, c)] = (1.0 - omega)*_p.f[P<T>::IndexF(idx, c)] + omega*Equilibrium<T, P>(rho, ux, uy, c);
+                }
+            }
+#pragma omp parallel for
             for (int j = 0; j < _p.ny; ++j) {
                 for (int i = 0; i < _p.nx; ++i) {
                     int idx = _p.Index(i, j);
-
-                    //  Update macro
-                    T rho, ux, uy;
-                    Macro<T, P>(rho, ux, uy, _p.f, idx);
-
-                    //  Save macro if need
-                    if (_issave) {
-                        _rho[idx] = rho;
-                        _ux[idx] = ux;
-                        _uy[idx] = uy;
-                    }
-
                     //  Collide and stream
                     for (int c = 0; c < P<T>::nc; ++c) {
                         int idxstream = _p.Index(i + P<T>::cx[c], j + P<T>::cy[c]);
-                        _p.fnext[P<T>::IndexF(idxstream, c)] = (1.0 - omega)*_p.f[P<T>::IndexF(idx, c)] + omega*Equilibrium<T, P>(rho, ux, uy, c);
+                        _p.fnext[P<T>::IndexF(idxstream, c)] = _p.f[P<T>::IndexF(idx, c)];
                     }
                 }
             }

@@ -519,38 +519,38 @@ private:
 
     template<class T>
     void D2Q9<T>::SmoothCorner() {
-        for (int c = 0; c < D2Q9<T>::nc; ++c) {
-            int idx, idxx, idxy;
-
-            //  Corner at xmin, ymin
-            if (this->PEx == 0 && this->PEy == 0) {
-                idx = this->Index(0, 0);
-                idxx = this->Index(1, 0);
-                idxy = this->Index(0, 1);
+        //  Corner at xmin, ymin
+        if (this->PEx == 0 && this->PEy == 0) {
+            int idx = this->Index(0, 0), idxx = this->Index(1, 0), idxy = this->Index(0, 1);
+            this->f0[idx] = 0.5*(this->f0[idxx] + this->f0[idxy]);
+            for (int c = 1; c < D2Q9<T>::nc; ++c) {
                 this->f[D2Q9<T>::IndexF(idx, c)] = 0.5*(this->f[D2Q9<T>::IndexF(idxx, c)] + this->f[D2Q9<T>::IndexF(idxy, c)]);
             }
-            
-            //  Corner at xmin, ymax
-            if (this->PEx == 0 && this->PEy == this->my - 1) {
-                idx = this->Index(0, this->ny - 1);
-                idxx = this->Index(1, this->ny - 1);
-                idxy = this->Index(0,this->ny - 2);
+        }
+        
+        //  Corner at xmin, ymax
+        if (this->PEx == 0 && this->PEy == this->my - 1) {
+            int idx = this->Index(0, this->ny - 1), idxx = this->Index(1, this->ny - 1), idxy = this->Index(0,this->ny - 2);
+            this->f0[idx] = 0.5*(this->f0[idxx] + this->f0[idxy]);    
+            for (int c = 1; c < D2Q9<T>::nc; ++c) {
                 this->f[D2Q9<T>::IndexF(idx, c)] = 0.5*(this->f[D2Q9<T>::IndexF(idxx, c)] + this->f[D2Q9<T>::IndexF(idxy, c)]);    
             }
-            
-            //  Corner at xmax, ymin
-            if (this->PEx == this->mx - 1 && this->PEy == 0) {
-                idx = this->Index(this->nx - 1, 0);
-                idxx = this->Index(this->nx - 2, 0);
-                idxy = this->Index(this->nx - 1, 1);
+        }
+        
+        //  Corner at xmax, ymin
+        if (this->PEx == this->mx - 1 && this->PEy == 0) {
+            int idx = this->Index(this->nx - 1, 0), idxx = this->Index(this->nx - 2, 0), idxy = this->Index(this->nx - 1, 1);
+            this->f0[idx] = 0.5*(this->f0[idxx] + this->f0[idxy]);  
+            for (int c = 1; c < D2Q9<T>::nc; ++c) {
                 this->f[D2Q9<T>::IndexF(idx, c)] = 0.5*(this->f[D2Q9<T>::IndexF(idxx, c)] + this->f[D2Q9<T>::IndexF(idxy, c)]);  
             }
-            
-            //  Corner at xmax, ymax
-            if (this->PEx == this->mx - 1 && this->PEy == this->my - 1) {
-                idx = this->Index(this->nx - 1, this->ny - 1);
-                idxx = this->Index(this->nx - 2, this->ny - 1);
-                idxy = this->Index(this->nx - 1, this->ny - 2);
+        }
+        
+        //  Corner at xmax, ymax
+        if (this->PEx == this->mx - 1 && this->PEy == this->my - 1) {
+            int idx = this->Index(this->nx - 1, this->ny - 1), idxx = this->Index(this->nx - 2, this->ny - 1), idxy = this->Index(this->nx - 1, this->ny - 2);
+            this->f0[idx] = 0.5*(this->f0[idxx] + this->f0[idxy]);  
+            for (int c = 1; c < D2Q9<T>::nc; ++c) {
                 this->f[D2Q9<T>::IndexF(idx, c)] = 0.5*(this->f[D2Q9<T>::IndexF(idxx, c)] + this->f[D2Q9<T>::IndexF(idxy, c)]);  
             }
         }

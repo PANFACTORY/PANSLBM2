@@ -75,7 +75,7 @@ int main(int argc, char** argv) {
             );
         }
 
-        pf.Swap();
+        pf.Stream();
         pf.BoundaryCondition([=](int _i, int _j) { return _i == 0 ? 1 : 0; });
         EL::BoundaryConditionSetStress(pf, 
             [=](int _i, int _j) { return 0.0; }, 

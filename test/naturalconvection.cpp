@@ -49,10 +49,8 @@ int main(int argc, char** argv) {
             pg, tem, qx, qy, alpha, 
             0.0, 1.6e-5, 0.5*(Th + Tl), true
         );
-        pf.Swap();
-        pg.Swap();
-        pf.Synchronize();
-        pg.Synchronize();
+        pf.Stream();
+        pg.Stream();
         pf.BoundaryCondition([=](int _i, int _j) { return (_j == 0 || _j == ly - 1) ? 2 : 0; });
         pg.BoundaryCondition([=](int _i, int _j) { return 0; });
         AD::BoundaryConditionSetT(pg, 

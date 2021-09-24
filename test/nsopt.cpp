@@ -79,8 +79,7 @@ int main(int argc, char** argv) {
             if (Residual(ux, uy, uxp, uyp, pf.nxyz) < epsu) {
                 break;
             }
-            pf.Swap();
-            pf.Synchronize();
+            pf.Stream();
             pf.BoundaryCondition([=](int _i, int _j) { return ((_i == 0 && 0.7*ly < _j && _j < 0.9*ly) || (_j == 0 && 0.7*lx < _i && _i < 0.9*lx)) ? 0 : 1; });
             NS::BoundaryConditionSetU(pf, 
                 [=](int _i, int _j) { return -u0*(_j - 0.7*ly)*(_j - 0.9*ly)/(0.1*ly*0.1*ly); }, 
@@ -106,8 +105,7 @@ int main(int argc, char** argv) {
             if (Residual(iux, iuy, iuxp, iuyp, pf.nxyz) < epsu) {
                 break;
             }
-            pf.Swap();
-            pf.iSynchronize();
+            pf.iStream();
             pf.iBoundaryCondition([=](int _i, int _j) { return ((_i == 0 && 0.7*ly < _j && _j < 0.9*ly) || (_j == 0 && 0.7*lx < _i && _i < 0.9*lx)) ? 0 : 1; });
             ANS::iBoundaryConditionSetU(pf, 
                 [=](int _i, int _j) { return -u0*(_j - 0.7*ly)*(_j - 0.9*ly)/(0.1*ly*0.1*ly); }, 

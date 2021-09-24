@@ -55,8 +55,7 @@ int main(int argc, char** argv) {
             std::cout << "t = " << t/dt << std::endl;
         }
         NS::MacroBrinkmanCollideStream(pf, rho, ux, uy, uz, nu, alpha, true);
-        pf.Swap();
-        pf.Synchronize();
+        pf.Stream();
         pf.BoundaryCondition([=](int _i, int _j, int _k) { return (_j == 0 || _k == 0) ? 2 : (pow(_j, 2.0) + pow(_k, 2.0) >= pow(0.15*lx, 2.0) ? 1 : 0); });
         NS::BoundaryConditionSetU(pf, 
             [=](int _i, int _j, int _k) { 
@@ -83,8 +82,7 @@ int main(int argc, char** argv) {
             std::cout << "t = " << t/dt << std::endl;
         }
         ANS::MacroBrinkmanCollideStream(pf, rho, ux, uy, uz, irho, iux, iuy, iuz, imx, imy, imz, nu, alpha, true);
-        pf.Swap();
-        pf.iSynchronize();
+        pf.iStream();
         pf.iBoundaryCondition([=](int _i, int _j, int _k) { return (_j == 0 || _k == 0) ? 2 : (pow(_j, 2.0) + pow(_k, 2.0) >= pow(0.15*lx, 2.0) ? 1 : 0); });
         ANS::iBoundaryConditionSetU(pf, 
             [=](int _i, int _j, int _k) { 

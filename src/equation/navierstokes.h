@@ -61,8 +61,7 @@ namespace PANSLBM2 {
 
         //  Function of applying external force of NS with Brinkman model for 2D
         template<class T, template<class>class P>
-        void ExternalForceBrinkman(T _rho, T _ux, T _uy, T _alpha, T *_f0, T *_f, int _idx) {
-            _f0[_idx] -= 3.0*_alpha/(1.0 + _alpha/_rho);
+        void ExternalForceBrinkman(T _rho, T _ux, T _uy, T _alpha, T *_f, int _idx) {
             for (int c = 1; c < P<T>::nc; ++c) {
                 _f[P<T>::IndexF(_idx, c)] -= 3.0*_alpha/(1.0 + _alpha/_rho)*P<T>::ei[c]*(P<T>::cx[c]*_ux + P<T>::cy[c]*_uy);
             }
@@ -70,8 +69,7 @@ namespace PANSLBM2 {
 
         //  Function of applying external force of NS with Brinkman model for 3D
         template<class T, template<class>class P>
-        void ExternalForceBrinkman(T _rho, T _ux, T _uy, T _uz, T _alpha, T *_f0, T *_f, int _idx) {
-            _f0[_idx] -= 3.0*_alpha/(1.0 + _alpha/_rho);
+        void ExternalForceBrinkman(T _rho, T _ux, T _uy, T _uz, T _alpha, T *_f, int _idx) {
             for (int c = 1; c < P<T>::nc; ++c) {
                 _f[P<T>::IndexF(_idx, c)] -= 3.0*_alpha/(1.0 + _alpha/_rho)*P<T>::ei[c]*(P<T>::cx[c]*_ux + P<T>::cy[c]*_uy + P<T>::cz[c]*_uz);
             }
@@ -139,7 +137,7 @@ namespace PANSLBM2 {
                 Macro<T, P>(rho, ux, uy, _p.f0, _p.f, idx);
 
                 //  External force with Brinkman model
-                ExternalForceBrinkman<T, P>(rho, ux, uy, _alpha[idx], _p.f0, _p.f, idx);
+                ExternalForceBrinkman<T, P>(rho, ux, uy, _alpha[idx], _p.f, idx);
                 Macro<T, P>(rho, ux, uy, _p.f0, _p.f, idx);
 
                 //  Save macro if need
@@ -168,7 +166,7 @@ namespace PANSLBM2 {
                 Macro<T, P>(rho, ux, uy, uz, _p.f0, _p.f, idx);
 
                 //  External force with Brinkman model
-                ExternalForceBrinkman<T, P>(rho, ux, uy, uz, _alpha[idx], _p.f0, _p.f, idx);
+                ExternalForceBrinkman<T, P>(rho, ux, uy, uz, _alpha[idx], _p.f, idx);
                 Macro<T, P>(rho, ux, uy, uz, _p.f0, _p.f, idx);
 
                 //  Save macro if need

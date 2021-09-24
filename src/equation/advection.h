@@ -13,11 +13,11 @@ namespace PANSLBM2 {
     namespace AD {
         //  Function of updating macroscopic values of AD for 2D
         template<class T, template<class>class Q>
-        void Macro(T &_tem, T &_qx, T &_qy, T _ux, T _uy, const T *_g, T _omegag, int _idx) {
-            _tem = T();
+        void Macro(T &_tem, T &_qx, T &_qy, T _ux, T _uy, const T *_g0, const T *_g, T _omegag, int _idx) {
+            _tem = _g0[_idx];
             _qx = T();
             _qy = T();
-            for (int c = 0; c < Q<T>::nc; ++c) {
+            for (int c = 1; c < Q<T>::nc; ++c) {
                 _tem += _g[Q<T>::IndexF(_idx, c)];
                 _qx += Q<T>::cx[c]*_g[Q<T>::IndexF(_idx, c)];
                 _qy += Q<T>::cy[c]*_g[Q<T>::IndexF(_idx, c)];
@@ -28,12 +28,12 @@ namespace PANSLBM2 {
 
         //  Function of updating macroscopic values of AD for 3D
         template<class T, template<class>class Q>
-        void Macro(T &_tem, T &_qx, T &_qy, T &_qz, T _ux, T _uy, T _uz, const T *_g, T _omegag, int _idx) {
-            _tem = T();
+        void Macro(T &_tem, T &_qx, T &_qy, T &_qz, T _ux, T _uy, T _uz, const T *_g0, const T *_g, T _omegag, int _idx) {
+            _tem = _g0[_idx];
             _qx = T();
             _qy = T();
             _qz = T();
-            for (int c = 0; c < Q<T>::nc; ++c) {
+            for (int c = 1; c < Q<T>::nc; ++c) {
                 _tem += _g[Q<T>::IndexF(_idx, c)];
                 _qx += Q<T>::cx[c]*_g[Q<T>::IndexF(_idx, c)];
                 _qy += Q<T>::cy[c]*_g[Q<T>::IndexF(_idx, c)];
@@ -61,7 +61,7 @@ namespace PANSLBM2 {
         //  Function of applying external force of AD with natural convection for 2D
         template<class T, template<class>class P>
         void ExternalForceNaturalConvection(T _tem, T _gx, T _gy, T _tem0, T *_f, int _idx) {
-            for (int c = 0; c < P<T>::nc; ++c) {
+            for (int c = 1; c < P<T>::nc; ++c) {
                 _f[P<T>::IndexF(_idx, c)] += 3.0*P<T>::ei[c]*(P<T>::cx[c]*_gx + P<T>::cy[c]*_gy)*(_tem - _tem0);
             }
         }
@@ -69,15 +69,16 @@ namespace PANSLBM2 {
         //  Function of applying external force of AD with natural convection for 3D
         template<class T, template<class>class P>
         void ExternalForceNaturalConvection(T _tem, T _gx, T _gy, T _gz, T _tem0, T *_f, int _idx) {
-            for (int c = 0; c < P<T>::nc; ++c) {
+            for (int c = 1; c < P<T>::nc; ++c) {
                 _f[P<T>::IndexF(_idx, c)] += 3.0*P<T>::ei[c]*(P<T>::cx[c]*_gx + P<T>::cy[c]*_gy + P<T>::cz[c]*_gz)*(_tem - _tem0);
             }
         }
 
         //  Function of applying external force of AD with heat exchange for 2D/3D
         template<class T, template<class>class Q>
-        void ExternalForceHeatExchange(T _tem, T *_g, const T *_beta, int _idx) {
-            for (int c = 0; c < Q<T>::nc; ++c) {
+        void ExternalForceHeatExchange(T _tem, T *_g0, T *_g, const T *_beta, int _idx) {
+            _g0[_idx] += Q<T>::ei[0]*_beta[_idx]*(1.0 - _tem)/(1.0 + _beta[_idx]);
+            for (int c = 1; c < Q<T>::nc; ++c) {
                 _g[Q<T>::IndexF(_idx, c)] += Q<T>::ei[c]*_beta[_idx]*(1.0 - _tem)/(1.0 + _beta[_idx]);
             }
         }
@@ -90,35 +91,32 @@ namespace PANSLBM2 {
             bool _issave = false
         ) {
             T omegaf = 1.0/(3.0*_viscosity + 0.5), omegag = 1.0/(3.0*_diffusivity + 0.5);
-            for (int i = 0; i < _p.nx; ++i) {
-                for (int j = 0; j < _p.ny; ++j) {
-                    int idx = _p.Index(i, j);
+#pragma omp parallel for
+            for (int idx = 0; idx < _p.nxyz; ++idx) {
+                //  Update macro
+                T rho, ux, uy;
+                NS::Macro<T, P>(rho, ux, uy, _p.f0, _p.f, idx);
+                T tem, qx, qy;
+                Macro<T, Q>(tem, qx, qy, ux, uy, _q.f0, _q.f, omegag, idx);
 
-                    //  Update macro
-                    T rho, ux, uy;
-                    NS::Macro<T, P>(rho, ux, uy, _p.f, idx);
-                    T tem, qx, qy;
-                    Macro<T, Q>(tem, qx, qy, ux, uy, _q.f, omegag, idx);
+                //  Save macro if need
+                if (_issave) {
+                    _rho[idx] = rho;
+                    _ux[idx] = ux;
+                    _uy[idx] = uy;
+                    _tem[idx] = tem;
+                    _qx[idx] = qx;
+                    _qy[idx] = qy;
+                }
 
-                    //  Save macro if need
-                    if (_issave) {
-                        _rho[idx] = rho;
-                        _ux[idx] = ux;
-                        _uy[idx] = uy;
-                        _tem[idx] = tem;
-                        _qx[idx] = qx;
-                        _qy[idx] = qy;
-                    }
-
-                    //  Collide and stream
-                    for (int c = 0; c < P<T>::nc; ++c) {
-                        int idxstream = _p.Index(i + P<T>::cx[c], j + P<T>::cy[c]);
-                        _p.fnext[P<T>::IndexF(idxstream, c)] = (1.0 - omegaf)*_p.f[P<T>::IndexF(idx, c)] + omegaf*NS::Equilibrium<T, P>(rho, ux, uy, c);
-                    }
-                    for (int c = 0; c < Q<T>::nc; ++c) {
-                        int idxstream = _q.Index(i + Q<T>::cx[c], j + Q<T>::cy[c]);
-                        _q.fnext[Q<T>::IndexF(idxstream, c)] = (1.0 - omegag)*_q.f[Q<T>::IndexF(idx, c)] + omegag*Equilibrium<T, Q>(tem, ux, uy, c);
-                    }
+                //  Collide
+                _p.f0[idx] = (1.0 - omegaf)*_p.f0[idx] + omegaf*NS::Equilibrium<T, P>(rho, ux, uy, 0);
+                for (int c = 1; c < P<T>::nc; ++c) {
+                    _p.f[P<T>::IndexF(idx, c)] = (1.0 - omegaf)*_p.f[P<T>::IndexF(idx, c)] + omegaf*NS::Equilibrium<T, P>(rho, ux, uy, c);
+                }
+                _q.f0[idx] = (1.0 - omegag)*_q.f0[idx] + omegag*Equilibrium<T, Q>(tem, ux, uy, 0);
+                for (int c = 1; c < Q<T>::nc; ++c) {
+                    _q.f[Q<T>::IndexF(idx, c)] = (1.0 - omegag)*_q.f[Q<T>::IndexF(idx, c)] + omegag*Equilibrium<T, Q>(tem, ux, uy, c);
                 }
             }
         }
@@ -131,39 +129,34 @@ namespace PANSLBM2 {
             bool _issave = false
         ) {
             T omegaf = 1.0/(3.0*_viscosity + 0.5), omegag = 1.0/(3.0*_diffusivity + 0.5);
-            for (int i = 0; i < _p.nx; ++i) {
-                for (int j = 0; j < _p.ny; ++j) {
-                    for (int k = 0; k < _p.nz; ++k) {
-                        int idx = _p.Index(i, j, k);
+#pragma omp parallel for
+            for (int idx = 0; idx < _p.nxyz; ++idx) {
+                //  Update macro
+                T rho, ux, uy, uz;
+                NS::Macro<T, P>(rho, ux, uy, uz, _p.f0, _p.f, idx);
+                T tem, qx, qy, qz;
+                Macro<T, Q>(tem, qx, qy, qz, ux, uy, uz, _q.f0, _q.f, omegag, idx);
 
-                        //  Update macro
-                        T rho, ux, uy, uz;
-                        NS::Macro<T, P>(rho, ux, uy, uz, _p.f, idx);
-                        T tem, qx, qy, qz;
-                        Macro<T, Q>(tem, qx, qy, qz, ux, uy, uz, _q.f, omegag, idx);
+                //  Save macro if need
+                if (_issave) {
+                    _rho[idx] = rho;
+                    _ux[idx] = ux;
+                    _uy[idx] = uy;
+                    _uz[idx] = uz;
+                    _tem[idx] = tem;
+                    _qx[idx] = qx;
+                    _qy[idx] = qy;
+                    _qz[idx] = qz;
+                }
 
-                        //  Save macro if need
-                        if (_issave) {
-                            _rho[idx] = rho;
-                            _ux[idx] = ux;
-                            _uy[idx] = uy;
-                            _uz[idx] = uz;
-                            _tem[idx] = tem;
-                            _qx[idx] = qx;
-                            _qy[idx] = qy;
-                            _qz[idx] = qz;
-                        }
-
-                        //  Collide and stream
-                        for (int c = 0; c < P<T>::nc; ++c) {
-                            int idxstream = _p.Index(i + P<T>::cx[c], j + P<T>::cy[c], k + P<T>::cz[c]);
-                            _p.fnext[P<T>::IndexF(idxstream, c)] = (1.0 - omegaf)*_p.f[P<T>::IndexF(idx, c)] + omegaf*NS::Equilibrium<T, P>(rho, ux, uy, uz, c);
-                        }
-                        for (int c = 0; c < Q<T>::nc; ++c) {
-                            int idxstream = _q.Index(i + Q<T>::cx[c], j + Q<T>::cy[c], k + Q<T>::cz[c]);
-                            _q.fnext[Q<T>::IndexF(idxstream, c)] = (1.0 - omegag)*_q.f[Q<T>::IndexF(idx, c)] + omegag*Equilibrium<T, Q>(tem, ux, uy, uz, c);
-                        }
-                    }
+                //  Collide
+                _p.f0[idx] = (1.0 - omegaf)*_p.f0[idx] + omegaf*NS::Equilibrium<T, P>(rho, ux, uy, uz, 0);
+                for (int c = 1; c < P<T>::nc; ++c) {
+                    _p.f[P<T>::IndexF(idx, c)] = (1.0 - omegaf)*_p.f[P<T>::IndexF(idx, c)] + omegaf*NS::Equilibrium<T, P>(rho, ux, uy, uz, c);
+                }
+                _q.f0[idx] = (1.0 - omegag)*_q.f0[idx] + omegag*Equilibrium<T, Q>(tem, ux, uy, uz, 0);
+                for (int c = 1; c < Q<T>::nc; ++c) {
+                    _q.f[Q<T>::IndexF(idx, c)] = (1.0 - omegag)*_q.f[Q<T>::IndexF(idx, c)] + omegag*Equilibrium<T, Q>(tem, ux, uy, uz, c);
                 }
             }
         }
@@ -176,39 +169,36 @@ namespace PANSLBM2 {
             T _gx, T _gy, T _tem0, bool _issave = false
         ) {
             T omegaf = 1.0/(3.0*_viscosity + 0.5), omegag = 1.0/(3.0*_diffusivity + 0.5);
-            for (int i = 0; i < _p.nx; ++i) {
-                for (int j = 0; j < _p.ny; ++j) {
-                    int idx = _p.Index(i, j);
+#pragma omp parallel for
+            for (int idx = 0; idx < _p.nxyz; ++idx) {
+                //  Update macro
+                T rho, ux, uy;
+                NS::Macro<T, P>(rho, ux, uy, _p.f0, _p.f, idx);
+                T tem, qx, qy;
+                Macro<T, Q>(tem, qx, qy, ux, uy, _q.f0, _q.f, omegag, idx);
 
-                    //  Update macro
-                    T rho, ux, uy;
-                    NS::Macro<T, P>(rho, ux, uy, _p.f, idx);
-                    T tem, qx, qy;
-                    Macro<T, Q>(tem, qx, qy, ux, uy, _q.f, omegag, idx);
+                //  External force with natural convection
+                ExternalForceNaturalConvection<T, P>(tem, _gx, _gy, _tem0, _p.f, idx);
+                NS::Macro<T, P>(rho, ux, uy, _p.f0, _p.f, idx);
 
-                    //  External force with natural convection
-                    ExternalForceNaturalConvection<T, P>(tem, _gx, _gy, _tem0, _p.f, idx);
-                    NS::Macro<T, P>(rho, ux, uy, _p.f, idx);
+                //  Save macro if need
+                if (_issave) {
+                    _rho[idx] = rho;
+                    _ux[idx] = ux;
+                    _uy[idx] = uy;
+                    _tem[idx] = tem;
+                    _qx[idx] = qx;
+                    _qy[idx] = qy;
+                }
 
-                    //  Save macro if need
-                    if (_issave) {
-                        _rho[idx] = rho;
-                        _ux[idx] = ux;
-                        _uy[idx] = uy;
-                        _tem[idx] = tem;
-                        _qx[idx] = qx;
-                        _qy[idx] = qy;
-                    }
-
-                    //  Collide and stream
-                    for (int c = 0; c < P<T>::nc; ++c) {
-                        int idxstream = _p.Index(i + P<T>::cx[c], j + P<T>::cy[c]);
-                        _p.fnext[P<T>::IndexF(idxstream, c)] = (1.0 - omegaf)*_p.f[P<T>::IndexF(idx, c)] + omegaf*NS::Equilibrium<T, P>(rho, ux, uy, c);
-                    }
-                    for (int c = 0; c < Q<T>::nc; ++c) {
-                        int idxstream = _q.Index(i + Q<T>::cx[c], j + Q<T>::cy[c]);
-                        _q.fnext[Q<T>::IndexF(idxstream, c)] = (1.0 - omegag)*_q.f[Q<T>::IndexF(idx, c)] + omegag*Equilibrium<T, Q>(tem, ux, uy, c);
-                    }
+                //  Collide
+                _p.f0[idx] = (1.0 - omegaf)*_p.f0[idx] + omegaf*NS::Equilibrium<T, P>(rho, ux, uy, 0);
+                for (int c = 1; c < P<T>::nc; ++c) {
+                    _p.f[P<T>::IndexF(idx, c)] = (1.0 - omegaf)*_p.f[P<T>::IndexF(idx, c)] + omegaf*NS::Equilibrium<T, P>(rho, ux, uy, c);
+                }
+                _q.f0[idx] = (1.0 - omegag)*_q.f0[idx] + omegag*Equilibrium<T, Q>(tem, ux, uy, 0);
+                for (int c = 1; c < Q<T>::nc; ++c) {
+                    _q.f[Q<T>::IndexF(idx, c)] = (1.0 - omegag)*_q.f[Q<T>::IndexF(idx, c)] + omegag*Equilibrium<T, Q>(tem, ux, uy, c);
                 }
             }
         }
@@ -221,43 +211,38 @@ namespace PANSLBM2 {
             T _gx, T _gy, T _gz, T _tem0, bool _issave = false
         ) {
             T omegaf = 1.0/(3.0*_viscosity + 0.5), omegag = 1.0/(3.0*_diffusivity + 0.5);
-            for (int i = 0; i < _p.nx; ++i) {
-                for (int j = 0; j < _p.ny; ++j) {
-                    for (int k = 0; k < _p.nz; ++k) {
-                        int idx = _p.Index(i, j, k);
+#pragma omp parallel for
+            for (int idx = 0; idx < _p.nxyz; ++idx) {
+                //  Update macro
+                T rho, ux, uy, uz;
+                NS::Macro<T, P>(rho, ux, uy, uz, _p.f0, _p.f, idx);
+                T tem, qx, qy, qz;
+                Macro<T, Q>(tem, qx, qy, qz, ux, uy, uz, _q.f0, _q.f, omegag, idx);
 
-                        //  Update macro
-                        T rho, ux, uy, uz;
-                        NS::Macro<T, P>(rho, ux, uy, uz, _p.f, idx);
-                        T tem, qx, qy, qz;
-                        Macro<T, Q>(tem, qx, qy, qz, ux, uy, uz, _q.f, omegag, idx);
+                //  External force with natural convection
+                ExternalForceNaturalConvection<T, P>(tem, _gx, _gy, _gz, _tem0, _p.f, idx);
+                NS::Macro<T, P>(rho, ux, uy, uz, _p.f0, _p.f, idx);
 
-                        //  External force with natural convection
-                        ExternalForceNaturalConvection<T, P>(tem, _gx, _gy, _gz, _tem0, _p.f, idx);
-                        NS::Macro<T, P>(rho, ux, uy, uz, _p.f, idx);
+                //  Save macro if need
+                if (_issave) {
+                    _rho[idx] = rho;
+                    _ux[idx] = ux;
+                    _uy[idx] = uy;
+                    _uz[idx] = uz;
+                    _tem[idx] = tem;
+                    _qx[idx] = qx;
+                    _qy[idx] = qy;
+                    _qz[idx] = qz;
+                }
 
-                        //  Save macro if need
-                        if (_issave) {
-                            _rho[idx] = rho;
-                            _ux[idx] = ux;
-                            _uy[idx] = uy;
-                            _uz[idx] = uz;
-                            _tem[idx] = tem;
-                            _qx[idx] = qx;
-                            _qy[idx] = qy;
-                            _qz[idx] = qz;
-                        }
-
-                        //  Collide and stream
-                        for (int c = 0; c < P<T>::nc; ++c) {
-                            int idxstream = _p.Index(i + P<T>::cx[c], j + P<T>::cy[c], k + P<T>::cz[c]);
-                            _p.fnext[P<T>::IndexF(idxstream, c)] = (1.0 - omegaf)*_p.f[P<T>::IndexF(idx, c)] + omegaf*NS::Equilibrium<T, P>(rho, ux, uy, uz, c);
-                        }
-                        for (int c = 0; c < Q<T>::nc; ++c) {
-                            int idxstream = _q.Index(i + Q<T>::cx[c], j + Q<T>::cy[c], k + Q<T>::cz[c]);
-                            _q.fnext[Q<T>::IndexF(idxstream, c)] = (1.0 - omegag)*_q.f[Q<T>::IndexF(idx, c)] + omegag*Equilibrium<T, Q>(tem, ux, uy, uz, c);
-                        }
-                    }
+                //  Collide
+                _p.f0[idx] = (1.0 - omegaf)*_p.f0[idx] + omegaf*NS::Equilibrium<T, P>(rho, ux, uy, uz, 0);
+                for (int c = 1; c < P<T>::nc; ++c) {
+                    _p.f[P<T>::IndexF(idx, c)] = (1.0 - omegaf)*_p.f[P<T>::IndexF(idx, c)] + omegaf*NS::Equilibrium<T, P>(rho, ux, uy, uz, c);
+                }
+                _q.f0[idx] = (1.0 - omegag)*_q.f0[idx] + omegag*Equilibrium<T, Q>(tem, ux, uy, uz, 0);
+                for (int c = 1; c < Q<T>::nc; ++c) {
+                    _q.f[Q<T>::IndexF(idx, c)] = (1.0 - omegag)*_q.f[Q<T>::IndexF(idx, c)] + omegag*Equilibrium<T, Q>(tem, ux, uy, uz, c);
                 }
             }
         }
@@ -269,41 +254,38 @@ namespace PANSLBM2 {
             Q<T>& _q, T *_tem, T *_qx, T *_qy, const T *_beta, T _diffusivity, bool _issave = false
         ) {
             T omegaf = 1.0/(3.0*_viscosity + 0.5), omegag = 1.0/(3.0*_diffusivity + 0.5);
-            for (int i = 0; i < _p.nx; ++i) {
-                for (int j = 0; j < _p.ny; ++j) {
-                    int idx = _p.Index(i, j);
+#pragma omp parallel for
+            for (int idx = 0; idx < _p.nxyz; ++idx) {
+                //  Update macro
+                T rho, ux, uy;
+                NS::Macro<T, P>(rho, ux, uy, _p.f0, _p.f, idx);
+                T tem, qx, qy;
+                Macro<T, Q>(tem, qx, qy, ux, uy, _q.f0, _q.f, omegag, idx);
 
-                    //  Update macro
-                    T rho, ux, uy;
-                    NS::Macro<T, P>(rho, ux, uy, _p.f, idx);
-                    T tem, qx, qy;
-                    Macro<T, Q>(tem, qx, qy, ux, uy, _q.f, omegag, idx);
+                //  External force with Brinkman and heat exchange
+                NS::ExternalForceBrinkman<T, P>(rho, ux, uy, _alpha[idx], _p.f, idx);
+                NS::Macro<T, P>(rho, ux, uy, _p.f0, _p.f, idx);
+                ExternalForceHeatExchange<T, Q>(tem, _q.f0, _q.f, _beta, idx);
+                Macro<T, Q>(tem, qx, qy, ux, uy, _q.f0, _q.f, omegag, idx);
 
-                    //  External force with Brinkman and heat exchange
-                    NS::ExternalForceBrinkman<T, P>(rho, ux, uy, _alpha[idx], _p.f, idx);
-                    NS::Macro<T, P>(rho, ux, uy, _p.f, idx);
-                    ExternalForceHeatExchange<T, Q>(tem, _q.f, _beta, idx);
-                    Macro<T, Q>(tem, qx, qy, ux, uy, _q.f, omegag, idx);
+                //  Save macro if need
+                if (_issave) {
+                    _rho[idx] = rho;
+                    _ux[idx] = ux;
+                    _uy[idx] = uy;
+                    _tem[idx] = tem;
+                    _qx[idx] = qx;
+                    _qy[idx] = qy;
+                }
 
-                    //  Save macro if need
-                    if (_issave) {
-                        _rho[idx] = rho;
-                        _ux[idx] = ux;
-                        _uy[idx] = uy;
-                        _tem[idx] = tem;
-                        _qx[idx] = qx;
-                        _qy[idx] = qy;
-                    }
-
-                    //  Collide and stream
-                    for (int c = 0; c < P<T>::nc; ++c) {
-                        int idxstream = _p.Index(i + P<T>::cx[c], j + P<T>::cy[c]);
-                        _p.fnext[P<T>::IndexF(idxstream, c)] = (1.0 - omegaf)*_p.f[P<T>::IndexF(idx, c)] + omegaf*NS::Equilibrium<T, P>(rho, ux, uy, c);
-                    }
-                    for (int c = 0; c < Q<T>::nc; ++c) {
-                        int idxstream = _q.Index(i + Q<T>::cx[c], j + Q<T>::cy[c]);
-                        _q.fnext[Q<T>::IndexF(idxstream, c)] = (1.0 - omegag)*_q.f[Q<T>::IndexF(idx, c)] + omegag*Equilibrium<T, Q>(tem, ux, uy, c);
-                    }
+                //  Collide
+                _p.f0[idx] = (1.0 - omegaf)*_p.f0[idx] + omegaf*NS::Equilibrium<T, P>(rho, ux, uy, 0);
+                for (int c = 1; c < P<T>::nc; ++c) {
+                    _p.f[P<T>::IndexF(idx, c)] = (1.0 - omegaf)*_p.f[P<T>::IndexF(idx, c)] + omegaf*NS::Equilibrium<T, P>(rho, ux, uy, c);
+                }
+                _q.f0[idx] = (1.0 - omegag)*_q.f0[idx] + omegag*Equilibrium<T, Q>(tem, ux, uy, 0);
+                for (int c = 1; c < Q<T>::nc; ++c) {
+                    _q.f[Q<T>::IndexF(idx, c)] = (1.0 - omegag)*_q.f[Q<T>::IndexF(idx, c)] + omegag*Equilibrium<T, Q>(tem, ux, uy, c);
                 }
             }
         }
@@ -315,45 +297,40 @@ namespace PANSLBM2 {
             Q<T>& _q, T *_tem, T *_qx, T *_qy, T *_qz, const T *_beta, T _diffusivity, bool _issave = false
         ) {
             T omegaf = 1.0/(3.0*_viscosity + 0.5), omegag = 1.0/(3.0*_diffusivity + 0.5);
-            for (int i = 0; i < _p.nx; ++i) {
-                for (int j = 0; j < _p.ny; ++j) {
-                    for (int k = 0; k < _p.nz; ++k) {
-                        int idx = _p.Index(i, j, k);
+#pragma omp parallel for
+            for (int idx = 0; idx < _p.nxyz; ++idx) {
+                //  Update macro
+                T rho, ux, uy, uz;
+                NS::Macro<T, P>(rho, ux, uy, uz, _p.f0, _p.f, idx);
+                T tem, qx, qy, qz;
+                Macro<T, Q>(tem, qx, qy, qz, ux, uy, uz, _q.f0, _q.f, omegag, idx);
 
-                        //  Update macro
-                        T rho, ux, uy, uz;
-                        NS::Macro<T, P>(rho, ux, uy, uz, _p.f, idx);
-                        T tem, qx, qy, qz;
-                        Macro<T, Q>(tem, qx, qy, qz, ux, uy, uz, _q.f, omegag, idx);
+                //  External force with Brinkman and heat exchange
+                NS::ExternalForceBrinkman<T, P>(rho, ux, uy, uz, _alpha[idx], _p.f, idx);
+                NS::Macro<T, P>(rho, ux, uy, uz, _p.f0, _p.f, idx);
+                ExternalForceHeatExchange<T, Q>(tem, _q.f0, _q.f, _beta, idx);
+                Macro<T, Q>(tem, qx, qy, qz, ux, uy, uz, _q.f0, _q.f, omegag, idx);
 
-                        //  External force with Brinkman and heat exchange
-                        NS::ExternalForceBrinkman<T, P>(rho, ux, uy, uz, _alpha[idx], _p.f, idx);
-                        NS::Macro<T, P>(rho, ux, uy, uz, _p.f, idx);
-                        ExternalForceHeatExchange<T, Q>(tem, _q.f, _beta, idx);
-                        Macro<T, Q>(tem, qx, qy, qz, ux, uy, uz, _q.f, omegag, idx);
+                //  Save macro if need
+                if (_issave) {
+                    _rho[idx] = rho;
+                    _ux[idx] = ux;
+                    _uy[idx] = uy;
+                    _uz[idx] = uz;
+                    _tem[idx] = tem;
+                    _qx[idx] = qx;
+                    _qy[idx] = qy;
+                    _qz[idx] = qz;
+                }
 
-                        //  Save macro if need
-                        if (_issave) {
-                            _rho[idx] = rho;
-                            _ux[idx] = ux;
-                            _uy[idx] = uy;
-                            _uz[idx] = uz;
-                            _tem[idx] = tem;
-                            _qx[idx] = qx;
-                            _qy[idx] = qy;
-                            _qz[idx] = qz;
-                        }
-
-                        //  Collide and stream
-                        for (int c = 0; c < P<T>::nc; ++c) {
-                            int idxstream = _p.Index(i + P<T>::cx[c], j + P<T>::cy[c], k + P<T>::cz[c]);
-                            _p.fnext[P<T>::IndexF(idxstream, c)] = (1.0 - omegaf)*_p.f[P<T>::IndexF(idx, c)] + omegaf*NS::Equilibrium<T, P>(rho, ux, uy, uz, c);
-                        }
-                        for (int c = 0; c < Q<T>::nc; ++c) {
-                            int idxstream = _q.Index(i + Q<T>::cx[c], j + Q<T>::cy[c], k + Q<T>::cz[c]);
-                            _q.fnext[Q<T>::IndexF(idxstream, c)] = (1.0 - omegag)*_q.f[Q<T>::IndexF(idx, c)] + omegag*Equilibrium<T, Q>(tem, ux, uy, uz, c);
-                        }
-                    }
+                //  Collide
+                _p.f0[idx] = (1.0 - omegaf)*_p.f0[idx] + omegaf*NS::Equilibrium<T, P>(rho, ux, uy, uz, 0);
+                for (int c = 1; c < P<T>::nc; ++c) {
+                    _p.f[P<T>::IndexF(idx, c)] = (1.0 - omegaf)*_p.f[P<T>::IndexF(idx, c)] + omegaf*NS::Equilibrium<T, P>(rho, ux, uy, uz, c);
+                }
+                _q.f0[idx] = (1.0 - omegag)*_q.f0[idx] + omegag*Equilibrium<T, Q>(tem, ux, uy, uz, 0);
+                for (int c = 1; c < Q<T>::nc; ++c) {                  
+                    _q.f[Q<T>::IndexF(idx, c)] = (1.0 - omegag)*_q.f[Q<T>::IndexF(idx, c)] + omegag*Equilibrium<T, Q>(tem, ux, uy, uz, c);
                 }
             }
         }
@@ -366,40 +343,37 @@ namespace PANSLBM2 {
             bool _issave = false
         ) {
             T omegaf = 1.0/(3.0*_viscosity + 0.5), omegag = 1.0/(3.0*_diffusivity + 0.5);
-            for (int i = 0; i < _p.nx; ++i) {
-                for (int j = 0; j < _p.ny; ++j) {
-                    int idx = _p.Index(i, j);
+#pragma omp parallel for
+            for (int idx = 0; idx < _p.nxyz; ++idx) {
+                //  Update macro
+                T rho, ux, uy;
+                NS::Macro<T, P>(rho, ux, uy, _p.f0, _p.f, idx);
+                T tem, qx, qy;
+                Macro<T, Q>(tem, qx, qy, ux, uy, _q.f0, _q.f, omegag, idx);
 
-                    //  Update macro
-                    T rho, ux, uy;
-                    NS::Macro<T, P>(rho, ux, uy, _p.f, idx);
-                    T tem, qx, qy;
-                    Macro<T, Q>(tem, qx, qy, ux, uy, _q.f, omegag, idx);
+                //  External force with Brinkman model
+                NS::ExternalForceBrinkman<T, P>(rho, ux, uy, _alpha[idx], _p.f, idx);
+                NS::Macro<T, P>(rho, ux, uy, _p.f0, _p.f, idx);
+                Macro<T, Q>(tem, qx, qy, ux, uy, _q.f0, _q.f, omegag, idx);
 
-                    //  External force with Brinkman model
-                    NS::ExternalForceBrinkman<T, P>(rho, ux, uy, _alpha[idx], _p.f, idx);
-                    NS::Macro<T, P>(rho, ux, uy, _p.f, idx);
-                    Macro<T, Q>(tem, qx, qy, ux, uy, _q.f, omegag, idx);
+                //  Save macro if need
+                if (_issave) {
+                    _rho[idx] = rho;
+                    _ux[idx] = ux;
+                    _uy[idx] = uy;
+                    _tem[idx] = tem;
+                    _qx[idx] = qx;
+                    _qy[idx] = qy;
+                }
 
-                    //  Save macro if need
-                    if (_issave) {
-                        _rho[idx] = rho;
-                        _ux[idx] = ux;
-                        _uy[idx] = uy;
-                        _tem[idx] = tem;
-                        _qx[idx] = qx;
-                        _qy[idx] = qy;
-                    }
-
-                    //  Collide and stream
-                    for (int c = 0; c < P<T>::nc; ++c) {
-                        int idxstream = _p.Index(i + P<T>::cx[c], j + P<T>::cy[c]);
-                        _p.fnext[P<T>::IndexF(idxstream, c)] = (1.0 - omegaf)*_p.f[P<T>::IndexF(idx, c)] + omegaf*NS::Equilibrium<T, P>(rho, ux, uy, c);
-                    }
-                    for (int c = 0; c < Q<T>::nc; ++c) {
-                        int idxstream = _q.Index(i + Q<T>::cx[c], j + Q<T>::cy[c]);
-                        _q.fnext[Q<T>::IndexF(idxstream, c)] = (1.0 - omegag)*_q.f[Q<T>::IndexF(idx, c)] + omegag*Equilibrium<T, Q>(tem, ux, uy, c);
-                    }
+                //  Collide
+                _p.f0[idx] = (1.0 - omegaf)*_p.f0[idx] + omegaf*NS::Equilibrium<T, P>(rho, ux, uy, 0);
+                for (int c = 1; c < P<T>::nc; ++c) {
+                    _p.f[P<T>::IndexF(idx, c)] = (1.0 - omegaf)*_p.f[P<T>::IndexF(idx, c)] + omegaf*NS::Equilibrium<T, P>(rho, ux, uy, c);
+                }
+                _q.f0[idx] = (1.0 - omegag)*_q.f0[idx] + omegag*Equilibrium<T, Q>(tem, ux, uy, 0);
+                for (int c = 1; c < Q<T>::nc; ++c) {
+                    _q.f[Q<T>::IndexF(idx, c)] = (1.0 - omegag)*_q.f[Q<T>::IndexF(idx, c)] + omegag*Equilibrium<T, Q>(tem, ux, uy, c);
                 }
             }
         }
@@ -412,44 +386,39 @@ namespace PANSLBM2 {
             bool _issave = false
         ) {
             T omegaf = 1.0/(3.0*_viscosity + 0.5), omegag = 1.0/(3.0*_diffusivity + 0.5);
-            for (int i = 0; i < _p.nx; ++i) {
-                for (int j = 0; j < _p.ny; ++j) {
-                    for (int k = 0; k < _p.nz; ++k) {
-                        int idx = _p.Index(i, j, k);
+#pragma omp parallel for
+            for (int idx = 0; idx < _p.nxyz; ++idx) {
+                //  Update macro
+                T rho, ux, uy, uz;
+                NS::Macro<T, P>(rho, ux, uy, uz, _p.f0, _p.f, idx);
+                T tem, qx, qy, qz;
+                Macro<T, Q>(tem, qx, qy, qz, ux, uy, uz, _q.f0, _q.f, omegag, idx);
 
-                        //  Update macro
-                        T rho, ux, uy, uz;
-                        NS::Macro<T, P>(rho, ux, uy, uz, _p.f, idx);
-                        T tem, qx, qy, qz;
-                        Macro<T, Q>(tem, qx, qy, qz, ux, uy, uz, _q.f, omegag, idx);
+                //  External force with Brinkman model
+                NS::ExternalForceBrinkman<T, P>(rho, ux, uy, uz, _alpha[idx], _p.f, idx);
+                NS::Macro<T, P>(rho, ux, uy, uz, _p.f0, _p.f, idx);
+                Macro<T, Q>(tem, qx, qy, qz, ux, uy, uz, _q.f0, _q.f, omegag, idx);
 
-                        //  External force with Brinkman model
-                        NS::ExternalForceBrinkman<T, P>(rho, ux, uy, uz, _alpha[idx], _p.f, idx);
-                        NS::Macro<T, P>(rho, ux, uy, uz, _p.f, idx);
-                        Macro<T, Q>(tem, qx, qy, qz, ux, uy, uz, _q.f, omegag, idx);
+                //  Save macro if need
+                if (_issave) {
+                    _rho[idx] = rho;
+                    _ux[idx] = ux;
+                    _uy[idx] = uy;
+                    _uz[idx] = uz;
+                    _tem[idx] = tem;
+                    _qx[idx] = qx;
+                    _qy[idx] = qy;
+                    _qz[idx] = qz;
+                }
 
-                        //  Save macro if need
-                        if (_issave) {
-                            _rho[idx] = rho;
-                            _ux[idx] = ux;
-                            _uy[idx] = uy;
-                            _uz[idx] = uz;
-                            _tem[idx] = tem;
-                            _qx[idx] = qx;
-                            _qy[idx] = qy;
-                            _qz[idx] = qz;
-                        }
-
-                        //  Collide and stream
-                        for (int c = 0; c < P<T>::nc; ++c) {
-                            int idxstream = _p.Index(i + P<T>::cx[c], j + P<T>::cy[c], k + P<T>::cz[c]);
-                            _p.fnext[P<T>::IndexF(idxstream, c)] = (1.0 - omegaf)*_p.f[P<T>::IndexF(idx, c)] + omegaf*NS::Equilibrium<T, P>(rho, ux, uy, uz, c);
-                        }
-                        for (int c = 0; c < Q<T>::nc; ++c) {
-                            int idxstream = _q.Index(i + Q<T>::cx[c], j + Q<T>::cy[c], k + Q<T>::cz[c]);
-                            _q.fnext[Q<T>::IndexF(idxstream, c)] = (1.0 - omegag)*_q.f[Q<T>::IndexF(idx, c)] + omegag*Equilibrium<T, Q>(tem, ux, uy, uz, c);
-                        }
-                    }
+                //  Collide
+                _p.f0[idx] = (1.0 - omegaf)*_p.f0[idx] + omegaf*NS::Equilibrium<T, P>(rho, ux, uy, uz, 0);
+                for (int c = 1; c < P<T>::nc; ++c) {
+                    _p.f[P<T>::IndexF(idx, c)] = (1.0 - omegaf)*_p.f[P<T>::IndexF(idx, c)] + omegaf*NS::Equilibrium<T, P>(rho, ux, uy, uz, c);
+                }
+                _q.f0[idx] = (1.0 - omegag)*_q.f0[idx] + omegag*Equilibrium<T, Q>(tem, ux, uy, uz, 0);
+                for (int c = 1; c < Q<T>::nc; ++c) {
+                    _q.f[Q<T>::IndexF(idx, c)] = (1.0 - omegag)*_q.f[Q<T>::IndexF(idx, c)] + omegag*Equilibrium<T, Q>(tem, ux, uy, uz, c);
                 }
             }
         }
@@ -462,41 +431,39 @@ namespace PANSLBM2 {
             bool _issave = false
         ) {
             T omegaf = 1.0/(3.0*_viscosity + 0.5);
-            for (int i = 0; i < _p.nx; ++i) {
-                for (int j = 0; j < _p.ny; ++j) {
-                    int idx = _p.Index(i, j);
-                    T omegag = 1.0/(3.0*_diffusivity[idx] + 0.5);
+#pragma omp parallel for
+            for (int idx = 0; idx < _p.nxyz; ++idx) {
+                T omegag = 1.0/(3.0*_diffusivity[idx] + 0.5);
 
-                    //  Update macro
-                    T rho, ux, uy;
-                    NS::Macro<T, P>(rho, ux, uy, _p.f, idx);
-                    T tem, qx, qy;
-                    Macro<T, Q>(tem, qx, qy, ux, uy, _q.f, omegag, idx);
+                //  Update macro
+                T rho, ux, uy;
+                NS::Macro<T, P>(rho, ux, uy, _p.f0, _p.f, idx);
+                T tem, qx, qy;
+                Macro<T, Q>(tem, qx, qy, ux, uy, _q.f0, _q.f, omegag, idx);
 
-                    //  External force with Brinkman model
-                    NS::ExternalForceBrinkman<T, P>(rho, ux, uy, _alpha[idx], _p.f, idx);
-                    NS::Macro<T, P>(rho, ux, uy, _p.f, idx);
-                    Macro<T, Q>(tem, qx, qy, ux, uy, _q.f, omegag, idx);
+                //  External force with Brinkman model
+                NS::ExternalForceBrinkman<T, P>(rho, ux, uy, _alpha[idx], _p.f, idx);
+                NS::Macro<T, P>(rho, ux, uy, _p.f0, _p.f, idx);
+                Macro<T, Q>(tem, qx, qy, ux, uy, _q.f0, _q.f, omegag, idx);
 
-                    //  Save macro if need
-                    if (_issave) {
-                        _rho[idx] = rho;
-                        _ux[idx] = ux;
-                        _uy[idx] = uy;
-                        _tem[idx] = tem;
-                        _qx[idx] = qx;
-                        _qy[idx] = qy;
-                    }
+                //  Save macro if need
+                if (_issave) {
+                    _rho[idx] = rho;
+                    _ux[idx] = ux;
+                    _uy[idx] = uy;
+                    _tem[idx] = tem;
+                    _qx[idx] = qx;
+                    _qy[idx] = qy;
+                }
 
-                    //  Collide and stream
-                    for (int c = 0; c < P<T>::nc; ++c) {
-                        int idxstream = _p.Index(i + P<T>::cx[c], j + P<T>::cy[c]);
-                        _p.fnext[P<T>::IndexF(idxstream, c)] = (1.0 - omegaf)*_p.f[P<T>::IndexF(idx, c)] + omegaf*NS::Equilibrium<T, P>(rho, ux, uy, c);
-                    }
-                    for (int c = 0; c < Q<T>::nc; ++c) {
-                        int idxstream = _q.Index(i + Q<T>::cx[c], j + Q<T>::cy[c]);
-                        _q.fnext[Q<T>::IndexF(idxstream, c)] = (1.0 - omegag)*_q.f[Q<T>::IndexF(idx, c)] + omegag*Equilibrium<T, Q>(tem, ux, uy, c);
-                    }
+                //  Collide
+                _p.f0[idx] = (1.0 - omegaf)*_p.f0[idx] + omegaf*NS::Equilibrium<T, P>(rho, ux, uy, 0);
+                for (int c = 1; c < P<T>::nc; ++c) {
+                    _p.f[P<T>::IndexF(idx, c)] = (1.0 - omegaf)*_p.f[P<T>::IndexF(idx, c)] + omegaf*NS::Equilibrium<T, P>(rho, ux, uy, c);
+                }
+                _q.f0[idx] = (1.0 - omegag)*_q.f0[idx] + omegag*Equilibrium<T, Q>(tem, ux, uy, 0);
+                for (int c = 1; c < Q<T>::nc; ++c) {
+                    _q.f[Q<T>::IndexF(idx, c)] = (1.0 - omegag)*_q.f[Q<T>::IndexF(idx, c)] + omegag*Equilibrium<T, Q>(tem, ux, uy, c);
                 }
             }
         }
@@ -509,45 +476,41 @@ namespace PANSLBM2 {
             bool _issave = false
         ) {
             T omegaf = 1.0/(3.0*_viscosity + 0.5);
-            for (int i = 0; i < _p.nx; ++i) {
-                for (int j = 0; j < _p.ny; ++j) {
-                    for (int k = 0; k < _p.nz; ++k) {
-                        int idx = _p.Index(i, j, k);
-                        T omegag = 1.0/(3.0*_diffusivity[idx] + 0.5);
+#pragma omp parallel for
+            for (int idx = 0; idx < _p.nxyz; ++idx) {
+                T omegag = 1.0/(3.0*_diffusivity[idx] + 0.5);
 
-                        //  Update macro
-                        T rho, ux, uy, uz;
-                        NS::Macro<T, P>(rho, ux, uy, uz, _p.f, idx);
-                        T tem, qx, qy, qz;
-                        Macro<T, Q>(tem, qx, qy, qz, ux, uy, uz, _q.f, omegag, idx);
+                //  Update macro
+                T rho, ux, uy, uz;
+                NS::Macro<T, P>(rho, ux, uy, uz, _p.f0, _p.f, idx);
+                T tem, qx, qy, qz;
+                Macro<T, Q>(tem, qx, qy, qz, ux, uy, uz, _q.f0, _q.f, omegag, idx);
 
-                        //  External force with Brinkman model
-                        NS::ExternalForceBrinkman<T, P>(rho, ux, uy, uz, _alpha[idx], _p.f, idx);
-                        NS::Macro<T, P>(rho, ux, uy, uz, _p.f, idx);
-                        Macro<T, Q>(tem, qx, qy, qz, ux, uy, uz, _q.f, omegag, idx);
+                //  External force with Brinkman model
+                NS::ExternalForceBrinkman<T, P>(rho, ux, uy, uz, _alpha[idx], _p.f, idx);
+                NS::Macro<T, P>(rho, ux, uy, uz, _p.f0, _p.f, idx);
+                Macro<T, Q>(tem, qx, qy, qz, ux, uy, uz, _q.f0, _q.f, omegag, idx);
 
-                        //  Save macro if need
-                        if (_issave) {
-                            _rho[idx] = rho;
-                            _ux[idx] = ux;
-                            _uy[idx] = uy;
-                            _uz[idx] = uz;
-                            _tem[idx] = tem;
-                            _qx[idx] = qx;
-                            _qy[idx] = qy;
-                            _qz[idx] = qz;
-                        }
+                //  Save macro if need
+                if (_issave) {
+                    _rho[idx] = rho;
+                    _ux[idx] = ux;
+                    _uy[idx] = uy;
+                    _uz[idx] = uz;
+                    _tem[idx] = tem;
+                    _qx[idx] = qx;
+                    _qy[idx] = qy;
+                    _qz[idx] = qz;
+                }
 
-                        //  Collide and stream
-                        for (int c = 0; c < P<T>::nc; ++c) {
-                            int idxstream = _p.Index(i + P<T>::cx[c], j + P<T>::cy[c], k + P<T>::cz[c]);
-                            _p.fnext[P<T>::IndexF(idxstream, c)] = (1.0 - omegaf)*_p.f[P<T>::IndexF(idx, c)] + omegaf*NS::Equilibrium<T, P>(rho, ux, uy, uz, c);
-                        }
-                        for (int c = 0; c < Q<T>::nc; ++c) {
-                            int idxstream = _q.Index(i + Q<T>::cx[c], j + Q<T>::cy[c], k + Q<T>::cz[c]);
-                            _q.fnext[Q<T>::IndexF(idxstream, c)] = (1.0 - omegag)*_q.f[Q<T>::IndexF(idx, c)] + omegag*Equilibrium<T, Q>(tem, ux, uy, uz, c);
-                        }
-                    }
+                //  Collide
+                _p.f0[idx] = (1.0 - omegaf)*_p.f0[idx] + omegaf*NS::Equilibrium<T, P>(rho, ux, uy, uz, 0);
+                for (int c = 1; c < P<T>::nc; ++c) {
+                    _p.f[P<T>::IndexF(idx, c)] = (1.0 - omegaf)*_p.f[P<T>::IndexF(idx, c)] + omegaf*NS::Equilibrium<T, P>(rho, ux, uy, uz, c);
+                }
+                _q.f0[idx] = (1.0 - omegag)*_q.f0[idx] + omegag*Equilibrium<T, Q>(tem, ux, uy, uz, 0);
+                for (int c = 1; c < Q<T>::nc; ++c) {
+                    _q.f[Q<T>::IndexF(idx, c)] = (1.0 - omegag)*_q.f[Q<T>::IndexF(idx, c)] + omegag*Equilibrium<T, Q>(tem, ux, uy, uz, c);
                 }
             }
         }
@@ -560,41 +523,38 @@ namespace PANSLBM2 {
             T _gx, T _gy, T _tem0, bool _issave = false
         ) {
             T omegaf = 1.0/(3.0*_viscosity + 0.5), omegag = 1.0/(3.0*_diffusivity + 0.5);
-            for (int i = 0; i < _p.nx; ++i) {
-                for (int j = 0; j < _p.ny; ++j) {
-                    int idx = _p.Index(i, j);
+#pragma omp parallel for
+            for (int idx = 0; idx < _p.nxyz; ++idx) {
+                //  Update macro
+                T rho, ux, uy;
+                NS::Macro<T, P>(rho, ux, uy, _p.f0, _p.f, idx);
+                T tem, qx, qy;
+                Macro<T, Q>(tem, qx, qy, ux, uy, _q.f0, _q.f, omegag, idx);
 
-                    //  Update macro
-                    T rho, ux, uy;
-                    NS::Macro<T, P>(rho, ux, uy, _p.f, idx);
-                    T tem, qx, qy;
-                    Macro<T, Q>(tem, qx, qy, ux, uy, _q.f, omegag, idx);
+                //  External force with Brinkman model and natural convection
+                ExternalForceNaturalConvection<T, P>(tem, _gx, _gy, _tem0, _p.f, idx);
+                NS::ExternalForceBrinkman<T, P>(rho, ux, uy, _alpha[idx], _p.f, idx);
+                NS::Macro<T, P>(rho, ux, uy, _p.f0, _p.f, idx);
+                Macro<T, Q>(tem, qx, qy, ux, uy, _q.f0, _q.f, omegag, idx);
 
-                    //  External force with Brinkman model and natural convection
-                    ExternalForceNaturalConvection<T, P>(tem, _gx, _gy, _tem0, _p.f, idx);
-                    NS::ExternalForceBrinkman<T, P>(rho, ux, uy, _alpha[idx], _p.f, idx);
-                    NS::Macro<T, P>(rho, ux, uy, _p.f, idx);
-                    Macro<T, Q>(tem, qx, qy, ux, uy, _q.f, omegag, idx);
+                //  Save macro if need
+                if (_issave) {
+                    _rho[idx] = rho;
+                    _ux[idx] = ux;
+                    _uy[idx] = uy;
+                    _tem[idx] = tem;
+                    _qx[idx] = qx;
+                    _qy[idx] = qy;
+                }
 
-                    //  Save macro if need
-                    if (_issave) {
-                        _rho[idx] = rho;
-                        _ux[idx] = ux;
-                        _uy[idx] = uy;
-                        _tem[idx] = tem;
-                        _qx[idx] = qx;
-                        _qy[idx] = qy;
-                    }
-
-                    //  Collide and stream
-                    for (int c = 0; c < P<T>::nc; ++c) {
-                        int idxstream = _p.Index(i + P<T>::cx[c], j + P<T>::cy[c]);
-                        _p.fnext[P<T>::IndexF(idxstream, c)] = (1.0 - omegaf)*_p.f[P<T>::IndexF(idx, c)] + omegaf*NS::Equilibrium<T, P>(rho, ux, uy, c);
-                    }
-                    for (int c = 0; c < Q<T>::nc; ++c) {
-                        int idxstream = _q.Index(i + Q<T>::cx[c], j + Q<T>::cy[c]);
-                        _q.fnext[Q<T>::IndexF(idxstream, c)] = (1.0 - omegag)*_q.f[Q<T>::IndexF(idx, c)] + omegag*Equilibrium<T, Q>(tem, ux, uy, c);
-                    }
+                //  Collide
+                _p.f0[idx] = (1.0 - omegaf)*_p.f0[idx] + omegaf*NS::Equilibrium<T, P>(rho, ux, uy, 0);
+                for (int c = 1; c < P<T>::nc; ++c) {
+                    _p.f[P<T>::IndexF(idx, c)] = (1.0 - omegaf)*_p.f[P<T>::IndexF(idx, c)] + omegaf*NS::Equilibrium<T, P>(rho, ux, uy, c);
+                }
+                _q.f0[idx] = (1.0 - omegag)*_q.f0[idx] + omegag*Equilibrium<T, Q>(tem, ux, uy, 0);
+                for (int c = 1; c < Q<T>::nc; ++c) {
+                    _q.f[Q<T>::IndexF(idx, c)] = (1.0 - omegag)*_q.f[Q<T>::IndexF(idx, c)] + omegag*Equilibrium<T, Q>(tem, ux, uy, c);
                 }
             }
         }
@@ -607,45 +567,40 @@ namespace PANSLBM2 {
             T _gx, T _gy, T _gz, T _tem0, bool _issave = false
         ) {
             T omegaf = 1.0/(3.0*_viscosity + 0.5), omegag = 1.0/(3.0*_diffusivity + 0.5);
-            for (int i = 0; i < _p.nx; ++i) {
-                for (int j = 0; j < _p.ny; ++j) {
-                    for (int k = 0; k < _p.nz; ++k) {
-                        int idx = _p.Index(i, j, k);
+#pragma omp parallel for
+            for (int idx = 0; idx < _p.nxyz; ++idx) {
+                //  Update macro
+                T rho, ux, uy, uz;
+                NS::Macro<T, P>(rho, ux, uy, uz, _p.f0, _p.f, idx);
+                T tem, qx, qy, qz;
+                Macro<T, Q>(tem, qx, qy, qz, ux, uy, uz, _q.f0, _q.f, omegag, idx);
 
-                        //  Update macro
-                        T rho, ux, uy, uz;
-                        NS::Macro<T, P>(rho, ux, uy, uz, _p.f, idx);
-                        T tem, qx, qy, qz;
-                        Macro<T, Q>(tem, qx, qy, qz, ux, uy, uz, _q.f, omegag, idx);
+                //  External force with Brinkman model and natural convection
+                ExternalForceNaturalConvection<T, P>(tem, _gx, _gy, _gz, _tem0, _p.f, idx);
+                NS::ExternalForceBrinkman<T, P>(rho, ux, uy, uz, _alpha[idx], _p.f, idx);
+                NS::Macro<T, P>(rho, ux, uy, uz, _p.f0, _p.f, idx);
+                Macro<T, Q>(tem, qx, qy, qz, ux, uy, uz, _q.f0, _q.f, omegag, idx);
 
-                        //  External force with Brinkman model and natural convection
-                        ExternalForceNaturalConvection<T, P>(tem, _gx, _gy, _gz, _tem0, _p.f, idx);
-                        NS::ExternalForceBrinkman<T, P>(rho, ux, uy, uz, _alpha[idx], _p.f, idx);
-                        NS::Macro<T, P>(rho, ux, uy, uz, _p.f, idx);
-                        Macro<T, Q>(tem, qx, qy, qz, ux, uy, uz, _q.f, omegag, idx);
+                //  Save macro if need
+                if (_issave) {
+                    _rho[idx] = rho;
+                    _ux[idx] = ux;
+                    _uy[idx] = uy;
+                    _uz[idx] = uz;
+                    _tem[idx] = tem;
+                    _qx[idx] = qx;
+                    _qy[idx] = qy;
+                    _qz[idx] = qz;
+                }
 
-                        //  Save macro if need
-                        if (_issave) {
-                            _rho[idx] = rho;
-                            _ux[idx] = ux;
-                            _uy[idx] = uy;
-                            _uz[idx] = uz;
-                            _tem[idx] = tem;
-                            _qx[idx] = qx;
-                            _qy[idx] = qy;
-                            _qz[idx] = qz;
-                        }
-
-                        //  Collide and stream
-                        for (int c = 0; c < P<T>::nc; ++c) {
-                            int idxstream = _p.Index(i + P<T>::cx[c], j + P<T>::cy[c], k + P<T>::cz[c]);
-                            _p.fnext[P<T>::IndexF(idxstream, c)] = (1.0 - omegaf)*_p.f[P<T>::IndexF(idx, c)] + omegaf*NS::Equilibrium<T, P>(rho, ux, uy, uz, c);
-                        }
-                        for (int c = 0; c < Q<T>::nc; ++c) {
-                            int idxstream = _q.Index(i + Q<T>::cx[c], j + Q<T>::cy[c], k + Q<T>::cz[c]);
-                            _q.fnext[Q<T>::IndexF(idxstream, c)] = (1.0 - omegag)*_q.f[Q<T>::IndexF(idx, c)] + omegag*Equilibrium<T, Q>(tem, ux, uy, uz, c);
-                        }
-                    }
+                //  Collide
+                _p.f0[idx] = (1.0 - omegaf)*_p.f0[idx] + omegaf*NS::Equilibrium<T, P>(rho, ux, uy, uz, 0);
+                for (int c = 1; c < P<T>::nc; ++c) {
+                    _p.f[P<T>::IndexF(idx, c)] = (1.0 - omegaf)*_p.f[P<T>::IndexF(idx, c)] + omegaf*NS::Equilibrium<T, P>(rho, ux, uy, uz, c);
+                }
+                _q.f0[idx] = (1.0 - omegag)*_q.f0[idx] + omegag*Equilibrium<T, Q>(tem, ux, uy, uz, 0);
+                for (int c = 1; c < Q<T>::nc; ++c) {
+                    _q.f[Q<T>::IndexF(idx, c)] = (1.0 - omegag)*_q.f[Q<T>::IndexF(idx, c)] + omegag*Equilibrium<T, Q>(tem, ux, uy, uz, c);
                 }
             }
         }
@@ -658,42 +613,40 @@ namespace PANSLBM2 {
             T _gx, T _gy, T _tem0, bool _issave = false
         ) {
             T omegaf = 1.0/(3.0*_viscosity + 0.5);
-            for (int i = 0; i < _p.nx; ++i) {
-                for (int j = 0; j < _p.ny; ++j) {
-                    int idx = _p.Index(i, j);
-                    T omegag = 1.0/(3.0*_diffusivity[idx] + 0.5);
+#pragma omp parallel for
+            for (int idx = 0; idx < _p.nxyz; ++idx) {
+                T omegag = 1.0/(3.0*_diffusivity[idx] + 0.5);
 
-                    //  Update macro
-                    T rho, ux, uy;
-                    NS::Macro<T, P>(rho, ux, uy, _p.f, idx);
-                    T tem, qx, qy;
-                    Macro<T, Q>(tem, qx, qy, ux, uy, _q.f, omegag, idx);
+                //  Update macro
+                T rho, ux, uy;
+                NS::Macro<T, P>(rho, ux, uy, _p.f0, _p.f, idx);
+                T tem, qx, qy;
+                Macro<T, Q>(tem, qx, qy, ux, uy, _q.f0, _q.f, omegag, idx);
 
-                    //  External force with Brinkman model and natural convection
-                    ExternalForceNaturalConvection<T, P>(tem, _gx, _gy, _tem0, _p.f, idx);
-                    NS::ExternalForceBrinkman<T, P>(rho, ux, uy, _alpha[idx], _p.f, idx);
-                    NS::Macro<T, P>(rho, ux, uy, _p.f, idx);
-                    Macro<T, Q>(tem, qx, qy, ux, uy, _q.f, omegag, idx);
+                //  External force with Brinkman model and natural convection
+                ExternalForceNaturalConvection<T, P>(tem, _gx, _gy, _tem0, _p.f, idx);
+                NS::ExternalForceBrinkman<T, P>(rho, ux, uy, _alpha[idx], _p.f, idx);
+                NS::Macro<T, P>(rho, ux, uy, _p.f0, _p.f, idx);
+                Macro<T, Q>(tem, qx, qy, ux, uy, _q.f0, _q.f, omegag, idx);
 
-                    //  Save macro if need
-                    if (_issave) {
-                        _rho[idx] = rho;
-                        _ux[idx] = ux;
-                        _uy[idx] = uy;
-                        _tem[idx] = tem;
-                        _qx[idx] = qx;
-                        _qy[idx] = qy;
-                    }
+                //  Save macro if need
+                if (_issave) {
+                    _rho[idx] = rho;
+                    _ux[idx] = ux;
+                    _uy[idx] = uy;
+                    _tem[idx] = tem;
+                    _qx[idx] = qx;
+                    _qy[idx] = qy;
+                }
 
-                    //  Collide and stream
-                    for (int c = 0; c < P<T>::nc; ++c) {
-                        int idxstream = _p.Index(i + P<T>::cx[c], j + P<T>::cy[c]);
-                        _p.fnext[P<T>::IndexF(idxstream, c)] = (1.0 - omegaf)*_p.f[P<T>::IndexF(idx, c)] + omegaf*NS::Equilibrium<T, P>(rho, ux, uy, c);
-                    }
-                    for (int c = 0; c < Q<T>::nc; ++c) {
-                        int idxstream = _q.Index(i + Q<T>::cx[c], j + Q<T>::cy[c]);
-                        _q.fnext[Q<T>::IndexF(idxstream, c)] = (1.0 - omegag)*_q.f[Q<T>::IndexF(idx, c)] + omegag*Equilibrium<T, Q>(tem, ux, uy, c);
-                    }
+                //  Collide
+                _p.f0[idx] = (1.0 - omegaf)*_p.f0[idx] + omegaf*NS::Equilibrium<T, P>(rho, ux, uy, 0);
+                for (int c = 1; c < P<T>::nc; ++c) {
+                    _p.f[P<T>::IndexF(idx, c)] = (1.0 - omegaf)*_p.f[P<T>::IndexF(idx, c)] + omegaf*NS::Equilibrium<T, P>(rho, ux, uy, c);
+                }
+                _q.f0[idx] = (1.0 - omegag)*_q.f0[idx] + omegag*Equilibrium<T, Q>(tem, ux, uy, 0);
+                for (int c = 1; c < Q<T>::nc; ++c) {
+                    _q.f[Q<T>::IndexF(idx, c)] = (1.0 - omegag)*_q.f[Q<T>::IndexF(idx, c)] + omegag*Equilibrium<T, Q>(tem, ux, uy, c);
                 }
             }
         }
@@ -706,46 +659,42 @@ namespace PANSLBM2 {
             T _gx, T _gy, T _gz, T _tem0, bool _issave = false
         ) {
             T omegaf = 1.0/(3.0*_viscosity + 0.5);
-            for (int i = 0; i < _p.nx; ++i) {
-                for (int j = 0; j < _p.ny; ++j) {
-                    for (int k = 0; k < _p.nz; ++k) {
-                        int idx = _p.Index(i, j, k);
-                        T omegag = 1.0/(3.0*_diffusivity[idx] + 0.5);
+#pragma omp parallel for
+            for (int idx = 0; idx < _p.nxyz; ++idx) {
+                T omegag = 1.0/(3.0*_diffusivity[idx] + 0.5);
 
-                        //  Update macro
-                        T rho, ux, uy, uz;
-                        NS::Macro<T, P>(rho, ux, uy, uz, _p.f, idx);
-                        T tem, qx, qy, qz;
-                        Macro<T, Q>(tem, qx, qy, qz, ux, uy, uz, _q.f, omegag, idx);
+                //  Update macro
+                T rho, ux, uy, uz;
+                NS::Macro<T, P>(rho, ux, uy, uz, _p.f0, _p.f, idx);
+                T tem, qx, qy, qz;
+                Macro<T, Q>(tem, qx, qy, qz, ux, uy, uz, _q.f0, _q.f, omegag, idx);
 
-                        //  External force with Brinkman model and natural convection
-                        ExternalForceNaturalConvection<T, P>(tem, _gx, _gy, _gz, _tem0, _p.f, idx);
-                        NS::ExternalForceBrinkman<T, P>(rho, ux, uy, uz, _alpha[idx], _p.f, idx);
-                        NS::Macro<T, P>(rho, ux, uy, uz, _p.f, idx);
-                        Macro<T, Q>(tem, qx, qy, qz, ux, uy, uz, _q.f, omegag, idx);
+                //  External force with Brinkman model and natural convection
+                ExternalForceNaturalConvection<T, P>(tem, _gx, _gy, _gz, _tem0, _p.f, idx);
+                NS::ExternalForceBrinkman<T, P>(rho, ux, uy, uz, _alpha[idx], _p.f, idx);
+                NS::Macro<T, P>(rho, ux, uy, uz, _p.f0, _p.f, idx);
+                Macro<T, Q>(tem, qx, qy, qz, ux, uy, uz, _q.f0, _q.f, omegag, idx);
 
-                        //  Save macro if need
-                        if (_issave) {
-                            _rho[idx] = rho;
-                            _ux[idx] = ux;
-                            _uy[idx] = uy;
-                            _uz[idx] = uz;
-                            _tem[idx] = tem;
-                            _qx[idx] = qx;
-                            _qy[idx] = qy;
-                            _qz[idx] = qz;
-                        }
+                //  Save macro if need
+                if (_issave) {
+                    _rho[idx] = rho;
+                    _ux[idx] = ux;
+                    _uy[idx] = uy;
+                    _uz[idx] = uz;
+                    _tem[idx] = tem;
+                    _qx[idx] = qx;
+                    _qy[idx] = qy;
+                    _qz[idx] = qz;
+                }
 
-                        //  Collide and stream
-                        for (int c = 0; c < P<T>::nc; ++c) {
-                            int idxstream = _p.Index(i + P<T>::cx[c], j + P<T>::cy[c], k + P<T>::cz[c]);
-                            _p.fnext[P<T>::IndexF(idxstream, c)] = (1.0 - omegaf)*_p.f[P<T>::IndexF(idx, c)] + omegaf*NS::Equilibrium<T, P>(rho, ux, uy, uz, c);
-                        }
-                        for (int c = 0; c < Q<T>::nc; ++c) {
-                            int idxstream = _q.Index(i + Q<T>::cx[c], j + Q<T>::cy[c], k + Q<T>::cz[c]);
-                            _q.fnext[Q<T>::IndexF(idxstream, c)] = (1.0 - omegag)*_q.f[Q<T>::IndexF(idx, c)] + omegag*Equilibrium<T, Q>(tem, ux, uy, uz, c);
-                        }
-                    }
+                //  Collide
+                _p.f0[idx] = (1.0 - omegaf)*_p.f0[idx] + omegaf*NS::Equilibrium<T, P>(rho, ux, uy, uz, 0);
+                for (int c = 1; c < P<T>::nc; ++c) {
+                    _p.f[P<T>::IndexF(idx, c)] = (1.0 - omegaf)*_p.f[P<T>::IndexF(idx, c)] + omegaf*NS::Equilibrium<T, P>(rho, ux, uy, uz, c);
+                }
+                _q.f0[idx] = (1.0 - omegag)*_q.f0[idx] + omegag*Equilibrium<T, Q>(tem, ux, uy, uz, 0);
+                for (int c = 1; c < Q<T>::nc; ++c) {
+                    _q.f[Q<T>::IndexF(idx, c)] = (1.0 - omegag)*_q.f[Q<T>::IndexF(idx, c)] + omegag*Equilibrium<T, Q>(tem, ux, uy, uz, c);
                 }
             }
         }
@@ -753,12 +702,10 @@ namespace PANSLBM2 {
         //  Function of setting initial condition of AD for 2D
         template<class T, template<class>class Q>
         void InitialCondition(Q<T>& _q, const T *_tem, const T *_ux, const T *_uy) {
-            for (int i = 0; i < _q.nx; ++ i) {
-                for (int j = 0; j < _q.ny; ++j) {
-                    int idx = _q.Index(i, j);
-                    for (int c = 0; c < Q<T>::nc; ++c) {
-                        _q.f[Q<T>::IndexF(idx, c)] = Equilibrium<T, Q>(_tem[idx], _ux[idx], _uy[idx], c);
-                    }
+            for (int idx = 0; idx < _q.nxyz; ++idx) {
+                _q.f0[idx] = Equilibrium<T, Q>(_tem[idx], _ux[idx], _uy[idx], 0);
+                for (int c = 1; c < Q<T>::nc; ++c) {
+                    _q.f[Q<T>::IndexF(idx, c)] = Equilibrium<T, Q>(_tem[idx], _ux[idx], _uy[idx], c);
                 }
             }
         }
@@ -766,14 +713,10 @@ namespace PANSLBM2 {
         //  Function of setting initial condition of AD for 3D
         template<class T, template<class>class Q>
         void InitialCondition(Q<T>& _q, const T *_tem, const T *_ux, const T *_uy, const T *_uz) {
-            for (int i = 0; i < _q.nx; ++ i) {
-                for (int j = 0; j < _q.ny; ++j) {
-                    for (int k = 0; k < _q.nz; ++k) {
-                        int idx = _q.Index(i, j, k);
-                        for (int c = 0; c < Q<T>::nc; ++c) {
-                            _q.f[Q<T>::IndexF(idx, c)] = Equilibrium<T, Q>(_tem[idx], _ux[idx], _uy[idx], _uz[idx], c);
-                        }
-                    }
+            for (int idx = 0; idx < _q.nxyz; ++idx) {
+                _q.f0[idx] = Equilibrium<T, Q>(_tem[idx], _ux[idx], _uy[idx], _uz[idx], 0);
+                for (int c = 1; c < Q<T>::nc; ++c) {
+                    _q.f[Q<T>::IndexF(idx, c)] = Equilibrium<T, Q>(_tem[idx], _ux[idx], _uy[idx], _uz[idx], c);
                 }
             }
         }
@@ -786,7 +729,7 @@ namespace PANSLBM2 {
                 for (int j = 0; j < _q.ny; ++j) {
                     if (_bctype(0 + _q.offsetx, j + _q.offsety)) {
                         int idx = _q.Index(0, j);
-                        T tem0 = 6.0*(_tembc(0 + _q.offsetx, j + _q.offsety) - _q.f[Q<T>::IndexF(idx, 0)] - _q.f[Q<T>::IndexF(idx, 2)] - _q.f[Q<T>::IndexF(idx, 3)] - _q.f[Q<T>::IndexF(idx, 4)] - _q.f[Q<T>::IndexF(idx, 6)] - _q.f[Q<T>::IndexF(idx, 7)])/(1.0 + 3.0*_ux[idx]);
+                        T tem0 = 6.0*(_tembc(0 + _q.offsetx, j + _q.offsety) - _q.f0[idx] - _q.f[Q<T>::IndexF(idx, 2)] - _q.f[Q<T>::IndexF(idx, 3)] - _q.f[Q<T>::IndexF(idx, 4)] - _q.f[Q<T>::IndexF(idx, 6)] - _q.f[Q<T>::IndexF(idx, 7)])/(1.0 + 3.0*_ux[idx]);
                         _q.f[Q<T>::IndexF(idx, 1)] = tem0*(1.0 + 3.0*_ux[idx])/9.0;
                         _q.f[Q<T>::IndexF(idx, 5)] = tem0*(1.0 + 3.0*_ux[idx] + 3.0*_uy[idx])/36.0;
                         _q.f[Q<T>::IndexF(idx, 8)] = tem0*(1.0 + 3.0*_ux[idx] - 3.0*_uy[idx])/36.0;
@@ -798,7 +741,7 @@ namespace PANSLBM2 {
                 for (int j = 0; j < _q.ny; ++j) {
                     if (_bctype((_q.nx - 1) + _q.offsetx, j + _q.offsety)) {
                         int idx = _q.Index(_q.nx - 1, j);
-                        T tem0 = 6.0*(_tembc((_q.nx - 1) + _q.offsetx, j + _q.offsety) - _q.f[Q<T>::IndexF(idx, 0)] - _q.f[Q<T>::IndexF(idx, 1)] - _q.f[Q<T>::IndexF(idx, 2)] - _q.f[Q<T>::IndexF(idx, 4)] - _q.f[Q<T>::IndexF(idx, 5)] - _q.f[Q<T>::IndexF(idx, 8)])/(1.0 - 3.0*_ux[idx]);
+                        T tem0 = 6.0*(_tembc((_q.nx - 1) + _q.offsetx, j + _q.offsety) - _q.f0[idx] - _q.f[Q<T>::IndexF(idx, 1)] - _q.f[Q<T>::IndexF(idx, 2)] - _q.f[Q<T>::IndexF(idx, 4)] - _q.f[Q<T>::IndexF(idx, 5)] - _q.f[Q<T>::IndexF(idx, 8)])/(1.0 - 3.0*_ux[idx]);
                         _q.f[Q<T>::IndexF(idx, 3)] = tem0*(1.0 - 3.0*_ux[idx])/9.0;
                         _q.f[Q<T>::IndexF(idx, 6)] = tem0*(1.0 - 3.0*_ux[idx] + 3.0*_uy[idx])/36.0;
                         _q.f[Q<T>::IndexF(idx, 7)] = tem0*(1.0 - 3.0*_ux[idx] - 3.0*_uy[idx])/36.0;
@@ -810,7 +753,7 @@ namespace PANSLBM2 {
                 for (int i = 0; i < _q.nx; ++i) {
                     if (_bctype(i + _q.offsetx, 0 + _q.offsety)) {
                         int idx = _q.Index(i, 0);
-                        T tem0 = 6.0*(_tembc(i + _q.offsetx, 0 + _q.offsety) - _q.f[Q<T>::IndexF(idx, 0)] - _q.f[Q<T>::IndexF(idx, 1)] - _q.f[Q<T>::IndexF(idx, 3)] - _q.f[Q<T>::IndexF(idx, 4)] - _q.f[Q<T>::IndexF(idx, 7)] - _q.f[Q<T>::IndexF(idx, 8)])/(1.0 + 3.0*_uy[idx]);
+                        T tem0 = 6.0*(_tembc(i + _q.offsetx, 0 + _q.offsety) - _q.f0[idx] - _q.f[Q<T>::IndexF(idx, 1)] - _q.f[Q<T>::IndexF(idx, 3)] - _q.f[Q<T>::IndexF(idx, 4)] - _q.f[Q<T>::IndexF(idx, 7)] - _q.f[Q<T>::IndexF(idx, 8)])/(1.0 + 3.0*_uy[idx]);
                         _q.f[Q<T>::IndexF(idx, 2)] = tem0*(1.0 + 3.0*_uy[idx])/9.0;
                         _q.f[Q<T>::IndexF(idx, 5)] = tem0*(1.0 + 3.0*_ux[idx] + 3.0*_uy[idx])/36.0;
                         _q.f[Q<T>::IndexF(idx, 6)] = tem0*(1.0 - 3.0*_ux[idx] + 3.0*_uy[idx])/36.0;
@@ -822,7 +765,7 @@ namespace PANSLBM2 {
                 for (int i = 0; i < _q.nx; ++i) { 
                     if (_bctype(i + _q.offsetx, (_q.ny - 1) + _q.offsety)) {
                         int idx = _q.Index(i, _q.ny - 1);
-                        T tem0 = 6.0*(_tembc(i + _q.offsetx, (_q.ny - 1) + _q.offsety) - _q.f[Q<T>::IndexF(idx, 0)] - _q.f[Q<T>::IndexF(idx, 1)] - _q.f[Q<T>::IndexF(idx, 2)] - _q.f[Q<T>::IndexF(idx, 3)] - _q.f[Q<T>::IndexF(idx, 5)] - _q.f[Q<T>::IndexF(idx, 6)])/(1.0 - 3.0*_uy[idx]);
+                        T tem0 = 6.0*(_tembc(i + _q.offsetx, (_q.ny - 1) + _q.offsety) - _q.f0[idx] - _q.f[Q<T>::IndexF(idx, 1)] - _q.f[Q<T>::IndexF(idx, 2)] - _q.f[Q<T>::IndexF(idx, 3)] - _q.f[Q<T>::IndexF(idx, 5)] - _q.f[Q<T>::IndexF(idx, 6)])/(1.0 - 3.0*_uy[idx]);
                         _q.f[Q<T>::IndexF(idx, 4)] = tem0*(1.0 - 3.0*_uy[idx])/9.0;
                         _q.f[Q<T>::IndexF(idx, 7)] = tem0*(1.0 - 3.0*_ux[idx] - 3.0*_uy[idx])/36.0;
                         _q.f[Q<T>::IndexF(idx, 8)] = tem0*(1.0 + 3.0*_ux[idx] - 3.0*_uy[idx])/36.0;
@@ -840,7 +783,7 @@ namespace PANSLBM2 {
                     for (int k = 0; k < _q.nz; ++k) {
                         if (_bctype(0 + _q.offsetx, j + _q.offsety, k + _q.offsetz)) {
                             int idx = _q.Index(0, j, k);
-                            T tem0 = 6.0*(_tembc(0 + _q.offsetx, j + _q.offsety, k + _q.offsetz) - _q.f[Q<T>::IndexF(idx, 0)] - _q.f[Q<T>::IndexF(idx, 2)] - _q.f[Q<T>::IndexF(idx, 3)] - _q.f[Q<T>::IndexF(idx, 4)] - _q.f[Q<T>::IndexF(idx, 5)] - _q.f[Q<T>::IndexF(idx, 6)] - _q.f[Q<T>::IndexF(idx, 8)] - _q.f[Q<T>::IndexF(idx, 11)] - _q.f[Q<T>::IndexF(idx, 13)] - _q.f[Q<T>::IndexF(idx, 14)])/(1.0 + 3.0*_ux[idx]);
+                            T tem0 = 6.0*(_tembc(0 + _q.offsetx, j + _q.offsety, k + _q.offsetz) - _q.f0[idx] - _q.f[Q<T>::IndexF(idx, 2)] - _q.f[Q<T>::IndexF(idx, 3)] - _q.f[Q<T>::IndexF(idx, 4)] - _q.f[Q<T>::IndexF(idx, 5)] - _q.f[Q<T>::IndexF(idx, 6)] - _q.f[Q<T>::IndexF(idx, 8)] - _q.f[Q<T>::IndexF(idx, 11)] - _q.f[Q<T>::IndexF(idx, 13)] - _q.f[Q<T>::IndexF(idx, 14)])/(1.0 + 3.0*_ux[idx]);
                             _q.f[Q<T>::IndexF(idx, 1)] = tem0*(1.0 + 3.0*_ux[idx])/9.0;
                             _q.f[Q<T>::IndexF(idx, 7)] = tem0*(1.0 + 3.0*_ux[idx] + 3.0*_uy[idx] + 3.0*_uz[idx])/72.0;
                             _q.f[Q<T>::IndexF(idx, 9)] = tem0*(1.0 + 3.0*_ux[idx] - 3.0*_uy[idx] + 3.0*_uz[idx])/72.0;
@@ -856,7 +799,7 @@ namespace PANSLBM2 {
                     for (int k = 0; k < _q.nz; ++k) {
                         if (_bctype((_q.nx - 1) + _q.offsetx, j + _q.offsety, k + _q.offsetz)) {
                             int idx = _q.Index(_q.nx - 1, j, k);
-                            T tem0 = 6.0*(_tembc((_q.nx - 1) + _q.offsetx, j + _q.offsety, k + _q.offsetz) - _q.f[Q<T>::IndexF(idx, 0)] - _q.f[Q<T>::IndexF(idx, 1)] - _q.f[Q<T>::IndexF(idx, 2)] - _q.f[Q<T>::IndexF(idx, 3)] - _q.f[Q<T>::IndexF(idx, 5)] - _q.f[Q<T>::IndexF(idx, 6)] - _q.f[Q<T>::IndexF(idx, 7)] - _q.f[Q<T>::IndexF(idx, 9)] - _q.f[Q<T>::IndexF(idx, 10)] - _q.f[Q<T>::IndexF(idx, 12)])/(1.0 - 3.0*_ux[idx]);
+                            T tem0 = 6.0*(_tembc((_q.nx - 1) + _q.offsetx, j + _q.offsety, k + _q.offsetz) - _q.f0[idx] - _q.f[Q<T>::IndexF(idx, 1)] - _q.f[Q<T>::IndexF(idx, 2)] - _q.f[Q<T>::IndexF(idx, 3)] - _q.f[Q<T>::IndexF(idx, 5)] - _q.f[Q<T>::IndexF(idx, 6)] - _q.f[Q<T>::IndexF(idx, 7)] - _q.f[Q<T>::IndexF(idx, 9)] - _q.f[Q<T>::IndexF(idx, 10)] - _q.f[Q<T>::IndexF(idx, 12)])/(1.0 - 3.0*_ux[idx]);
                             _q.f[Q<T>::IndexF(idx, 4)] = tem0*(1.0 - 3.0*_ux[idx])/9.0;
                             _q.f[Q<T>::IndexF(idx, 8)] = tem0*(1.0 - 3.0*_ux[idx] + 3.0*_uy[idx] + 3.0*_uz[idx])/72.0;
                             _q.f[Q<T>::IndexF(idx, 11)] = tem0*(1.0 - 3.0*_ux[idx] - 3.0*_uy[idx] - 3.0*_uz[idx])/72.0;
@@ -872,7 +815,7 @@ namespace PANSLBM2 {
                     for (int i = 0; i < _q.nx; ++i) {
                         if (_bctype(i + _q.offsetx, 0 + _q.offsety, k + _q.offsetz)) {
                             int idx = _q.Index(i, 0, k);
-                            T tem0 = 6.0*(_tembc(i + _q.offsetx, 0 + _q.offsety, k + _q.offsetz) - _q.f[Q<T>::IndexF(idx, 0)] - _q.f[Q<T>::IndexF(idx, 1)] - _q.f[Q<T>::IndexF(idx, 3)] - _q.f[Q<T>::IndexF(idx, 4)] - _q.f[Q<T>::IndexF(idx, 5)] - _q.f[Q<T>::IndexF(idx, 6)] - _q.f[Q<T>::IndexF(idx, 9)] - _q.f[Q<T>::IndexF(idx, 11)] - _q.f[Q<T>::IndexF(idx, 12)] - _q.f[Q<T>::IndexF(idx, 14)])/(1.0 + 3.0*_uy[idx]);
+                            T tem0 = 6.0*(_tembc(i + _q.offsetx, 0 + _q.offsety, k + _q.offsetz) - _q.f0[idx] - _q.f[Q<T>::IndexF(idx, 1)] - _q.f[Q<T>::IndexF(idx, 3)] - _q.f[Q<T>::IndexF(idx, 4)] - _q.f[Q<T>::IndexF(idx, 5)] - _q.f[Q<T>::IndexF(idx, 6)] - _q.f[Q<T>::IndexF(idx, 9)] - _q.f[Q<T>::IndexF(idx, 11)] - _q.f[Q<T>::IndexF(idx, 12)] - _q.f[Q<T>::IndexF(idx, 14)])/(1.0 + 3.0*_uy[idx]);
                             _q.f[Q<T>::IndexF(idx, 2)] = tem0*(1.0 + 3.0*_uy[idx])/9.0;
                             _q.f[Q<T>::IndexF(idx, 7)] = tem0*(1.0 + 3.0*_ux[idx] + 3.0*_uy[idx] + 3.0*_uz[idx])/72.0;
                             _q.f[Q<T>::IndexF(idx, 8)] = tem0*(1.0 - 3.0*_ux[idx] + 3.0*_uy[idx] + 3.0*_uz[idx])/72.0;
@@ -888,7 +831,7 @@ namespace PANSLBM2 {
                     for (int i = 0; i < _q.nx; ++i) {
                         if (_bctype(i + _q.offsetx, (_q.ny - 1) + _q.offsety, k + _q.offsetz)) {
                             int idx = _q.Index(i, _q.ny - 1, k);
-                            T tem0 = 6.0*(_tembc(i + _q.offsetx, (_q.ny - 1) + _q.offsety, k + _q.offsetz) - _q.f[Q<T>::IndexF(idx, 0)] - _q.f[Q<T>::IndexF(idx, 1)] - _q.f[Q<T>::IndexF(idx, 2)] - _q.f[Q<T>::IndexF(idx, 3)] - _q.f[Q<T>::IndexF(idx, 4)] - _q.f[Q<T>::IndexF(idx, 6)] - _q.f[Q<T>::IndexF(idx, 7)] - _q.f[Q<T>::IndexF(idx, 8)] - _q.f[Q<T>::IndexF(idx, 10)] - _q.f[Q<T>::IndexF(idx, 13)])/(1.0 - 3.0*_uy[idx]);
+                            T tem0 = 6.0*(_tembc(i + _q.offsetx, (_q.ny - 1) + _q.offsety, k + _q.offsetz) - _q.f0[idx] - _q.f[Q<T>::IndexF(idx, 1)] - _q.f[Q<T>::IndexF(idx, 2)] - _q.f[Q<T>::IndexF(idx, 3)] - _q.f[Q<T>::IndexF(idx, 4)] - _q.f[Q<T>::IndexF(idx, 6)] - _q.f[Q<T>::IndexF(idx, 7)] - _q.f[Q<T>::IndexF(idx, 8)] - _q.f[Q<T>::IndexF(idx, 10)] - _q.f[Q<T>::IndexF(idx, 13)])/(1.0 - 3.0*_uy[idx]);
                             _q.f[Q<T>::IndexF(idx, 5)] = tem0*(1.0 - 3.0*_uy[idx])/9.0;
                             _q.f[Q<T>::IndexF(idx, 9)] = tem0*(1.0 + 3.0*_ux[idx] - 3.0*_uy[idx] + 3.0*_uz[idx])/72.0;
                             _q.f[Q<T>::IndexF(idx, 11)] = tem0*(1.0 - 3.0*_ux[idx] - 3.0*_uy[idx] - 3.0*_uz[idx])/72.0;
@@ -904,7 +847,7 @@ namespace PANSLBM2 {
                     for (int j = 0; j < _q.ny; ++j) {
                         if (_bctype(i + _q.offsetx, j + _q.offsety, 0 + _q.offsetz)) {
                             int idx = _q.Index(i, j, 0);
-                            T tem0 = 6.0*(_tembc(i + _q.offsetx, j + _q.offsety, 0 + _q.offsetz) - _q.f[Q<T>::IndexF(idx, 0)] - _q.f[Q<T>::IndexF(idx, 1)] - _q.f[Q<T>::IndexF(idx, 2)] - _q.f[Q<T>::IndexF(idx, 4)] - _q.f[Q<T>::IndexF(idx, 5)] - _q.f[Q<T>::IndexF(idx, 6)] - _q.f[Q<T>::IndexF(idx, 10)] - _q.f[Q<T>::IndexF(idx, 11)] - _q.f[Q<T>::IndexF(idx, 12)] - _q.f[Q<T>::IndexF(idx, 13)])/(1.0 + 3.0*_uz[idx]);
+                            T tem0 = 6.0*(_tembc(i + _q.offsetx, j + _q.offsety, 0 + _q.offsetz) - _q.f0[idx] - _q.f[Q<T>::IndexF(idx, 1)] - _q.f[Q<T>::IndexF(idx, 2)] - _q.f[Q<T>::IndexF(idx, 4)] - _q.f[Q<T>::IndexF(idx, 5)] - _q.f[Q<T>::IndexF(idx, 6)] - _q.f[Q<T>::IndexF(idx, 10)] - _q.f[Q<T>::IndexF(idx, 11)] - _q.f[Q<T>::IndexF(idx, 12)] - _q.f[Q<T>::IndexF(idx, 13)])/(1.0 + 3.0*_uz[idx]);
                             _q.f[Q<T>::IndexF(idx, 3)] = tem0*(1.0 + 3.0*_uz[idx])/9.0;
                             _q.f[Q<T>::IndexF(idx, 7)] = tem0*(1.0 + 3.0*_ux[idx] + 3.0*_uy[idx] + 3.0*_uz[idx])/72.0;
                             _q.f[Q<T>::IndexF(idx, 8)] = tem0*(1.0 - 3.0*_ux[idx] + 3.0*_uy[idx] + 3.0*_uz[idx])/72.0;
@@ -920,7 +863,7 @@ namespace PANSLBM2 {
                     for (int j = 0; j < _q.ny; ++j) {
                         if (_bctype(i + _q.offsetx, j + _q.offsety, (_q.nz - 1) + _q.offsetz)) {
                             int idx = _q.Index(i, j, _q.nz - 1);
-                            T tem0 = 6.0*(_tembc(i + _q.offsetx, j + _q.offsety, (_q.nz - 1) + _q.offsetz) - _q.f[Q<T>::IndexF(idx, 0)] - _q.f[Q<T>::IndexF(idx, 1)] - _q.f[Q<T>::IndexF(idx, 2)] - _q.f[Q<T>::IndexF(idx, 3)] - _q.f[Q<T>::IndexF(idx, 4)] - _q.f[Q<T>::IndexF(idx, 5)] - _q.f[Q<T>::IndexF(idx, 7)] - _q.f[Q<T>::IndexF(idx, 8)] - _q.f[Q<T>::IndexF(idx, 9)] - _q.f[Q<T>::IndexF(idx, 14)])/(1.0 - 3.0*_uz[idx]);
+                            T tem0 = 6.0*(_tembc(i + _q.offsetx, j + _q.offsety, (_q.nz - 1) + _q.offsetz) - _q.f0[idx] - _q.f[Q<T>::IndexF(idx, 1)] - _q.f[Q<T>::IndexF(idx, 2)] - _q.f[Q<T>::IndexF(idx, 3)] - _q.f[Q<T>::IndexF(idx, 4)] - _q.f[Q<T>::IndexF(idx, 5)] - _q.f[Q<T>::IndexF(idx, 7)] - _q.f[Q<T>::IndexF(idx, 8)] - _q.f[Q<T>::IndexF(idx, 9)] - _q.f[Q<T>::IndexF(idx, 14)])/(1.0 - 3.0*_uz[idx]);
                             _q.f[Q<T>::IndexF(idx, 6)] = tem0*(1.0 - 3.0*_uz[idx])/9.0;
                             _q.f[Q<T>::IndexF(idx, 10)] = tem0*(1.0 + 3.0*_ux[idx] + 3.0*_uy[idx] - 3.0*_uz[idx])/72.0;
                             _q.f[Q<T>::IndexF(idx, 11)] = tem0*(1.0 - 3.0*_ux[idx] - 3.0*_uy[idx] - 3.0*_uz[idx])/72.0;

@@ -12,11 +12,11 @@ namespace PANSLBM2 {
     namespace NS {
         //  Function of updating macroscopic values of NS for 2D
         template<class T, template<class>class P>
-        void Macro(T &_rho, T &_ux, T &_uy, const T *_f, int _idx) {
-            _rho = T();
+        void Macro(T &_rho, T &_ux, T &_uy, const T *_f0, const T *_f, int _idx) {
+            _rho = _f0[_idx];
             _ux = T();
             _uy = T();
-            for (int c = 0; c < P<T>::nc; ++c) {
+            for (int c = 1; c < P<T>::nc; ++c) {
                 _rho += _f[P<T>::IndexF(_idx, c)];
                 _ux += P<T>::cx[c]*_f[P<T>::IndexF(_idx, c)];
                 _uy += P<T>::cy[c]*_f[P<T>::IndexF(_idx, c)];
@@ -83,15 +83,18 @@ namespace PANSLBM2 {
             for (int idx = 0; idx < _p.nxyz; ++idx) {
                 //  Update macro
                 T rho, ux, uy;
-                Macro<T, P>(rho, ux, uy, _p.f, idx);
+                Macro<T, P>(rho, ux, uy, _p.f0, _p.f, idx);
 
                 //  Save macro if need
-                _rho[idx] = rho;
-                _ux[idx] = ux;
-                _uy[idx] = uy;
+                if (_issave) {
+                    _rho[idx] = rho;
+                    _ux[idx] = ux;
+                    _uy[idx] = uy;
+                }
 
                 //  Collide
-                for (int c = 0; c < P<T>::nc; ++c) {
+                _p.f0[idx] = (1.0 - omega)*_p.f0[idx] + omega*Equilibrium<T, P>(rho, ux, uy, 0);
+                for (int c = 1; c < P<T>::nc; ++c) {
                     _p.f[P<T>::IndexF(idx, c)] = (1.0 - omega)*_p.f[P<T>::IndexF(idx, c)] + omega*Equilibrium<T, P>(rho, ux, uy, c);
                 }
             }
@@ -205,7 +208,8 @@ namespace PANSLBM2 {
             for (int i = 0; i < _p.nx; ++i) {
                 for (int j = 0; j < _p.ny; ++j) {
                     int idx = _p.Index(i, j);
-                    for (int c = 0; c < P<T>::nc; ++c) {
+                    _p.f0[idx] = Equilibrium<T, P>(_rho[idx], _ux[idx], _uy[idx], 0);
+                    for (int c = 1; c < P<T>::nc; ++c) {
                         _p.f[P<T>::IndexF(idx, c)] = Equilibrium<T, P>(_rho[idx], _ux[idx], _uy[idx], c);
                     }
                 }
@@ -235,7 +239,7 @@ namespace PANSLBM2 {
                 for (int j = 0; j < _p.ny; ++j) {
                     if (_bctype(0 + _p.offsetx, j + _p.offsety)) {
                         int idx = _p.Index(0, j);
-                        T rho0 = (_p.f[P<T>::IndexF(idx, 0)] + _p.f[P<T>::IndexF(idx, 2)] + _p.f[P<T>::IndexF(idx, 4)] + 2.0*(_p.f[P<T>::IndexF(idx, 3)] + _p.f[P<T>::IndexF(idx, 6)] + _p.f[P<T>::IndexF(idx, 7)]))/(1.0 - _uxbc(0 + _p.offsetx, j + _p.offsety));
+                        T rho0 = (_p.f0[idx] + _p.f[P<T>::IndexF(idx, 2)] + _p.f[P<T>::IndexF(idx, 4)] + 2.0*(_p.f[P<T>::IndexF(idx, 3)] + _p.f[P<T>::IndexF(idx, 6)] + _p.f[P<T>::IndexF(idx, 7)]))/(1.0 - _uxbc(0 + _p.offsetx, j + _p.offsety));
                         T mx = rho0*_uxbc(0 + _p.offsetx, j + _p.offsety)/6.0;
                         T my = 0.5*(_p.f[P<T>::IndexF(idx, 2)] - _p.f[P<T>::IndexF(idx, 4)] - rho0*_uybc(0 + _p.offsetx, j + _p.offsety));
                         _p.f[P<T>::IndexF(idx, 1)] = _p.f[P<T>::IndexF(idx, 3)] + 4.0*mx;
@@ -249,7 +253,7 @@ namespace PANSLBM2 {
                 for (int j = 0; j < _p.ny; ++j) {
                     if (_bctype((_p.nx - 1) + _p.offsetx, j + _p.offsety)) {
                         int idx = _p.Index(_p.nx - 1, j);
-                        T rho0 = (_p.f[P<T>::IndexF(idx, 0)] + _p.f[P<T>::IndexF(idx, 2)] + _p.f[P<T>::IndexF(idx, 4)] + 2.0*(_p.f[P<T>::IndexF(idx, 1)] + _p.f[P<T>::IndexF(idx, 5)] + _p.f[P<T>::IndexF(idx, 8)]))/(1.0 + _uxbc((_p.nx - 1) + _p.offsetx, j + _p.offsety));
+                        T rho0 = (_p.f0[idx] + _p.f[P<T>::IndexF(idx, 2)] + _p.f[P<T>::IndexF(idx, 4)] + 2.0*(_p.f[P<T>::IndexF(idx, 1)] + _p.f[P<T>::IndexF(idx, 5)] + _p.f[P<T>::IndexF(idx, 8)]))/(1.0 + _uxbc((_p.nx - 1) + _p.offsetx, j + _p.offsety));
                         T mx = rho0*_uxbc((_p.nx - 1) + _p.offsetx, j + _p.offsety)/6.0;
                         T my = 0.5*(_p.f[P<T>::IndexF(idx, 2)] - _p.f[P<T>::IndexF(idx, 4)] - rho0*_uybc((_p.nx - 1) + _p.offsetx, j + _p.offsety));
                         _p.f[P<T>::IndexF(idx, 3)] = _p.f[P<T>::IndexF(idx, 1)] - 4.0*mx;
@@ -263,7 +267,7 @@ namespace PANSLBM2 {
                 for (int i = 0; i < _p.nx; ++i) {
                     if (_bctype(i + _p.offsetx, 0 + _p.offsety)) {
                         int idx = _p.Index(i, 0);
-                        T rho0 = (_p.f[P<T>::IndexF(idx, 0)] + _p.f[P<T>::IndexF(idx, 1)] + _p.f[P<T>::IndexF(idx, 3)] + 2.0*(_p.f[P<T>::IndexF(idx, 4)] + _p.f[P<T>::IndexF(idx, 7)] + _p.f[P<T>::IndexF(idx, 8)]))/(1.0 - _uybc(i + _p.offsetx, 0 + _p.offsety));
+                        T rho0 = (_p.f0[idx] + _p.f[P<T>::IndexF(idx, 1)] + _p.f[P<T>::IndexF(idx, 3)] + 2.0*(_p.f[P<T>::IndexF(idx, 4)] + _p.f[P<T>::IndexF(idx, 7)] + _p.f[P<T>::IndexF(idx, 8)]))/(1.0 - _uybc(i + _p.offsetx, 0 + _p.offsety));
                         T mx = 0.5*(_p.f[P<T>::IndexF(idx, 1)] - _p.f[P<T>::IndexF(idx, 3)] - rho0*_uxbc(i + _p.offsetx, 0 + _p.offsety));
                         T my = rho0*_uybc(i + _p.offsetx, 0 + _p.offsety)/6.0;
                         _p.f[P<T>::IndexF(idx, 2)] = _p.f[P<T>::IndexF(idx, 4)] + 4.0*my;
@@ -277,7 +281,7 @@ namespace PANSLBM2 {
                 for (int i = 0; i < _p.nx; ++i) {
                     if (_bctype(i + _p.offsetx, (_p.ny - 1) + _p.offsety)) {
                         int idx = _p.Index(i, _p.ny - 1);
-                        T rho0 = (_p.f[P<T>::IndexF(idx, 0)] + _p.f[P<T>::IndexF(idx, 1)] + _p.f[P<T>::IndexF(idx, 3)] + 2.0*(_p.f[P<T>::IndexF(idx, 2)] + _p.f[P<T>::IndexF(idx, 5)] + _p.f[P<T>::IndexF(idx, 6)]))/(1.0 + _uybc(i + _p.offsetx, (_p.ny - 1) + _p.offsety));
+                        T rho0 = (_p.f0[idx] + _p.f[P<T>::IndexF(idx, 1)] + _p.f[P<T>::IndexF(idx, 3)] + 2.0*(_p.f[P<T>::IndexF(idx, 2)] + _p.f[P<T>::IndexF(idx, 5)] + _p.f[P<T>::IndexF(idx, 6)]))/(1.0 + _uybc(i + _p.offsetx, (_p.ny - 1) + _p.offsety));
                         T mx = 0.5*(_p.f[P<T>::IndexF(idx, 1)] - _p.f[P<T>::IndexF(idx, 3)] - rho0*_uxbc(i + _p.offsetx, (_p.ny - 1) + _p.offsety));
                         T my = rho0*_uybc(i + _p.offsetx, (_p.ny - 1) + _p.offsety)/6.0;
                         _p.f[P<T>::IndexF(idx, 4)] = _p.f[P<T>::IndexF(idx, 2)] - 4.0*my;

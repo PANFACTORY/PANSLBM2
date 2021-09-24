@@ -41,10 +41,10 @@ namespace PANSLBM2 {
             const T *_rho, const T *_ux, const T *_uy, const T *_uz, const T *_f0, const T *_f, int _idx
         ) {
             T uu = _ux[_idx]*_ux[_idx] + _uy[_idx]*_uy[_idx] + _uz[_idx]*_uz[_idx];
-            _ip = _f0[_idx]*P<T>::ei[0]*(1.0 - 1.5*uu);;
+            _ip = _f0[_idx]*P<T>::ei[0]*(1.0 - 1.5*uu);
             _iux = -_f0[_idx]*P<T>::ei[0]*_ux[_idx];
-            _iuy = -_f0[_idx]*P<T>::ei[0]*_uy[_idx];;
-            _iuz = -_f0[_idx]*P<T>::ei[0]*_uz[_idx];;
+            _iuy = -_f0[_idx]*P<T>::ei[0]*_uy[_idx];
+            _iuz = -_f0[_idx]*P<T>::ei[0]*_uz[_idx];
             _imx = T();
             _imy = T();
             _imz = T();

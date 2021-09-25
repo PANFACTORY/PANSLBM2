@@ -159,7 +159,7 @@ int main(int argc, char** argv) {
             std::swap(qy, qyp);
         }
         for (int idx0 = 0; idx0 < pg.nxyz; ++idx0) {
-            gi0[idx0] = pg.f[idx0];
+            gi0[idx0] = pg.f0[idx0];
         }
         for (int idxc = 0; idxc < pg.nxyz*(pg.nc - 1); ++idxc) {
             gi[idxc] = pg.f[idxc];
@@ -203,7 +203,7 @@ int main(int argc, char** argv) {
             std::swap(iqy, iqyp);
         }
         for (int idx0 = 0; idx0 < pg.nxyz; ++idx0) {
-            igi0[idx0] = pg.f[idx0];
+            igi0[idx0] = pg.f0[idx0];
         }
         for (int idxc = 0; idxc < pg.nxyz*(pg.nc - 1); ++idxc) {
             igi[idxc] = pg.f[idxc];

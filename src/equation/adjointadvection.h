@@ -1201,7 +1201,7 @@ namespace PANSLBM2 {
         template<class T, template<class>class Q, class Fv, class Ff>
         void SensitivityTemperatureAtHeatSource(
             const T *_ux, const T *_uy, const T *_imx, const T *_imy,
-            Q<T>& _q, const T *_tem, const T *_item, const T *_iqx, const T *_iqy, const T *_g0, const T *_g, const *_ig0, const T *_ig,
+            Q<T>& _q, const T *_tem, const T *_item, const T *_iqx, const T *_iqy, const T *_g0, const T *_g, const T *_ig0, const T *_ig,
             T *_dfds, const T *_diffusivity, const T *_dads, const T *_dkds, Fv _qnbc, Ff _bctype
         ) {
             //  Brinkman term and diffusivity term

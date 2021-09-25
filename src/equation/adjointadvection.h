@@ -1272,7 +1272,7 @@ namespace PANSLBM2 {
             T *_dfds, const T *_diffusivity, const T *_dads, const T *_dkds, Fv _qnbc, Ff _bctype
         ) {
             //  Brinkman term and diffusivity term
-            for (int i = 0; i < _q.nx; ++i) {
+            for (int idx = 0; idx < _q.nxyz; ++idx) {
                 _dfds[idx] += 3.0*_dads[idx]*(_ux[idx]*_imx[idx] + _uy[idx]*_imy[idx] + _uz[idx]*_imz[idx]);
                 T sumg = _g0[idx]*_ig0[idx];
                 for (int c = 1; c < Q<T>::nc; ++c) {

@@ -47,8 +47,8 @@ int main() {
             pf, rho, ux, uy, alpha, nu,
             pg, tem, qx, qy, beta, alp, true
         );
-        pf.Swap();
-        pg.Swap();
+        pf.Stream();
+        pg.Stream();
         pf.BoundaryCondition([=](int _i, int _j) { return _j == 0 ? 2 : (_j >= 0.33*ny ? 1 : 0); });
         NS::BoundaryConditionSetU(pf, 
             [=](int _i, int _j) { return -u0*(_j - 0.33*ny)*(_j + 0.33*ny)/(0.33*ny*0.33*ny); }, 
@@ -83,8 +83,8 @@ int main() {
             pf, rho, ux, uy, irho, iux, iuy, imx, imy, alpha, nu,
             pg, tem, item, iqx, iqy, beta, alp, true
         );
-        pg.Swap();
-        pf.Swap();
+        pg.iStream();
+        pf.iStream();
         pg.iBoundaryCondition([=](int _i, int _j) { return _j == 0 ? 2 : 0; });
         AAD::iBoundaryConditionSetT(pg, ux, uy, [=](int _i, int _j) { return _i == 0 && _j < 0.33*ny; });
         AAD::iBoundaryConditionSetQ(pg, ux, uy, [=](int _i, int _j) { return _i == nx - 1 || _j >= 0.33*ny; });
@@ -115,7 +115,7 @@ int main() {
     std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count() << std::endl;
 
     //--------------------Export result--------------------
-    VTKExport file("result/adjointadvection.vtk", nx, ny);
+    VTKExport file("result/nsadsens.vtk", nx, ny);
     file.AddPointScaler("p", [&](int _i, int _j, int _k) { return rho[pf.Index(_i, _j)]/3.0; });
     file.AddPointVector("u", 
         [&](int _i, int _j, int _k) { return ux[pf.Index(_i, _j)]; },

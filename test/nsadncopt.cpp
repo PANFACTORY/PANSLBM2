@@ -48,7 +48,7 @@ int main(int argc, char** argv) {
         irho[idx] = 0.0;  iux[idx] = 0.0;   iuy[idx] = 0.0;   iuxp[idx] = 0.0;  iuyp[idx] = 0.0;  imx[idx] = 0.0;   imy[idx] = 0.0;   item[idx] = 0.0;  iqx[idx] = 0.0;   iqy[idx] = 0.0;  iqxp[idx] = 0.0;   iqyp[idx] = 0.0;
     }
     double *alpha = new double[pf.nxyz], *diffusivity = new double[pf.nxyz], *dads = new double[pf.nxyz], *dkds = new double[pf.nxyz];
-    double *gi = new double[pg.nxyz*pg.nc], *igi = new double[pg.nxyz*pg.nc];
+    double *gi0 = new double[pg.nxyz*pg.nc], *gi = new double[pg.nxyz*pg.nc], *igi = new double[pg.nxyz*pg.nc], *igi0 = new double[pg.nxyz*pg.nc];
     
     if (MyRank == 0) {
         std::cout << "U:" << U << std::endl;
@@ -136,10 +136,8 @@ int main(int argc, char** argv) {
                     break;
                 }
             }
-            pf.Swap();
-            pg.Swap();
-            pf.Synchronize();
-            pg.Synchronize();
+            pf.Stream();
+            pg.Stream();
             pf.BoundaryCondition([=](int _i, int _j) { return _i == 0 ? 2 : 1; });
             AD::BoundaryConditionSetT(pg, 
                 [=](int _i, int _j) { return tem0; }, 
@@ -160,7 +158,10 @@ int main(int argc, char** argv) {
             std::swap(qx, qxp);
             std::swap(qy, qyp);
         }
-        for (int idxc = 0; idxc < pg.nxyz*pg.nc; ++idxc) {
+        for (int idx0 = 0; idx0 < pg.nxyz; ++idx0) {
+            gi0[idx0] = pg.f[idx0];
+        }
+        for (int idxc = 0; idxc < pg.nxyz*(pg.nc - 1); ++idxc) {
             gi[idxc] = pg.f[idxc];
         }
                 
@@ -186,10 +187,8 @@ int main(int argc, char** argv) {
                     break;
                 }
             }
-            pf.Swap();
-            pg.Swap();
-            pf.iSynchronize();
-            pg.iSynchronize();
+            pf.iStream();
+            pg.iStream();
             AAD::iBoundaryConditionSetT(pg, ux, uy, [=](int _i, int _j) { return _i == lx - 1 || _j == ly - 1; });
             AAD::iBoundaryConditionSetQ(pg, ux, uy, [=](int _i, int _j) { return _j == 0; });
             AAD::iBoundaryConditionSetQ(pg, ux, uy, [=](int _i, int _j) { return _j == 0 && _i < L; }, 1.0);
@@ -203,7 +202,10 @@ int main(int argc, char** argv) {
             std::swap(iqx, iqxp);
             std::swap(iqy, iqyp);
         }
-        for (int idxc = 0; idxc < pg.nxyz*pg.nc; ++idxc) {
+        for (int idx0 = 0; idx0 < pg.nxyz; ++idx0) {
+            igi0[idx0] = pg.f[idx0];
+        }
+        for (int idxc = 0; idxc < pg.nxyz*(pg.nc - 1); ++idxc) {
             igi[idxc] = pg.f[idxc];
         }
                
@@ -222,7 +224,7 @@ int main(int argc, char** argv) {
         f /= L;
         std::vector<double> dfdss(s.size(), 0.0);
         AAD::SensitivityTemperatureAtHeatSource(
-            ux, uy, imx, imy, pg, tem, item, iqx, iqy, gi, igi, dfdss.data(), diffusivity, dads, dkds,
+            ux, uy, imx, imy, pg, tem, item, iqx, iqy, gi0, gi, igi0, igi, dfdss.data(), diffusivity, dads, dkds,
             [=](int _i, int _j) { return (_j == 0 && _i < L) ? qn : 0.0; }, 
             [=](int _i, int _j) { return _j == 0 && _i < L; }
         );
@@ -353,7 +355,7 @@ int main(int argc, char** argv) {
         }
     }
     
-    delete[] rho, ux, uy, uxp, uyp, tem, qx, qy, qxp, qyp, diffusivity, alpha, dkds, dads, irho, iux, iuy, iuxp, iuyp, imx, imy, item, iqx, iqy, iqxp, iqyp, gi, igi;
+    delete[] rho, ux, uy, uxp, uyp, tem, qx, qy, qxp, qyp, diffusivity, alpha, dkds, dads, irho, iux, iuy, iuxp, iuyp, imx, imy, item, iqx, iqy, iqxp, iqyp, gi0, gi, igi0, igi;
 #ifdef _USE_MPI_DEFINES
     MPI_Finalize();
 #endif

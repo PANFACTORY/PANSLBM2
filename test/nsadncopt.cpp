@@ -48,7 +48,7 @@ int main(int argc, char** argv) {
         irho[idx] = 0.0;  iux[idx] = 0.0;   iuy[idx] = 0.0;   iuxp[idx] = 0.0;  iuyp[idx] = 0.0;  imx[idx] = 0.0;   imy[idx] = 0.0;   item[idx] = 0.0;  iqx[idx] = 0.0;   iqy[idx] = 0.0;  iqxp[idx] = 0.0;   iqyp[idx] = 0.0;
     }
     double *alpha = new double[pf.nxyz], *diffusivity = new double[pf.nxyz], *dads = new double[pf.nxyz], *dkds = new double[pf.nxyz];
-    double *gi0 = new double[pg.nxyz*pg.nc], *gi = new double[pg.nxyz*pg.nc], *igi = new double[pg.nxyz*pg.nc], *igi0 = new double[pg.nxyz*pg.nc];
+    double *gi0 = new double[pg.nxyz], *gi = new double[pg.nxyz*(pg.nc - 1)], *igi0 = new double[pg.nxyz], *igi = new double[pg.nxyz*(pg.nc - 1)];
     
     if (MyRank == 0) {
         std::cout << "U:" << U << std::endl;

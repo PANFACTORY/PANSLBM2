@@ -80,7 +80,7 @@ public:
         void SmoothCorner();
         
         const int lx, ly, lz, PEid, mx, my, mz, PEx, PEy, PEz, nx, ny, nz, nxyz, offsetx, offsety, offsetz;
-        static const int nc = 9, nd = 2, cx[nc], cy[nc], cz[nc], packsize = 1;
+        static const int nc = 9, nd = 2, cx[nc], cy[nc], cz[nc], packsize = 4;
         static const T ei[nc];
         T *f0, *f;
         

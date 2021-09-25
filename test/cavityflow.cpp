@@ -60,7 +60,6 @@ int main(int argc, char** argv) {
         }
 
         pf.Stream();
-        pf.Synchronize();
         pf.BoundaryCondition([=](int _i, int _j) { return (_i == 0 || _i == lx - 1 || _j == 0) ? 1 : 0; });
         NS::BoundaryConditionSetU(pf, 
             [=](int _i, int _j) { return u0; }, 

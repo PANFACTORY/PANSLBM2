@@ -12,7 +12,7 @@
 //  compile option for g++(MinGW) : -mavx
 
 namespace PANSLBM2 {
-    namespace NS {
+    namespace NS_AVX {
         //  Function of updating macroscopic values of NS for 2D
         template<class P>
         void Macro(__m256d &__rho, __m256d &__ux, __m256d &__uy, __m256d __f0, const __m256d *__f) {

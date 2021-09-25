@@ -45,11 +45,10 @@ public:
             this->frecv_ymin = new T[this->nx*3];
             this->frecv_ymax = new T[this->nx*3];
             for (int c = 0; c < D2Q9<T>::nc; ++c) {
-                T _cx = D2Q9<T>::cx[c], _cy = D2Q9<T>::cy[c], _cz = D2Q9<T>::cz[c];
-                D2Q9<T>::__cx[c] = _mm256_broadcast_sd((const double*)&_cx);
-                D2Q9<T>::__cy[c] = _mm256_broadcast_sd((const double*)&_cy);
-                D2Q9<T>::__cz[c] = _mm256_broadcast_sd((const double*)&_cz);
-                D2Q9<T>::__ei[c] = _mm256_broadcast_sd((const double*)&D2Q9<T>::ei[c]);
+                D2Q9<T>::__cx[c] = _mm256_set1_pd((double)D2Q9<T>::cx[c]);
+                D2Q9<T>::__cy[c] = _mm256_set1_pd((double)D2Q9<T>::cy[c]);
+                D2Q9<T>::__cz[c] = _mm256_set1_pd((double)D2Q9<T>::cz[c]);
+                D2Q9<T>::__ei[c] = _mm256_set1_pd(D2Q9<T>::ei[c]);
             }
         }
         D2Q9(const D2Q9<T>& _p) = delete;

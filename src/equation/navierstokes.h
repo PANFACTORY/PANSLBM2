@@ -7,8 +7,66 @@
 
 #pragma once
 #include <cassert>
+#include <immintrin.h>
 
 namespace PANSLBM2 {
+    namespace NS_AVX {
+        //  Function of updating macroscopic values of NS for 2D
+        template<double, template<class>class P>
+        void Macro(__m256d &__rho, __m256d &__ux, __m256d &__uy, __m256d __f0, const __m256d *__f) {
+            __rho = __f0;
+            for (int c = 1; c < P<double>::nc; ++c) {
+                __rho = _mm256_add_pd(__rho, __f[c]);
+                __ux = _mm256_add_pd(__ux, _mm256_mul_pd(__f[c], P<double>::__cx[c]));
+                __uy = _mm256_add_pd(__uy, _mm256_mul_pd(__f[c], P<double>::__cy[c]));
+            }
+            __ux = _mm256_div_pd(__ux, __rho);
+            __uy = _mm256_div_pd(__uy, __rho);
+        }
+
+        //  Function of getting equilibrium of NS for 2D
+        template<double, template<class>class P>
+        __m256d Equilibrium(__m256d __rho, __m256d __ux, __m256d __uy, int _c) {
+            double a = 1.0, b = 3.0, c = 4.5, d = 1.5;
+            __m256d __1 = _mm256_broadcast_sd((const double*)&a), __3 = _mm256_broadcast_sd((const double*)&b), __45 = _mm256_broadcast_sd((const double*)&c), __15 = _mm256_broadcast_sd((const double*)&d);
+            __m256d __1m15uu = _mm256_sub_pd(__1, _mm256_mul_pd(__15, _mm256_add_pd(_mm256_mul_pd(__ux, __ux), _mm256_mul_pd(__uy, __uy))));
+            __m256d __cu = _mm256_add_pd(_mm256_mul_pd(P<double>::__cx[_c], __ux), _mm256_mul_pd(P<double>::__cy[_c], __uy));
+            __m256d __3cup45cucu = _mm256_add_pd(_mm256_mul_pd(__3, __cu), _mm256_mul_pd(__45, _mm256_mul_pd(__cu, __cu)));
+            return _mm256_mul_pd(P<double>::__ei[_c], _mm256_mul_pd(__rho, _mm256_add_pd(__1m15uu, __3cup45cucu)));
+        }
+
+        //  Function of Update macro, Collide and Stream of NS for 2D
+        template<template<class>class P>
+        void MacroCollideStream(P<double>& _p, double *_rho, double *_ux, double *_uy, double _viscosity, bool _issave = false) {
+            T omega = 1.0/(3.0*_viscosity + 0.5), iomega = 1.0 - omega;
+            __m256d __omega = _mm256_broadcast_sd((const double*)&omega), __iomega = _mm256_broadcast_sd((const double*)&iomega);
+
+            for (int idx = 0; idx < _p.nxyz; idx += P<double>::packsize) {
+                //  Pack f0 and f
+                __m256d __f0 = _mm256_loadu_pd(&_p.f0[idx]), __f[P<double>::nc];
+                for (int c = 1; c < P<double>::nc; ++c) {
+                    __f[c] = _mm256_loadu_pd(&_p.f[P<double>::IndexF(idx, c)])
+                }
+
+                //  Update macro
+                __m256d __rho, __ux, __uy;
+                Macro<P>(__rho, __ux, __uy, __f0, __f);
+
+                //  Save macro if need
+                if (_issave) {
+                    _mm256_storeu_pd(&_rho[idx], __rho);
+                    _mm256_storeu_pd(&_ux[idx], __ux);
+                    _mm256_storeu_pd(&_uy[idx], __uy);
+                }
+
+                //  Collide
+                _mm256_storeu_pd(&_p.f0[idx], _mm256_add_pd(_mm256_mul_pd(__iomega, __f0), _mm256_mul_pd(__omega, Equilibrium<P>(__rho, __ux, __uy, 0))));
+                for (int c = 1; c < P<double>::nc; ++c) {
+                    _mm256_storeu_pd(&_p.f[P<double>::IndexF(idx, c)], _mm256_add_pd(_mm256_mul_pd(__iomega, __f[c]), _mm256_mul_pd(__omega, Equilibrium<P>(__rho, __ux, __uy, c))));
+                }
+            }
+        }
+    }
     namespace NS {
         //  Function of updating macroscopic values of NS for 2D
         template<class T, template<class>class P>

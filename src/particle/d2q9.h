@@ -10,6 +10,7 @@
 #ifdef _USE_MPI_DEFINES
     #include "mpi.h"
 #endif
+#include <immintrin.h>
 
 namespace PANSLBM2 {
     namespace {
@@ -42,6 +43,12 @@ public:
             this->frecv_xmax = new T[this->ny*3];
             this->frecv_ymin = new T[this->nx*3];
             this->frecv_ymax = new T[this->nx*3];
+            for (int c = 0; c < D2Q9<T>::nc; ++c) {
+                D2Q9<T>::__cx[c] = _mm256_set1_pd(D2Q9<T>::cx[c]);
+                D2Q9<T>::__cy[c] = _mm256_set1_pd(D2Q9<T>::cy[c]);
+                D2Q9<T>::__cz[c] = _mm256_set1_pd(D2Q9<T>::cz[c]);
+                D2Q9<T>::__ei[c] = _mm256_set1_pd(D2Q9<T>::ei[c]);
+            }
         }
         D2Q9(const D2Q9<T>& _p) = delete;
         ~D2Q9() {
@@ -80,9 +87,10 @@ public:
         void SmoothCorner();
         
         const int lx, ly, lz, PEid, mx, my, mz, PEx, PEy, PEz, nx, ny, nz, nxyz, offsetx, offsety, offsetz;
-        static const int nc = 9, nd = 2, cx[nc], cy[nc], cz[nc], packsize = 4;
+        static const int nc = 9, nd = 2, cx[nc], cy[nc], cz[nc], packsize = 32/sizeof(T);
         static const T ei[nc];
         T *f0, *f;
+        static __m256d __cx[nc], __cy[nc], __cz[nc], __ei[nc];
         
 private:
         T *fnext;

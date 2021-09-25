@@ -28,7 +28,7 @@ public:
             nxyz(this->nx*this->ny),
             offsetx(this->mx - this->PEx > this->lx%this->mx ? this->PEx*this->nx : this->lx - (this->mx - this->PEx)*this->nx),
             offsety(this->my - this->PEy > this->ly%this->my ? this->PEy*this->ny : this->ly - (this->my - this->PEy)*this->ny),
-            offsetz(0),
+            offsetz(0)
         {
             assert(0 < _lx && 0 < _ly && 0 <= _PEid && 0 < _mx && 0 < _my);
             this->f0 = new T[(this->nxyz/D2Q9<T>::packsize + 1)*D2Q9<T>::packsize];

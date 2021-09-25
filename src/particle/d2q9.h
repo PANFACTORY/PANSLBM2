@@ -28,12 +28,12 @@ public:
             nxyz(this->nx*this->ny),
             offsetx(this->mx - this->PEx > this->lx%this->mx ? this->PEx*this->nx : this->lx - (this->mx - this->PEx)*this->nx),
             offsety(this->my - this->PEy > this->ly%this->my ? this->PEy*this->ny : this->ly - (this->my - this->PEy)*this->ny),
-            offsetz(0)
+            offsetz(0),
         {
             assert(0 < _lx && 0 < _ly && 0 <= _PEid && 0 < _mx && 0 < _my);
-            this->f0 = new T[this->nxyz];
-            this->f = new T[this->nxyz*(D2Q9<T>::nc - 1)];
-            this->fnext = new T[this->nxyz*(D2Q9<T>::nc - 1)];
+            this->f0 = new T[(this->nxyz/D2Q9<T>::packsize + 1)*D2Q9<T>::packsize];
+            this->f = new T[(this->nxyz/D2Q9<T>::packsize + 1)*D2Q9<T>::packsize*(D2Q9<T>::nc - 1)];
+            this->fnext = new T[(this->nxyz/D2Q9<T>::packsize + 1)*D2Q9<T>::packsize*(D2Q9<T>::nc - 1)];
             this->fsend_xmin = new T[this->ny*3];
             this->fsend_xmax = new T[this->ny*3];
             this->fsend_ymin = new T[this->nx*3];
@@ -59,7 +59,7 @@ public:
             return this->Index(_i, _j);
         }
         static int IndexF(int _idx, int _c) {
-            return (D2Q9<T>::nc - 1)*_idx + (_c - 1);
+            return (_idx/D2Q9<T>::packsize)*D2Q9<T>::packsize*(D2Q9<T>::nc - 1) + D2Q9<T>::packsize*(_c - 1) + _idx%D2Q9<T>::packsize;
         }
         int IndexPE(int _i, int _j) const {
             int i = _i == -1 ? this->mx - 1 : (_i == this->mx ? 0 : _i);
@@ -80,7 +80,7 @@ public:
         void SmoothCorner();
         
         const int lx, ly, lz, PEid, mx, my, mz, PEx, PEy, PEz, nx, ny, nz, nxyz, offsetx, offsety, offsetz;
-        static const int nc = 9, nd = 2, cx[nc], cy[nc], cz[nc];
+        static const int nc = 9, nd = 2, cx[nc], cy[nc], cz[nc], packsize = 1;
         static const T ei[nc];
         T *f0, *f;
         

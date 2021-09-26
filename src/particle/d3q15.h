@@ -159,10 +159,10 @@ private:
     template<class T>const T D3Q15<T>::ei[D3Q15<T>::nc] = { 2.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/72.0, 1.0/72.0, 1.0/72.0, 1.0/72.0, 1.0/72.0, 1.0/72.0, 1.0/72.0, 1.0/72.0 };
 
 #ifdef _USE_AVX_DEFINES
-    template<class T>__m256d D2Q9<T>::__cx[D2Q9<T>::nc] = { 0 };
-    template<class T>__m256d D2Q9<T>::__cy[D2Q9<T>::nc] = { 0 };
-    template<class T>__m256d D2Q9<T>::__cz[D2Q9<T>::nc] = { 0 };
-    template<class T>__m256d D2Q9<T>::__ei[D2Q9<T>::nc] = { 0 };
+    template<class T>__m256d D3Q15<T>::__cx[D3Q15<T>::nc] = { 0 };
+    template<class T>__m256d D3Q15<T>::__cy[D3Q15<T>::nc] = { 0 };
+    template<class T>__m256d D3Q15<T>::__cz[D3Q15<T>::nc] = { 0 };
+    template<class T>__m256d D3Q15<T>::__ei[D3Q15<T>::nc] = { 0 };
 #endif
 
     template<class T>

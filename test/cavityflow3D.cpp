@@ -1,6 +1,6 @@
 #define _USE_MATH_DEFINES
 //#define _USE_MPI_DEFINES
-#define _USE_AVX_DEFINES
+//#define _USE_AVX_DEFINES
 #include <cmath>
 #include <iostream>
 #include <chrono>
@@ -46,7 +46,7 @@ int main(int argc, char** argv) {
         if (t%dt == 0 && MyRank == 0) {
             std::cout << "t = " << t/dt << std::endl;
         }
-        NS::MacroCollideStream(pf, rho, ux, uy, uz, nu, true);
+        NS::MacroCollide(pf, rho, ux, uy, uz, nu, true);
         pf.Stream();
         pf.BoundaryCondition([=](int _i, int _j, int _k) { return (_i == 0 || _i == lx - 1 || _j == 0 || _j == ly - 1 || _k == 0) ? 1 : 0; });
         NS::BoundaryConditionSetU(pf, 

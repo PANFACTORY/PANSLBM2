@@ -65,9 +65,9 @@ namespace PANSLBM2 {
             return _mm256_mul_pd(P::__ei[_c], _mm256_mul_pd(__rho, _mm256_add_pd(__1m15uu, __3cup45cucu)));
         }
 
-        //  Function of Update macro, Collide and Stream of NS for 2D
+        //  Function of Update macro and Collide of NS for 2D
         template<template<class>class P>
-        void MacroCollideStream(P<double>& _p, double *_rho, double *_ux, double *_uy, double _viscosity, bool _issave = false) {
+        void MacroCollide(P<double>& _p, double *_rho, double *_ux, double *_uy, double _viscosity, bool _issave = false) {
             double omega = 1.0/(3.0*_viscosity + 0.5);
             __m256d __omega = _mm256_set1_pd(omega), __iomega = _mm256_set1_pd(1.0 - omega);
 #pragma omp parallel for
@@ -109,9 +109,9 @@ namespace PANSLBM2 {
             }
         }
 
-        //  Function of Update macro, Collide and Stream of NS for 3D
+        //  Function of Update macro and Collide of NS for 3D
         template<template<class>class P>
-        void MacroCollideStream(P<double>& _p, double *_rho, double *_ux, double *_uy, double *_uz, double _viscosity, bool _issave = false) {
+        void MacroCollide(P<double>& _p, double *_rho, double *_ux, double *_uy, double *_uz, double _viscosity, bool _issave = false) {
             double omega = 1.0/(3.0*_viscosity + 0.5);
             __m256d __omega = _mm256_set1_pd(omega), __iomega = _mm256_set1_pd(1.0 - omega);
 #pragma omp parallel for

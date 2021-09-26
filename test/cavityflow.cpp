@@ -44,11 +44,8 @@ int main(int argc, char** argv) {
     //--------------------Direct analyze--------------------
     NS::InitialCondition(pf, rho, ux, uy);
     for (int t = 1; t <= nt; ++t) {
-        if (t%dt != 0) {
-            NS::MacroCollideStream(pf, rho, ux, uy, nu);
-        } else {
-            NS::MacroCollideStream(pf, rho, ux, uy, nu, true);
-
+        NS::MacroCollide(pf, rho, ux, uy, nu, true);
+        if (t%dt == 0) {
             if (MyRank == 0) {
                 std::cout << "t = " << t/dt << std::endl;
             }
@@ -60,7 +57,6 @@ int main(int argc, char** argv) {
                 [](int _i, int _j, int _k) { return 0.0; }
             );*/
         }
-
         pf.Stream();
         pf.BoundaryCondition([=](int _i, int _j) { return (_i == 0 || _i == lx - 1 || _j == 0) ? 1 : 0; });
         NS::BoundaryConditionSetU(pf, 

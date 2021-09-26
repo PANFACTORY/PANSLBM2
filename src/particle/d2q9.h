@@ -29,13 +29,13 @@ public:
             nxyz(this->nx*this->ny),
             offsetx(this->mx - this->PEx > this->lx%this->mx ? this->PEx*this->nx : this->lx - (this->mx - this->PEx)*this->nx),
             offsety(this->my - this->PEy > this->ly%this->my ? this->PEy*this->ny : this->ly - (this->my - this->PEy)*this->ny),
-            offsetz(0),
-            np((this->nxyz/D2Q9<T>::packsize + 1)*D2Q9<T>::packsize)
+            offsetz(0)
         {
             assert(0 < _lx && 0 < _ly && 0 <= _PEid && 0 < _mx && 0 < _my);
-            this->f0 = new T[this->np];
-            this->f = new T[this->np*(D2Q9<T>::nc - 1)];
-            this->fnext = new T[this->np*(D2Q9<T>::nc - 1)];
+            
+            this->f0 = new T[(this->nxyz/D2Q9<T>::packsize + 1)*D2Q9<T>::packsize];
+            this->f = new T[(this->nxyz/D2Q9<T>::packsize + 1)*D2Q9<T>::packsize*(D2Q9<T>::nc - 1)];
+            this->fnext = new T[(this->nxyz/D2Q9<T>::packsize + 1)*D2Q9<T>::packsize*(D2Q9<T>::nc - 1)];
             this->fsend_xmin = new T[this->ny*3];
             this->fsend_xmax = new T[this->ny*3];
             this->fsend_ymin = new T[this->nx*3];
@@ -44,6 +44,7 @@ public:
             this->frecv_xmax = new T[this->ny*3];
             this->frecv_ymin = new T[this->nx*3];
             this->frecv_ymax = new T[this->nx*3];
+
             for (int c = 0; c < D2Q9<T>::nc; ++c) {
                 D2Q9<T>::__cx[c] = _mm256_set1_pd((double)D2Q9<T>::cx[c]);
                 D2Q9<T>::__cy[c] = _mm256_set1_pd((double)D2Q9<T>::cy[c]);
@@ -87,7 +88,7 @@ public:
         void iBoundaryCondition(Ff _bctype);
         void SmoothCorner();
         
-        const int lx, ly, lz, PEid, mx, my, mz, PEx, PEy, PEz, nx, ny, nz, nxyz, offsetx, offsety, offsetz, np;
+        const int lx, ly, lz, PEid, mx, my, mz, PEx, PEy, PEz, nx, ny, nz, nxyz, offsetx, offsety, offsetz;
         static const int nc = 9, nd = 2, cx[nc], cy[nc], cz[nc], packsize = 32/sizeof(T);
         static const T ei[nc];
         T *f0, *f;

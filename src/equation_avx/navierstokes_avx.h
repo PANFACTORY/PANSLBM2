@@ -57,9 +57,21 @@ namespace PANSLBM2 {
 
                 //  Save macro if need
                 if (_issave) {
-                    _mm256_storeu_pd(&_rho[idx], __rho);
-                    _mm256_storeu_pd(&_ux[idx], __ux);
-                    _mm256_storeu_pd(&_uy[idx], __uy);
+                    if (idx + P<double>::packsize < _p.nxyz) {
+                        _mm256_storeu_pd(&_rho[idx], __rho);
+                        _mm256_storeu_pd(&_ux[idx], __ux);
+                        _mm256_storeu_pd(&_uy[idx], __uy);
+                    } else {
+                        double rho[P<double>::packsize], ux[P<double>::packsize], uy[P<double>::packsize];
+                        _mm256_storeu_pd(rho, __rho);
+                        _mm256_storeu_pd(ux, __ux);
+                        _mm256_storeu_pd(uy, __uy);
+                        for (int didx = 0; didx < _p.nxyz%P<double>::packsize; ++didx) {
+                            _rho[idx + didx] = rho[didx];
+                            _ux[idx + didx] = ux[didx];
+                            _uy[idx + didx] = uy[didx];
+                        }
+                    }
                 }
 
                 //  Collide

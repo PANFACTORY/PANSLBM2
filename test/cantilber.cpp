@@ -43,11 +43,8 @@ int main(int argc, char** argv) {
     //--------------------Direct analyze--------------------
     EL::InitialCondition(pf, rho, ux, uy, sxx, sxy, syx, syy);
     for (int t = 1; t <= nt; ++t) {
-        if (t%dt != 0) {
-            EL::MacroCollideStream(pf, rho, ux, uy, sxx, sxy, syx, syy, 0.8);
-        } else {
-            EL::MacroCollideStream(pf, rho, ux, uy, sxx, sxy, syx, syy, 0.8, true);
-
+        if (t%dt == 0) {
+            EL::MacroCollide(pf, rho, ux, uy, sxx, sxy, syx, syy, 0.8, true);
             if (MyRank == 0) {
                 std::cout << "t = " << t/dt << std::endl;
             }
@@ -74,7 +71,6 @@ int main(int argc, char** argv) {
                 [](int _i, int _j, int _k) { return 0.0; }
             );
         }
-
         pf.Stream();
         pf.BoundaryCondition([=](int _i, int _j) { return _i == 0 ? 1 : 0; });
         EL::BoundaryConditionSetStress(pf, 

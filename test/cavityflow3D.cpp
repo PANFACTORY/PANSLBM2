@@ -1,6 +1,6 @@
 #define _USE_MATH_DEFINES
 //#define _USE_MPI_DEFINES
-//#define _USE_AVX_DEFINES
+#define _USE_AVX_DEFINES
 #include <cmath>
 #include <iostream>
 #include <chrono>
@@ -29,7 +29,7 @@ int main(int argc, char** argv) {
 #endif
 
     //--------------------Set parameters--------------------
-    int lx = 31, ly = 31, lz = 31, nt = 10000, dt = 100;
+    int lx = 51, ly = 51, lz = 51, nt = 10000, dt = 100;
     double nu = 0.1, u0 = 0.1, theta = 90.0;
     D3Q15<double> pf(lx, ly, lz, MyRank, mx, my, mz);
     double *rho = new double[pf.nxyz], *ux = new double[pf.nxyz], *uy = new double[pf.nxyz], *uz = new double[pf.nxyz];

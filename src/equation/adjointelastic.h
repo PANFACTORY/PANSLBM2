@@ -40,9 +40,9 @@ namespace PANSLBM2 {
             return 3.0*imc + 4.5*_gamma*cisc - 1.5*_gamma*irhocc;
         }
 
-        //  Function of Update macro, Collide and Stream of AEL for 2D
+        //  Function of Update macro and Collide of AEL for 2D
         template<class T, template<class>class P>
-        void MacroCollideStream(P<T>& _p, T *_irho, T *_imx, T *_imy, T *_isxx, T *_isxy, T *_isyx, T *_isyy, T _tau, const T *_gamma, bool _issave = false) {
+        void MacroCollide(P<T>& _p, T *_irho, T *_imx, T *_imy, T *_isxx, T *_isxy, T *_isyx, T *_isyy, T _tau, const T *_gamma, bool _issave = false) {
             T omega = 1/_tau;
 #pragma omp parallel for
             for (int idx = 0; idx < _p.nxyz; ++idx) {

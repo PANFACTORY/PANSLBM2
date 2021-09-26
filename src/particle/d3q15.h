@@ -111,7 +111,7 @@ public:
 #ifdef _USE_AVX_DEFINES
             return (_idx/D3Q15<T>::packsize)*D3Q15<T>::packsize*(D3Q15<T>::nc - 1) + D3Q15<T>::packsize*(_c - 1) + _idx%D3Q15<T>::packsize;
 #else
-            return D3Q15<T>::nc*_idx + _c;
+            return (D3Q15<T>::nc - 1)*_idx + (_c - 1);
 #endif
         }
         int IndexPE(int _i, int _j, int _k) const {

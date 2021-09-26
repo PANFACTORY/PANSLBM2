@@ -51,7 +51,7 @@ int main(int argc, char** argv) {
         if (MyRank == 0 && t%dt == 0) {
             std::cout << "t = " << t/dt << std::endl;
         }
-        NS::MacroBrinkmanCollideStream(pf, rho, ux, uy, nu, alpha, true);
+        NS::MacroBrinkmanCollide(pf, rho, ux, uy, nu, alpha, true);
         pf.Stream();
         pf.BoundaryCondition([=](int _i, int _j) { return _j == 0 ? 2 : (_j >= 0.33*ly ? 1 : 0); });
         NS::BoundaryConditionSetU(pf, 
@@ -73,7 +73,7 @@ int main(int argc, char** argv) {
         if (MyRank == 0 && t%dt == 0) {
             std::cout << "t = " << t/dt << std::endl;
         }
-        ANS::MacroBrinkmanCollideStream(pf, rho, ux, uy, irho, iux, iuy, imx, imy, nu, alpha, true);
+        ANS::MacroBrinkmanCollide(pf, rho, ux, uy, irho, iux, iuy, imx, imy, nu, alpha, true);
         pf.iStream();
         pf.iBoundaryCondition([=](int _i, int _j) { return _j == 0 ? 2 : (_j >= 0.33*ly ? 1 : 0); });
         ANS::iBoundaryConditionSetU(pf, 

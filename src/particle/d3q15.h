@@ -34,9 +34,15 @@ public:
             offsetz(this->mz - this->PEz > this->lz%this->mz ? this->PEz*this->nz : this->lz - (this->mz - this->PEz)*this->nz)
         {
             assert(0 < _lx && 0 < _ly && 0 < _lz && 0 <= _PEid && 0 < _mx && 0 < _my && 0 < _mz);
+#ifdef _USE_AVX_DEFINES
             this->f0 = new(std::align_val_t{32}) T[(this->nxyz/D3Q15<T>::packsize + 1)*D3Q15<T>::packsize];
             this->f = new(std::align_val_t{32}) T[(this->nxyz/D3Q15<T>::packsize + 1)*D3Q15<T>::packsize*(D3Q15<T>::nc - 1)];
             this->fnext = new(std::align_val_t{32}) T[(this->nxyz/D3Q15<T>::packsize + 1)*D3Q15<T>::packsize*(D3Q15<T>::nc - 1)];
+#else
+            this->f0 = new T[this->nxyz];
+            this->f = new T[this->nxyz*(D3Q15<T>::nc - 1)];
+            this->fnext = new T[this->nxyz*(D3Q15<T>::nc - 1)];
+#endif
             this->fsend_xmin = new T[this->ny*this->nz*5];
             this->fsend_xmax = new T[this->ny*this->nz*5];
             this->fsend_ymin = new T[this->nz*this->nx*5];
@@ -102,7 +108,11 @@ public:
             return i + this->nx*j + this->nx*this->ny*k;
         }
         static int IndexF(int _idx, int _c) {
+#ifdef _USE_AVX_DEFINES
             return (_idx/D3Q15<T>::packsize)*D3Q15<T>::packsize*(D3Q15<T>::nc - 1) + D3Q15<T>::packsize*(_c - 1) + _idx%D3Q15<T>::packsize;
+#else
+            return D3Q15<T>::nc*_idx + _c;
+#endif
         }
         int IndexPE(int _i, int _j, int _k) const {
             int i = _i == -1 ? this->mx - 1 : (_i == this->mx ? 0 : _i);
@@ -136,8 +146,6 @@ public:
 #ifdef _USE_AVX_DEFINES
         static const int packsize = 32/sizeof(T);
         static __m256d __cx[nc], __cy[nc], __cz[nc], __ei[nc];
-#else
-        static const int packsize = 1;
 #endif
         
 private:

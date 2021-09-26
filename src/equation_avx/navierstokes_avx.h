@@ -43,7 +43,7 @@ namespace PANSLBM2 {
         void MacroCollideStream(P<double>& _p, double *_rho, double *_ux, double *_uy, double _viscosity, bool _issave = false) {
             double omega = 1.0/(3.0*_viscosity + 0.5);
             __m256d __omega = _mm256_set1_pd(omega), __iomega = _mm256_set1_pd(1.0 - omega);
-
+#pragma omp parallel for
             for (int idx = 0; idx < _p.nxyz; idx += P<double>::packsize) {
                 //  Pack f0 and f
                 __m256d __f0 = _mm256_loadu_pd(&_p.f0[idx]), __f[P<double>::nc] = { 0 };
@@ -57,7 +57,7 @@ namespace PANSLBM2 {
 
                 //  Save macro if need
                 if (_issave) {
-                    if (idx + P<double>::packsize < _p.nxyz) {
+                    if (idx + P<double>::packsize <= _p.nxyz) {
                         _mm256_storeu_pd(&_rho[idx], __rho);
                         _mm256_storeu_pd(&_ux[idx], __ux);
                         _mm256_storeu_pd(&_uy[idx], __uy);

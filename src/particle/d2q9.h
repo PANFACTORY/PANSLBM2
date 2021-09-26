@@ -10,7 +10,9 @@
 #ifdef _USE_MPI_DEFINES
     #include "mpi.h"
 #endif
-#include <immintrin.h>
+#ifdef _USE_AVX_DEFINES
+    #include <immintrin.h>
+#endif
 
 namespace PANSLBM2 {
     namespace {
@@ -33,9 +35,9 @@ public:
         {
             assert(0 < _lx && 0 < _ly && 0 <= _PEid && 0 < _mx && 0 < _my);
             
-            this->f0 = new T[(this->nxyz/D2Q9<T>::packsize + 1)*D2Q9<T>::packsize];
-            this->f = new T[(this->nxyz/D2Q9<T>::packsize + 1)*D2Q9<T>::packsize*(D2Q9<T>::nc - 1)];
-            this->fnext = new T[(this->nxyz/D2Q9<T>::packsize + 1)*D2Q9<T>::packsize*(D2Q9<T>::nc - 1)];
+            this->f0 = new(std::align_val_t{32}) T[(this->nxyz/D2Q9<T>::packsize + 1)*D2Q9<T>::packsize];
+            this->f = new(std::align_val_t{32}) T[(this->nxyz/D2Q9<T>::packsize + 1)*D2Q9<T>::packsize*(D2Q9<T>::nc - 1)];
+            this->fnext = new(std::align_val_t{32}) T[(this->nxyz/D2Q9<T>::packsize + 1)*D2Q9<T>::packsize*(D2Q9<T>::nc - 1)];
             this->fsend_xmin = new T[this->ny*3];
             this->fsend_xmax = new T[this->ny*3];
             this->fsend_ymin = new T[this->nx*3];
@@ -44,13 +46,14 @@ public:
             this->frecv_xmax = new T[this->ny*3];
             this->frecv_ymin = new T[this->nx*3];
             this->frecv_ymax = new T[this->nx*3];
-
+#ifdef _USE_AVX_DEFINES
             for (int c = 0; c < D2Q9<T>::nc; ++c) {
                 D2Q9<T>::__cx[c] = _mm256_set1_pd((double)D2Q9<T>::cx[c]);
                 D2Q9<T>::__cy[c] = _mm256_set1_pd((double)D2Q9<T>::cy[c]);
                 D2Q9<T>::__cz[c] = _mm256_set1_pd((double)D2Q9<T>::cz[c]);
                 D2Q9<T>::__ei[c] = _mm256_set1_pd(D2Q9<T>::ei[c]);
             }
+#endif
         }
         D2Q9(const D2Q9<T>& _p) = delete;
         ~D2Q9() {
@@ -89,11 +92,16 @@ public:
         void SmoothCorner();
         
         const int lx, ly, lz, PEid, mx, my, mz, PEx, PEy, PEz, nx, ny, nz, nxyz, offsetx, offsety, offsetz;
-        static const int nc = 9, nd = 2, cx[nc], cy[nc], cz[nc], packsize = 32/sizeof(T);
+        static const int nc = 9, nd = 2, cx[nc], cy[nc], cz[nc];
         static const T ei[nc];
         T *f0, *f;
+#ifdef _USE_AVX_DEFINES
+        static const int packsize = 32/sizeof(T);
         static __m256d __cx[nc], __cy[nc], __cz[nc], __ei[nc];
-        
+#else
+        static const int packsize = 1;
+#endif
+
 private:
         T *fnext;
         T *fsend_xmin, *fsend_xmax, *fsend_ymin, *fsend_ymax, *frecv_xmin, *frecv_xmax, *frecv_ymin, *frecv_ymax;
@@ -109,10 +117,12 @@ private:
     template<class T>const int D2Q9<T>::cz[D2Q9<T>::nc] = { 0, 0, 0, 0, 0, 0, 0, 0, 0 };
     template<class T>const T D2Q9<T>::ei[D2Q9<T>::nc] = { 4.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/36.0, 1.0/36.0, 1.0/36.0, 1.0/36.0 };
 
+#ifdef _USE_AVX_DEFINES
     template<class T>__m256d D2Q9<T>::__cx[D2Q9<T>::nc] = { 0 };
     template<class T>__m256d D2Q9<T>::__cy[D2Q9<T>::nc] = { 0 };
     template<class T>__m256d D2Q9<T>::__cz[D2Q9<T>::nc] = { 0 };
     template<class T>__m256d D2Q9<T>::__ei[D2Q9<T>::nc] = { 0 };
+#endif
 
     template<class T>
     void D2Q9<T>::Stream() {

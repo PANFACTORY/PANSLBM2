@@ -1,4 +1,5 @@
 //#define _USE_MPI_DEFINES
+#define _USE_AVX_DEFINES
 #include <iostream>
 #include <chrono>
 #include <cassert>
@@ -31,7 +32,7 @@ int main(int argc, char** argv) {
     int lx = 101, ly = 101, nt = 100000, dt = 1000;
     double nu = 0.1, u0 = 0.1, Re = u0*(lx - 1)/nu;
     D2Q9<double> pf(lx, ly, MyRank, mx, my);
-    double rho[pf.nxyz], ux[pf.nxyz], uy[pf.nxyz];
+    double *rho = new double[pf.nxyz], *ux = new double[pf.nxyz], *uy = new double[pf.nxyz];
     for (int idx = 0; idx < pf.nxyz; ++idx) {
         rho[idx] = 1.0;
         ux[idx] = 0.0;
@@ -44,20 +45,20 @@ int main(int argc, char** argv) {
     NS::InitialCondition(pf, rho, ux, uy);
     for (int t = 1; t <= nt; ++t) {
         if (t%dt != 0) {
-            NS_AVX::MacroCollideStream(pf, rho, ux, uy, nu);
+            NS::MacroCollideStream(pf, rho, ux, uy, nu);
         } else {
-            NS_AVX::MacroCollideStream(pf, rho, ux, uy, nu, true);
+            NS::MacroCollideStream(pf, rho, ux, uy, nu, true);
 
             if (MyRank == 0) {
                 std::cout << "t = " << t/dt << std::endl;
             }
-            VTKXMLExport file(pf, "result/cavity_" + std::to_string(t/dt));
+            /*VTKXMLExport file(pf, "result/cavity_" + std::to_string(t/dt));
             file.AddPointData(pf, "rho", [&](int _i, int _j, int _k) { return rho[pf.Index(_i, _j)]; });
             file.AddPointData(pf, "u", 
                 [&](int _i, int _j, int _k) { return ux[pf.Index(_i, _j)]; },
                 [&](int _i, int _j, int _k) { return uy[pf.Index(_i, _j)]; },
                 [](int _i, int _j, int _k) { return 0.0; }
-            );
+            );*/
         }
 
         pf.Stream();
@@ -74,6 +75,7 @@ int main(int argc, char** argv) {
     if (MyRank == 0) {
         std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count() << std::endl;
     }
+    delete[] rho, ux, uy;
 #ifdef _USE_MPI_DEFINES
     MPI_Finalize();
 #endif

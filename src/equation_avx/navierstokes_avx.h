@@ -6,13 +6,12 @@
 //*****************************************************************************
 
 #pragma once
-#include <cassert>
 #include <immintrin.h>
 
 //  compile option for g++(MinGW) : -mavx
 
 namespace PANSLBM2 {
-    namespace NS_AVX {
+    namespace NS {
         //  Function of updating macroscopic values of NS for 2D
         template<class P>
         void Macro(__m256d &__rho, __m256d &__ux, __m256d &__uy, __m256d __f0, const __m256d *__f) {
@@ -46,9 +45,9 @@ namespace PANSLBM2 {
 #pragma omp parallel for
             for (int idx = 0; idx < _p.nxyz; idx += P<double>::packsize) {
                 //  Pack f0 and f
-                __m256d __f0 = _mm256_loadu_pd(&_p.f0[idx]), __f[P<double>::nc] = { 0 };
+                __m256d __f0 = _mm256_load_pd(&_p.f0[idx]), __f[P<double>::nc] = { 0 };
                 for (int c = 1; c < P<double>::nc; ++c) {
-                    __f[c] = _mm256_loadu_pd(&_p.f[P<double>::IndexF(idx, c)]);
+                    __f[c] = _mm256_load_pd(&_p.f[P<double>::IndexF(idx, c)]);
                 }
 
                 //  Update macro
@@ -75,9 +74,9 @@ namespace PANSLBM2 {
                 }
 
                 //  Collide
-                _mm256_storeu_pd(&_p.f0[idx], _mm256_add_pd(_mm256_mul_pd(__iomega, __f0), _mm256_mul_pd(__omega, Equilibrium<P<double> >(__rho, __ux, __uy, 0))));
+                _mm256_store_pd(&_p.f0[idx], _mm256_add_pd(_mm256_mul_pd(__iomega, __f0), _mm256_mul_pd(__omega, Equilibrium<P<double> >(__rho, __ux, __uy, 0))));
                 for (int c = 1; c < P<double>::nc; ++c) {
-                    _mm256_storeu_pd(&_p.f[P<double>::IndexF(idx, c)], _mm256_add_pd(_mm256_mul_pd(__iomega, __f[c]), _mm256_mul_pd(__omega, Equilibrium<P<double> >(__rho, __ux, __uy, c))));
+                    _mm256_store_pd(&_p.f[P<double>::IndexF(idx, c)], _mm256_add_pd(_mm256_mul_pd(__iomega, __f[c]), _mm256_mul_pd(__omega, Equilibrium<P<double> >(__rho, __ux, __uy, c))));
                 }
             }
         }

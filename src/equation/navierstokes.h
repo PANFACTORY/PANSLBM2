@@ -7,7 +7,9 @@
 
 #pragma once
 #include <cassert>
-#include <immintrin.h>
+#ifdef _USE_AVX_DEFINES
+    #include "../equation_avx/navierstokes_avx.h"
+#endif
 
 namespace PANSLBM2 {
     namespace NS {
@@ -75,10 +77,13 @@ namespace PANSLBM2 {
                 _f[P<T>::IndexF(_idx, c)] -= 3.0*_alpha/(1.0 + _alpha/_rho)*P<T>::ei[c]*(P<T>::cx[c]*_ux + P<T>::cy[c]*_uy + P<T>::cz[c]*_uz);
             }
         }
+    }
 
-        //  Function of Update macro, Collide and Stream of NS for 2D
+#ifndef _USE_AVX_DEFINES
+    namespace NS {
+        //  Function of Update macro and Collide of NS for 2D
         template<class T, template<class>class P>
-        void MacroCollideStream(P<T>& _p, T *_rho, T *_ux, T *_uy, T _viscosity, bool _issave = false) {
+        void MacroCollide(P<T>& _p, T *_rho, T *_ux, T *_uy, T _viscosity, bool _issave = false) {
             T omega = 1.0/(3.0*_viscosity + 0.5);
 #pragma omp parallel for
             for (int idx = 0; idx < _p.nxyz; ++idx) {
@@ -101,9 +106,9 @@ namespace PANSLBM2 {
             }
         }
 
-        //  Function of Update macro, Collide and Stream of NS for 3D
+        //  Function of Update macro and Collide of NS for 3D
         template<class T, template<class>class P>
-        void MacroCollideStream(P<T>& _p, T *_rho, T *_ux, T *_uy, T *_uz, T _viscosity, bool _issave = false) {
+        void MacroCollide(P<T>& _p, T *_rho, T *_ux, T *_uy, T *_uz, T _viscosity, bool _issave = false) {
             T omega = 1.0/(3.0*_viscosity + 0.5);
 #pragma omp parallel for
             for (int idx = 0; idx < _p.nxyz; ++idx) {
@@ -127,9 +132,9 @@ namespace PANSLBM2 {
             }
         }
 
-        //  Function of Update macro, External force(Brinkman model), Collide and Stream of NS for 2D
+        //  Function of Update macro, External force(Brinkman model) and Collide of NS for 2D
         template<class T, template<class>class P>
-        void MacroBrinkmanCollideStream(P<T>& _p, T *_rho, T *_ux, T *_uy, T _viscosity, const T *_alpha, bool _issave = false) {
+        void MacroBrinkmanCollide(P<T>& _p, T *_rho, T *_ux, T *_uy, T _viscosity, const T *_alpha, bool _issave = false) {
             T omega = 1.0/(3.0*_viscosity + 0.5);
 #pragma omp parallel for
             for (int idx = 0; idx < _p.nxyz; ++idx) {
@@ -156,9 +161,9 @@ namespace PANSLBM2 {
             }
         }
 
-        //  Function of Update macro, External force(Brinkman model), Collide and Stream of NS for 3D
+        //  Function of Update macro, External force(Brinkman model) and Collide of NS for 3D
         template<class T, template<class>class P>
-        void MacroBrinkmanCollideStream(P<T>& _p, T *_rho, T *_ux, T *_uy, T *_uz, T _viscosity, const T *_alpha, bool _issave = false) {
+        void MacroBrinkmanCollide(P<T>& _p, T *_rho, T *_ux, T *_uy, T *_uz, T _viscosity, const T *_alpha, bool _issave = false) {
             T omega = 1.0/(3.0*_viscosity + 0.5);
 #pragma omp parallel for
             for (int idx = 0; idx < _p.nxyz; ++idx) {
@@ -185,7 +190,11 @@ namespace PANSLBM2 {
                 }
             }
         }
-
+    }   
+#endif 
+    
+    //  Initial conditions and boundary conditions
+    namespace NS {
         //  Function of setting initial condition of NS for 2D
         template<class T, template<class>class P>
         void InitialCondition(P<T>& _p, const T *_rho, const T *_ux, const T *_uy) {

@@ -132,7 +132,7 @@ int main(int argc, char** argv) {
         NS::InitialCondition(pf, rho, ux, uy, uz);
         AD::InitialCondition(pg, tem, ux, uy, uz);
         for (int t = 1; t <= nt; t++) {
-            AD::MacroBrinkmanCollideStreamNaturalConvection(pf, rho, ux, uy, uz, alpha, nu, pg, tem, qx, qy, qz, diffusivity, gx, gy, gz, tem0, true);
+            AD::MacroBrinkmanCollideNaturalConvection(pf, rho, ux, uy, uz, alpha, nu, pg, tem, qx, qy, qz, diffusivity, gx, gy, gz, tem0, true);
             if (t%dt == 0) {
                 if (MyRank == 0) {
                     std::cout << "\rDirect analyse t = " << t << std::string(10, ' ');
@@ -181,7 +181,7 @@ int main(int argc, char** argv) {
         ANS::InitialCondition(pf, ux, uy, uz, irho, iux, iuy, iuz);
         AAD::InitialCondition(pg, ux, uy, uz, item, iqx, iqy, iqz);
         for (int t = 1; t <= nt; t++) {
-            AAD::MacroBrinkmanCollideStreamNaturalConvection(
+            AAD::MacroBrinkmanCollideNaturalConvection(
                 pf, rho, ux, uy, uz, irho, iux, iuy, iuz, imx, imy, imz, alpha, nu, 
                 pg, tem, item, iqx, iqy, iqz, diffusivity,
                 gx, gy, gz, true

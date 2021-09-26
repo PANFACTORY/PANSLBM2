@@ -43,7 +43,7 @@ int main() {
     NS::InitialCondition(pf, rho, ux, uy);
     AD::InitialCondition(pg, tem, ux, uy);
     for (int t = 1; t <= nt; ++t) {
-        AD::MacroBrinkmanCollideStreamHeatExchange(
+        AD::MacroBrinkmanCollideHeatExchange(
             pf, rho, ux, uy, alpha, nu,
             pg, tem, qx, qy, beta, alp, true
         );
@@ -79,7 +79,7 @@ int main() {
     ANS::InitialCondition(pf, ux, uy, irho, iux, iuy);
     AAD::InitialCondition(pg, ux, uy, item, iqx, iqy);
     for (int t = 1; t <= nt; ++t) {
-        AAD::MacroBrinkmanCollideStreamHeatExchange(
+        AAD::MacroBrinkmanCollideHeatExchange(
             pf, rho, ux, uy, irho, iux, iuy, imx, imy, alpha, nu,
             pg, tem, item, iqx, iqy, beta, alp, true
         );

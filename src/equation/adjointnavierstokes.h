@@ -67,7 +67,7 @@ namespace PANSLBM2 {
         template<class T, template<class>class P>
         void Equilibrium(T *_feq, T _ux, T _uy, T _uz, T _ip, T _iux, T _iuy, T _iuz) {
             for (int c = 0; c < P<T>::nc; ++c) {
-                _feq[c] = _ip + 3.0*(_iux*(P<T>::cx[_c] - _ux) + _iuy*(P<T>::cy[_c] - _uy) + _iuz*(P<T>::cz[_c] - _uz));
+                _feq[c] = _ip + 3.0*(_iux*(P<T>::cx[c] - _ux) + _iuy*(P<T>::cy[c] - _uy) + _iuz*(P<T>::cz[c] - _uz));
             }
         }
 
@@ -84,10 +84,10 @@ namespace PANSLBM2 {
         //  Function of applying external force with Brinkman model of ANS for 3D
         template<class T, template<class>class P>
         void ExternalForceBrinkman(T _rho, T _ux, T _uy, T _uz, T _imx, T _imy, T _imz, T *_f0, T *_f, T _alpha, int _idx) {
-            T coef = 3.0*_alpha[_idx]/(_rho[_idx] + _alpha[_idx]);
-            _f0[_idx] -= -coef*(_ux[_idx]*_imx + _uy[_idx]*_imy + _uz[_idx]*_imz);
+            T coef = 3.0*_alpha/(_rho + _alpha);
+            _f0[_idx] -= -coef*(_ux*_imx + _uy*_imy + _uz*_imz);
             for (int c = 1; c < P<T>::nc; ++c) {
-                _f[P<T>::IndexF(_idx, c)] -= coef*((P<T>::cx[c] - _ux[_idx])*_imx + (P<T>::cy[c] - _uy[_idx])*_imy + (P<T>::cz[c] - _uz[_idx])*_imz);
+                _f[P<T>::IndexF(_idx, c)] -= coef*((P<T>::cx[c] - _ux)*_imx + (P<T>::cy[c] - _uy)*_imy + (P<T>::cz[c] - _uz)*_imz);
             }
         }
 

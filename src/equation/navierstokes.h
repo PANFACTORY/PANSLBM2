@@ -73,16 +73,18 @@ namespace PANSLBM2 {
         //  Function of applying external force of NS with Brinkman model for 2D
         template<class T, template<class>class P>
         void ExternalForceBrinkman(T _rho, T _ux, T _uy, T _alpha, T *_f, int _idx) {
+            T coef = 3.0*_alpha*_rho/(_rho + _alpha);
             for (int c = 1; c < P<T>::nc; ++c) {
-                _f[P<T>::IndexF(_idx, c)] -= 3.0*_alpha/(1.0 + _alpha/_rho)*P<T>::ei[c]*(P<T>::cx[c]*_ux + P<T>::cy[c]*_uy);
+                _f[P<T>::IndexF(_idx, c)] -= coef*P<T>::ei[c]*(P<T>::cx[c]*_ux + P<T>::cy[c]*_uy);
             }
         }
 
         //  Function of applying external force of NS with Brinkman model for 3D
         template<class T, template<class>class P>
         void ExternalForceBrinkman(T _rho, T _ux, T _uy, T _uz, T _alpha, T *_f, int _idx) {
+            T coef = 3.0*_alpha*_rho/(_rho + _alpha);
             for (int c = 1; c < P<T>::nc; ++c) {
-                _f[P<T>::IndexF(_idx, c)] -= 3.0*_alpha/(1.0 + _alpha/_rho)*P<T>::ei[c]*(P<T>::cx[c]*_ux + P<T>::cy[c]*_uy + P<T>::cz[c]*_uz);
+                _f[P<T>::IndexF(_idx, c)] -= coef*P<T>::ei[c]*(P<T>::cx[c]*_ux + P<T>::cy[c]*_uy + P<T>::cz[c]*_uz);
             }
         }
     }

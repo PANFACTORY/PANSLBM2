@@ -180,8 +180,9 @@ private:
         for (int k = 0; k < this->nz; ++k) {
             for (int j = 0; j < this->ny; ++j) {
                 for (int i = 0; i < this->nx; ++i) {
+                    int idx = this->Index(i, j, k);
                     for (int c = 1; c < D3Q15<T>::nc; ++c) {
-                        int idx = this->Index(i, j, k), idxstream = this->Index(i - D3Q15<T>::cx[c], j - D3Q15<T>::cy[c], k - D3Q15<T>::cz[c]);
+                        int idxstream = this->Index(i - D3Q15<T>::cx[c], j - D3Q15<T>::cy[c], k - D3Q15<T>::cz[c]);
                         this->fnext[D3Q15<T>::IndexF(idx, c)] = this->f[D3Q15<T>::IndexF(idxstream, c)];
                     }
                 }
@@ -607,8 +608,9 @@ private:
         for (int k = 0; k < this->nz; ++k) {
             for (int j = 0; j < this->ny; ++j) {
                 for (int i = 0; i < this->nx; ++i) {
+                    int idx = this->Index(i, j, k);
                     for (int c = 1; c < D3Q15<T>::nc; ++c) {
-                        int idx = this->Index(i, j, k), idxstream = this->Index(i + D3Q15<T>::cx[c], j + D3Q15<T>::cy[c], k + D3Q15<T>::cz[c]);
+                        int idxstream = this->Index(i + D3Q15<T>::cx[c], j + D3Q15<T>::cy[c], k + D3Q15<T>::cz[c]);
                         this->fnext[D3Q15<T>::IndexF(idx, c)] = this->f[D3Q15<T>::IndexF(idxstream, c)];
                     }
                 }

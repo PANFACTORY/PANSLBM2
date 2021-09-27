@@ -101,7 +101,7 @@ namespace PANSLBM2 {
         ) {
             T omegaf = 1.0/(3.0*_viscosity + 0.5), iomegaf = 1.0 - omegaf, feq[P<T>::nc];
             T omegag = 1.0/(3.0*_diffusivity + 0.5), iomegag = 1.0 - omegag, geq[Q<T>::nc];
-#pragma omp parallel for
+            #pragma omp parallel for private(feq, geq)
             for (int idx = 0; idx < _p.nxyz; ++idx) {
                 //  Update macro
                 T rho, ux, uy;
@@ -144,7 +144,7 @@ namespace PANSLBM2 {
         ) {
             T omegaf = 1.0/(3.0*_viscosity + 0.5), iomegaf = 1.0 - omegaf, feq[P<T>::nc];
             T omegag = 1.0/(3.0*_diffusivity + 0.5), iomegag = 1.0 - omegag, geq[Q<T>::nc];
-#pragma omp parallel for
+            #pragma omp parallel for private(feq, geq)
             for (int idx = 0; idx < _p.nxyz; ++idx) {
                 //  Update macro
                 T rho, ux, uy, uz;
@@ -189,7 +189,7 @@ namespace PANSLBM2 {
         ) {
             T omegaf = 1.0/(3.0*_viscosity + 0.5), iomegaf = 1.0 - omegaf, feq[P<T>::nc]; 
             T omegag = 1.0/(3.0*_diffusivity + 0.5), iomegag = 1.0 - omegag, geq[Q<T>::nc];
-#pragma omp parallel for
+            #pragma omp parallel for private(feq, geq)
             for (int idx = 0; idx < _p.nxyz; ++idx) {
                 //  Update macro
                 T rho, ux, uy;
@@ -236,7 +236,7 @@ namespace PANSLBM2 {
         ) {
             T omegaf = 1.0/(3.0*_viscosity + 0.5), iomegaf = 1.0 - omegaf, feq[P<T>::nc];
             T omegag = 1.0/(3.0*_diffusivity + 0.5), iomegag = 1.0 - omegag, geq[Q<T>::nc];
-#pragma omp parallel for
+            #pragma omp parallel for private(feq, geq)
             for (int idx = 0; idx < _p.nxyz; ++idx) {
                 //  Update macro
                 T rho, ux, uy, uz;
@@ -284,7 +284,7 @@ namespace PANSLBM2 {
         ) {
             T omegaf = 1.0/(3.0*_viscosity + 0.5), iomegaf = 1.0 - omegaf, feq[P<T>::nc];
             T omegag = 1.0/(3.0*_diffusivity + 0.5), iomegag = 1.0 - omegag, geq[Q<T>::nc];
-#pragma omp parallel for
+            #pragma omp parallel for private(feq, geq)
             for (int idx = 0; idx < _p.nxyz; ++idx) {
                 //  Update macro
                 T rho, ux, uy;
@@ -332,7 +332,7 @@ namespace PANSLBM2 {
         ) {
             T omegaf = 1.0/(3.0*_viscosity + 0.5), iomegaf = 1.0 - omegaf, feq[P<T>::nc];
             T omegag = 1.0/(3.0*_diffusivity + 0.5), iomegag = 1.0 - omegag, geq[Q<T>::nc];
-#pragma omp parallel for
+            #pragma omp parallel for private(feq, geq)
             for (int idx = 0; idx < _p.nxyz; ++idx) {
                 //  Update macro
                 T rho, ux, uy, uz;
@@ -382,7 +382,7 @@ namespace PANSLBM2 {
             bool _issave = false
         ) {
             T omegaf = 1.0/(3.0*_viscosity + 0.5), iomegaf = 1.0 - omegaf, feq[P<T>::nc], geq[Q<T>::nc];
-#pragma omp parallel for
+            #pragma omp parallel for private(feq, geq)
             for (int idx = 0; idx < _p.nxyz; ++idx) {
                 T omegag = 1.0/(3.0*_diffusivity[idx] + 0.5), iomegag = 1.0 - omegag;
 
@@ -431,7 +431,7 @@ namespace PANSLBM2 {
             bool _issave = false
         ) {
             T omegaf = 1.0/(3.0*_viscosity + 0.5), iomegaf = 1.0 - omegaf, feq[P<T>::nc], geq[Q<T>::nc];
-#pragma omp parallel for
+            #pragma omp parallel for private(feq, geq)
             for (int idx = 0; idx < _p.nxyz; ++idx) {
                 T omegag = 1.0/(3.0*_diffusivity[idx] + 0.5), iomegag = 1.0 - omegag;
 
@@ -482,7 +482,7 @@ namespace PANSLBM2 {
             T _gx, T _gy, T _tem0, bool _issave = false
         ) {
             T omegaf = 1.0/(3.0*_viscosity + 0.5), iomegaf = 1.0 - omegaf, feq[P<T>::nc], geq[Q<T>::nc];
-#pragma omp parallel for
+            #pragma omp parallel for private(feq, geq)
             for (int idx = 0; idx < _p.nxyz; ++idx) {
                 T omegag = 1.0/(3.0*_diffusivity[idx] + 0.5), iomegag = 1.0 - omegag;
 
@@ -532,7 +532,7 @@ namespace PANSLBM2 {
             T _gx, T _gy, T _gz, T _tem0, bool _issave = false
         ) {
             T omegaf = 1.0/(3.0*_viscosity + 0.5), iomegaf = 1.0 - omegaf, feq[P<T>::nc], geq[Q<T>::nc];
-#pragma omp parallel for
+            #pragma omp parallel for private(feq, geq)
             for (int idx = 0; idx < _p.nxyz; ++idx) {
                 T omegag = 1.0/(3.0*_diffusivity[idx] + 0.5), iomegag = 1.0 - omegag;
 

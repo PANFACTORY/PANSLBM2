@@ -1,5 +1,5 @@
 //#define _USE_MPI_DEFINES
-#define _USE_AVX_DEFINES
+//#define _USE_AVX_DEFINES
 #include <iostream>
 #include <chrono>
 #include <cassert>
@@ -9,7 +9,6 @@
 
 #include "../src/particle/d2q9.h"
 #include "../src/equation/navierstokes.h"
-#include "../src/equation_avx/navierstokes_avx.h"
 #include "../src/utility/vtkxmlexport.h"
 
 using namespace PANSLBM2;

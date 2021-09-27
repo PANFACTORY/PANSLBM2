@@ -1,3 +1,5 @@
 *.exe
+*.out
+gprof
 .vscode
 result

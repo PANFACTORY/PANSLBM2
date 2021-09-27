@@ -95,7 +95,7 @@ namespace PANSLBM2 {
         template<class T, template<class>class P>
         void MacroCollide(P<T>& _p, T *_rho, T *_ux, T *_uy, T _viscosity, bool _issave = false) {
             T omega = 1.0/(3.0*_viscosity + 0.5), iomega = 1.0 - omega, feq[P<T>::nc];
-#pragma omp parallel for
+            #pragma omp parallel for private(feq)
             for (int idx = 0; idx < _p.nxyz; ++idx) {
                 //  Update macro
                 T rho, ux, uy;
@@ -122,7 +122,7 @@ namespace PANSLBM2 {
         template<class T, template<class>class P>
         void MacroCollide(P<T>& _p, T *_rho, T *_ux, T *_uy, T *_uz, T _viscosity, bool _issave = false) {
             T omega = 1.0/(3.0*_viscosity + 0.5), iomega = 1.0 - omega, feq[P<T>::nc];
-#pragma omp parallel for
+            #pragma omp parallel for private(feq)
             for (int idx = 0; idx < _p.nxyz; ++idx) {
                 //  Update macro
                 T rho, ux, uy, uz;
@@ -150,7 +150,7 @@ namespace PANSLBM2 {
         template<class T, template<class>class P>
         void MacroBrinkmanCollide(P<T>& _p, T *_rho, T *_ux, T *_uy, T _viscosity, const T *_alpha, bool _issave = false) {
             T omega = 1.0/(3.0*_viscosity + 0.5), iomega = 1.0 - omega, feq[P<T>::nc];
-#pragma omp parallel for
+            #pragma omp parallel for private(feq)
             for (int idx = 0; idx < _p.nxyz; ++idx) {
                 //  Update macro
                 T rho, ux, uy;
@@ -181,7 +181,7 @@ namespace PANSLBM2 {
         template<class T, template<class>class P>
         void MacroBrinkmanCollide(P<T>& _p, T *_rho, T *_ux, T *_uy, T *_uz, T _viscosity, const T *_alpha, bool _issave = false) {
             T omega = 1.0/(3.0*_viscosity + 0.5), iomega = 1.0 - omega, feq[P<T>::nc];
-#pragma omp parallel for
+            #pragma omp parallel for private(feq)
             for (int idx = 0; idx < _p.nxyz; ++idx) {
                 //  Update macro
                 T rho, ux, uy, uz;

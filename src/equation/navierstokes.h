@@ -20,12 +20,14 @@ namespace PANSLBM2 {
             _ux = T();
             _uy = T();
             for (int c = 1; c < P<T>::nc; ++c) {
-                _rho += _f[P<T>::IndexF(_idx, c)];
-                _ux += P<T>::cx[c]*_f[P<T>::IndexF(_idx, c)];
-                _uy += P<T>::cy[c]*_f[P<T>::IndexF(_idx, c)];
+                T f = _f[P<T>::IndexF(_idx, c)];
+                _rho += f;
+                _ux += P<T>::cx[c]*f;
+                _uy += P<T>::cy[c]*f;
             }
-            _ux /= _rho;
-            _uy /= _rho;
+            T invrho = 1.0/_rho;
+            _ux *= invrho;
+            _uy *= invrho;
         }
 
         //  Function of updating macroscopic values of NS for 3D
@@ -36,30 +38,36 @@ namespace PANSLBM2 {
             _uy = T();
             _uz = T();
             for (int c = 1; c < P<T>::nc; ++c) {
-                _rho += _f[P<T>::IndexF(_idx, c)];
-                _ux += P<T>::cx[c]*_f[P<T>::IndexF(_idx, c)];
-                _uy += P<T>::cy[c]*_f[P<T>::IndexF(_idx, c)];
-                _uz += P<T>::cz[c]*_f[P<T>::IndexF(_idx, c)];
+                T f = _f[P<T>::IndexF(_idx, c)];
+                _rho += f;
+                _ux += P<T>::cx[c]*f;
+                _uy += P<T>::cy[c]*f;
+                _uz += P<T>::cz[c]*f;
             }
-            _ux /= _rho;
-            _uy /= _rho;
-            _uz /= _rho;
+            T invrho = 1.0/_rho;
+            _ux *= invrho;
+            _uy *= invrho;
+            _uz *= invrho;
         }
 
         //  Function of getting equilibrium of NS for 2D
         template<class T, template<class>class P>
-        T Equilibrium(T _rho, T _ux, T _uy, int _c) {
-            T uu = _ux*_ux + _uy*_uy;
-            T ciu = P<T>::cx[_c]*_ux + P<T>::cy[_c]*_uy;
-            return P<T>::ei[_c]*_rho*(1.0 + 3.0*ciu + 4.5*ciu*ciu - 1.5*uu);
+        void Equilibrium(T *_feq, T _rho, T _ux, T _uy) {
+            T uu = 1.0 - 1.5*(_ux*_ux + _uy*_uy);
+            for (int c = 0; c < P<T>::nc; ++c) {
+                T ciu = P<T>::cx[c]*_ux + P<T>::cy[c]*_uy;
+                _feq[c] = P<T>::ei[c]*_rho*(3.0*ciu + 4.5*ciu*ciu + uu);
+            }
         }
 
         //  Function of getting equilibrium of NS for 3D
         template<class T, template<class>class P>
-        T Equilibrium(T _rho, T _ux, T _uy, T _uz, int _c) {
-            T uu = _ux*_ux + _uy*_uy + _uz*_uz;
-            T ciu = P<T>::cx[_c]*_ux + P<T>::cy[_c]*_uy + P<T>::cz[_c]*_uz;
-            return P<T>::ei[_c]*_rho*(1.0 + 3.0*ciu + 4.5*ciu*ciu - 1.5*uu);
+        void Equilibrium(T *_feq, T _rho, T _ux, T _uy, T _uz) {
+            T uu = 1.0 - 1.5*(_ux*_ux + _uy*_uy + _uz*_uz);
+            for (int c = 0; c < P<T>::nc; ++c) {
+                T ciu = P<T>::cx[c]*_ux + P<T>::cy[c]*_uy + P<T>::cz[c]*_uz;
+                _feq[c] = P<T>::ei[c]*_rho*(3.0*ciu + 4.5*ciu*ciu + uu);
+            } 
         }
 
         //  Function of applying external force of NS with Brinkman model for 2D
@@ -84,7 +92,7 @@ namespace PANSLBM2 {
         //  Function of Update macro and Collide of NS for 2D
         template<class T, template<class>class P>
         void MacroCollide(P<T>& _p, T *_rho, T *_ux, T *_uy, T _viscosity, bool _issave = false) {
-            T omega = 1.0/(3.0*_viscosity + 0.5);
+            T omega = 1.0/(3.0*_viscosity + 0.5), iomega = 1.0 - omega, feq[P<T>::nc];
 #pragma omp parallel for
             for (int idx = 0; idx < _p.nxyz; ++idx) {
                 //  Update macro
@@ -99,9 +107,11 @@ namespace PANSLBM2 {
                 }
 
                 //  Collide
-                _p.f0[idx] = (1.0 - omega)*_p.f0[idx] + omega*Equilibrium<T, P>(rho, ux, uy, 0);
+                Equilibrium<T, P>(feq, rho, ux, uy);
+                _p.f0[idx] = iomega*_p.f0[idx] + omega*feq[0];
                 for (int c = 1; c < P<T>::nc; ++c) {
-                    _p.f[P<T>::IndexF(idx, c)] = (1.0 - omega)*_p.f[P<T>::IndexF(idx, c)] + omega*Equilibrium<T, P>(rho, ux, uy, c);
+                    int idxf = P<T>::IndexF(idx, c);
+                    _p.f[idxf] = iomega*_p.f[idxf] + omega*feq[c];
                 }
             }
         }
@@ -109,7 +119,7 @@ namespace PANSLBM2 {
         //  Function of Update macro and Collide of NS for 3D
         template<class T, template<class>class P>
         void MacroCollide(P<T>& _p, T *_rho, T *_ux, T *_uy, T *_uz, T _viscosity, bool _issave = false) {
-            T omega = 1.0/(3.0*_viscosity + 0.5);
+            T omega = 1.0/(3.0*_viscosity + 0.5), iomega = 1.0 - omega, feq[P<T>::nc];
 #pragma omp parallel for
             for (int idx = 0; idx < _p.nxyz; ++idx) {
                 //  Update macro
@@ -125,9 +135,11 @@ namespace PANSLBM2 {
                 }
 
                 //  Collide
-                _p.f0[idx] = (1.0 - omega)*_p.f0[idx] + omega*Equilibrium<T, P>(rho, ux, uy, uz, 0);
+                Equilibrium<T, P>(feq, rho, ux, uy, uz);
+                _p.f0[idx] = iomega*_p.f0[idx] + omega*feq[0];
                 for (int c = 1; c < P<T>::nc; ++c) {
-                    _p.f[P<T>::IndexF(idx, c)] = (1.0 - omega)*_p.f[P<T>::IndexF(idx, c)] + omega*Equilibrium<T, P>(rho, ux, uy, uz, c);
+                    int idxf = P<T>::IndexF(idx, c);
+                    _p.f[idxf] = iomega*_p.f[idxf] + omega*feq[c];
                 }
             }
         }
@@ -135,7 +147,7 @@ namespace PANSLBM2 {
         //  Function of Update macro, External force(Brinkman model) and Collide of NS for 2D
         template<class T, template<class>class P>
         void MacroBrinkmanCollide(P<T>& _p, T *_rho, T *_ux, T *_uy, T _viscosity, const T *_alpha, bool _issave = false) {
-            T omega = 1.0/(3.0*_viscosity + 0.5);
+            T omega = 1.0/(3.0*_viscosity + 0.5), iomega = 1.0 - omega, feq[P<T>::nc];
 #pragma omp parallel for
             for (int idx = 0; idx < _p.nxyz; ++idx) {
                 //  Update macro
@@ -154,9 +166,11 @@ namespace PANSLBM2 {
                 }
 
                 //  Collide
-                _p.f0[idx] = (1.0 - omega)*_p.f0[idx] + omega*Equilibrium<T, P>(rho, ux, uy, 0);
+                Equilibrium<T, P>(feq, rho, ux, uy);
+                _p.f0[idx] = iomega*_p.f0[idx] + omega*feq[0];
                 for (int c = 1; c < P<T>::nc; ++c) {
-                    _p.f[P<T>::IndexF(idx, c)] = (1.0 - omega)*_p.f[P<T>::IndexF(idx, c)] + omega*Equilibrium<T, P>(rho, ux, uy, c);
+                    int idxf = P<T>::IndexF(idx, c);
+                    _p.f[idxf] = iomega*_p.f[idxf] + omega*feq[c];
                 }
             }
         }
@@ -164,7 +178,7 @@ namespace PANSLBM2 {
         //  Function of Update macro, External force(Brinkman model) and Collide of NS for 3D
         template<class T, template<class>class P>
         void MacroBrinkmanCollide(P<T>& _p, T *_rho, T *_ux, T *_uy, T *_uz, T _viscosity, const T *_alpha, bool _issave = false) {
-            T omega = 1.0/(3.0*_viscosity + 0.5);
+            T omega = 1.0/(3.0*_viscosity + 0.5), iomega = 1.0 - omega, feq[P<T>::nc];
 #pragma omp parallel for
             for (int idx = 0; idx < _p.nxyz; ++idx) {
                 //  Update macro
@@ -184,9 +198,11 @@ namespace PANSLBM2 {
                 }
 
                 //  Collide
-                _p.f0[idx] = (1.0 - omega)*_p.f0[idx] + omega*Equilibrium<T, P>(rho, ux, uy, uz, 0);
+                Equilibrium<T, P>(feq, rho, ux, uy, uz);
+                _p.f0[idx] = iomega*_p.f0[idx] + omega*feq[0];
                 for (int c = 1; c < P<T>::nc; ++c) {
-                    _p.f[P<T>::IndexF(idx, c)] = (1.0 - omega)*_p.f[P<T>::IndexF(idx, c)] + omega*Equilibrium<T, P>(rho, ux, uy, uz, c);
+                    int idxf = P<T>::IndexF(idx, c);
+                    _p.f[idxf] = iomega*_p.f[idxf] + omega*feq[c];
                 }
             }
         }
@@ -198,10 +214,12 @@ namespace PANSLBM2 {
         //  Function of setting initial condition of NS for 2D
         template<class T, template<class>class P>
         void InitialCondition(P<T>& _p, const T *_rho, const T *_ux, const T *_uy) {
+            T feq[P<T>::nc];
             for (int idx = 0; idx < _p.nxyz; ++idx) {
-                _p.f0[idx] = Equilibrium<T, P>(_rho[idx], _ux[idx], _uy[idx], 0);
+                Equilibrium<T, P>(feq, _rho[idx], _ux[idx], _uy[idx]);
+                _p.f0[idx] = feq[0];
                 for (int c = 1; c < P<T>::nc; ++c) {
-                    _p.f[P<T>::IndexF(idx, c)] = Equilibrium<T, P>(_rho[idx], _ux[idx], _uy[idx], c);
+                    _p.f[P<T>::IndexF(idx, c)] = feq[c];
                 }
             }
         }
@@ -209,10 +227,12 @@ namespace PANSLBM2 {
         //  Function of setting initial condition of NS for 3D
         template<class T, template<class>class P>
         void InitialCondition(P<T>& _p, const T *_rho, const T *_ux, const T *_uy, const T *_uz) {
+            T feq[P<T>::nc];
             for (int idx = 0; idx < _p.nxyz; ++idx) {
-                _p.f0[idx] = Equilibrium<T, P>(_rho[idx], _ux[idx], _uy[idx], _uz[idx], 0);
+                Equilibrium<T, P>(feq, _rho[idx], _ux[idx], _uy[idx], _uz[idx]);
+                _p.f0[idx] = feq[0];
                 for (int c = 1; c < P<T>::nc; ++c) {
-                    _p.f[P<T>::IndexF(idx, c)] = Equilibrium<T, P>(_rho[idx], _ux[idx], _uy[idx], _uz[idx], c);
+                    _p.f[P<T>::IndexF(idx, c)] = feq[c];
                 }
             }
         }

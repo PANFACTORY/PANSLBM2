@@ -137,8 +137,9 @@ private:
 #pragma omp parallel for
         for (int j = 0; j < this->ny; ++j) {
             for (int i = 0; i < this->nx; ++i) {
+                int idx = this->Index(i, j);
                 for (int c = 1; c < D2Q9<T>::nc; ++c) {
-                    int idx = this->Index(i, j), idxstream = this->Index(i - D2Q9<T>::cx[c], j - D2Q9<T>::cy[c]);
+                    int idxstream = this->Index(i - D2Q9<T>::cx[c], j - D2Q9<T>::cy[c]);
                     this->fnext[D2Q9<T>::IndexF(idx, c)] = this->f[D2Q9<T>::IndexF(idxstream, c)];
                 }
             }
@@ -277,8 +278,9 @@ private:
 #pragma omp parallel for
         for (int j = 0; j < this->ny; ++j) {
             for (int i = 0; i < this->nx; ++i) {
+                int idx = this->Index(i, j);
                 for (int c = 1; c < D2Q9<T>::nc; ++c) {
-                    int idx = this->Index(i, j), idxstream = this->Index(i + D2Q9<T>::cx[c], j + D2Q9<T>::cy[c]);
+                    int idxstream = this->Index(i + D2Q9<T>::cx[c], j + D2Q9<T>::cy[c]);
                     this->fnext[D2Q9<T>::IndexF(idx, c)] = this->f[D2Q9<T>::IndexF(idxstream, c)];
                 }
             }

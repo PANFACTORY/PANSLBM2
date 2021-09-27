@@ -13,22 +13,19 @@ namespace PANSLBM2 {
     namespace ANS {
         //  Function of updating macroscopic values of ANS for 2D
         template<class T, template<class>class P>
-        void Macro(
-            T &_ip, T &_iux, T &_iuy, T &_imx, T &_imy, 
-            const T *_rho, const T *_ux, const T *_uy, const T *_f0, const T *_f, int _idx
-        ) {
-            T uu = _ux[_idx]*_ux[_idx] + _uy[_idx]*_uy[_idx];
+        void Macro(T &_ip, T &_iux, T &_iuy, T &_imx, T &_imy, T _rho, T _ux, T _uy, const T *_f0, const T *_f, int _idx) {
+            T uu = _ux*_ux + _uy*_uy;
             _ip = _f0[_idx]*P<T>::ei[0]*(1.0 - 1.5*uu);
-            _iux = -_f0[_idx]*P<T>::ei[0]*_ux[_idx];
-            _iuy = -_f0[_idx]*P<T>::ei[0]*_uy[_idx];
+            _iux = -_f0[_idx]*P<T>::ei[0]*_ux;
+            _iuy = -_f0[_idx]*P<T>::ei[0]*_uy;
             _imx = T();
             _imy = T();
             for (int c = 1; c < P<T>::nc; ++c) {
-                T ciu = P<T>::cx[c]*_ux[_idx] + P<T>::cy[c]*_uy[_idx];
+                T ciu = P<T>::cx[c]*_ux + P<T>::cy[c]*_uy;
                 T fei = _f[P<T>::IndexF(_idx, c)]*P<T>::ei[c];
                 _ip += fei*(1.0 + 3.0*ciu + 4.5*ciu*ciu - 1.5*uu);
-                _iux += fei*(P<T>::cx[c] + 3.0*ciu*P<T>::cx[c] - _ux[_idx]);
-                _iuy += fei*(P<T>::cy[c] + 3.0*ciu*P<T>::cy[c] - _uy[_idx]);
+                _iux += fei*(P<T>::cx[c] + 3.0*ciu*P<T>::cx[c] - _ux);
+                _iuy += fei*(P<T>::cy[c] + 3.0*ciu*P<T>::cy[c] - _uy);
                 _imx += fei*P<T>::cx[c];
                 _imy += fei*P<T>::cy[c];
             }
@@ -36,10 +33,7 @@ namespace PANSLBM2 {
 
         //  Function of updating macroscopic values of ANS for 3D
         template<class T, template<class>class P>
-        void Macro(
-            T &_ip, T &_iux, T &_iuy, T &_iuz, T &_imx, T &_imy, T &_imz, 
-            const T *_rho, const T *_ux, const T *_uy, const T *_uz, const T *_f0, const T *_f, int _idx
-        ) {
+        void Macro(T &_ip, T &_iux, T &_iuy, T &_iuz, T &_imx, T &_imy, T &_imz, T _rho, T _ux, T _uy, T _uz, const T *_f0, const T *_f, int _idx) {
             T uu = _ux[_idx]*_ux[_idx] + _uy[_idx]*_uy[_idx] + _uz[_idx]*_uz[_idx];
             _ip = _f0[_idx]*P<T>::ei[0]*(1.0 - 1.5*uu);
             _iux = -_f0[_idx]*P<T>::ei[0]*_ux[_idx];
@@ -63,37 +57,37 @@ namespace PANSLBM2 {
 
         //  Function of getting equilibrium of ANS for 2D
         template<class T, template<class>class P>
-        T Equilibrium(T _ux, T _uy, T _ip, T _iux, T _iuy, int _c) {
-            return _ip + 3.0*(_iux*(P<T>::cx[_c] - _ux) + _iuy*(P<T>::cy[_c] - _uy));
+        void Equilibrium(T *_feq, T _ux, T _uy, T _ip, T _iux, T _iuy) {
+            for (int c = 0; c < P<T>::nc; ++c) {
+                _feq[c] = _ip + 3.0*(_iux*(P<T>::cx[c] - _ux) + _iuy*(P<T>::cy[c] - _uy));
+            }
         }
 
         //  Function of getting equilibrium of ANS for 3D
         template<class T, template<class>class P>
-        T Equilibrium(T _ux, T _uy, T _uz, T _ip, T _iux, T _iuy, T _iuz, int _c) {
-            return _ip + 3.0*(_iux*(P<T>::cx[_c] - _ux) + _iuy*(P<T>::cy[_c] - _uy) + _iuz*(P<T>::cz[_c] - _uz));
+        void Equilibrium(T *_feq, T _ux, T _uy, T _uz, T _ip, T _iux, T _iuy, T _iuz) {
+            for (int c = 0; c < P<T>::nc; ++c) {
+                _feq[c] = _ip + 3.0*(_iux*(P<T>::cx[_c] - _ux) + _iuy*(P<T>::cy[_c] - _uy) + _iuz*(P<T>::cz[_c] - _uz));
+            }
         }
 
         //  Function of applying external force with Brinkman model of ANS for 2D
         template<class T, template<class>class P>
-        void ExternalForceBrinkman(
-            const T *_rho, const T *_ux, const T *_uy, 
-            T _imx, T _imy, T *_f0, T *_f, const T *_alpha, int _idx
-        ) {
-            _f0[_idx] -= -3.0*_alpha[_idx]/(_rho[_idx] + _alpha[_idx])*(_ux[_idx]*_imx + _uy[_idx]*_imy);
+        void ExternalForceBrinkman(T _rho, T _ux, T _uy, T _imx, T _imy, T *_f0, T *_f, T _alpha, int _idx) {
+            T coef = 3.0*_alpha/(_rho + _alpha);
+            _f0[_idx] -= -coef*(_ux*_imx + _uy*_imy);
             for (int c = 1; c < P<T>::nc; ++c) {
-                _f[P<T>::IndexF(_idx, c)] -= 3.0*_alpha[_idx]/(_rho[_idx] + _alpha[_idx])*((P<T>::cx[c] - _ux[_idx])*_imx + (P<T>::cy[c] - _uy[_idx])*_imy);
+                _f[P<T>::IndexF(_idx, c)] -= coef*((P<T>::cx[c] - _ux)*_imx + (P<T>::cy[c] - _uy)*_imy);
             }
         }
 
         //  Function of applying external force with Brinkman model of ANS for 3D
         template<class T, template<class>class P>
-        void ExternalForceBrinkman(
-            const T *_rho, const T *_ux, const T *_uy, const T *_uz, 
-            T _imx, T _imy, T _imz, T *_f0, T *_f, const T *_alpha, int _idx
-        ) {
-            _f0[_idx] -= -3.0*_alpha[_idx]/(_rho[_idx] + _alpha[_idx])*(_ux[_idx]*_imx + _uy[_idx]*_imy + _uz[_idx]*_imz);
+        void ExternalForceBrinkman(T _rho, T _ux, T _uy, T _uz, T _imx, T _imy, T _imz, T *_f0, T *_f, T _alpha, int _idx) {
+            T coef = 3.0*_alpha[_idx]/(_rho[_idx] + _alpha[_idx]);
+            _f0[_idx] -= -coef*(_ux[_idx]*_imx + _uy[_idx]*_imy + _uz[_idx]*_imz);
             for (int c = 1; c < P<T>::nc; ++c) {
-                _f[P<T>::IndexF(_idx, c)] -= 3.0*_alpha[_idx]/(_rho[_idx] + _alpha[_idx])*((P<T>::cx[c] - _ux[_idx])*_imx + (P<T>::cy[c] - _uy[_idx])*_imy + (P<T>::cz[c] - _uz[_idx])*_imz);
+                _f[P<T>::IndexF(_idx, c)] -= coef*((P<T>::cx[c] - _ux[_idx])*_imx + (P<T>::cy[c] - _uy[_idx])*_imy + (P<T>::cz[c] - _uz[_idx])*_imz);
             }
         }
 
@@ -104,15 +98,15 @@ namespace PANSLBM2 {
             T *_ip, T *_iux, T *_iuy, T *_imx, T *_imy, 
             T _viscosity, const T *_alpha, bool _issave = false
         ) {
-            T omega = 1.0/(3.0*_viscosity + 0.5);
-#pragma omp parallel for
+            T omega = 1.0/(3.0*_viscosity + 0.5), iomega = 1.0 - omega, feq[P<T>::nc];
+            #pragma omp parallel for private(feq)
             for (int idx = 0; idx < _p.nxyz; ++idx) {
                 T ip, iux, iuy, imx, imy;
-                Macro<T, P>(ip, iux, iuy, imx, imy, _rho, _ux, _uy, _p.f0, _p.f, idx);
+                Macro<T, P>(ip, iux, iuy, imx, imy, _rho[idx], _ux[idx], _uy[idx], _p.f0, _p.f, idx);
 
                 //  External force with Brinkman model
-                ExternalForceBrinkman<T, P>(_rho, _ux, _uy, imx, imy, _p.f0, _p.f, _alpha, idx);
-                Macro<T, P>(ip, iux, iuy, imx, imy, _rho, _ux, _uy, _p.f0, _p.f, idx);
+                ExternalForceBrinkman<T, P>(_rho[idx], _ux[idx], _uy[idx], imx, imy, _p.f0, _p.f, _alpha[idx], idx);
+                Macro<T, P>(ip, iux, iuy, imx, imy, _rho[idx], _ux[idx], _uy[idx], _p.f0, _p.f, idx);
 
                 //  Save macro if need
                 if (_issave) {
@@ -124,9 +118,11 @@ namespace PANSLBM2 {
                 }
 
                 //  Collide
-                _p.f0[idx] = (1.0 - omega)*_p.f0[idx] + omega*Equilibrium<T, P>(_ux[idx], _uy[idx], ip, iux, iuy, 0);
+                Equilibrium<T, P>(feq, _ux[idx], _uy[idx], ip, iux, iuy);
+                _p.f0[idx] = iomega*_p.f0[idx] + omega*feq[0];
                 for (int c = 1; c < P<T>::nc; ++c) {
-                    _p.f[P<T>::IndexF(idx, c)] = (1.0 - omega)*_p.f[P<T>::IndexF(idx, c)] + omega*Equilibrium<T, P>(_ux[idx], _uy[idx], ip, iux, iuy, c);
+                    int idxf = P<T>::IndexF(idx, c);
+                    _p.f[idxf] = iomega*_p.f[idxf] + omega*feq[c];
                 }
             }
         }
@@ -138,16 +134,16 @@ namespace PANSLBM2 {
             T *_ip, T *_iux, T *_iuy, T *_iuz, T *_imx, T *_imy, T *_imz, 
             T _viscosity, const T *_alpha, bool _issave = false
         ) {
-            T omega = 1.0/(3.0*_viscosity + 0.5);
-#pragma omp parallel for
+            T omega = 1.0/(3.0*_viscosity + 0.5), iomega = 1.0 - omega, feq[P<T>::nc];
+            #pragma omp parallel for private(feq)
             for (int idx = 0; idx < _p.nxyz; ++idx) {
                 //  Update macro
                 T ip, iux, iuy, iuz, imx, imy, imz;
-                Macro<T, P>(ip, iux, iuy, iuz, imx, imy, imz, _rho, _ux, _uy, _uz, _p.f0, _p.f, idx);
+                Macro<T, P>(ip, iux, iuy, iuz, imx, imy, imz, _rho[idx], _ux[idx], _uy[idx], _uz[idx], _p.f0, _p.f, idx);
 
                 //  External force with Brinkman model
-                ExternalForceBrinkman<T, P>(_rho, _ux, _uy, _uz, imx, imy, imz, _p.f0, _p.f, _alpha, idx);
-                Macro<T, P>(ip, iux, iuy, iuz, imx, imy, imz, _rho, _ux, _uy, _uz, _p.f0, _p.f, idx);
+                ExternalForceBrinkman<T, P>(_rho[idx], _ux[idx], _uy[idx], _uz[idx], imx, imy, imz, _p.f0, _p.f, _alpha[idx], idx);
+                Macro<T, P>(ip, iux, iuy, iuz, imx, imy, imz, _rho[idx], _ux[idx], _uy[idx], _uz[idx], _p.f0, _p.f, idx);
 
                 //  Save macro if need
                 if (_issave) {
@@ -161,9 +157,11 @@ namespace PANSLBM2 {
                 }
 
                 //  Collide and stream
-                _p.f0[idx] = (1.0 - omega)*_p.f0[idx] + omega*Equilibrium<T, P>(_ux[idx], _uy[idx], _uz[idx], ip, iux, iuy, iuz, 0);
+                Equilibrium<T, P>(feq, _ux[idx], _uy[idx], _uz[idx], ip, iux, iuy, iuz);
+                _p.f0[idx] = iomega*_p.f0[idx] + omega*feq[0];
                 for (int c = 1; c < P<T>::nc; ++c) {
-                    _p.f[P<T>::IndexF(idx, c)] = (1.0 - omega)*_p.f[P<T>::IndexF(idx, c)] + omega*Equilibrium<T, P>(_ux[idx], _uy[idx], _uz[idx], ip, iux, iuy, iuz, c);
+                    int idxf = P<T>::IndexF(idx, c);
+                    _p.f[idxf] = iomega*_p.f[idxf] + omega*feq[c];
                 }
             }
         } 
@@ -171,11 +169,13 @@ namespace PANSLBM2 {
         //  Function of setting initial condition of ANS for 2D
         template<class T, template<class>class P>
         void InitialCondition(P<T>& _p, const T *_ux, const T *_uy, const T *_ip, const T *_iux, const T *_iuy) {
-#pragma omp parallel for
+            T feq[P<T>::nc];
+            #pragma omp parallel for private(feq)
             for (int idx = 0; idx < _p.nxyz; ++idx) {
-                _p.f0[idx] = Equilibrium<T, P>(_ux[idx], _uy[idx], _ip[idx], _iux[idx], _iuy[idx], 0);
+                Equilibrium<T, P>(feq, _ux[idx], _uy[idx], _ip[idx], _iux[idx], _iuy[idx]);
+                _p.f0[idx] = feq[0];
                 for (int c = 1; c < P<T>::nc; ++c) {
-                    _p.f[P<T>::IndexF(idx, c)] = Equilibrium<T, P>(_ux[idx], _uy[idx], _ip[idx], _iux[idx], _iuy[idx], c);
+                    _p.f[P<T>::IndexF(idx, c)] = feq[c];
                 }
             }
         }
@@ -183,11 +183,13 @@ namespace PANSLBM2 {
         //  Function of setting initial condition of ANS for 3D
         template<class T, template<class>class P>
         void InitialCondition(P<T>& _p, const T *_ux, const T *_uy, const T *_uz, const T *_ip, const T *_iux, const T *_iuy, const T *_iuz) {
-#pragma omp parallel for
+            T feq[P<T>::nc];
+            #pragma omp parallel for private(feq)
             for (int idx = 0; idx < _p.nxyz; ++idx) {
-                _p.f0[idx] = Equilibrium<T, P>(_ux[idx], _uy[idx], _uz[idx], _ip[idx], _iux[idx], _iuy[idx], _iuz[idx], 0);
+                Equilibrium<T, P>(feq, _ux[idx], _uy[idx], _uz[idx], _ip[idx], _iux[idx], _iuy[idx], _iuz[idx]);
+                _p.f0[idx] = feq[0];
                 for (int c = 1; c < P<T>::nc; ++c) {
-                    _p.f[P<T>::IndexF(idx, c)] = Equilibrium<T, P>(_ux[idx], _uy[idx], _uz[idx], _ip[idx], _iux[idx], _iuy[idx], _iuz[idx], c);
+                    _p.f[P<T>::IndexF(idx, c)] = feq[c];
                 }
             }
         }

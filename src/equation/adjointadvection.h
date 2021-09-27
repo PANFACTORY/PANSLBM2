@@ -127,13 +127,13 @@ namespace PANSLBM2 {
             for (int idx = 0; idx < _p.nxyz; ++idx) {
                 //  Update macro
                 T ip, iux, iuy, imx, imy;
-                ANS::Macro<T, P>(ip, iux, iuy, imx, imy, _rho, _ux, _uy, _p.f0, _p.f, idx);
+                ANS::Macro<T, P>(ip, iux, iuy, imx, imy, _rho[idx], _ux[idx], _uy[idx], _p.f0, _p.f, idx);
                 T item, iqx, iqy;
                 Macro<T, Q>(item, iqx, iqy, _q.f0, _q.f, idx);
 
                 //  External force with Brinkman model
                 ExternalForceBrinkman<T, P>(_rho, _ux, _uy, imx, imy, _tem, iqx, iqy, omegag, _p.f0, _p.f, _alpha, idx);
-                ANS::Macro<T, P>(ip, iux, iuy, imx, imy, _rho, _ux, _uy, _p.f0, _p.f, idx);
+                ANS::Macro<T, P>(ip, iux, iuy, imx, imy, _rho[idx], _ux[idx], _uy[idx], _p.f0, _p.f, idx);
                 ExternalForceHeatExchange<T, Q>(item, _q.f0, _q.f, _beta, idx);
                 Macro<T, Q>(item, iqx, iqy, _q.f0, _q.f, idx);
 
@@ -172,13 +172,13 @@ namespace PANSLBM2 {
             for (int idx = 0; idx < _p.nxyz; ++idx) {
                 //  Update macro
                 T ip, iux, iuy, iuz, imx, imy, imz;
-                ANS::Macro<T, P>(ip, iux, iuy, iuz, imx, imy, imz, _rho, _ux, _uy, _uz, _p.f0, _p.f, idx);
+                ANS::Macro<T, P>(ip, iux, iuy, iuz, imx, imy, imz, _rho[idx], _ux[idx], _uy[idx], _uz[idx], _p.f0, _p.f, idx);
                 T item, iqx, iqy, iqz;
                 Macro<T, Q>(item, iqx, iqy, iqz, _q.f0, _q.f, idx);
 
                 //  External force with Brinkman model
                 ExternalForceBrinkman<T, P>(_rho, _ux, _uy, _uz, imx, imy, imz, _tem, iqx, iqy, iqz, omegag, _p.f0, _p.f, _alpha, idx);
-                ANS::Macro<T, P>(ip, iux, iuy, iuz, imx, imy, imz, _rho, _ux, _uy, uz, _p.f0, _p.f, idx);
+                ANS::Macro<T, P>(ip, iux, iuy, iuz, imx, imy, imz, _rho[idx], _ux[idx], _uy[idx], uz[idx], _p.f0, _p.f, idx);
                 ExternalForceHeatExchange<T, Q>(item, _q.f0, _q.f, _beta, idx);
                 Macro<T, Q>(item, iqx, iqy, iqz, _q.f0, _q.f, idx);
 
@@ -222,13 +222,13 @@ namespace PANSLBM2 {
 
                 //  Update macro
                 T ip, iux, iuy, imx, imy;
-                ANS::Macro<T, P>(ip, iux, iuy, imx, imy, _rho, _ux, _uy, _p.f0, _p.f, idx);
+                ANS::Macro<T, P>(ip, iux, iuy, imx, imy, _rho[idx], _ux[idx], _uy[idx], _p.f0, _p.f, idx);
                 T item, iqx, iqy;
                 Macro<T, Q>(item, iqx, iqy, _q.f0, _q.f, idx);
 
                 //  External force with Brinkman model
                 ExternalForceBrinkman<T, P>(_rho, _ux, _uy, imx, imy, _tem, iqx, iqy, omegag, _p.f0, _p.f, _alpha, idx);
-                ANS::Macro<T, P>(ip, iux, iuy, imx, imy, _rho, _ux, _uy, _p.f0, _p.f, idx);
+                ANS::Macro<T, P>(ip, iux, iuy, imx, imy, _rho[idx], _ux[idx], _uy[idx], _p.f0, _p.f, idx);
 
                 //  Save macro if need
                 if (_issave) {
@@ -267,13 +267,13 @@ namespace PANSLBM2 {
 
                 //  Update macro
                 T ip, iux, iuy, iuz, imx, imy, imz;
-                ANS::Macro<T, P>(ip, iux, iuy, iuz, imx, imy, imz, _rho, _ux, _uy, _uz, _p.f0, _p.f, idx);
+                ANS::Macro<T, P>(ip, iux, iuy, iuz, imx, imy, imz, _rho[idx], _ux[idx], _uy[idx], _uz[idx], _p.f0, _p.f, idx);
                 T item, iqx, iqy, iqz;
                 Macro<T, Q>(item, iqx, iqy, iqz, _q.f0, _q.f, idx);
 
                 //  External force with Brinkman model
                 ExternalForceBrinkman<T, P>(_rho, _ux, _uy, _uz, imx, imy, imz, _tem, iqx, iqy, iqz, omegag, _p.f0, _p.f, _alpha, idx);
-                ANS::Macro<T, P>(ip, iux, iuy, iuz, imx, imy, imz, _rho, _ux, _uy, _uz, _p.f0, _p.f, idx);
+                ANS::Macro<T, P>(ip, iux, iuy, iuz, imx, imy, imz, _rho[idx], _ux[idx], _uy[idx], _uz[idx], _p.f0, _p.f, idx);
 
                 //  Save macro if need
                 if (_issave) {
@@ -314,13 +314,13 @@ namespace PANSLBM2 {
 
                 //  Update macro
                 T ip, iux, iuy, imx, imy;
-                ANS::Macro<T, P>(ip, iux, iuy, imx, imy, _rho, _ux, _uy, _p.f0, _p.f, idx);
+                ANS::Macro<T, P>(ip, iux, iuy, imx, imy, _rho[idx], _ux[idx], _uy[idx], _p.f0, _p.f, idx);
                 T item, iqx, iqy;
                 Macro<T, Q>(item, iqx, iqy, _q.f0, _q.f, idx);
 
                 //  External force with Brinkman model
                 ExternalForceBrinkman<T, P>(_rho, _ux, _uy, imx, imy, _tem, iqx, iqy, omegag, _p.f0, _p.f, _alpha, idx);
-                ANS::Macro<T, P>(ip, iux, iuy, imx, imy, _rho, _ux, _uy, _p.f0, _p.f, idx);
+                ANS::Macro<T, P>(ip, iux, iuy, imx, imy, _rho[idx], _ux[idx], _uy[idx], _p.f0, _p.f, idx);
                 ExternalForceNaturalConvection<T, Q>(imx, imy, _gx, _gy, _q.f0, _q.f, idx);
                 Macro<T, Q>(item, iqx, iqy, _q.f0, _q.f, idx);
 
@@ -361,13 +361,13 @@ namespace PANSLBM2 {
 
                 //  Update macro
                 T ip, iux, iuy, iuz, imx, imy, imz;
-                ANS::Macro<T, P>(ip, iux, iuy, iuz, imx, imy, imz, _rho, _ux, _uy, _uz, _p.f0, _p.f, idx);
+                ANS::Macro<T, P>(ip, iux, iuy, iuz, imx, imy, imz, _rho[idx], _ux[idx], _uy[idx], _uz[idx], _p.f0, _p.f, idx);
                 T item, iqx, iqy, iqz;
                 Macro<T, Q>(item, iqx, iqy, iqz, _q.f0, _q.f, idx);
 
                 //  External force with Brinkman model
                 ExternalForceBrinkman<T, P>(_rho, _ux, _uy, _uz, imx, imy, imz, _tem, iqx, iqy, iqz, omegag, _p.f0, _p.f, _alpha, idx);
-                ANS::Macro<T, P>(ip, iux, iuy, iuz, imx, imy, imz, _rho, _ux, _uy, _uz, _p.f0, _p.f, idx);
+                ANS::Macro<T, P>(ip, iux, iuy, iuz, imx, imy, imz, _rho[idx], _ux[idx], _uy[idx], _uz[idx], _p.f0, _p.f, idx);
                 ExternalForceNaturalConvection<T, Q>(imx, imy, imz, _gx, _gy, _gz, _q.f0, _q.f, idx);
                 Macro<T, Q>(item, iqx, iqy, iqz, _q.f0, _q.f, idx);
 

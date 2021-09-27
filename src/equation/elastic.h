@@ -19,42 +19,46 @@ namespace PANSLBM2 {
             _sxy = T();
             _syx = T();
             _syy = T();
-            for (int c = 0; c < P<T>::nc; ++c) {
-                _ux += P<T>::cx[c]*_f[P<T>::IndexF(_idx, c)];
-                _uy += P<T>::cy[c]*_f[P<T>::IndexF(_idx, c)];
-                _sxx -= P<T>::cx[c]*P<T>::cx[c]*_f[P<T>::IndexF(_idx, c)];
-                _sxy -= P<T>::cx[c]*P<T>::cy[c]*_f[P<T>::IndexF(_idx, c)];
-                _syx -= P<T>::cy[c]*P<T>::cx[c]*_f[P<T>::IndexF(_idx, c)];
-                _syy -= P<T>::cy[c]*P<T>::cy[c]*_f[P<T>::IndexF(_idx, c)];
+            for (int c = 1; c < P<T>::nc; ++c) {
+                T f = _f[P<T>::IndexF(_idx, c)];
+                _ux += P<T>::cx[c]*f;
+                _uy += P<T>::cy[c]*f;
+                _sxx -= P<T>::cx[c]*P<T>::cx[c]*f;
+                _sxy -= P<T>::cx[c]*P<T>::cy[c]*f;
+                _syx -= P<T>::cy[c]*P<T>::cx[c]*f;
+                _syy -= P<T>::cy[c]*P<T>::cy[c]*f;
             }
-            _ux /= _rho;
-            _uy /= _rho;
+            T invrho = 1.0/_rho;
+            _ux *= invrho;
+            _uy *= invrho;
         }
 
         //  Function of updating macroscopic values of EL with topology optimization for 2D
         template<class T, template<class>class P>
-        void Macro(T _rho, T &_ux, T &_uy, T &_sxx, T &_sxy, T &_syx, T &_syy, const T *_f, const T *_gamma, int _idx) {
+        void Macro(T _rho, T &_ux, T &_uy, T &_sxx, T &_sxy, T &_syx, T &_syy, const T *_f, T _gamma, int _idx) {
             Macro<T, P>(_rho, _ux, _uy, _sxx, _sxy, _syx, _syy, _f, _idx);
-            _sxx *= _gamma[_idx];
-            _sxy *= _gamma[_idx];
-            _syx *= _gamma[_idx];
-            _syy *= _gamma[_idx];
+            _sxx *= _gamma;
+            _sxy *= _gamma;
+            _syx *= _gamma;
+            _syy *= _gamma;
         }
     
         //  Function of getting equilibrium of EL for 2D
         template<class T, template<class>class P>
-        T Equilibrium(T _rho, T _ux, T _uy, T _sxx, T _sxy, T _syx, T _syy, int _c) {
-            T ciu = P<T>::cx[_c]*_ux + P<T>::cy[_c]*_uy;
-            T cisci = P<T>::cx[_c]*_sxx*P<T>::cx[_c] + P<T>::cx[_c]*_sxy*P<T>::cy[_c] + P<T>::cy[_c]*_syx*P<T>::cx[_c] + P<T>::cy[_c]*_syy*P<T>::cy[_c];
-            T trss = _sxx + _syy;
-            return P<T>::ei[_c]*(3.0*_rho*ciu - 4.5*cisci + 1.5*trss);
+        void Equilibrium(T *_feq, T _rho, T _ux, T _uy, T _sxx, T _sxy, T _syx, T _syy) {
+            for (int c = 0; c < P<T>::nc; ++c) {
+                T ciu = P<T>::cx[c]*_ux + P<T>::cy[c]*_uy;
+                T cisci = P<T>::cx[c]*_sxx*P<T>::cx[c] + P<T>::cx[c]*_sxy*P<T>::cy[c] + P<T>::cy[c]*_syx*P<T>::cx[c] + P<T>::cy[c]*_syy*P<T>::cy[c];
+                T trss = _sxx + _syy;
+                _feq[c] = P<T>::ei[c]*(3.0*_rho*ciu - 4.5*cisci + 1.5*trss);
+            }
         }
 
         //  Function of Update macro and Collide of EL for 2D
         template<class T, template<class>class P>
         void MacroCollide(P<T>& _p, T *_rho, T *_ux, T *_uy, T *_sxx, T *_sxy, T *_syx, T *_syy, T _tau, bool _issave = false) {
-            T omega = 1/_tau;
-#pragma omp parallel for
+            T omega = 1.0/_tau, iomega = 1.0 - omega, feq[P<T>::nc];
+            #pragma omp parallel for private(feq)
             for (int idx = 0; idx < _p.nxyz; ++idx) {
                 //  Update macro
                 T ux, uy, sxx, sxy, syx, syy;
@@ -71,9 +75,11 @@ namespace PANSLBM2 {
                 }
 
                 //  Collide
-                _p.f0[idx] = (1.0 - omega)*_p.f0[idx] + omega*Equilibrium<T, P>(_rho[idx], ux, uy, sxx, sxy, syx, syy, 0);
+                Equilibrium<T, P>(feq, _rho[idx], ux, uy, sxx, sxy, syx, syy);
+                _p.f0[idx] = iomega*_p.f0[idx] + omega*feq[0];
                 for (int c = 1; c < P<T>::nc; ++c) {
-                    _p.f[P<T>::IndexF(idx, c)] = (1.0 - omega)*_p.f[P<T>::IndexF(idx, c)] + omega*Equilibrium<T, P>(_rho[idx], ux, uy, sxx, sxy, syx, syy, c);
+                    int idxf = P<T>::IndexF(idx, c);
+                    _p.f[idxf] = iomega*_p.f[idx] + omega*feq[c];
                 }
             }
         }
@@ -81,12 +87,12 @@ namespace PANSLBM2 {
         //  Function of Update macro and Collide of EL with topology optimization for 2D
         template<class T, template<class>class P>
         void MacroExtendedCollideStream(P<T>& _p, T *_rho, T *_ux, T *_uy, T *_sxx, T *_sxy, T *_syx, T *_syy, T _tau, const T *_gamma, bool _issave = false) {
-            T omega = 1/_tau;
-#pragma omp parallel for
+            T omega = 1.0/_tau, iomega = 1.0 - omega, feq[P<T>::nc];
+            #pragma omp parallel for private(feq)
             for (int idx = 0; idx < _p.nxyz; ++idx) {
                 //  Update macro
                 T ux, uy, sxx, sxy, syx, syy;
-                Macro<T, P>(_rho[idx], ux, uy, sxx, sxy, syx, syy, _p.f, _gamma, idx);
+                Macro<T, P>(_rho[idx], ux, uy, sxx, sxy, syx, syy, _p.f, _gamma[idx], idx);
 
                 //  Save macro if need
                 if (_issave) {
@@ -99,9 +105,11 @@ namespace PANSLBM2 {
                 }
 
                 //  Collide
-                _p.f0[idx] = (1.0 - omega)*_p.f0[idx] + omega*Equilibrium<T, P>(_rho[idx], ux, uy, sxx, sxy, syx, syy, 0);
+                Equilibrium<T, P>(feq, _rho[idx], ux, uy, sxx, sxy, syx, syy);
+                _p.f0[idx] = iomega*_p.f0[idx] + omega*feq[0];
                 for (int c = 1; c < P<T>::nc; ++c) {
-                    _p.f[P<T>::IndexF(idx, c)] = (1.0 - omega)*_p.f[P<T>::IndexF(idx, c)] + omega*Equilibrium<T, P>(_rho[idx], ux, uy, sxx, sxy, syx, syy, c);
+                    int idxf = P<T>::IndexF(idx, c);
+                    _p.f[idxf] = iomega*_p.f[idxf] + omega*feq[c];
                 }
             }
         }
@@ -109,10 +117,12 @@ namespace PANSLBM2 {
         //  Function of setting initial condition of EL for 2D
         template<class T, template<class>class P>
         void InitialCondition(P<T>& _p, const T *_rho, const T *_ux, const T *_uy, const T *_sxx, const T *_sxy, const T *_syx, const T *_syy) {
+            T feq[P<T>::nc];
             for (int idx = 0; idx < _p.nxyz; ++idx) {
-                _p.f0[idx] = Equilibrium<T, P>(_rho[idx], _ux[idx], _uy[idx], _sxx[idx], _sxy[idx], _syx[idx], _syy[idx], 0);
+                Equilibrium<T, P>(feq, _rho[idx], _ux[idx], _uy[idx], _sxx[idx], _sxy[idx], _syx[idx], _syy[idx]);
+                _p.f0[idx] = feq[0];
                 for (int c = 1; c < P<T>::nc; ++c) {
-                    _p.f[P<T>::IndexF(idx, c)] = Equilibrium<T, P>(_rho[idx], _ux[idx], _uy[idx], _sxx[idx], _sxy[idx], _syx[idx], _syy[idx], c);
+                    _p.f[P<T>::IndexF(idx, c)] = feq[c];
                 }
             }
         }

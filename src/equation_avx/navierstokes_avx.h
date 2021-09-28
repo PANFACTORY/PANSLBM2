@@ -16,6 +16,8 @@ namespace PANSLBM2 {
         template<class T, template<class>class P>void Macro(T &, T &, T &, T &, const T *, const T *, int); //  Function of updating macroscopic values of NS for 3D        
         template<class T, template<class>class P>void Equilibrium(T *, T, T, T);                            //  Function of getting equilibrium of NS for 2D  
         template<class T, template<class>class P>void Equilibrium(T *, T, T, T, T);                         //  Function of getting equilibrium of NS for 3D
+        template<class T, template<class>class P>void ExternalForceBrinkman(T, T, T, T, T *, int);          //  Function of applying external force of NS with Brinkman model for 2D        
+        template<class T, template<class>class P>void ExternalForceBrinkman(T, T, T, T, T, T *, int);       //  Function of applying external force of NS with Brinkman model for 3D
 
         //  Function of updating macroscopic values of NS for 2D
         template<class P>
@@ -70,6 +72,22 @@ namespace PANSLBM2 {
             __m256d __cu = _mm256_add_pd(_mm256_add_pd(_mm256_mul_pd(P::__cx[_c], __ux), _mm256_mul_pd(P::__cy[_c], __uy)), _mm256_mul_pd(P::__cz[_c], __uz));
             __m256d __3cup45cucu = _mm256_add_pd(_mm256_mul_pd(__3, __cu), _mm256_mul_pd(__45, _mm256_mul_pd(__cu, __cu)));
             return _mm256_mul_pd(P::__ei[_c], _mm256_mul_pd(__rho, _mm256_add_pd(__1m15uu, __3cup45cucu)));
+        }
+
+        template<class P>
+        void ExternalForceBrinkman(__m256d __rho, __m256d __ux, __m256d __uy, __m256d __alpha, __m256d *__f) {
+            __m256d __coef = _mm256_div_pd(_mm256_mul_pd(_mm256_mul_pd(_mm256_set1_pd(3.0), __alpha), __rho), _mm256_add_pd(__rho, __alpha));
+            for (int c = 1; c < P<T>::nc; ++c) {
+                __f[c] = _mm256_sub_pd(__f[c], __mm256_mul_pd(__mm256_mul_pd(__coef, P::__ei[c]), __mm256_add_pd(__mm256_mul_pd(P::__cx[c], __ux), __mm256_mul_pd(P::__cy[c], __uy))));
+            }
+        }
+
+        template<class P>
+        void ExternalForceBrinkman(__m256d __rho, __m256d __ux, __m256d __uy, __m256d __uz, __m256d __alpha, __m256d *__f) {
+            __m256d __coef = _mm256_div_pd(_mm256_mul_pd(_mm256_mul_pd(_mm256_set1_pd(3.0), __alpha), __rho), _mm256_add_pd(__rho, __alpha));
+            for (int c = 1; c < P<T>::nc; ++c) {
+                __f[c] = _mm256_sub_pd(__f[c], __mm256_mul_pd(__mm256_mul_pd(__coef, P::__ei[c]), __mm256_add_pd(__mm256_add_pd(__mm256_mul_pd(P::__cx[c], __ux), __mm256_mul_pd(P::__cy[c], __uy)), __mm256_mul_pd(P::__cz[c], __uz))));
+            }
         }
 
         //  Function of Update macro and Collide of NS for 2D

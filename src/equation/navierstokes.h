@@ -87,10 +87,7 @@ namespace PANSLBM2 {
                 _f[P<T>::IndexF(_idx, c)] -= coef*P<T>::ei[c]*(P<T>::cx[c]*_ux + P<T>::cy[c]*_uy + P<T>::cz[c]*_uz);
             }
         }
-    }
-
-#ifndef _USE_AVX_DEFINES
-    namespace NS {
+    
         //  Function of Update macro and Collide of NS for 2D
         template<class T, template<class>class P>
         void MacroCollide(P<T>& _p, T *_rho, T *_ux, T *_uy, T _viscosity, bool _issave = false) {
@@ -208,11 +205,7 @@ namespace PANSLBM2 {
                 }
             }
         }
-    }   
-#endif 
     
-    //  Initial conditions and boundary conditions
-    namespace NS {
         //  Function of setting initial condition of NS for 2D
         template<class T, template<class>class P>
         void InitialCondition(P<T>& _p, const T *_rho, const T *_ux, const T *_uy) {

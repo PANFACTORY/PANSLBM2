@@ -92,7 +92,8 @@ public:
         T *f0, *f;
 
 #ifdef _USE_AVX_DEFINES
-        static __m256d __cx[nc], __cy[nc], __cz[nc], __ei[nc];  //  If you use any type except double, rewrite here.
+        static const int packsize = 32/sizeof(T);
+        static __m256d __cx[nc], __cy[nc], __cz[nc], __ei[nc];  //  If you use any type except double, cast these values.
         static void LoadCxCyCzEi(); 
         template<class mmT>
         static void ShuffleToSoA(const T *_f_aos, mmT *_f_soa);

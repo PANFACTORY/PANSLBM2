@@ -12,8 +12,10 @@
 
 namespace PANSLBM2 {
     namespace NS {
-        template<class T, template<class>class P>void Macro(T &, T &, T &, const T *, const T *, int);  //  Function of updating macroscopic values of NS for 2D        
-        template<class T, template<class>class P>void Equilibrium(T *, T, T, T);                        //  Function of getting equilibrium of NS for 2D
+        template<class T, template<class>class P>void Macro(T &, T &, T &, const T *, const T *, int);      //  Function of updating macroscopic values of NS for 2D
+        template<class T, template<class>class P>void Macro(T &, T &, T &, T &, const T *, const T *, int); //  Function of updating macroscopic values of NS for 3D        
+        template<class T, template<class>class P>void Equilibrium(T *, T, T, T);                            //  Function of getting equilibrium of NS for 2D  
+        template<class T, template<class>class P>void Equilibrium(T *, T, T, T, T);                         //  Function of getting equilibrium of NS for 3D
 
         //  Function of updating macroscopic values of NS for 2D
         template<class P>
@@ -44,9 +46,10 @@ namespace PANSLBM2 {
                 __uy = _mm256_add_pd(__uy, _mm256_mul_pd(__f[c], P::__cy[c]));
                 __uz = _mm256_add_pd(__uz, _mm256_mul_pd(__f[c], P::__cz[c]));
             }
-            __ux = _mm256_div_pd(__ux, __rho);
-            __uy = _mm256_div_pd(__uy, __rho);
-            __uz = _mm256_div_pd(__uz, __rho);
+            __m256d __invrho = _mm256_div_pd(_mm256_set1_pd(1.0), __rho);
+            __ux = _mm256_mul_pd(__ux, __invrho);
+            __uy = _mm256_mul_pd(__uy, __invrho);
+            __uz = _mm256_mul_pd(__uz, __invrho);
         }
 
         //  Function of getting equilibrium of NS for 2D
@@ -72,10 +75,13 @@ namespace PANSLBM2 {
         //  Function of Update macro and Collide of NS for 2D
         template<template<class>class P>
         void MacroCollide(P<double>& _p, double *_rho, double *_ux, double *_uy, double _viscosity, bool _issave = false) {
-            const int ps = 4, ne = (_p.nxyz/ps)*ps;
+            const int ne = _p.nxyz/P<double>::packsize;
             double omega = 1.0/(3.0*_viscosity + 0.5), iomega = 1.0 - omega, feq[P<double>::nc];
             __m256d __omega = _mm256_set1_pd(omega), __iomega = _mm256_set1_pd(iomega);
-            for (int idx = 0; idx < ne; idx += ps) {
+            #pragma omp parallel for
+            for (int pidx = 0; pidx < ne; ++pidx) {
+                int idx = pidx*P<double>::packsize;
+
                 //  Pack f0 and f
                 __m256d __f0 = _mm256_load_pd(&_p.f0[idx]), __f[P<double>::nc];
                 P<double>::ShuffleToSoA(&_p.f[P<double>::IndexF(idx, 1)], &__f[1]);
@@ -98,7 +104,7 @@ namespace PANSLBM2 {
                 }
                 P<double>::ShuffleToAoS(&_p.f[P<double>::IndexF(idx, 1)], &__f[1]);
             }
-            for (int idx = ne; idx < _p.nxyz; ++idx) {
+            for (int idx = ne*P<double>::packsize; idx < _p.nxyz; ++idx) {
                 //  Update macro
                 double rho, ux, uy;
                 Macro<double, P>(rho, ux, uy, _p.f0, _p.f, idx);

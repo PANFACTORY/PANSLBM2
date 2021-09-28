@@ -68,15 +68,13 @@ namespace PANSLBM2 {
         //  Function of Update macro and Collide of NS for 2D
         template<template<class>class P>
         void MacroCollide(P<double>& _p, double *_rho, double *_ux, double *_uy, double _viscosity, bool _issave = false) {
-            double omega = 1.0/(3.0*_viscosity + 0.5);
-            __m256d __omega = _mm256_set1_pd(omega), __iomega = _mm256_set1_pd(1.0 - omega);
-#pragma omp parallel for
-            for (int idx = 0; idx < _p.nxyz; idx += P<double>::packsize) {
+            int ne = (_p.nxyz/P<double>::packsize)*P<double>::packsize;
+            double omega = 1.0/(3.0*_viscosity + 0.5), iomega = 1.0 - omega, feq[P<double>::nc];
+            __m256d __omega = _mm256_set1_pd(omega), __iomega = _mm256_set1_pd(iomega);
+            for (int idx = 0; idx < ne; idx += P<double>::packsize) {
                 //  Pack f0 and f
-                __m256d __f0 = _mm256_load_pd(&_p.f0[idx]), __f[P<double>::nc] = { 0 };
-                for (int c = 1; c < P<double>::nc; ++c) {
-                    __f[c] = _mm256_load_pd(&_p.f[P<double>::IndexF(idx, c)]);
-                }
+                __m256d __f0 = _mm256_load_pd(&_p.f0[idx]), __f[P<double>::nc];
+                P<double>::ShuffleToSoA(&_p.f[P<double>::IndexF(idx, 1)], __f);
 
                 //  Update macro
                 __m256d __rho, __ux, __uy;
@@ -84,27 +82,36 @@ namespace PANSLBM2 {
 
                 //  Save macro if need
                 if (_issave) {
-                    if (idx + P<double>::packsize <= _p.nxyz) {
-                        _mm256_storeu_pd(&_rho[idx], __rho);
-                        _mm256_storeu_pd(&_ux[idx], __ux);
-                        _mm256_storeu_pd(&_uy[idx], __uy);
-                    } else {
-                        double rho[P<double>::packsize], ux[P<double>::packsize], uy[P<double>::packsize];
-                        _mm256_storeu_pd(rho, __rho);
-                        _mm256_storeu_pd(ux, __ux);
-                        _mm256_storeu_pd(uy, __uy);
-                        for (int didx = 0; didx < _p.nxyz%P<double>::packsize; ++didx) {
-                            _rho[idx + didx] = rho[didx];
-                            _ux[idx + didx] = ux[didx];
-                            _uy[idx + didx] = uy[didx];
-                        }
-                    }
+                    _mm256_storeu_pd(&_rho[idx], __rho);
+                    _mm256_storeu_pd(&_ux[idx], __ux);
+                    _mm256_storeu_pd(&_uy[idx], __uy);
                 }
 
                 //  Collide
                 _mm256_store_pd(&_p.f0[idx], _mm256_add_pd(_mm256_mul_pd(__iomega, __f0), _mm256_mul_pd(__omega, Equilibrium<P<double> >(__rho, __ux, __uy, 0))));
                 for (int c = 1; c < P<double>::nc; ++c) {
-                    _mm256_store_pd(&_p.f[P<double>::IndexF(idx, c)], _mm256_add_pd(_mm256_mul_pd(__iomega, __f[c]), _mm256_mul_pd(__omega, Equilibrium<P<double> >(__rho, __ux, __uy, c))));
+                    __f[c] = _mm256_add_pd(_mm256_mul_pd(__iomega, __f[c]), _mm256_mul_pd(__omega, Equilibrium<P<double> >(__rho, __ux, __uy, c)));
+                }
+                P<double>::ShuffleToAoS(&_p.f[P<double>::IndexF(idx, 1)], __f);
+            }
+            for (int idx = ne; idx < _p.nxyz; ++idx) {
+                //  Update macro
+                T rho, ux, uy;
+                Macro<T, P>(rho, ux, uy, _p.f0, _p.f, idx);
+
+                //  Save macro if need
+                if (_issave) {
+                    _rho[idx] = rho;
+                    _ux[idx] = ux;
+                    _uy[idx] = uy;
+                }
+
+                //  Collide
+                Equilibrium<T, P>(feq, rho, ux, uy);
+                _p.f0[idx] = iomega*_p.f0[idx] + omega*feq[0];
+                for (int c = 1; c < P<T>::nc; ++c) {
+                    int idxf = P<T>::IndexF(idx, c);
+                    _p.f[idxf] = iomega*_p.f[idxf] + omega*feq[c];
                 }
             }
         }

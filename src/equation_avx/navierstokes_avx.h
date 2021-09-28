@@ -13,6 +13,37 @@
 namespace PANSLBM2 {
     namespace NS {
         //  Function of updating macroscopic values of NS for 2D
+        template<class T, template<class>class P>
+        void Macro2(T &_rho, T &_ux, T &_uy, const T *_f0, const T *_f, int _idx) {
+            _rho = _f0[_idx];
+            _ux = T();
+            _uy = T();
+            for (int c = 1; c < P<T>::nc; ++c) {
+                T f = _f[P<T>::IndexF(_idx, c)];
+                _rho += f;
+                _ux += P<T>::cx[c]*f;
+                _uy += P<T>::cy[c]*f;
+            }
+            T invrho = 1.0/_rho;
+            _ux *= invrho;
+            _uy *= invrho;
+        }
+
+        //  Function of getting equilibrium of NS for 2D
+        template<class T, template<class>class P>
+        void Equilibrium2(T *_feq, T _rho, T _ux, T _uy) {
+            T uu = 1.0 - 1.5*(_ux*_ux + _uy*_uy);
+            for (int c = 0; c < P<T>::nc; ++c) {
+                T ciu = P<T>::cx[c]*_ux + P<T>::cy[c]*_uy;
+                _feq[c] = P<T>::ei[c]*_rho*(3.0*ciu + 4.5*ciu*ciu + uu);
+            }
+        }
+
+
+
+
+
+        //  Function of updating macroscopic values of NS for 2D
         template<class P>
         void Macro(__m256d &__rho, __m256d &__ux, __m256d &__uy, __m256d __f0, const __m256d *__f) {
             __rho = __f0;
@@ -96,8 +127,8 @@ namespace PANSLBM2 {
             }
             for (int idx = ne; idx < _p.nxyz; ++idx) {
                 //  Update macro
-                T rho, ux, uy;
-                Macro<T, P>(rho, ux, uy, _p.f0, _p.f, idx);
+                double rho, ux, uy;
+                Macro2<double, P>(rho, ux, uy, _p.f0, _p.f, idx);
 
                 //  Save macro if need
                 if (_issave) {
@@ -107,10 +138,10 @@ namespace PANSLBM2 {
                 }
 
                 //  Collide
-                Equilibrium<T, P>(feq, rho, ux, uy);
+                Equilibrium2<double, P>(feq, rho, ux, uy);
                 _p.f0[idx] = iomega*_p.f0[idx] + omega*feq[0];
-                for (int c = 1; c < P<T>::nc; ++c) {
-                    int idxf = P<T>::IndexF(idx, c);
+                for (int c = 1; c < P<double>::nc; ++c) {
+                    int idxf = P<double>::IndexF(idx, c);
                     _p.f[idxf] = iomega*_p.f[idxf] + omega*feq[c];
                 }
             }

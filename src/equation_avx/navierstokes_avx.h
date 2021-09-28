@@ -68,10 +68,10 @@ namespace PANSLBM2 {
         //  Function of Update macro and Collide of NS for 2D
         template<template<class>class P>
         void MacroCollide(P<double>& _p, double *_rho, double *_ux, double *_uy, double _viscosity, bool _issave = false) {
-            int ne = (_p.nxyz/P<double>::packsize)*P<double>::packsize;
+            const int ps = 4, ne = (_p.nxyz/ps)*ps;
             double omega = 1.0/(3.0*_viscosity + 0.5), iomega = 1.0 - omega, feq[P<double>::nc];
             __m256d __omega = _mm256_set1_pd(omega), __iomega = _mm256_set1_pd(iomega);
-            for (int idx = 0; idx < ne; idx += P<double>::packsize) {
+            for (int idx = 0; idx < ne; idx += ps) {
                 //  Pack f0 and f
                 __m256d __f0 = _mm256_load_pd(&_p.f0[idx]), __f[P<double>::nc];
                 P<double>::ShuffleToSoA(&_p.f[P<double>::IndexF(idx, 1)], __f);

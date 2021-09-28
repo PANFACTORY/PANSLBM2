@@ -47,7 +47,7 @@ public:
             this->frecv_ymin = new T[this->nx*3];
             this->frecv_ymax = new T[this->nx*3];
 #ifdef _USE_AVX_DEFINES
-            D2Q9<T>::LoadConst();
+            D2Q9<T>::LoadCxCyCzEi();
 #endif
         }
         D2Q9(const D2Q9<T>& _p) = delete;
@@ -92,8 +92,8 @@ public:
         T *f0, *f;
 
 #ifdef _USE_AVX_DEFINES
-        static __m256d __cx[nc], __cy[nc], __cz[nc], __ei[nc];
-        static void LoadConst(); 
+        static __m256d __cx[nc], __cy[nc], __cz[nc], __ei[nc];  //  If you use any type except double, rewrite here.
+        static void LoadCxCyCzEi(); 
         template<class mmT>
         static void ShuffleToSoA(const T *_f_aos, mmT *_f_soa);
         template<class mmT>
@@ -581,7 +581,7 @@ private:
     template<>__m256d D2Q9<double>::__ei[D2Q9<double>::nc] = { 0 };
 
     template<>
-    void D2Q9<double>::LoadConst() {
+    void D2Q9<double>::LoadCxCyCzEi() {
         for (int c = 0; c < D2Q9<double>::nc; ++c) {
             D2Q9<double>::__cx[c] = _mm256_set1_pd((double)D2Q9<double>::cx[c]);
             D2Q9<double>::__cy[c] = _mm256_set1_pd((double)D2Q9<double>::cy[c]);

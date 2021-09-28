@@ -54,8 +54,9 @@ namespace PANSLBM2 {
                 __ux = _mm256_add_pd(__ux, _mm256_mul_pd(__f[c], P::__cx[c]));
                 __uy = _mm256_add_pd(__uy, _mm256_mul_pd(__f[c], P::__cy[c]));
             }
-            __ux = _mm256_div_pd(__ux, __rho);
-            __uy = _mm256_div_pd(__uy, __rho);
+            __m256d __invrho = _mm256_div_pd(_mm256_set1_pd(1.0), __rho);
+            __ux = _mm256_mul_pd(__ux, __invrho);
+            __uy = _mm256_mul_pd(__uy, __invrho);
         }
 
         //  Function of updating macroscopic values of NS for 3D
@@ -105,7 +106,7 @@ namespace PANSLBM2 {
             for (int idx = 0; idx < ne; idx += ps) {
                 //  Pack f0 and f
                 __m256d __f0 = _mm256_load_pd(&_p.f0[idx]), __f[P<double>::nc];
-                P<double>::ShuffleToSoA(&_p.f[P<double>::IndexF(idx, 1)], __f);
+                P<double>::ShuffleToSoA(&_p.f[P<double>::IndexF(idx, 1)], &__f[1]);
 
                 //  Update macro
                 __m256d __rho, __ux, __uy;
@@ -123,7 +124,7 @@ namespace PANSLBM2 {
                 for (int c = 1; c < P<double>::nc; ++c) {
                     __f[c] = _mm256_add_pd(_mm256_mul_pd(__iomega, __f[c]), _mm256_mul_pd(__omega, Equilibrium<P<double> >(__rho, __ux, __uy, c)));
                 }
-                P<double>::ShuffleToAoS(&_p.f[P<double>::IndexF(idx, 1)], __f);
+                P<double>::ShuffleToAoS(&_p.f[P<double>::IndexF(idx, 1)], &__f[1]);
             }
             for (int idx = ne; idx < _p.nxyz; ++idx) {
                 //  Update macro

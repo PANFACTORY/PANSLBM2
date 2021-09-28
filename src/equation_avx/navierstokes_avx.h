@@ -147,15 +147,16 @@ namespace PANSLBM2 {
         //  Function of Update macro and Collide of NS for 3D
         template<template<class>class P>
         void MacroCollide(P<double>& _p, double *_rho, double *_ux, double *_uy, double *_uz, double _viscosity, bool _issave = false) {
-            double omega = 1.0/(3.0*_viscosity + 0.5);
-            __m256d __omega = _mm256_set1_pd(omega), __iomega = _mm256_set1_pd(1.0 - omega);
-#pragma omp parallel for
-            for (int idx = 0; idx < _p.nxyz; idx += P<double>::packsize) {
+            const int ne = _p.nxyz/P<double>::packsize;
+            double omega = 1.0/(3.0*_viscosity + 0.5), iomega = 1.0 - omega, feq[P<double>::nc];
+            __m256d __omega = _mm256_set1_pd(omega), __iomega = _mm256_set1_pd(iomega);
+            #pragma omp parallel for
+            for (int pidx = 0; pidx < ne; ++pidx) {
+                int idx = pidx*P<double>::packsize;
+
                 //  Pack f0 and f
-                __m256d __f0 = _mm256_load_pd(&_p.f0[idx]), __f[P<double>::nc] = { 0 };
-                for (int c = 1; c < P<double>::nc; ++c) {
-                    __f[c] = _mm256_load_pd(&_p.f[P<double>::IndexF(idx, c)]);
-                }
+                __m256d __f0 = _mm256_load_pd(&_p.f0[idx]), __f[P<double>::nc];
+                P<double>::ShuffleToSoA(&_p.f[P<double>::IndexF(idx, 1)], &__f[1]);
 
                 //  Update macro
                 __m256d __rho, __ux, __uy, __uz;
@@ -163,30 +164,166 @@ namespace PANSLBM2 {
 
                 //  Save macro if need
                 if (_issave) {
-                    if (idx + P<double>::packsize <= _p.nxyz) {
-                        _mm256_storeu_pd(&_rho[idx], __rho);
-                        _mm256_storeu_pd(&_ux[idx], __ux);
-                        _mm256_storeu_pd(&_uy[idx], __uy);
-                        _mm256_storeu_pd(&_uz[idx], __uz);
-                    } else {
-                        double rho[P<double>::packsize], ux[P<double>::packsize], uy[P<double>::packsize], uz[P<double>::packsize];
-                        _mm256_storeu_pd(rho, __rho);
-                        _mm256_storeu_pd(ux, __ux);
-                        _mm256_storeu_pd(uy, __uy);
-                        _mm256_storeu_pd(uz, __uz);
-                        for (int didx = 0; didx < _p.nxyz%P<double>::packsize; ++didx) {
-                            _rho[idx + didx] = rho[didx];
-                            _ux[idx + didx] = ux[didx];
-                            _uy[idx + didx] = uy[didx];
-                            _uz[idx + didx] = uz[didx];
-                        }
-                    }
+                    _mm256_storeu_pd(&_rho[idx], __rho);
+                    _mm256_storeu_pd(&_ux[idx], __ux);
+                    _mm256_storeu_pd(&_uy[idx], __uy);
+                    _mm256_storeu_pd(&_uz[idx], __uz);
                 }
 
                 //  Collide
                 _mm256_store_pd(&_p.f0[idx], _mm256_add_pd(_mm256_mul_pd(__iomega, __f0), _mm256_mul_pd(__omega, Equilibrium<P<double> >(__rho, __ux, __uy, __uz, 0))));
                 for (int c = 1; c < P<double>::nc; ++c) {
-                    _mm256_store_pd(&_p.f[P<double>::IndexF(idx, c)], _mm256_add_pd(_mm256_mul_pd(__iomega, __f[c]), _mm256_mul_pd(__omega, Equilibrium<P<double> >(__rho, __ux, __uy, __uz, c))));
+                    __f[c] = _mm256_add_pd(_mm256_mul_pd(__iomega, __f[c]), _mm256_mul_pd(__omega, Equilibrium<P<double> >(__rho, __ux, __uy, __uz, c)));
+                }
+                P<double>::ShuffleToAoS(&_p.f[P<double>::IndexF(idx, 1)], &__f[1]);
+            }
+            for (int idx = ne*P<double>::packsize; idx < _p.nxyz; ++idx) {
+                //  Update macro
+                double rho, ux, uy, uz;
+                Macro<double, P>(rho, ux, uy, uz, _p.f0, _p.f, idx);
+
+                //  Save macro if need
+                if (_issave) {
+                    _rho[idx] = rho;
+                    _ux[idx] = ux;
+                    _uy[idx] = uy;
+                    _uz[idx] = uz;
+                }
+
+                //  Collide
+                Equilibrium<double, P>(feq, rho, ux, uy, uz);
+                _p.f0[idx] = iomega*_p.f0[idx] + omega*feq[0];
+                for (int c = 1; c < P<double>::nc; ++c) {
+                    int idxf = P<double>::IndexF(idx, c);
+                    _p.f[idxf] = iomega*_p.f[idxf] + omega*feq[c];
+                }
+            }
+        }
+
+        //  Function of Update macro, External force(Brinkman model) and Collide of NS for 2D
+        template<template<class>class P>
+        void MacroBrinkmanCollide(P<double>& _p, double *_rho, double *_ux, double *_uy, double _viscosity, const double *_alpha, bool _issave = false) {
+            const int ne = _p.nxyz/P<double>::packsize;
+            double omega = 1.0/(3.0*_viscosity + 0.5), iomega = 1.0 - omega, feq[P<double>::nc];
+            __m256d __omega = _mm256_set1_pd(omega), __iomega = _mm256_set1_pd(iomega);
+            #pragma omp parallel for
+            for (int pidx = 0; pidx < ne; ++pidx) {
+                int idx = pidx*P<double>::packsize;
+
+                //  Pack f0 and f
+                __m256d __f0 = _mm256_load_pd(&_p.f0[idx]), __f[P<double>::nc];
+                P<double>::ShuffleToSoA(&_p.f[P<double>::IndexF(idx, 1)], &__f[1]);
+                
+                //  Update macro
+                __m256d __rho, __ux, __uy;
+                Macro<P<double> >(__rho, __ux, __uy, __f0, __f);
+
+                //  External force with Brinkman model
+                __m256d __alpha = _mm256_loadu_pd(&_alpha[idx]);
+                ExternalForceBrinkman<P<double> >(__rho, __ux, __uy, __alpha, __f);
+                Macro<P<double> >(__rho, __ux, __uy, __f0, __f);
+
+                //  Save macro if need
+                if (_issave) {
+                    _mm256_storeu_pd(&_rho[idx], __rho);
+                    _mm256_storeu_pd(&_ux[idx], __ux);
+                    _mm256_storeu_pd(&_uy[idx], __uy);
+                }
+
+                //  Collide
+                _mm256_store_pd(&_p.f0[idx], _mm256_add_pd(_mm256_mul_pd(__iomega, __f0), _mm256_mul_pd(__omega, Equilibrium<P<double> >(__rho, __ux, __uy, 0))));
+                for (int c = 1; c < P<double>::nc; ++c) {
+                    __f[c] = _mm256_add_pd(_mm256_mul_pd(__iomega, __f[c]), _mm256_mul_pd(__omega, Equilibrium<P<double> >(__rho, __ux, __uy, c)));
+                }
+                P<double>::ShuffleToAoS(&_p.f[P<double>::IndexF(idx, 1)], &__f[1]);
+            }
+            for (int idx = ne*P<double>::packsize; idx < _p.nxyz; ++idx) {
+                //  Update macro
+                double rho, ux, uy;
+                Macro<double, P>(rho, ux, uy, _p.f0, _p.f, idx);
+
+                //  Save macro if need
+                if (_issave) {
+                    _rho[idx] = rho;
+                    _ux[idx] = ux;
+                    _uy[idx] = uy;
+                }
+
+                //  External force with Brinkman model
+                ExternalForceBrinkman<T, P>(rho, ux, uy, _alpha[idx], _p.f, idx);
+                Macro<T, P>(rho, ux, uy, _p.f0, _p.f, idx);
+
+                //  Collide
+                Equilibrium<double, P>(feq, rho, ux, uy);
+                _p.f0[idx] = iomega*_p.f0[idx] + omega*feq[0];
+                for (int c = 1; c < P<double>::nc; ++c) {
+                    int idxf = P<double>::IndexF(idx, c);
+                    _p.f[idxf] = iomega*_p.f[idxf] + omega*feq[c];
+                }
+            }
+        }
+
+        //  Function of Update macro and Collide of NS for 3D
+        template<template<class>class P>
+        void MacroCollide(P<double>& _p, double *_rho, double *_ux, double *_uy, double *_uz, double _viscosity, bool _issave = false) {
+            const int ne = _p.nxyz/P<double>::packsize;
+            double omega = 1.0/(3.0*_viscosity + 0.5), iomega = 1.0 - omega, feq[P<double>::nc];
+            __m256d __omega = _mm256_set1_pd(omega), __iomega = _mm256_set1_pd(iomega);
+            #pragma omp parallel for
+            for (int pidx = 0; pidx < ne; ++pidx) {
+                int idx = pidx*P<double>::packsize;
+
+                //  Pack f0 and f
+                __m256d __f0 = _mm256_load_pd(&_p.f0[idx]), __f[P<double>::nc];
+                P<double>::ShuffleToSoA(&_p.f[P<double>::IndexF(idx, 1)], &__f[1]);
+
+                //  Update macro
+                __m256d __rho, __ux, __uy, __uz;
+                Macro<P<double> >(__rho, __ux, __uy, __uz, __f0, __f);
+
+                //  External force with Brinkman model
+                __m256d __alpha = _mm256_loadu_pd(&_alpha[idx]);
+                ExternalForceBrinkman<P<double> >(__rho, __ux, __uy, __uz, __alpha, __f);
+                Macro<P<double> >(__rho, __ux, __uy, __uz, __f0, __f);
+
+                //  Save macro if need
+                if (_issave) {
+                    _mm256_storeu_pd(&_rho[idx], __rho);
+                    _mm256_storeu_pd(&_ux[idx], __ux);
+                    _mm256_storeu_pd(&_uy[idx], __uy);
+                    _mm256_storeu_pd(&_uz[idx], __uz);
+                }
+
+                //  Collide
+                _mm256_store_pd(&_p.f0[idx], _mm256_add_pd(_mm256_mul_pd(__iomega, __f0), _mm256_mul_pd(__omega, Equilibrium<P<double> >(__rho, __ux, __uy, __uz, 0))));
+                for (int c = 1; c < P<double>::nc; ++c) {
+                    __f[c] = _mm256_add_pd(_mm256_mul_pd(__iomega, __f[c]), _mm256_mul_pd(__omega, Equilibrium<P<double> >(__rho, __ux, __uy, __uz, c)));
+                }
+                P<double>::ShuffleToAoS(&_p.f[P<double>::IndexF(idx, 1)], &__f[1]);
+            }
+            for (int idx = ne*P<double>::packsize; idx < _p.nxyz; ++idx) {
+                //  Update macro
+                double rho, ux, uy, uz;
+                Macro<double, P>(rho, ux, uy, uz, _p.f0, _p.f, idx);
+
+                //  External force with Brinkman model
+                ExternalForceBrinkman<double, P>(rho, ux, uy, uz, _alpha[idx], _p.f, idx);
+                Macro<double, P>(rho, ux, uy, uz, _p.f0, _p.f, idx);
+
+                //  Save macro if need
+                if (_issave) {
+                    _rho[idx] = rho;
+                    _ux[idx] = ux;
+                    _uy[idx] = uy;
+                    _uz[idx] = uz;
+                }
+
+                //  Collide
+                Equilibrium<double, P>(feq, rho, ux, uy, uz);
+                _p.f0[idx] = iomega*_p.f0[idx] + omega*feq[0];
+                for (int c = 1; c < P<double>::nc; ++c) {
+                    int idxf = P<double>::IndexF(idx, c);
+                    _p.f[idxf] = iomega*_p.f[idxf] + omega*feq[c];
                 }
             }
         }

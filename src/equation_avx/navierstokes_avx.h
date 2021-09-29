@@ -250,8 +250,8 @@ namespace PANSLBM2 {
                 }
 
                 //  External force with Brinkman model
-                ExternalForceBrinkman<T, P>(rho, ux, uy, _alpha[idx], _p.f, idx);
-                Macro<T, P>(rho, ux, uy, _p.f0, _p.f, idx);
+                ExternalForceBrinkman<double, P>(rho, ux, uy, _alpha[idx], _p.f, idx);
+                Macro<double, P>(rho, ux, uy, _p.f0, _p.f, idx);
 
                 //  Collide
                 Equilibrium<double, P>(feq, rho, ux, uy);
@@ -265,7 +265,7 @@ namespace PANSLBM2 {
 
         //  Function of Update macro and Collide of NS for 3D
         template<template<class>class P>
-        void MacroCollide(P<double>& _p, double *_rho, double *_ux, double *_uy, double *_uz, double _viscosity, bool _issave = false) {
+        void MacroBrinkmanCollide(P<double>& _p, double *_rho, double *_ux, double *_uy, double *_uz, double _viscosity, const double *_alpha, bool _issave = false) {
             const int ne = _p.nxyz/P<double>::packsize;
             double omega = 1.0/(3.0*_viscosity + 0.5), iomega = 1.0 - omega, feq[P<double>::nc];
             __m256d __omega = _mm256_set1_pd(omega), __iomega = _mm256_set1_pd(iomega);

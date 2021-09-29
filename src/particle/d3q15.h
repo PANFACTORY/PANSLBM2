@@ -1548,24 +1548,36 @@ private:
     template<>
     template<>
     void D3Q15<double>::ShuffleToAoS<__m256d>(double *_f_aos, const __m256d *_f_soa) {
-        const int mm0 = 2*16 + 0*1, mm1 = 3*16 + 1*1;
-        __m256d f31_10 = _mm256_permute2f128_pd(_f_soa[0], _f_soa[2], mm0);  //  f3(1) f3(0) f1(1) f1(0)
-        __m256d f42_10 = _mm256_permute2f128_pd(_f_soa[1], _f_soa[3], mm0);  //  f4(1) f4(0) f2(1) f2(0)
-        __m256d f75_10 = _mm256_permute2f128_pd(_f_soa[4], _f_soa[6], mm0);  //  f7(1) f7(0) f5(1) f5(0)
-        __m256d f86_10 = _mm256_permute2f128_pd(_f_soa[5], _f_soa[7], mm0);  //  f8(1) f6(0) f8(1) f6(0)
-        __m256d f31_32 = _mm256_permute2f128_pd(_f_soa[0], _f_soa[2], mm1);  //  f3(3) f3(2) f1(3) f1(2)
-        __m256d f42_32 = _mm256_permute2f128_pd(_f_soa[1], _f_soa[3], mm1);  //  f4(3) f4(2) f2(3) f2(2)
-        __m256d f75_32 = _mm256_permute2f128_pd(_f_soa[4], _f_soa[6], mm1);  //  f7(3) f7(2) f5(3) f5(2)
-        __m256d f86_32 = _mm256_permute2f128_pd(_f_soa[5], _f_soa[7], mm1);  //  f8(3) f6(2) f8(3) f6(2)
+        __m256d unpack0 = _mm256_unpacklo_pd(_f_soa[0], _f_soa[1]);     //  f 2(2) f 1(2) f 2(0) f 1(0)
+        __m256d unpack1 = _mm256_unpackhi_pd(_f_soa[0], _f_soa[1]);     //  f 2(3) f 1(3) f 2(1) f 1(1)
+        __m256d unpack2 = _mm256_unpacklo_pd(_f_soa[2], _f_soa[3]);     //  f 4(2) f 3(2) f 4(0) f 3(0)
+        __m256d unpack3 = _mm256_unpackhi_pd(_f_soa[2], _f_soa[3]);     //  f 4(3) f 3(3) f 4(1) f 3(1)
+        __m256d unpack4 = _mm256_unpacklo_pd(_f_soa[4], _f_soa[5]);     //  f 6(2) f 5(2) f 6(0) f 5(0)
+        __m256d unpack5 = _mm256_unpackhi_pd(_f_soa[4], _f_soa[5]);     //  f 6(3) f 5(3) f 6(1) f 5(1)
+        __m256d unpack6 = _mm256_unpacklo_pd(_f_soa[6], _f_soa[7]);     //  f 8(2) f 7(2) f 8(0) f 7(0)
+        __m256d unpack7 = _mm256_unpackhi_pd(_f_soa[6], _f_soa[7]);     //  f 8(3) f 7(3) f 8(1) f 7(1)
+        __m256d unpack8 = _mm256_unpacklo_pd(_f_soa[8], _f_soa[9]);     //  f10(2) f 9(2) f10(0) f 9(0)
+        __m256d unpack9 = _mm256_unpackhi_pd(_f_soa[8], _f_soa[9]);     //  f10(3) f 9(3) f10(1) f 9(1)
+        __m256d unpack10 = _mm256_unpacklo_pd(_f_soa[10], _f_soa[11]);  //  f12(2) f11(2) f12(0) f11(0)
+        __m256d unpack11 = _mm256_unpackhi_pd(_f_soa[10], _f_soa[11]);  //  f12(3) f11(3) f12(1) f11(1)
+        __m256d unpack12 = _mm256_unpacklo_pd(_f_soa[12], _f_soa[13]);  //  f14(2) f13(2) f14(0) f13(0)
+        __m256d unpack13 = _mm256_unpackhi_pd(_f_soa[12], _f_soa[13]);  //  f14(3) f13(3) f14(1) f13(1)
 
-        _mm256_store_pd(&_f_aos[ 0], _mm256_unpacklo_pd(f31_10, f42_10));  //  f4(0) f3(0) f2(0) f1(0)
-        _mm256_store_pd(&_f_aos[ 4], _mm256_unpacklo_pd(f75_10, f86_10));  //  f8(0) f7(0) f6(0) f5(0)  
-        _mm256_store_pd(&_f_aos[ 8], _mm256_unpackhi_pd(f31_10, f42_10));  //  f4(1) f3(1) f2(1) f1(1)
-        _mm256_store_pd(&_f_aos[12], _mm256_unpackhi_pd(f75_10, f86_10));  //  f8(1) f7(1) f6(1) f5(1)
-        _mm256_store_pd(&_f_aos[16], _mm256_unpacklo_pd(f31_32, f42_32));  //  f4(2) f3(2) f2(2) f1(2)
-        _mm256_store_pd(&_f_aos[20], _mm256_unpacklo_pd(f75_32, f86_32));  //  f8(2) f7(2) f6(2) f5(2)
-        _mm256_store_pd(&_f_aos[24], _mm256_unpackhi_pd(f31_32, f42_32));  //  f4(3) f3(3) f2(3) f1(3)
-        _mm256_store_pd(&_f_aos[28], _mm256_unpackhi_pd(f75_32, f86_32));  //  f8(3) f7(3) f6(3) f5(3)
+        const int mm0 = 2*16 + 0*1, mm1 = 3*16 + 1*1;
+        _mm256_store_pd(&_f_aos[ 0], _mm256_permute2f128_pd(unpack0, unpack2, mm0));    //  f 4(0) f 3(0) f 2(0) f 1(0)
+        _mm256_store_pd(&_f_aos[ 4], _mm256_permute2f128_pd(unpack4, unpack6, mm0));    //  f 8(0) f 7(0) f 6(0) f 5(0)
+        _mm256_store_pd(&_f_aos[ 8], _mm256_permute2f128_pd(unpack8, unpack10, mm0));   //  f12(0) f11(0) f10(0) f 9(0)
+        _mm256_store_pd(&_f_aos[12], _mm256_permute2f128_pd(unpack12, unpack1, mm0));   //  f 2(1) f 1(1) f14(0) f13(0)
+        _mm256_store_pd(&_f_aos[16], _mm256_permute2f128_pd(unpack3, unpack5, mm0));    //  f 6(1) f 5(1) f 4(1) f 3(1)
+        _mm256_store_pd(&_f_aos[20], _mm256_permute2f128_pd(unpack7, unpack9, mm0));    //  f10(1) f 9(1) f 8(1) f 7(1)
+        _mm256_store_pd(&_f_aos[24], _mm256_permute2f128_pd(unpack11, unpack13, mm0));  //  f14(1) f13(1) f12(1) f11(1)
+        _mm256_store_pd(&_f_aos[28], _mm256_permute2f128_pd(unpack0, unpack2, mm1));    //  f 4(2) f 3(2) f 2(2) f 1(2)
+        _mm256_store_pd(&_f_aos[32], _mm256_permute2f128_pd(unpack4, unpack6, mm1));    //  f 8(2) f 7(2) f 6(2) f 5(2)
+        _mm256_store_pd(&_f_aos[36], _mm256_permute2f128_pd(unpack8, unpack10, mm1));   //  f12(2) f11(2) f10(2) f 9(2)
+        _mm256_store_pd(&_f_aos[40], _mm256_permute2f128_pd(unpack12, unpack1, mm1));   //  f 2(3) f 1(3) f14(2) f13(2)
+        _mm256_store_pd(&_f_aos[44], _mm256_permute2f128_pd(unpack3, unpack5, mm1));    //  f 6(3) f 5(3) f 4(3) f 3(3)
+        _mm256_store_pd(&_f_aos[48], _mm256_permute2f128_pd(unpack7, unpack9, mm1));    //  f10(3) f 9(3) f 8(3) f 7(3)
+        _mm256_store_pd(&_f_aos[52], _mm256_permute2f128_pd(unpack11, unpack13, mm1));  //  f14(3) f13(3) f12(3) f11(3)
     }
 #endif
 }

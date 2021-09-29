@@ -1507,11 +1507,11 @@ private:
         __m256d load6 = _mm256_load_pd(&_f_aos[24]);   //  f14(1) f13(1) f12(1) f11(1)
         __m256d load7 = _mm256_load_pd(&_f_aos[28]);   //  f 4(2) f 3(2) f 2(2) f 1(2)
         __m256d load8 = _mm256_load_pd(&_f_aos[32]);   //  f 8(2) f 7(2) f 6(2) f 5(2)
-        __m256d load9 = _mm256_load_pd(&_f_aos[40]);   //  f12(2) f11(2) f10(2) f 9(2)
-        __m256d load10 = _mm256_load_pd(&_f_aos[44]);  //  f 2(3) f 1(3) f14(2) f13(2)
-        __m256d load11 = _mm256_load_pd(&_f_aos[48]);  //  f 6(3) f 5(3) f 4(3) f 3(3)
-        __m256d load12 = _mm256_load_pd(&_f_aos[52]);  //  f10(3) f 9(3) f 8(3) f 7(3)
-        __m256d load13 = _mm256_load_pd(&_f_aos[56]);  //  f14(3) f13(3) f12(3) f11(3)
+        __m256d load9 = _mm256_load_pd(&_f_aos[36]);   //  f12(2) f11(2) f10(2) f 9(2)
+        __m256d load10 = _mm256_load_pd(&_f_aos[40]);  //  f 2(3) f 1(3) f14(2) f13(2)
+        __m256d load11 = _mm256_load_pd(&_f_aos[44]);  //  f 6(3) f 5(3) f 4(3) f 3(3)
+        __m256d load12 = _mm256_load_pd(&_f_aos[48]);  //  f10(3) f 9(3) f 8(3) f 7(3)
+        __m256d load13 = _mm256_load_pd(&_f_aos[52]);  //  f14(3) f13(3) f12(3) f11(3)
         
         const int mm0 = 2*16 + 0*1, mm1 = 3*16 + 1*1; 
         __m256d permute0 = _mm256_permute2f128_pd(load0, load7, mm0);    //  f 2(2) f 1(2) f 2(0) f 1(0)

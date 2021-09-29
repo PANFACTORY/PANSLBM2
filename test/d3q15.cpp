@@ -19,10 +19,11 @@ int main() {
     }
 
     //  Test ShuffleToAoS
-    /*D2Q9<double>::ShuffleToAoS(f, __f);
+    D3Q15<double>::ShuffleToAoS(f, __f);
     for (int idx = 0; idx < 4; ++idx) {
-        printf("%lf %lf %lf %lf %lf %lf %lf %lf\n", 
-            f[8*idx + 0], f[8*idx + 1], f[8*idx + 2], f[8*idx + 3], 
-            f[8*idx + 4], f[8*idx + 5], f[8*idx + 6], f[8*idx + 7]);
-    }*/
+        printf("%lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf\n", 
+            f[14*idx +  0], f[14*idx +  1], f[14*idx +  2], f[14*idx +  3], f[14*idx +  4], f[14*idx +  5], f[14*idx +  6], 
+            f[14*idx +  7], f[14*idx +  8], f[14*idx +  9], f[14*idx + 10], f[14*idx + 11], f[14*idx + 12], f[14*idx + 13]
+        );
+    }
 }

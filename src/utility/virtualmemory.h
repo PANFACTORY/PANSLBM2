@@ -60,5 +60,7 @@ private:
             }
             fin.close();
         }
+
+        this->chunkidxcurrent = _chunkidx;
     }
 }

@@ -1,5 +1,4 @@
 #pragma once
-#include <vector>
 #include <string>
 #include <fstream>
 #include <cassert>
@@ -11,13 +10,13 @@ public:
         VArray() = delete;
         VArray(int _size, int _chunknum = 2) : 
             size(_size), chunknum(_chunknum), 
-            chunksize((this->size + 1)/this->chunksize),
-            chunkname(this->chunknum)
-        ) {
+            chunksize((this->size + 1)/this->chunknum)
+        {
             assert(this->size > 0 && this->chunknum > 1);
-            this->data = new T[this->size];
+            this->data = new T[this->chunksize];
+            this->chunkname = new std::string[this->chunknum];
             for (int chunkidx = 0; chunkidx < this->chunknum; ++chunkidx) {
-                chunkname[chunkidx] = "chunk" + std::to_string(chunkidx);
+                this->chunkname[chunkidx] = "chunk" + std::to_string(chunkidx);
             }
             this->chunkidxcurrent = 0;
         }
@@ -25,19 +24,27 @@ public:
         ~VArray() {
             delete[] this->data;
             for (int chunkidx = 0; chunkidx < this->chunknum; ++chunkidx) {
-                remove(this->chunkname[chunkidx]);
+                remove(this->chunkname[chunkidx].c_str());
             }
+            delete[] this->chunkname;
         }
 
-        void Load(int _chunkidx);
-        void LoadNext() {}
-        void LoadPrev() {}
+        T &operator[](int _idx) {
+            int chunkidx = _idx/this->chunksize;
+            if (chunkidx != this->chunkidxcurrent) {
+                this->Load(chunkidx);
+            }
+            return this->data[_idx%this->chunksize];
+        }
 
         const int size, chunknum, chunksize;
-        T *data;
-        std::vector<std::string> chunkname;
+        
 private:
+        T *data;
+        std::string *chunkname;
         int chunkidxcurrent;
+
+        void Load(int _chunkidx);
     };
 
     template<class T>
@@ -45,7 +52,7 @@ private:
         assert(0 <= _chunkidx && _chunkidx < this->chunknum);
         
         //  Write current chunk
-        std::ofstream fout(this->chunkname[this->chunkidxcurrent], ios::out|ios::binary|ios::trunc);
+        std::ofstream fout(this->chunkname[this->chunkidxcurrent], std::ios::out|std::ios::binary|std::ios::trunc);
         if (!fout) {}
         for (int idx = 0; idx < this->chunksize; ++idx) {
             fout.write((char*)&this->data[idx], sizeof(T));
@@ -53,7 +60,7 @@ private:
         fout.close();
 
         //  Read idx chunk
-        std::fin(this->chunkname[_chunkidx], ios::in|ios::binary);
+        std::ifstream fin(this->chunkname[_chunkidx], std::ios::in|std::ios::binary);
         if (fin) {
             for (int idx = 0; !fin.eof(); ++idx) {
                 fin.read((char*)&this->data[idx], sizeof(T));

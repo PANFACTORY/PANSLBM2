@@ -54,10 +54,13 @@ private:
 
     template<class T>
     void VArray<T>::Swap(size_t _chunkidx) {
-        assert(0 <= _chunkidx && _chunkidx < this->chunknum);
+        assert(_chunkidx < this->chunknum);
         
         //  Write current chunk
+        const int buffersize = 1000000;
+        char buffer[buffersize];
         std::ofstream fout(this->chunkname[this->chunkidxcurrent], std::ios::out|std::ios::binary|std::ios::trunc);
+        ofstream.rdbuf()->pubsetbuf(buffer, buffersize);
         if (!fout) {}
         for (size_t idx = 0; idx < this->chunksize; ++idx) {
             fout.write((char*)&this->data[idx], sizeof(T));

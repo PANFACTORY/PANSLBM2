@@ -32,7 +32,7 @@ public:
         T &operator[](int _idx) {
             int chunkidx = _idx/this->chunksize;
             if (chunkidx != this->chunkidxcurrent) {
-                this->Load(chunkidx);
+                this->Swap(chunkidx);
             }
             return this->data[_idx%this->chunksize];
         }
@@ -44,11 +44,11 @@ private:
         std::string *chunkname;
         int chunkidxcurrent;
 
-        void Load(int _chunkidx);
+        void Swap(int _chunkidx);
     };
 
     template<class T>
-    void VArray<T>::Load(int _chunkidx) {
+    void VArray<T>::Swap(int _chunkidx) {
         assert(0 <= _chunkidx && _chunkidx < this->chunknum);
         
         //  Write current chunk

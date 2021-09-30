@@ -8,14 +8,14 @@ namespace PANSLBM2 {
     class VArray {
 public:
         VArray() = delete;
-        VArray(long _size, long _chunknum = 2) : 
+        VArray(size_t _size, size_t _chunknum = 2) : 
             size(_size), chunknum(_chunknum), 
             chunksize((this->size + 1)/this->chunknum)
         {
             assert(this->size > 0 && this->chunknum > 1);
             this->data = new T[this->chunksize];
             this->chunkname = new std::string[this->chunknum];
-            for (long chunkidx = 0; chunkidx < this->chunknum; ++chunkidx) {
+            for (size_t chunkidx = 0; chunkidx < this->chunknum; ++chunkidx) {
                 this->chunkname[chunkidx] = "varraychunk_" + std::to_string(VArray<T>::objectid) + "_" + std::to_string(chunkidx);
             }
             this->chunkidxcurrent = 0;
@@ -24,42 +24,42 @@ public:
         VArray(const VArray<T>&) = delete;
         ~VArray() {
             delete[] this->data;
-            for (long chunkidx = 0; chunkidx < this->chunknum; ++chunkidx) {
+            for (size_t chunkidx = 0; chunkidx < this->chunknum; ++chunkidx) {
                 remove(this->chunkname[chunkidx].c_str());
             }
             delete[] this->chunkname;
         }
 
-        T &operator[](long _idx) {
-            long chunkidx = _idx/this->chunksize;
+        T &operator[](size_t _idx) {
+            size_t chunkidx = _idx/this->chunksize;
             if (chunkidx != this->chunkidxcurrent) {
                 this->Swap(chunkidx);
             }
             return this->data[_idx%this->chunksize];
         }
 
-        const long size, chunknum, chunksize;
+        const size_t size, chunknum, chunksize;
         
 private:
         T *data;
         std::string *chunkname;
-        long chunkidxcurrent;
-        static long objectid;
+        size_t chunkidxcurrent;
+        static int objectid;
         
-        void Swap(long _chunkidx);
+        void Swap(size_t _chunkidx);
     };
 
     template<class T>
-    long VArray<T>::objectid = 0;
+    int VArray<T>::objectid = 0;
 
     template<class T>
-    void VArray<T>::Swap(long _chunkidx) {
+    void VArray<T>::Swap(size_t _chunkidx) {
         assert(0 <= _chunkidx && _chunkidx < this->chunknum);
         
         //  Write current chunk
         std::ofstream fout(this->chunkname[this->chunkidxcurrent], std::ios::out|std::ios::binary|std::ios::trunc);
         if (!fout) {}
-        for (long idx = 0; idx < this->chunksize; ++idx) {
+        for (size_t idx = 0; idx < this->chunksize; ++idx) {
             fout.write((char*)&this->data[idx], sizeof(T));
         }
         fout.close();
@@ -67,7 +67,7 @@ private:
         //  Read idx chunk
         std::ifstream fin(this->chunkname[_chunkidx], std::ios::in|std::ios::binary);
         if (fin) {
-            for (long idx = 0; !fin.eof(); ++idx) {
+            for (size_t idx = 0; !fin.eof(); ++idx) {
                 fin.read((char*)&this->data[idx], sizeof(T));
             }
             fin.close();

@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include <fstream>
+#include <typeinfo>
 #include <cassert>
 
 namespace PANSLBM2 {
@@ -16,9 +17,10 @@ public:
             this->data = new T[this->chunksize];
             this->chunkname = new std::string[this->chunknum];
             for (int chunkidx = 0; chunkidx < this->chunknum; ++chunkidx) {
-                this->chunkname[chunkidx] = "chunk" + std::to_string(chunkidx);
+                this->chunkname[chunkidx] = "varraychunk_" + typeid(T).name() + "_" + std::to_string(VArray<T>::objectid) + "_" + std::to_string(chunkidx);
             }
             this->chunkidxcurrent = 0;
+            VArray<T>::objectid++;
         }
         VArray(const VArray<T>&) = delete;
         ~VArray() {
@@ -43,9 +45,13 @@ private:
         T *data;
         std::string *chunkname;
         int chunkidxcurrent;
-
+        static int objectid;
+        
         void Swap(int _chunkidx);
     };
+
+    template<class T>
+    int VArray<T>::objectid = 0;
 
     template<class T>
     void VArray<T>::Swap(int _chunkidx) {

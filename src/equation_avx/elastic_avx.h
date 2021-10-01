@@ -62,7 +62,7 @@ namespace PANSLBM2 {
         template<template<class>class P>
         void MacroCollide(P<double>& _p, double *_rho, double *_ux, double *_uy, double *_sxx, double *_sxy, double *_syx, double *_syy, double _tau, bool _issave = false) {
             const int ne = _p.nxyz/P<double>::packsize;
-            T omega = 1.0/_tau, iomega = 1.0 - omega, feq[P<T>::nc];
+            double omega = 1.0/_tau, iomega = 1.0 - omega, feq[P<double>::nc];
             __m256d __omega = _mm256_set1_pd(omega), __iomega = _mm256_set1_pd(iomega);
             #pragma omp parallel for private(feq)
             for (int pidx = 0; pidx < ne; ++pidx) {
@@ -124,7 +124,7 @@ namespace PANSLBM2 {
         template<template<class>class P>
         void MacroExtendedCollide(P<double>& _p, double *_rho, double *_ux, double *_uy, double *_sxx, double *_sxy, double *_syx, double *_syy, double _tau, const T *_gamma, bool _issave = false) {
             const int ne = _p.nxyz/P<double>::packsize;
-            T omega = 1.0/_tau, iomega = 1.0 - omega, feq[P<T>::nc];
+            double omega = 1.0/_tau, iomega = 1.0 - omega, feq[P<double>::nc];
             __m256d __omega = _mm256_set1_pd(omega), __iomega = _mm256_set1_pd(iomega);
             #pragma omp parallel for private(feq)
             for (int pidx = 0; pidx < ne; ++pidx) {
@@ -159,7 +159,7 @@ namespace PANSLBM2 {
             }
             for (int idx = ne*P<double>::packsize; idx < _p.nxyz; ++idx) {
                 //  Update macro
-                T ux, uy, sxx, sxy, syx, syy;
+                double ux, uy, sxx, sxy, syx, syy;
                 Macro<double, P>(_rho[idx], ux, uy, sxx, sxy, syx, syy, _p.f, _gamma[idx], idx);
 
                 //  Save macro if need

@@ -6,7 +6,9 @@
 //*****************************************************************************
 
 #pragma once
-#include <cassert>
+#ifdef _USE_AVX_DEFINES
+    #include "../equation_avx/adjointelastic_avx.h"
+#endif
 
 namespace PANSLBM2 {
     namespace AEL {
@@ -34,7 +36,7 @@ namespace PANSLBM2 {
 
         //  Function of getting equilibrium of AEL for 2D
         template<class T, template<class>class P>
-        T Equilibrium(T *_feq, T _irho, T _imx, T _imy, T _isxx, T _isxy, T _isyx, T _isyy, T _gamma) {
+        void Equilibrium(T *_feq, T _irho, T _imx, T _imy, T _isxx, T _isxy, T _isyx, T _isyy, T _gamma) {
             for (int c = 0; c < P<T>::nc; ++c) {
                 T imc = _imx*P<T>::cx[c] + _imy*P<T>::cy[c];
                 T cisc = P<T>::cx[c]*_isxx*P<T>::cx[c] + P<T>::cx[c]*_isxy*P<T>::cy[c] + P<T>::cy[c]*_isyx*P<T>::cx[c] + P<T>::cy[c]*_isyy*P<T>::cy[c];

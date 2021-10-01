@@ -6,8 +6,9 @@
 //*****************************************************************************
 
 #pragma once
-#include <cmath>
-#include <cassert>
+#ifdef _USE_AVX_DEFINES
+    #include "../equation_avx/adjointnavierstokes_avx.h"
+#endif
 
 namespace PANSLBM2 {
     namespace ANS {

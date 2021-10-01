@@ -108,9 +108,9 @@ namespace PANSLBM2 {
         ) {
             const int ne = _p.nxyz/P<double>::packsize;
             double omegaf = 1.0/(3.0*_viscosity + 0.5), iomegaf = 1.0 - omegaf, feq[P<double>::nc];
-            __mm256d __omegaf = _mm256_set1_pd(omegaf), __iomegaf = _mm256_set1_pd(iomegaf);
+            __m256d __omegaf = _mm256_set1_pd(omegaf), __iomegaf = _mm256_set1_pd(iomegaf);
             double omegag = 1.0/(3.0*_diffusivity + 0.5), iomegag = 1.0 - omegag, geq[Q<double>::nc];
-            __mm256d __omegag = _mm256_set1_pd(omegag), __iomegag = _mm256_set1_pd(iomegag);
+            __m256d __omegag = _mm256_set1_pd(omegag), __iomegag = _mm256_set1_pd(iomegag);
             #pragma omp parallel for
             for (int pidx = 0; pidx < ne; ++pidx) {
                 int idx = pidx*P<double>::packsize;
@@ -192,9 +192,9 @@ namespace PANSLBM2 {
         ) {
             const int ne = _p.nxyz/P<double>::packsize;
             double omegaf = 1.0/(3.0*_viscosity + 0.5), iomegaf = 1.0 - omegaf, feq[P<double>::nc];
-            __mm256d __omegaf = _mm256_set1_pd(omegaf), __iomegaf = _mm256_set1_pd(iomegaf);
+            __m256d __omegaf = _mm256_set1_pd(omegaf), __iomegaf = _mm256_set1_pd(iomegaf);
             double omegag = 1.0/(3.0*_diffusivity + 0.5), iomegag = 1.0 - omegag, geq[Q<double>::nc];
-            __mm256d __omegag = _mm256_set1_pd(omegag), __iomegag = _mm256_set1_pd(iomegag);
+            __m256d __omegag = _mm256_set1_pd(omegag), __iomegag = _mm256_set1_pd(iomegag);
             #pragma omp parallel for
             for (int pidx = 0; pidx < ne; ++pidx) {
                 int idx = pidx*P<double>::packsize;
@@ -280,10 +280,10 @@ namespace PANSLBM2 {
         ) {
             const int ne = _p.nxyz/P<double>::packsize;
             double omegaf = 1.0/(3.0*_viscosity + 0.5), iomegaf = 1.0 - omegaf, feq[P<double>::nc];
-            __mm256d __omegaf = _mm256_set1_pd(omegaf), __iomegaf = _mm256_set1_pd(iomegaf);
+            __m256d __omegaf = _mm256_set1_pd(omegaf), __iomegaf = _mm256_set1_pd(iomegaf);
             double omegag = 1.0/(3.0*_diffusivity + 0.5), iomegag = 1.0 - omegag, geq[Q<double>::nc];
-            __mm256d __omegag = _mm256_set1_pd(omegag), __iomegag = _mm256_set1_pd(iomegag);
-            __mm256d __gx = _mm256_set1_pd(_gx), __gy = _mm256_set1_pd(_gy), __tem0 = _mm256_set1_pd(_tem0);
+            __m256d __omegag = _mm256_set1_pd(omegag), __iomegag = _mm256_set1_pd(iomegag);
+            __m256d __gx = _mm256_set1_pd(_gx), __gy = _mm256_set1_pd(_gy), __tem0 = _mm256_set1_pd(_tem0);
             #pragma omp parallel for
             for (int pidx = 0; pidx < ne; ++pidx) {
                 int idx = pidx*P<double>::packsize;
@@ -373,10 +373,10 @@ namespace PANSLBM2 {
         ) {
             const int ne = _p.nxyz/P<double>::packsize;
             double omegaf = 1.0/(3.0*_viscosity + 0.5), iomegaf = 1.0 - omegaf, feq[P<double>::nc];
-            __mm256d __omegaf = _mm256_set1_pd(omegaf), __iomegaf = _mm256_set1_pd(iomegaf);
+            __m256d __omegaf = _mm256_set1_pd(omegaf), __iomegaf = _mm256_set1_pd(iomegaf);
             double omegag = 1.0/(3.0*_diffusivity + 0.5), iomegag = 1.0 - omegag, geq[Q<double>::nc];
-            __mm256d __omegag = _mm256_set1_pd(omegag), __iomegag = _mm256_set1_pd(iomegag);
-            __mm256d __gx = _mm256_set1_pd(_gx), __gy = _mm256_set1_pd(_gy), __gz = _mm256_set1_pd(_gz), __tem0 = _mm256_set1_pd(_tem0);
+            __m256d __omegag = _mm256_set1_pd(omegag), __iomegag = _mm256_set1_pd(iomegag);
+            __m256d __gx = _mm256_set1_pd(_gx), __gy = _mm256_set1_pd(_gy), __gz = _mm256_set1_pd(_gz), __tem0 = _mm256_set1_pd(_tem0);
             #pragma omp parallel for
             for (int pidx = 0; pidx < ne; ++pidx) {
                 int idx = pidx*P<double>::packsize;
@@ -469,9 +469,9 @@ namespace PANSLBM2 {
         ) {
             const int ne = _p.nxyz/P<double>::packsize;
             double omegaf = 1.0/(3.0*_viscosity + 0.5), iomegaf = 1.0 - omegaf, feq[P<double>::nc];
-            __mm256d __omegaf = _mm256_set1_pd(omegaf), __iomegaf = _mm256_set1_pd(iomegaf);
+            __m256d __omegaf = _mm256_set1_pd(omegaf), __iomegaf = _mm256_set1_pd(iomegaf);
             double omegag = 1.0/(3.0*_diffusivity + 0.5), iomegag = 1.0 - omegag, geq[Q<double>::nc];
-            __mm256d __omegag = _mm256_set1_pd(omegag), __iomegag = _mm256_set1_pd(iomegag);
+            __m256d __omegag = _mm256_set1_pd(omegag), __iomegag = _mm256_set1_pd(iomegag);
             #pragma omp parallel for
             for (int pidx = 0; pidx < ne; ++pidx) {
                 int idx = pidx*P<double>::packsize;
@@ -566,9 +566,9 @@ namespace PANSLBM2 {
         ) {
             const int ne = _p.nxyz/P<double>::packsize;
             double omegaf = 1.0/(3.0*_viscosity + 0.5), iomegaf = 1.0 - omegaf, feq[P<double>::nc];
-            __mm256d __omegaf = _mm256_set1_pd(omegaf), __iomegaf = _mm256_set1_pd(iomegaf);
+            __m256d __omegaf = _mm256_set1_pd(omegaf), __iomegaf = _mm256_set1_pd(iomegaf);
             double omegag = 1.0/(3.0*_diffusivity + 0.5), iomegag = 1.0 - omegag, geq[Q<double>::nc];
-            __mm256d __omegag = _mm256_set1_pd(omegag), __iomegag = _mm256_set1_pd(iomegag);
+            __m256d __omegag = _mm256_set1_pd(omegag), __iomegag = _mm256_set1_pd(iomegag);
             #pragma omp parallel for
             for (int pidx = 0; pidx < ne; ++pidx) {
                 int idx = pidx*P<double>::packsize;
@@ -668,7 +668,7 @@ namespace PANSLBM2 {
         ) {
             const int ne = _p.nxyz/P<double>::packsize;
             double omegaf = 1.0/(3.0*_viscosity + 0.5), iomegaf = 1.0 - omegaf, feq[P<double>::nc], geq[Q<double>::nc];
-            __mm256d __omegaf = _mm256_set1_pd(omegaf), __iomegaf = _mm256_set1_pd(iomegaf);
+            __m256d __omegaf = _mm256_set1_pd(omegaf), __iomegaf = _mm256_set1_pd(iomegaf);
             #pragma omp parallel for
             for (int pidx = 0; pidx < ne; ++pidx) {
                 int idx = pidx*P<double>::packsize;
@@ -767,7 +767,7 @@ namespace PANSLBM2 {
         ) {
             const int ne = _p.nxyz/P<double>::packsize;
             double omegaf = 1.0/(3.0*_viscosity + 0.5), iomegaf = 1.0 - omegaf, feq[P<double>::nc], geq[Q<double>::nc];
-            __mm256d __omegaf = _mm256_set1_pd(omegaf), __iomegaf = _mm256_set1_pd(iomegaf);
+            __m256d __omegaf = _mm256_set1_pd(omegaf), __iomegaf = _mm256_set1_pd(iomegaf);
             #pragma omp parallel for
             for (int pidx = 0; pidx < ne; ++pidx) {
                 int idx = pidx*P<double>::packsize;
@@ -870,8 +870,8 @@ namespace PANSLBM2 {
         ) {
             const int ne = _p.nxyz/P<double>::packsize;
             double omegaf = 1.0/(3.0*_viscosity + 0.5), iomegaf = 1.0 - omegaf, feq[P<double>::nc], geq[Q<double>::nc];
-            __mm256d __omegaf = _mm256_set1_pd(omegaf), __iomegaf = _mm256_set1_pd(iomegaf);
-            __mm256d __gx = _mm256_set1_pd(_gx), __gy = _mm256_set1_pd(_gy), __tem0 = _mm256_set1_pd(_tem0);
+            __m256d __omegaf = _mm256_set1_pd(omegaf), __iomegaf = _mm256_set1_pd(iomegaf);
+            __m256d __gx = _mm256_set1_pd(_gx), __gy = _mm256_set1_pd(_gy), __tem0 = _mm256_set1_pd(_tem0);
             #pragma omp parallel for
             for (int pidx = 0; pidx < ne; ++pidx) {
                 int idx = pidx*P<double>::packsize;
@@ -972,8 +972,8 @@ namespace PANSLBM2 {
         ) {
             const int ne = _p.nxyz/P<double>::packsize;
             double omegaf = 1.0/(3.0*_viscosity + 0.5), iomegaf = 1.0 - omegaf, feq[P<double>::nc], geq[Q<double>::nc];
-            __mm256d __omegaf = _mm256_set1_pd(omegaf), __iomegaf = _mm256_set1_pd(iomegaf);
-            __mm256d __gx = _mm256_set1_pd(_gx), __gy = _mm256_set1_pd(_gy), __gz = _mm256_set1_pd(_gz), __tem0 = _mm256_set1_pd(_tem0);
+            __m256d __omegaf = _mm256_set1_pd(omegaf), __iomegaf = _mm256_set1_pd(iomegaf);
+            __m256d __gx = _mm256_set1_pd(_gx), __gy = _mm256_set1_pd(_gy), __gz = _mm256_set1_pd(_gz), __tem0 = _mm256_set1_pd(_tem0);
             #pragma omp parallel for
             for (int pidx = 0; pidx < ne; ++pidx) {
                 int idx = pidx*P<double>::packsize;

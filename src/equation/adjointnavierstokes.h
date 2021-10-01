@@ -101,6 +101,7 @@ namespace PANSLBM2 {
             T omega = 1.0/(3.0*_viscosity + 0.5), iomega = 1.0 - omega, feq[P<T>::nc];
             #pragma omp parallel for private(feq)
             for (int idx = 0; idx < _p.nxyz; ++idx) {
+                //  Update macro
                 T ip, iux, iuy, imx, imy;
                 Macro<T, P>(ip, iux, iuy, imx, imy, _rho[idx], _ux[idx], _uy[idx], _p.f0, _p.f, idx);
 

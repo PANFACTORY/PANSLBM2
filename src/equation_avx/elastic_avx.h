@@ -115,7 +115,7 @@ namespace PANSLBM2 {
                 _p.f0[idx] = iomega*_p.f0[idx] + omega*feq[0];
                 for (int c = 1; c < P<double>::nc; ++c) {
                     int idxf = P<double>::IndexF(idx, c);
-                    _p.f[idxf] = iomega*_p.f[idx] + omega*feq[c];
+                    _p.f[idxf] = iomega*_p.f[idxf] + omega*feq[c];
                 }
             }
         }
@@ -177,7 +177,7 @@ namespace PANSLBM2 {
                 _p.f0[idx] = iomega*_p.f0[idx] + omega*feq[0];
                 for (int c = 1; c < P<double>::nc; ++c) {
                     int idxf = P<double>::IndexF(idx, c);
-                    _p.f[idxf] = iomega*_p.f[idx] + omega*feq[c];
+                    _p.f[idxf] = iomega*_p.f[idxf] + omega*feq[c];
                 }
             }
         }

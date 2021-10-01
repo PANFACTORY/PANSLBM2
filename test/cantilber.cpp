@@ -1,4 +1,5 @@
-#define _USE_MPI_DEFINES
+//#define _USE_MPI_DEFINES
+#define _USE_AVX_DEFINES
 #include <iostream>
 #include <chrono>
 #include <cassert>
@@ -43,8 +44,8 @@ int main(int argc, char** argv) {
     //--------------------Direct analyze--------------------
     EL::InitialCondition(pf, rho, ux, uy, sxx, sxy, syx, syy);
     for (int t = 1; t <= nt; ++t) {
+        EL::MacroCollide(pf, rho, ux, uy, sxx, sxy, syx, syy, 0.8, true);
         if (t%dt == 0) {
-            EL::MacroCollide(pf, rho, ux, uy, sxx, sxy, syx, syy, 0.8, true);
             if (MyRank == 0) {
                 std::cout << "t = " << t/dt << std::endl;
             }

@@ -8,6 +8,9 @@
 #pragma once
 #include <cassert>
 #include "navierstokes.h"
+#ifdef _USE_AVX_DEFINES
+    #include "../equation_avx/navierstokes_avx.h"
+#endif
 
 namespace PANSLBM2 {
     namespace AD {

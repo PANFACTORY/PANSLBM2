@@ -6,126 +6,179 @@
 //*****************************************************************************
 
 #pragma once
-#include <cassert>
 #include <immintrin.h>
 
 //  compile option for g++(MinGW) : -mavx
 
 namespace PANSLBM2 {
     namespace EL {
-        //*********************************************************************
-        //  Elastic 2D  :   Update macroscopic values
-        //*********************************************************************
+        template<class T, template<class>class P>void Macro(T, T &, T &, T &, T &, T &, T &, const T *, int);       //  Function of updating macroscopic values of EL for 2D       
+        template<class T, template<class>class P>void Macro(T, T &, T &, T &, T &, T &, T &, const T *, T, int);    //  Function of updating macroscopic values of EL with topology optimization for 2D
+        template<class T, template<class>class P>void Equilibrium(T *, T, T, T, T, T, T, T);                        //  Function of getting equilibrium of EL for 2D
+
+        //  Function of updating macroscopic values of EL for 2D
+        template<class P>
+        void Macro(__m256d __rho, __m256d &__ux, __m256d & __uy, __m256d &__sxx, __m256d &__sxy, __m256d &__syx, __m256d &__syy, const __m256d *__f) {
+            __ux = _mm256_setzero_pd();
+            __uy = _mm256_setzero_pd();
+            __sxx = _mm256_setzero_pd();
+            __sxy = _mm256_setzero_pd();
+            __syx = _mm256_setzero_pd();
+            __syy = _mm256_setzero_pd();
+            for (int c = 1; c < P::nc; ++c) {
+                __ux = _mm256_add_pd(__ux, _mm256_mul_pd(P::__cx[c], __f[c]));
+                __uy = _mm256_add_pd(__uy, _mm256_mul_pd(P::__cy[c], __f[c]));
+                __sxx = _mm256_sub_pd(__sxx, _mm256_mul_pd(_mm256_mul_pd(P::__cx[c], P::__cx[c]), __f[c]));
+                __sxy = _mm256_sub_pd(__sxy, _mm256_mul_pd(_mm256_mul_pd(P::__cx[c], P::__cy[c]), __f[c]));
+                __syx = _mm256_sub_pd(__syx, _mm256_mul_pd(_mm256_mul_pd(P::__cy[c], P::__cx[c]), __f[c]));
+                __syy = _mm256_sub_pd(__syy, _mm256_mul_pd(_mm256_mul_pd(P::__cy[c], P::__cy[c]), __f[c]));
+            }
+            __m256d __invrho = _mm256_div_pd(_mm256_set1_pd(1.0), __rho);
+            __ux = _mm256_mul_pd(__ux, __invrho);
+            __uy = _mm256_mul_pd(__uy, __invrho);
+        }
+
+        //  Function of updating macroscopic values of EL for 2D
+        template<class P>
+        void Macro(__m256d __rho, __m256d &__ux, __m256d & __uy, __m256d &__sxx, __m256d &__sxy, __m256d &__syx, __m256d &__syy, const __m256d *__f, __m256d __gamma) {
+            Macro<P>(__rho, __ux, __uy, __sxx, __sxy, __syx, __syy, __f);
+            __sxx = _mm256_mul_pd(__sxx, __gamma);
+            __sxy = _mm256_mul_pd(__sxy, __gamma);
+            __syx = _mm256_mul_pd(__syx, __gamma);
+            __syy = _mm256_mul_pd(__syy, __gamma);
+        }
+
+        //  Function of getting equilibrium of EL for 2D
+        template<class P>
+        __m256d Equilibrium(__m256d __rho, __m256d __ux, __m256d __uy, __m256d __sxx, __m256d __sxy, __m256d __syx, __m256d __syy, int _c) {
+            __m256d __trs = _mm256_add_pd(__sxx, __syy);
+            __m256d __3 = _mm256_set1_pd(3.0), __45 = _mm256_set1_pd(4.5), __15 = _mm256_set1_pd(1.5);
+            __m256d __ciu = _mm256_add_pd(_mm256_mul_pd(P::__cx[_c], __ux), _mm256_mul_pd(P::__cy[_c], __uy));
+            __m256d __csc = _mm256_add_pd(_mm256_add_pd(_mm256_mul_pd(_mm256_mul_pd(P::__cx[_c], P::__cx[_c]), __sxx), _mm256_mul_pd(_mm256_mul_pd(P::__cx[_c], P::__cy[_c]), __sxy)), _mm256_add_pd(_mm256_mul_pd(_mm256_mul_pd(P::__cy[_c], P::__cx[_c]), __syx), _mm256_mul_pd(_mm256_mul_pd(P::__cy[_c], P::__cy[_c]), __syy)));          
+            return _mm256_mul_pd(__ei[_c], _mm256_add_pd(_mm256_sub_pd(_mm256_mul_pd(__1, _mm256_mul_pd(__rho, __ciu)), _mm256_mul_pd(__45, __csc)), _mm256_mul_pd(__15, __trs)));
+        }
+
+        //  Function of Update macro and Collide of NS for 2D
         template<template<class>class P>
-        void UpdateMacro(P<double>& _p, double *_rho, double *_ux, double *_uy, double *_sxx, double *_sxy, double *_syx, double *_syy) {
-            assert(P<double>::nd == 2);
+        void MacroCollide(P<double>& _p, double *_rho, double *_ux, double *_uy, double *_sxx, double *_sxy, double *_syx, double *_syy, double _tau, bool _issave = false) {
+            const int ne = _p.nxyz/P<double>::packsize;
+            T omega = 1.0/_tau, iomega = 1.0 - omega, feq[P<T>::nc];
+            __m256d __omega = _mm256_set1_pd(omega), __iomega = _mm256_set1_pd(iomega);
+            #pragma omp parallel for private(feq)
+            for (int pidx = 0; pidx < ne; ++pidx) {
+                int idx = pidx*P<double>::packsize;
 
-            const int packsize = 32/sizeof(double), ne = (_p.np/packsize)*packsize;
+                //  Pack f0, f and rho
+                __m256d __f[P<double>::nc];
+                __f[0] = _mm256_load_pd(&_p.f0[idx]);
+                P<double>::ShuffleToSoA(&_p.f[P<double>::IndexF(idx, 1)], &__f[1]);
+                __m256d __rho = _mm256_loadu_pd(&_rho[idx]);
 
-            __m256d __cx[P<double>::nc], __cy[P<double>::nc];
-            for (int j = 0; j < P<double>::nc; j++) {
-                double cxd = P<double>::cx[j], cyd = P<double>::cy[j]; 
-                __cx[j] = _mm256_broadcast_sd((const double*)&cxd);
-                __cy[j] = _mm256_broadcast_sd((const double*)&cyd);
-            }
+                //  Update macro
+                __m256d __ux, __uy, __sxx, __sxy, __syx, __syy;
+                Macro<P<double> >(__rho, __ux, __uy, __sxx, __sxy, __syx, __syy, __f);
 
-            for (int i = 0; i < ne; i += packsize) {
-                __m256d __rho = _mm256_loadu_pd(&_rho[i]), __ux = { 0 }, __uy = { 0 }, __sxx = { 0 }, __sxy = { 0 }, __syx = { 0 }, __syy = { 0 };
-
-                for (int j = 0; j < P<double>::nc; j++) {
-                    __m256d __ft = _mm256_loadu_pd(&_p.ft[j][i]);
-                    __ux = _mm256_add_pd(__ux, _mm256_mul_pd(__cx[j], __ft));
-                    __uy = _mm256_add_pd(__uy, _mm256_mul_pd(__cy[j], __ft));
-                    __sxx = _mm256_sub_pd(__sxx, _mm256_mul_pd(_mm256_mul_pd(__cx[j], __cx[j]), __ft));
-                    __sxy = _mm256_sub_pd(__sxy, _mm256_mul_pd(_mm256_mul_pd(__cx[j], __cy[j]), __ft));
-                    __syx = _mm256_sub_pd(__syx, _mm256_mul_pd(_mm256_mul_pd(__cy[j], __cx[j]), __ft));
-                    __syy = _mm256_sub_pd(__syy, _mm256_mul_pd(_mm256_mul_pd(__cy[j], __cy[j]), __ft));
+                //  Save macro if need
+                if (_issave) {
+                    _mm256_storeu_pd(&_ux[idx], __ux);
+                    _mm256_storeu_pd(&_uy[idx], __uy);
+                    _mm256_storeu_pd(&_sxx[idx], __sxx);
+                    _mm256_storeu_pd(&_sxy[idx], __sxy);
+                    _mm256_storeu_pd(&_syx[idx], __syx);
+                    _mm256_storeu_pd(&_syy[idx], __syy);
                 }
 
-                _mm256_storeu_pd(&_ux[i], _mm256_div_pd(__ux, __rho));
-                _mm256_storeu_pd(&_uy[i], _mm256_div_pd(__uy, __rho));
-                _mm256_storeu_pd(&_sxx[i], __sxx);
-                _mm256_storeu_pd(&_sxy[i], __sxy);
-                _mm256_storeu_pd(&_syx[i], __syx);
-                _mm256_storeu_pd(&_syy[i], __syy);
-            }
-
-            for (int i = ne; i < _p.np; i++) {
-                _ux[i] = 0.0;
-                _uy[i] = 0.0;
-                _sxx[i] = 0.0;
-                _sxy[i] = 0.0;
-                _syx[i] = 0.0;
-                _syy[i] = 0.0;
-                for (int j = 0; j < P<double>::nc; j++) {
-                    _ux[i] += P<double>::cx[j]*_p.ft[j][i];
-                    _uy[i] += P<double>::cy[j]*_p.ft[j][i];
-                    _sxx[i] -= P<double>::cx[j]*P<double>::cx[j]*_p.ft[j][i];
-                    _sxy[i] -= P<double>::cx[j]*P<double>::cy[j]*_p.ft[j][i];
-                    _syx[i] -= P<double>::cy[j]*P<double>::cx[j]*_p.ft[j][i];
-                    _syy[i] -= P<double>::cy[j]*P<double>::cy[j]*_p.ft[j][i]; 
+                //  Collide
+                _mm256_store_pd(&_p.f0[idx], _mm256_add_pd(_mm256_mul_pd(__iomega, __f[0]), _mm256_mul_pd(__omega, Equilibrium<P<double> >(__rho, __ux, __uy, __sxx, __sxy, __syx, __syy, 0))));
+                for (int c = 1; c < P<double>::nc; ++c) {
+                    __f[c] = _mm256_add_pd(_mm256_mul_pd(__iomega, __f[c]), _mm256_mul_pd(__omega, Equilibrium<P<double> >(__rho, __ux, __uy, __sxx, __sxy, __syx, __syy, c)));
                 }
-                _ux[i] /= _rho[i];
-                _uy[i] /= _rho[i];
+                P<double>::ShuffleToAoS(&_p.f[P<double>::IndexF(idx, 1)], &__f[1]);
+            }
+            for (int idx = ne*P<double>::packsize; idx < _p.nxyz; ++idx) {
+                //  Update macro
+                T ux, uy, sxx, sxy, syx, syy;
+                Macro<double, P>(_rho[idx], ux, uy, sxx, sxy, syx, syy, _p.f, idx);
+
+                //  Save macro if need
+                if (_issave) {
+                    _ux[idx] = ux;
+                    _uy[idx] = uy;
+                    _sxx[idx] = sxx;
+                    _sxy[idx] = sxy;
+                    _syx[idx] = syx;
+                    _syy[idx] = syy;
+                }
+
+                //  Collide
+                Equilibrium<double, P>(feq, _rho[idx], ux, uy, sxx, sxy, syx, syy);
+                _p.f0[idx] = iomega*_p.f0[idx] + omega*feq[0];
+                for (int c = 1; c < P<double>::nc; ++c) {
+                    int idxf = P<double>::IndexF(idx, c);
+                    _p.f[idxf] = iomega*_p.f[idx] + omega*feq[c];
+                }
             }
         }
 
-        //*********************************************************************
-        //  Elastic 2D  :   Collision term
-        //*********************************************************************
+        //  Function of Update macro and Collide of NS for 2D
         template<template<class>class P>
-        void Collision(double _elasticy, P<double>& _p, double *_rho, double *_ux, double *_uy, double *_sxx, double *_sxy, double *_syx, double *_syy) {
-            assert(P<double>::nd == 2);
+        void MacroExtendedCollide(P<double>& _p, double *_rho, double *_ux, double *_uy, double *_sxx, double *_sxy, double *_syx, double *_syy, double _tau, const T *_gamma, bool _issave = false) {
+            const int ne = _p.nxyz/P<double>::packsize;
+            T omega = 1.0/_tau, iomega = 1.0 - omega, feq[P<T>::nc];
+            __m256d __omega = _mm256_set1_pd(omega), __iomega = _mm256_set1_pd(iomega);
+            #pragma omp parallel for private(feq)
+            for (int pidx = 0; pidx < ne; ++pidx) {
+                int idx = pidx*P<double>::packsize;
 
-            const int packsize = 32/sizeof(double), ne = (_p.np/packsize)*packsize;
+                //  Pack f0, f and rho
+                __m256d __f[P<double>::nc];
+                __f[0] = _mm256_load_pd(&_p.f0[idx]);
+                P<double>::ShuffleToSoA(&_p.f[P<double>::IndexF(idx, 1)], &__f[1]);
+                __m256d __rho = _mm256_loadu_pd(&_rho[idx]), __gamma = _mm256_loadu_pd(&_gamma[idx]); 
 
-            double omega = 1.0/(3.0*_elasticy*_p.dt/(_p.dx*_p.dx) + 0.5), iomega = 1.0 - omega, a = 3.0, b = 4.5, c = 1.5;
-            __m256d __omega = _mm256_broadcast_sd((const double*)&omega), __iomega = _mm256_broadcast_sd((const double*)&iomega), __a = _mm256_broadcast_sd((const double*)&a), __b = _mm256_broadcast_sd((const double*)&b), __c = _mm256_broadcast_sd((const double*)&c);
+                //  Update macro
+                __m256d __ux, __uy, __sxx, __sxy, __syx, __syy;
+                Macro<P<double> >(__rho, __ux, __uy, __sxx, __sxy, __syx, __syy, __f, __gamma);
 
-            __m256d __ei[P<double>::nc], __cx[P<double>::nc], __cy[P<double>::nc];
-            for (int j = 0; j < P<double>::nc; j++) {
-                double eid = P<double>::ei[j], cxd = P<double>::cx[j], cyd = P<double>::cy[j]; 
-                __ei[j] = _mm256_broadcast_sd((const double*)&eid);
-                __cx[j] = _mm256_broadcast_sd((const double*)&cxd);
-                __cy[j] = _mm256_broadcast_sd((const double*)&cyd);
-            }
-
-            for (int i = 0; i < ne; i += packsize) {
-                __m256d __rho = _mm256_loadu_pd(&_rho[i]), __ux = _mm256_loadu_pd(&_ux[i]), __uy = _mm256_loadu_pd(&_uy[i]), __sxx = _mm256_loadu_pd(&_sxx[i]), __sxy = _mm256_loadu_pd(&_sxy[i]), __syx = _mm256_loadu_pd(&_syx[i]), __syy = _mm256_loadu_pd(&_syy[i]);
-                __m256d __trs = _mm256_add_pd(__sxx, __syy);
-                
-                for (int j = 0; j < P<double>::nc; j++) {
-                    __m256d __ft = _mm256_loadu_pd(&_p.ft[j][i]);
-                    __m256d __ciu = _mm256_add_pd(_mm256_mul_pd(__cx[j], __ux), _mm256_mul_pd(__cy[j], __uy));
-                    __m256d __csc = _mm256_add_pd(_mm256_add_pd(_mm256_mul_pd(_mm256_mul_pd(__cx[j], __cx[j]), __sxx), _mm256_mul_pd(_mm256_mul_pd(__cx[j], __cy[j]), __sxy)), _mm256_add_pd(_mm256_mul_pd(_mm256_mul_pd(__cy[j], __cx[j]), __syx), _mm256_mul_pd(_mm256_mul_pd(__cy[j], __cy[j]), __syy)));
-                    
-                    __m256d __feq = _mm256_mul_pd(__ei[j], _mm256_add_pd(_mm256_sub_pd(_mm256_mul_pd(__a, _mm256_mul_pd(__rho, __ciu)), _mm256_mul_pd(__b, __csc)), _mm256_mul_pd(__c, __trs)));
-                    _mm256_storeu_pd(&_p.ftp1[j][i], _mm256_add_pd(_mm256_mul_pd(__iomega, __ft), _mm256_mul_pd(__omega, __feq)));
+                //  Save macro if need
+                if (_issave) {
+                    _mm256_storeu_pd(&_ux[idx], __ux);
+                    _mm256_storeu_pd(&_uy[idx], __uy);
+                    _mm256_storeu_pd(&_sxx[idx], __sxx);
+                    _mm256_storeu_pd(&_sxy[idx], __sxy);
+                    _mm256_storeu_pd(&_syx[idx], __syx);
+                    _mm256_storeu_pd(&_syy[idx], __syy);
                 }
-            }
 
-            for (int i = ne; i < _p.np; i++) {
-                for (int j = 0; j < P<double>::nc; j++) {
-                    double cu = P<double>::cx[j]*_ux[i] + P<double>::cy[j]*_uy[i];
-                    double csc = P<double>::cx[j]*_sxx[i]*P<double>::cx[j] + P<double>::cx[j]*_sxy[i]*P<double>::cy[j] + P<double>::cy[j]*_syx[i]*P<double>::cx[j] + P<double>::cy[j]*_syy[i]*P<double>::cy[j];
-                    double trs = _sxx[i] + _syy[i];
-                    double feq = P<double>::ei[j]*(3.0*_rho[i]*cu - 4.5*csc + 1.5*trs);
-                    _p.ftp1[j][i] = (1.0 - omega)*_p.ft[j][i] + omega*feq;
+                //  Collide
+                _mm256_store_pd(&_p.f0[idx], _mm256_add_pd(_mm256_mul_pd(__iomega, __f[0]), _mm256_mul_pd(__omega, Equilibrium<P<double> >(__rho, __ux, __uy, __sxx, __sxy, __syx, __syy, 0))));
+                for (int c = 1; c < P<double>::nc; ++c) {
+                    __f[c] = _mm256_add_pd(_mm256_mul_pd(__iomega, __f[c]), _mm256_mul_pd(__omega, Equilibrium<P<double> >(__rho, __ux, __uy, __sxx, __sxy, __syx, __syy, c)));
                 }
+                P<double>::ShuffleToAoS(&_p.f[P<double>::IndexF(idx, 1)], &__f[1]);
             }
-        }
+            for (int idx = ne*P<double>::packsize; idx < _p.nxyz; ++idx) {
+                //  Update macro
+                T ux, uy, sxx, sxy, syx, syy;
+                Macro<double, P>(_rho[idx], ux, uy, sxx, sxy, syx, syy, _p.f, _gamma[idx], idx);
 
-        //*********************************************************************
-        //  Elastic 2D  :   Initial condition
-        //*********************************************************************
-        template<class T, template<class>class P>
-        void InitialCondition(int _i, P<T>& _p, T _rho, T _ux, T _uy, T _sxx, T _sxy, T _syx, T _syy) {
-            assert(P<T>::nd == 2 && 0 <= _i && _i < _p.np);
-            for (int j = 0; j < P<T>::nc; j++) {
-                T cu = P<T>::cx[j]*_ux + P<T>::cy[j]*_uy;
-                T csc = P<T>::cx[j]*_sxx*P<T>::cx[j] + P<T>::cx[j]*_sxy*P<T>::cy[j] + P<T>::cy[j]*_syx*P<T>::cx[j] + P<T>::cy[j]*_syy*P<T>::cy[j];
-                T trs = _sxx + _syy;
-                _p.ft[j][_i] = P<T>::ei[j]*(3.0*_rho*cu - 4.5*csc + 1.5*trs);
+                //  Save macro if need
+                if (_issave) {
+                    _ux[idx] = ux;
+                    _uy[idx] = uy;
+                    _sxx[idx] = sxx;
+                    _sxy[idx] = sxy;
+                    _syx[idx] = syx;
+                    _syy[idx] = syy;
+                }
+
+                //  Collide
+                Equilibrium<double, P>(feq, _rho[idx], ux, uy, sxx, sxy, syx, syy);
+                _p.f0[idx] = iomega*_p.f0[idx] + omega*feq[0];
+                for (int c = 1; c < P<double>::nc; ++c) {
+                    int idxf = P<double>::IndexF(idx, c);
+                    _p.f[idxf] = iomega*_p.f[idx] + omega*feq[c];
+                }
             }
         }
     }

@@ -21,8 +21,8 @@ namespace PANSLBM2 {
 
         //  Function of updating macroscopic values of NS for 2D
         template<class P>
-        void Macro(__m256d &__rho, __m256d &__ux, __m256d &__uy, __m256d __f0, const __m256d *__f) {
-            __rho = __f0;
+        void Macro(__m256d &__rho, __m256d &__ux, __m256d &__uy, const __m256d *__f) {
+            __rho = __f[0];
             __ux = _mm256_setzero_pd();
             __uy = _mm256_setzero_pd();
             for (int c = 1; c < P::nc; ++c) {
@@ -37,8 +37,8 @@ namespace PANSLBM2 {
 
         //  Function of updating macroscopic values of NS for 3D
         template<class P>
-        void Macro(__m256d &__rho, __m256d &__ux, __m256d &__uy, __m256d &__uz, __m256d __f0, const __m256d *__f) {
-            __rho = __f0;
+        void Macro(__m256d &__rho, __m256d &__ux, __m256d &__uy, __m256d &__uz, const __m256d *__f) {
+            __rho = __f[0];
             __ux = _mm256_setzero_pd();
             __uy = _mm256_setzero_pd();
             __uz = _mm256_setzero_pd();
@@ -101,12 +101,13 @@ namespace PANSLBM2 {
                 int idx = pidx*P<double>::packsize;
 
                 //  Pack f0 and f
-                __m256d __f0 = _mm256_load_pd(&_p.f0[idx]), __f[P<double>::nc];
+                __m256d __f[P<double>::nc];
+                __f[0] = _mm256_load_pd(&_p.f0[idx]);
                 P<double>::ShuffleToSoA(&_p.f[P<double>::IndexF(idx, 1)], &__f[1]);
 
                 //  Update macro
                 __m256d __rho, __ux, __uy;
-                Macro<P<double> >(__rho, __ux, __uy, __f0, __f);
+                Macro<P<double> >(__rho, __ux, __uy, __f);
 
                 //  Save macro if need
                 if (_issave) {
@@ -116,7 +117,7 @@ namespace PANSLBM2 {
                 }
 
                 //  Collide
-                _mm256_store_pd(&_p.f0[idx], _mm256_add_pd(_mm256_mul_pd(__iomega, __f0), _mm256_mul_pd(__omega, Equilibrium<P<double> >(__rho, __ux, __uy, 0))));
+                _mm256_store_pd(&_p.f0[idx], _mm256_add_pd(_mm256_mul_pd(__iomega, __f[0]), _mm256_mul_pd(__omega, Equilibrium<P<double> >(__rho, __ux, __uy, 0))));
                 for (int c = 1; c < P<double>::nc; ++c) {
                     __f[c] = _mm256_add_pd(_mm256_mul_pd(__iomega, __f[c]), _mm256_mul_pd(__omega, Equilibrium<P<double> >(__rho, __ux, __uy, c)));
                 }
@@ -155,12 +156,13 @@ namespace PANSLBM2 {
                 int idx = pidx*P<double>::packsize;
 
                 //  Pack f0 and f
-                __m256d __f0 = _mm256_load_pd(&_p.f0[idx]), __f[P<double>::nc];
+                __m256d __f[P<double>::nc];
+                __f[0] = _mm256_load_pd(&_p.f0[idx]);
                 P<double>::ShuffleToSoA(&_p.f[P<double>::IndexF(idx, 1)], &__f[1]);
 
                 //  Update macro
                 __m256d __rho, __ux, __uy, __uz;
-                Macro<P<double> >(__rho, __ux, __uy, __uz, __f0, __f);
+                Macro<P<double> >(__rho, __ux, __uy, __uz, __f);
 
                 //  Save macro if need
                 if (_issave) {
@@ -171,7 +173,7 @@ namespace PANSLBM2 {
                 }
 
                 //  Collide
-                _mm256_store_pd(&_p.f0[idx], _mm256_add_pd(_mm256_mul_pd(__iomega, __f0), _mm256_mul_pd(__omega, Equilibrium<P<double> >(__rho, __ux, __uy, __uz, 0))));
+                _mm256_store_pd(&_p.f0[idx], _mm256_add_pd(_mm256_mul_pd(__iomega, __f[0]), _mm256_mul_pd(__omega, Equilibrium<P<double> >(__rho, __ux, __uy, __uz, 0))));
                 for (int c = 1; c < P<double>::nc; ++c) {
                     __f[c] = _mm256_add_pd(_mm256_mul_pd(__iomega, __f[c]), _mm256_mul_pd(__omega, Equilibrium<P<double> >(__rho, __ux, __uy, __uz, c)));
                 }
@@ -211,17 +213,18 @@ namespace PANSLBM2 {
                 int idx = pidx*P<double>::packsize;
 
                 //  Pack f0 and f
-                __m256d __f0 = _mm256_load_pd(&_p.f0[idx]), __f[P<double>::nc];
+                __m256d __f[P<double>::nc];
+                __f[0] = _mm256_load_pd(&_p.f0[idx]);
                 P<double>::ShuffleToSoA(&_p.f[P<double>::IndexF(idx, 1)], &__f[1]);
                 
                 //  Update macro
                 __m256d __rho, __ux, __uy;
-                Macro<P<double> >(__rho, __ux, __uy, __f0, __f);
+                Macro<P<double> >(__rho, __ux, __uy, __f);
 
                 //  External force with Brinkman model
                 __m256d __alpha = _mm256_loadu_pd(&_alpha[idx]);
                 ExternalForceBrinkman<P<double> >(__rho, __ux, __uy, __alpha, __f);
-                Macro<P<double> >(__rho, __ux, __uy, __f0, __f);
+                Macro<P<double> >(__rho, __ux, __uy, __f);
 
                 //  Save macro if need
                 if (_issave) {
@@ -231,7 +234,7 @@ namespace PANSLBM2 {
                 }
 
                 //  Collide
-                _mm256_store_pd(&_p.f0[idx], _mm256_add_pd(_mm256_mul_pd(__iomega, __f0), _mm256_mul_pd(__omega, Equilibrium<P<double> >(__rho, __ux, __uy, 0))));
+                _mm256_store_pd(&_p.f0[idx], _mm256_add_pd(_mm256_mul_pd(__iomega, __f[0]), _mm256_mul_pd(__omega, Equilibrium<P<double> >(__rho, __ux, __uy, 0))));
                 for (int c = 1; c < P<double>::nc; ++c) {
                     __f[c] = _mm256_add_pd(_mm256_mul_pd(__iomega, __f[c]), _mm256_mul_pd(__omega, Equilibrium<P<double> >(__rho, __ux, __uy, c)));
                 }
@@ -274,17 +277,18 @@ namespace PANSLBM2 {
                 int idx = pidx*P<double>::packsize;
 
                 //  Pack f0 and f
-                __m256d __f0 = _mm256_load_pd(&_p.f0[idx]), __f[P<double>::nc];
+                __m256d __f[P<double>::nc];
+                __f[0] = _mm256_load_pd(&_p.f0[idx]);
                 P<double>::ShuffleToSoA(&_p.f[P<double>::IndexF(idx, 1)], &__f[1]);
 
                 //  Update macro
                 __m256d __rho, __ux, __uy, __uz;
-                Macro<P<double> >(__rho, __ux, __uy, __uz, __f0, __f);
+                Macro<P<double> >(__rho, __ux, __uy, __uz, __f);
 
                 //  External force with Brinkman model
                 __m256d __alpha = _mm256_loadu_pd(&_alpha[idx]);
                 ExternalForceBrinkman<P<double> >(__rho, __ux, __uy, __uz, __alpha, __f);
-                Macro<P<double> >(__rho, __ux, __uy, __uz, __f0, __f);
+                Macro<P<double> >(__rho, __ux, __uy, __uz, __f);
 
                 //  Save macro if need
                 if (_issave) {
@@ -295,7 +299,7 @@ namespace PANSLBM2 {
                 }
 
                 //  Collide
-                _mm256_store_pd(&_p.f0[idx], _mm256_add_pd(_mm256_mul_pd(__iomega, __f0), _mm256_mul_pd(__omega, Equilibrium<P<double> >(__rho, __ux, __uy, __uz, 0))));
+                _mm256_store_pd(&_p.f0[idx], _mm256_add_pd(_mm256_mul_pd(__iomega, __f[0]), _mm256_mul_pd(__omega, Equilibrium<P<double> >(__rho, __ux, __uy, __uz, 0))));
                 for (int c = 1; c < P<double>::nc; ++c) {
                     __f[c] = _mm256_add_pd(_mm256_mul_pd(__iomega, __f[c]), _mm256_mul_pd(__omega, Equilibrium<P<double> >(__rho, __ux, __uy, __uz, c)));
                 }

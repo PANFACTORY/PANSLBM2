@@ -202,6 +202,7 @@ namespace PANSLBM2 {
                 //  External force with natural convection
                 ExternalForceNaturalConvection<T, P>(tem, _gx, _gy, _tem0, _p.f, idx);
                 NS::Macro<T, P>(rho, ux, uy, _p.f0, _p.f, idx);
+                Macro<T, Q>(tem, qx, qy, ux, uy, _q.f0, _q.f, omegag, idx);
 
                 //  Save macro if need
                 if (_issave) {
@@ -249,6 +250,7 @@ namespace PANSLBM2 {
                 //  External force with natural convection
                 ExternalForceNaturalConvection<T, P>(tem, _gx, _gy, _gz, _tem0, _p.f, idx);
                 NS::Macro<T, P>(rho, ux, uy, uz, _p.f0, _p.f, idx);
+                Macro<T, Q>(tem, qx, qy, qz, ux, uy, uz, _q.f0, _q.f, omegag, idx);
 
                 //  Save macro if need
                 if (_issave) {

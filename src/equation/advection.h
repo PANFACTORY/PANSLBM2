@@ -9,7 +9,7 @@
 #include <cassert>
 #include "navierstokes.h"
 #ifdef _USE_AVX_DEFINES
-    #include "../equation_avx/navierstokes_avx.h"
+    #include "../equation_avx/advection_avx.h"
 #endif
 
 namespace PANSLBM2 {

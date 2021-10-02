@@ -74,18 +74,18 @@ namespace PANSLBM2 {
         //  Function of applying external force of AD with natural convection for 2D
         template<class P>
         void ExternalForceNaturalConvection(__m256d __tem, __m256d __gx, __m256d __gy, __m256d __tem0, __m256d *__f) {
-            __m256d __coef = _mm256_mul_pd(_mm256_set1_pd(3.0), _mm256_mul_pd(Q::__ei[c], _mm256_sub_pd(__tem, __tem0)));
+            __m256d __coef = _mm256_mul_pd(_mm256_set1_pd(3.0), _mm256_mul_pd(P::__ei[0], _mm256_sub_pd(__tem, __tem0)));
             for (int c = 1; c < P::nc; ++c) {
-                __f[c] = _mm256_add_pd(__f[c], _mm256_mul_pd(__coef, _mm256_add_pd(_mm256_mul_pd(Q::__cx[c], __gx), _mm256_mul_pd(Q::__cy[c], __gy))));
+                __f[c] = _mm256_add_pd(__f[c], _mm256_mul_pd(__coef, _mm256_add_pd(_mm256_mul_pd(P::__cx[c], __gx), _mm256_mul_pd(P::__cy[c], __gy))));
             }
         }
 
         //  Function of applying external force of AD with natural convection for 3D
         template<class P>
         void ExternalForceNaturalConvection(__m256d __tem, __m256d __gx, __m256d __gy, __m256d __gz, __m256d __tem0, __m256d *__f) {
-            __m256d __coef = _mm256_mul_pd(_mm256_set1_pd(3.0), _mm256_mul_pd(Q::__ei[c], _mm256_sub_pd(__tem, __tem0)));
+            __m256d __coef = _mm256_mul_pd(_mm256_set1_pd(3.0), _mm256_mul_pd(P::__ei[0], _mm256_sub_pd(__tem, __tem0)));
             for (int c = 1; c < P::nc; ++c) {
-                __f[c] = _mm256_add_pd(__f[c], _mm256_mul_pd(__coef, _mm256_add_pd(_mm256_add_pd(_mm256_mul_pd(Q::__cx[c], __gx), _mm256_mul_pd(Q::__cy[c], __gy)), _mm256_mul_pd(Q::__cz[c], __gz))));
+                __f[c] = _mm256_add_pd(__f[c], _mm256_mul_pd(__coef, _mm256_add_pd(_mm256_add_pd(_mm256_mul_pd(P::__cx[c], __gx), _mm256_mul_pd(P::__cy[c], __gy)), _mm256_mul_pd(P::__cz[c], __gz))));
             }
         }
 
@@ -117,9 +117,9 @@ namespace PANSLBM2 {
 
                 //  Pack f0, f, g0 and g
                 __m256d __f[P<double>::nc], __g[Q<double>::nc];
-                __m256d __f[0] = _mm256_load_pd(&_p.f0[idx]);
+                __f[0] = _mm256_load_pd(&_p.f0[idx]);
                 P<double>::ShuffleToSoA(&_p.f[P<double>::IndexF(idx, 1)], &__f[1]);
-                __m256d __g[0] = _mm256_load_pd(&_q.f0[idx]);
+                __g[0] = _mm256_load_pd(&_q.f0[idx]);
                 Q<double>::ShuffleToSoA(&_q.f[Q<double>::IndexF(idx, 1)], &__g[1]);
 
                 //  Update macro
@@ -152,10 +152,10 @@ namespace PANSLBM2 {
             }
             for (int idx = ne*P<double>::packsize; idx < _p.nxyz; ++idx) {
                 //  Update macro
-                T rho, ux, uy;
-                NS::Macro<T, P>(rho, ux, uy, _p.f0, _p.f, idx);
-                T tem, qx, qy;
-                Macro<T, Q>(tem, qx, qy, ux, uy, _q.f0, _q.f, omegag, idx);
+                double rho, ux, uy;
+                NS::Macro<double, P>(rho, ux, uy, _p.f0, _p.f, idx);
+                double tem, qx, qy;
+                Macro<double, Q>(tem, qx, qy, ux, uy, _q.f0, _q.f, omegag, idx);
 
                 //  Save macro if need
                 if (_issave) {
@@ -168,16 +168,16 @@ namespace PANSLBM2 {
                 }
 
                 //  Collide
-                NS::Equilibrium<T, P>(feq, rho, ux, uy);
+                NS::Equilibrium<double, P>(feq, rho, ux, uy);
                 _p.f0[idx] = iomegaf*_p.f0[idx] + omegaf*feq[0];
-                for (int c = 1; c < P<T>::nc; ++c) {
-                    int idxf = P<T>::IndexF(idx, c);
+                for (int c = 1; c < P<double>::nc; ++c) {
+                    int idxf = P<double>::IndexF(idx, c);
                     _p.f[idxf] = iomegaf*_p.f[idxf] + omegaf*feq[c];
                 }
-                Equilibrium<T, Q>(geq, tem, ux, uy);
+                Equilibrium<double, Q>(geq, tem, ux, uy);
                 _q.f0[idx] = iomegag*_q.f0[idx] + omegag*geq[0];
-                for (int c = 1; c < Q<T>::nc; ++c) {
-                    int idxf = Q<T>::IndexF(idx, c);
+                for (int c = 1; c < Q<double>::nc; ++c) {
+                    int idxf = Q<double>::IndexF(idx, c);
                     _q.f[idxf] = iomegag*_q.f[idxf] + omegag*geq[c];
                 }
             }
@@ -201,9 +201,9 @@ namespace PANSLBM2 {
 
                 //  Pack f0, f, g0 and g
                 __m256d __f[P<double>::nc], __g[Q<double>::nc];
-                __m256d __f[0] = _mm256_load_pd(&_p.f0[idx]);
+                __f[0] = _mm256_load_pd(&_p.f0[idx]);
                 P<double>::ShuffleToSoA(&_p.f[P<double>::IndexF(idx, 1)], &__f[1]);
-                __m256d __g[0] = _mm256_load_pd(&_q.f0[idx]);
+                __g[0] = _mm256_load_pd(&_q.f0[idx]);
                 Q<double>::ShuffleToSoA(&_q.f[Q<double>::IndexF(idx, 1)], &__g[1]);
 
                 //  Update macro
@@ -238,10 +238,10 @@ namespace PANSLBM2 {
             }
             for (int idx = ne*P<double>::packsize; idx < _p.nxyz; ++idx) {
                 //  Update macro
-                T rho, ux, uy, uz;
-                NS::Macro<T, P>(rho, ux, uy, uz, _p.f0, _p.f, idx);
-                T tem, qx, qy, qz;
-                Macro<T, Q>(tem, qx, qy, qz, ux, uy, uz, _q.f0, _q.f, omegag, idx);
+                double rho, ux, uy, uz;
+                NS::Macro<double, P>(rho, ux, uy, uz, _p.f0, _p.f, idx);
+                double tem, qx, qy, qz;
+                Macro<double, Q>(tem, qx, qy, qz, ux, uy, uz, _q.f0, _q.f, omegag, idx);
 
                 //  Save macro if need
                 if (_issave) {
@@ -256,16 +256,16 @@ namespace PANSLBM2 {
                 }
 
                 //  Collide
-                NS::Equilibrium<T, P>(feq, rho, ux, uy, uz);
+                NS::Equilibrium<double, P>(feq, rho, ux, uy, uz);
                 _p.f0[idx] = iomegaf*_p.f0[idx] + omegaf*feq[0];
-                for (int c = 1; c < P<T>::nc; ++c) {
-                    int idxf = P<T>::IndexF(idx, c);
+                for (int c = 1; c < P<double>::nc; ++c) {
+                    int idxf = P<double>::IndexF(idx, c);
                     _p.f[idxf] = iomegaf*_p.f[idxf] + omegaf*feq[c];
                 }
-                Equilibrium<T, Q>(geq, tem, ux, uy, uz);
+                Equilibrium<double, Q>(geq, tem, ux, uy, uz);
                 _q.f0[idx] = iomegag*_q.f0[idx] + omegag*geq[0];
-                for (int c = 1; c < Q<T>::nc; ++c) {
-                    int idxf = Q<T>::IndexF(idx, c);
+                for (int c = 1; c < Q<double>::nc; ++c) {
+                    int idxf = Q<double>::IndexF(idx, c);
                     _q.f[idxf] = iomegag*_q.f[idxf] + omegag*geq[c];
                 }
             }
@@ -290,9 +290,9 @@ namespace PANSLBM2 {
 
                 //  Pack f0, f, g0 and g
                 __m256d __f[P<double>::nc], __g[Q<double>::nc];
-                __m256d __f[0] = _mm256_load_pd(&_p.f0[idx]);
+                __f[0] = _mm256_load_pd(&_p.f0[idx]);
                 P<double>::ShuffleToSoA(&_p.f[P<double>::IndexF(idx, 1)], &__f[1]);
-                __m256d __g[0] = _mm256_load_pd(&_q.f0[idx]);
+                __g[0] = _mm256_load_pd(&_q.f0[idx]);
                 Q<double>::ShuffleToSoA(&_q.f[Q<double>::IndexF(idx, 1)], &__g[1]);
 
                 //  Update macro
@@ -329,14 +329,14 @@ namespace PANSLBM2 {
             }
             for (int idx = ne*P<double>::packsize; idx < _p.nxyz; ++idx) {
                 //  Update macro
-                T rho, ux, uy;
-                NS::Macro<T, P>(rho, ux, uy, _p.f0, _p.f, idx);
-                T tem, qx, qy;
-                Macro<T, Q>(tem, qx, qy, ux, uy, _q.f0, _q.f, omegag, idx);
+                double rho, ux, uy;
+                NS::Macro<double, P>(rho, ux, uy, _p.f0, _p.f, idx);
+                double tem, qx, qy;
+                Macro<double, Q>(tem, qx, qy, ux, uy, _q.f0, _q.f, omegag, idx);
 
                 //  External force with natural convection
-                ExternalForceNaturalConvection<T, P>(tem, _gx, _gy, _tem0, _p.f, idx);
-                NS::Macro<T, P>(rho, ux, uy, _p.f0, _p.f, idx);
+                ExternalForceNaturalConvection<double, P>(tem, _gx, _gy, _tem0, _p.f, idx);
+                NS::Macro<double, P>(rho, ux, uy, _p.f0, _p.f, idx);
 
                 //  Save macro if need
                 if (_issave) {
@@ -349,16 +349,16 @@ namespace PANSLBM2 {
                 }
 
                 //  Collide
-                NS::Equilibrium<T, P>(feq, rho, ux, uy);
+                NS::Equilibrium<double, P>(feq, rho, ux, uy);
                 _p.f0[idx] = iomegaf*_p.f0[idx] + omegaf*feq[0];
-                for (int c = 1; c < P<T>::nc; ++c) {
-                    int idxf = P<T>::IndexF(idx, c);
+                for (int c = 1; c < P<double>::nc; ++c) {
+                    int idxf = P<double>::IndexF(idx, c);
                     _p.f[idxf] = iomegaf*_p.f[idxf] + omegaf*feq[c];
                 }
-                Equilibrium<T, Q>(geq, tem, ux, uy);
+                Equilibrium<double, Q>(geq, tem, ux, uy);
                 _q.f0[idx] = iomegag*_q.f0[idx] + omegag*geq[0];
-                for (int c = 1; c < Q<T>::nc; ++c) {
-                    int idxf = Q<T>::IndexF(idx, c); 
+                for (int c = 1; c < Q<double>::nc; ++c) {
+                    int idxf = Q<double>::IndexF(idx, c); 
                     _q.f[idxf] = iomegag*_q.f[idxf] + omegag*geq[c];
                 }
             }
@@ -383,9 +383,9 @@ namespace PANSLBM2 {
 
                 //  Pack f0, f, g0 and g
                 __m256d __f[P<double>::nc], __g[Q<double>::nc];
-                __m256d __f[0] = _mm256_load_pd(&_p.f0[idx]);
+                __f[0] = _mm256_load_pd(&_p.f0[idx]);
                 P<double>::ShuffleToSoA(&_p.f[P<double>::IndexF(idx, 1)], &__f[1]);
-                __m256d __g[0] = _mm256_load_pd(&_q.f0[idx]);
+                __g[0] = _mm256_load_pd(&_q.f0[idx]);
                 Q<double>::ShuffleToSoA(&_q.f[Q<double>::IndexF(idx, 1)], &__g[1]);
 
                 //  Update macro
@@ -424,14 +424,14 @@ namespace PANSLBM2 {
             }
             for (int idx = ne*P<double>::packsize; idx < _p.nxyz; ++idx) {
                 //  Update macro
-                T rho, ux, uy, uz;
-                NS::Macro<T, P>(rho, ux, uy, uz, _p.f0, _p.f, idx);
-                T tem, qx, qy, qz;
-                Macro<T, Q>(tem, qx, qy, qz, ux, uy, uz, _q.f0, _q.f, omegag, idx);
+                double rho, ux, uy, uz;
+                NS::Macro<double, P>(rho, ux, uy, uz, _p.f0, _p.f, idx);
+                double tem, qx, qy, qz;
+                Macro<double, Q>(tem, qx, qy, qz, ux, uy, uz, _q.f0, _q.f, omegag, idx);
 
                 //  External force with natural convection
-                ExternalForceNaturalConvection<T, P>(tem, _gx, _gy, _gz, _tem0, _p.f, idx);
-                NS::Macro<T, P>(rho, ux, uy, uz, _p.f0, _p.f, idx);
+                ExternalForceNaturalConvection<double, P>(tem, _gx, _gy, _gz, _tem0, _p.f, idx);
+                NS::Macro<double, P>(rho, ux, uy, uz, _p.f0, _p.f, idx);
 
                 //  Save macro if need
                 if (_issave) {
@@ -446,16 +446,16 @@ namespace PANSLBM2 {
                 }
 
                 //  Collide
-                NS::Equilibrium<T, P>(feq, rho, ux, uy, uz);
+                NS::Equilibrium<double, P>(feq, rho, ux, uy, uz);
                 _p.f0[idx] = iomegaf*_p.f0[idx] + omegaf*feq[0];
-                for (int c = 1; c < P<T>::nc; ++c) {
-                    int idxf = P<T>::IndexF(idx, c); 
+                for (int c = 1; c < P<double>::nc; ++c) {
+                    int idxf = P<double>::IndexF(idx, c); 
                     _p.f[idxf] = iomegaf*_p.f[idxf] + omegaf*feq[c];
                 }
-                Equilibrium<T, Q>(geq, tem, ux, uy, uz);
+                Equilibrium<double, Q>(geq, tem, ux, uy, uz);
                 _q.f0[idx] = iomegag*_q.f0[idx] + omegag*geq[0];
-                for (int c = 1; c < Q<T>::nc; ++c) {
-                    int idxf = Q<T>::IndexF(idx, c);
+                for (int c = 1; c < Q<double>::nc; ++c) {
+                    int idxf = Q<double>::IndexF(idx, c);
                     _q.f[idxf] = iomegag*_q.f[idxf] + omegag*geq[c];
                 }
             }
@@ -478,9 +478,9 @@ namespace PANSLBM2 {
 
                 //  Pack f0, f, g0 and g
                 __m256d __f[P<double>::nc], __g[Q<double>::nc];
-                __m256d __f[0] = _mm256_load_pd(&_p.f0[idx]);
+                __f[0] = _mm256_load_pd(&_p.f0[idx]);
                 P<double>::ShuffleToSoA(&_p.f[P<double>::IndexF(idx, 1)], &__f[1]);
-                __m256d __g[0] = _mm256_load_pd(&_q.f0[idx]);
+                __g[0] = _mm256_load_pd(&_q.f0[idx]);
                 Q<double>::ShuffleToSoA(&_q.f[Q<double>::IndexF(idx, 1)], &__g[1]);
 
                 //  Update macro
@@ -521,16 +521,16 @@ namespace PANSLBM2 {
             }
             for (int idx = ne*P<double>::packsize; idx < _p.nxyz; ++idx) {
                 //  Update macro
-                T rho, ux, uy;
-                NS::Macro<T, P>(rho, ux, uy, _p.f0, _p.f, idx);
-                T tem, qx, qy;
-                Macro<T, Q>(tem, qx, qy, ux, uy, _q.f0, _q.f, omegag, idx);
+                double rho, ux, uy;
+                NS::Macro<double, P>(rho, ux, uy, _p.f0, _p.f, idx);
+                double tem, qx, qy;
+                Macro<double, Q>(tem, qx, qy, ux, uy, _q.f0, _q.f, omegag, idx);
 
                 //  External force with Brinkman and heat exchange
-                NS::ExternalForceBrinkman<T, P>(rho, ux, uy, _alpha[idx], _p.f, idx);
-                NS::Macro<T, P>(rho, ux, uy, _p.f0, _p.f, idx);
-                ExternalForceHeatExchange<T, Q>(tem, _beta[idx], _q.f0, _q.f, idx);
-                Macro<T, Q>(tem, qx, qy, ux, uy, _q.f0, _q.f, omegag, idx);
+                NS::ExternalForceBrinkman<double, P>(rho, ux, uy, _alpha[idx], _p.f, idx);
+                NS::Macro<double, P>(rho, ux, uy, _p.f0, _p.f, idx);
+                ExternalForceHeatExchange<double, Q>(tem, _beta[idx], _q.f0, _q.f, idx);
+                Macro<double, Q>(tem, qx, qy, ux, uy, _q.f0, _q.f, omegag, idx);
 
                 //  Save macro if need
                 if (_issave) {
@@ -543,16 +543,16 @@ namespace PANSLBM2 {
                 }
 
                 //  Collide
-                NS::Equilibrium<T, P>(feq, rho, ux, uy);
+                NS::Equilibrium<double, P>(feq, rho, ux, uy);
                 _p.f0[idx] = iomegaf*_p.f0[idx] + omegaf*feq[0];
-                for (int c = 1; c < P<T>::nc; ++c) {
-                    int idxf = P<T>::IndexF(idx, c);
+                for (int c = 1; c < P<double>::nc; ++c) {
+                    int idxf = P<double>::IndexF(idx, c);
                     _p.f[idxf] = iomegaf*_p.f[idxf] + omegaf*feq[c];
                 }
-                Equilibrium<T, Q>(geq, tem, ux, uy);
+                Equilibrium<double, Q>(geq, tem, ux, uy);
                 _q.f0[idx] = iomegag*_q.f0[idx] + omegag*geq[0];
-                for (int c = 1; c < Q<T>::nc; ++c) {
-                    int idxf = Q<T>::IndexF(idx, c); 
+                for (int c = 1; c < Q<double>::nc; ++c) {
+                    int idxf = Q<double>::IndexF(idx, c); 
                     _q.f[idxf] = iomegag*_q.f[idxf] + omegag*geq[c];
                 }
             }
@@ -575,9 +575,9 @@ namespace PANSLBM2 {
 
                 //  Pack f0, f, g0 and g
                 __m256d __f[P<double>::nc], __g[Q<double>::nc];
-                __m256d __f[0] = _mm256_load_pd(&_p.f0[idx]);
+                __f[0] = _mm256_load_pd(&_p.f0[idx]);
                 P<double>::ShuffleToSoA(&_p.f[P<double>::IndexF(idx, 1)], &__f[1]);
-                __m256d __g[0] = _mm256_load_pd(&_q.f0[idx]);
+                __g[0] = _mm256_load_pd(&_q.f0[idx]);
                 Q<double>::ShuffleToSoA(&_q.f[Q<double>::IndexF(idx, 1)], &__g[1]);
 
                 //  Update macro
@@ -620,16 +620,16 @@ namespace PANSLBM2 {
             }
             for (int idx = ne*P<double>::packsize; idx < _p.nxyz; ++idx) {
                 //  Update macro
-                T rho, ux, uy, uz;
-                NS::Macro<T, P>(rho, ux, uy, uz, _p.f0, _p.f, idx);
-                T tem, qx, qy, qz;
-                Macro<T, Q>(tem, qx, qy, qz, ux, uy, uz, _q.f0, _q.f, omegag, idx);
+                double rho, ux, uy, uz;
+                NS::Macro<double, P>(rho, ux, uy, uz, _p.f0, _p.f, idx);
+                double tem, qx, qy, qz;
+                Macro<double, Q>(tem, qx, qy, qz, ux, uy, uz, _q.f0, _q.f, omegag, idx);
 
                 //  External force with Brinkman and heat exchange
-                NS::ExternalForceBrinkman<T, P>(rho, ux, uy, uz, _alpha[idx], _p.f, idx);
-                NS::Macro<T, P>(rho, ux, uy, uz, _p.f0, _p.f, idx);
-                ExternalForceHeatExchange<T, Q>(tem, _beta[idx], _q.f0, _q.f, idx);
-                Macro<T, Q>(tem, qx, qy, qz, ux, uy, uz, _q.f0, _q.f, omegag, idx);
+                NS::ExternalForceBrinkman<double, P>(rho, ux, uy, uz, _alpha[idx], _p.f, idx);
+                NS::Macro<double, P>(rho, ux, uy, uz, _p.f0, _p.f, idx);
+                ExternalForceHeatExchange<double, Q>(tem, _beta[idx], _q.f0, _q.f, idx);
+                Macro<double, Q>(tem, qx, qy, qz, ux, uy, uz, _q.f0, _q.f, omegag, idx);
 
                 //  Save macro if need
                 if (_issave) {
@@ -644,16 +644,16 @@ namespace PANSLBM2 {
                 }
 
                 //  Collide
-                NS::Equilibrium<T, P>(feq, rho, ux, uy, uz);
+                NS::Equilibrium<double, P>(feq, rho, ux, uy, uz);
                 _p.f0[idx] = iomegaf*_p.f0[idx] + omegaf*feq[0];
-                for (int c = 1; c < P<T>::nc; ++c) {
-                    int idxf = P<T>::IndexF(idx, c);
+                for (int c = 1; c < P<double>::nc; ++c) {
+                    int idxf = P<double>::IndexF(idx, c);
                     _p.f[idxf] = iomegaf*_p.f[idxf] + omegaf*feq[c];
                 }
-                Equilibrium<T, Q>(geq, tem, ux, uy, uz);
+                Equilibrium<double, Q>(geq, tem, ux, uy, uz);
                 _q.f0[idx] = iomegag*_q.f0[idx] + omegag*geq[0];
-                for (int c = 1; c < Q<T>::nc; ++c) {            
-                    int idxf = Q<T>::IndexF(idx, c);      
+                for (int c = 1; c < Q<double>::nc; ++c) {            
+                    int idxf = Q<double>::IndexF(idx, c);      
                     _q.f[idxf] = iomegag*_q.f[idxf] + omegag*geq[c];
                 }
             }
@@ -679,9 +679,9 @@ namespace PANSLBM2 {
 
                 //  Pack f0, f, g0 and g
                 __m256d __f[P<double>::nc], __g[Q<double>::nc];
-                __m256d __f[0] = _mm256_load_pd(&_p.f0[idx]);
+                __f[0] = _mm256_load_pd(&_p.f0[idx]);
                 P<double>::ShuffleToSoA(&_p.f[P<double>::IndexF(idx, 1)], &__f[1]);
-                __m256d __g[0] = _mm256_load_pd(&_q.f0[idx]);
+                __g[0] = _mm256_load_pd(&_q.f0[idx]);
                 Q<double>::ShuffleToSoA(&_q.f[Q<double>::IndexF(idx, 1)], &__g[1]);
 
                 //  Update macro
@@ -719,18 +719,18 @@ namespace PANSLBM2 {
                 Q<double>::ShuffleToAoS(&_q.f[Q<double>::IndexF(idx, 1)], &__g[1]);
             }
             for (int idx = ne*P<double>::packsize; idx < _p.nxyz; ++idx) {
-                T omegag = 1.0/(3.0*_diffusivity[idx] + 0.5), iomegag = 1.0 - omegag;
+                double omegag = 1.0/(3.0*_diffusivity[idx] + 0.5), iomegag = 1.0 - omegag;
 
                 //  Update macro
-                T rho, ux, uy;
-                NS::Macro<T, P>(rho, ux, uy, _p.f0, _p.f, idx);
-                T tem, qx, qy;
-                Macro<T, Q>(tem, qx, qy, ux, uy, _q.f0, _q.f, omegag, idx);
+                double rho, ux, uy;
+                NS::Macro<double, P>(rho, ux, uy, _p.f0, _p.f, idx);
+                double tem, qx, qy;
+                Macro<double, Q>(tem, qx, qy, ux, uy, _q.f0, _q.f, omegag, idx);
 
                 //  External force with Brinkman model
-                NS::ExternalForceBrinkman<T, P>(rho, ux, uy, _alpha[idx], _p.f, idx);
-                NS::Macro<T, P>(rho, ux, uy, _p.f0, _p.f, idx);
-                Macro<T, Q>(tem, qx, qy, ux, uy, _q.f0, _q.f, omegag, idx);
+                NS::ExternalForceBrinkman<double, P>(rho, ux, uy, _alpha[idx], _p.f, idx);
+                NS::Macro<double, P>(rho, ux, uy, _p.f0, _p.f, idx);
+                Macro<double, Q>(tem, qx, qy, ux, uy, _q.f0, _q.f, omegag, idx);
 
                 //  Save macro if need
                 if (_issave) {
@@ -743,16 +743,16 @@ namespace PANSLBM2 {
                 }
 
                 //  Collide
-                NS::Equilibrium<T, P>(feq, rho, ux, uy);
+                NS::Equilibrium<double, P>(feq, rho, ux, uy);
                 _p.f0[idx] = iomegaf*_p.f0[idx] + omegaf*feq[0];
-                for (int c = 1; c < P<T>::nc; ++c) {
-                    int idxf = P<T>::IndexF(idx, c);
+                for (int c = 1; c < P<double>::nc; ++c) {
+                    int idxf = P<double>::IndexF(idx, c);
                     _p.f[idxf] = iomegaf*_p.f[idxf] + omegaf*feq[c];
                 }
-                Equilibrium<T, Q>(geq, tem, ux, uy);
+                Equilibrium<double, Q>(geq, tem, ux, uy);
                 _q.f0[idx] = iomegag*_q.f0[idx] + omegag*geq[0];
-                for (int c = 1; c < Q<T>::nc; ++c) {
-                    int idxf = Q<T>::IndexF(idx, c);
+                for (int c = 1; c < Q<double>::nc; ++c) {
+                    int idxf = Q<double>::IndexF(idx, c);
                     _q.f[idxf] = iomegag*_q.f[idxf] + omegag*geq[c];
                 }
             }
@@ -778,9 +778,9 @@ namespace PANSLBM2 {
 
                 //  Pack f0, f, g0 and g
                 __m256d __f[P<double>::nc], __g[Q<double>::nc];
-                __m256d __f[0] = _mm256_load_pd(&_p.f0[idx]);
+                __f[0] = _mm256_load_pd(&_p.f0[idx]);
                 P<double>::ShuffleToSoA(&_p.f[P<double>::IndexF(idx, 1)], &__f[1]);
-                __m256d __g[0] = _mm256_load_pd(&_q.f0[idx]);
+                __g[0] = _mm256_load_pd(&_q.f0[idx]);
                 Q<double>::ShuffleToSoA(&_q.f[Q<double>::IndexF(idx, 1)], &__g[1]);
 
                 //  Update macro
@@ -820,18 +820,18 @@ namespace PANSLBM2 {
                 Q<double>::ShuffleToAoS(&_q.f[Q<double>::IndexF(idx, 1)], &__g[1]);
             }
             for (int idx = ne*P<double>::packsize; idx < _p.nxyz; ++idx) {
-                T omegag = 1.0/(3.0*_diffusivity[idx] + 0.5), iomegag = 1.0 - omegag;
+                double omegag = 1.0/(3.0*_diffusivity[idx] + 0.5), iomegag = 1.0 - omegag;
 
                 //  Update macro
-                T rho, ux, uy, uz;
-                NS::Macro<T, P>(rho, ux, uy, uz, _p.f0, _p.f, idx);
-                T tem, qx, qy, qz;
-                Macro<T, Q>(tem, qx, qy, qz, ux, uy, uz, _q.f0, _q.f, omegag, idx);
+                double rho, ux, uy, uz;
+                NS::Macro<double, P>(rho, ux, uy, uz, _p.f0, _p.f, idx);
+                double tem, qx, qy, qz;
+                Macro<double, Q>(tem, qx, qy, qz, ux, uy, uz, _q.f0, _q.f, omegag, idx);
 
                 //  External force with Brinkman model
-                NS::ExternalForceBrinkman<T, P>(rho, ux, uy, uz, _alpha[idx], _p.f, idx);
-                NS::Macro<T, P>(rho, ux, uy, uz, _p.f0, _p.f, idx);
-                Macro<T, Q>(tem, qx, qy, qz, ux, uy, uz, _q.f0, _q.f, omegag, idx);
+                NS::ExternalForceBrinkman<double, P>(rho, ux, uy, uz, _alpha[idx], _p.f, idx);
+                NS::Macro<double, P>(rho, ux, uy, uz, _p.f0, _p.f, idx);
+                Macro<double, Q>(tem, qx, qy, qz, ux, uy, uz, _q.f0, _q.f, omegag, idx);
 
                 //  Save macro if need
                 if (_issave) {
@@ -846,16 +846,16 @@ namespace PANSLBM2 {
                 }
 
                 //  Collide
-                NS::Equilibrium<T, P>(feq, rho, ux, uy, uz);
+                NS::Equilibrium<double, P>(feq, rho, ux, uy, uz);
                 _p.f0[idx] = iomegaf*_p.f0[idx] + omegaf*feq[0];
-                for (int c = 1; c < P<T>::nc; ++c) {
-                    int idxf = P<T>::IndexF(idx, c);
+                for (int c = 1; c < P<double>::nc; ++c) {
+                    int idxf = P<double>::IndexF(idx, c);
                     _p.f[idxf] = iomegaf*_p.f[idxf] + omegaf*feq[c];
                 }
-                Equilibrium<T, Q>(geq, tem, ux, uy, uz);
+                Equilibrium<double, Q>(geq, tem, ux, uy, uz);
                 _q.f0[idx] = iomegag*_q.f0[idx] + omegag*geq[0];
-                for (int c = 1; c < Q<T>::nc; ++c) {
-                    int idxf = Q<T>::IndexF(idx, c);
+                for (int c = 1; c < Q<double>::nc; ++c) {
+                    int idxf = Q<double>::IndexF(idx, c);
                     _q.f[idxf] = iomegag*_q.f[idxf] + omegag*geq[c];
                 }
             }
@@ -882,9 +882,9 @@ namespace PANSLBM2 {
 
                 //  Pack f0, f, g0 and g
                 __m256d __f[P<double>::nc], __g[Q<double>::nc];
-                __m256d __f[0] = _mm256_load_pd(&_p.f0[idx]);
+                __f[0] = _mm256_load_pd(&_p.f0[idx]);
                 P<double>::ShuffleToSoA(&_p.f[P<double>::IndexF(idx, 1)], &__f[1]);
-                __m256d __g[0] = _mm256_load_pd(&_q.f0[idx]);
+                __g[0] = _mm256_load_pd(&_q.f0[idx]);
                 Q<double>::ShuffleToSoA(&_q.f[Q<double>::IndexF(idx, 1)], &__g[1]);
 
                 //  Update macro
@@ -923,19 +923,19 @@ namespace PANSLBM2 {
                 Q<double>::ShuffleToAoS(&_q.f[Q<double>::IndexF(idx, 1)], &__g[1]);
             }
             for (int idx = ne*P<double>::packsize; idx < _p.nxyz; ++idx) {
-                T omegag = 1.0/(3.0*_diffusivity[idx] + 0.5), iomegag = 1.0 - omegag;
+                double omegag = 1.0/(3.0*_diffusivity[idx] + 0.5), iomegag = 1.0 - omegag;
 
                 //  Update macro
-                T rho, ux, uy;
-                NS::Macro<T, P>(rho, ux, uy, _p.f0, _p.f, idx);
-                T tem, qx, qy;
-                Macro<T, Q>(tem, qx, qy, ux, uy, _q.f0, _q.f, omegag, idx);
+                double rho, ux, uy;
+                NS::Macro<double, P>(rho, ux, uy, _p.f0, _p.f, idx);
+                double tem, qx, qy;
+                Macro<double, Q>(tem, qx, qy, ux, uy, _q.f0, _q.f, omegag, idx);
 
                 //  External force with Brinkman model and natural convection
-                ExternalForceNaturalConvection<T, P>(tem, _gx, _gy, _tem0, _p.f, idx);
-                NS::ExternalForceBrinkman<T, P>(rho, ux, uy, _alpha[idx], _p.f, idx);
-                NS::Macro<T, P>(rho, ux, uy, _p.f0, _p.f, idx);
-                Macro<T, Q>(tem, qx, qy, ux, uy, _q.f0, _q.f, omegag, idx);
+                ExternalForceNaturalConvection<double, P>(tem, _gx, _gy, _tem0, _p.f, idx);
+                NS::ExternalForceBrinkman<double, P>(rho, ux, uy, _alpha[idx], _p.f, idx);
+                NS::Macro<double, P>(rho, ux, uy, _p.f0, _p.f, idx);
+                Macro<double, Q>(tem, qx, qy, ux, uy, _q.f0, _q.f, omegag, idx);
 
                 //  Save macro if need
                 if (_issave) {
@@ -948,16 +948,16 @@ namespace PANSLBM2 {
                 }
 
                 //  Collide
-                NS::Equilibrium<T, P>(feq, rho, ux, uy);
+                NS::Equilibrium<double, P>(feq, rho, ux, uy);
                 _p.f0[idx] = iomegaf*_p.f0[idx] + omegaf*feq[0];
-                for (int c = 1; c < P<T>::nc; ++c) {
-                    int idxf = P<T>::IndexF(idx, c);
+                for (int c = 1; c < P<double>::nc; ++c) {
+                    int idxf = P<double>::IndexF(idx, c);
                     _p.f[idxf] = iomegaf*_p.f[idxf] + omegaf*feq[c];
                 }
-                Equilibrium<T, Q>(geq, tem, ux, uy);
+                Equilibrium<double, Q>(geq, tem, ux, uy);
                 _q.f0[idx] = iomegag*_q.f0[idx] + omegag*geq[0];
-                for (int c = 1; c < Q<T>::nc; ++c) {
-                    int idxf = Q<T>::IndexF(idx, c); 
+                for (int c = 1; c < Q<double>::nc; ++c) {
+                    int idxf = Q<double>::IndexF(idx, c); 
                     _q.f[idxf] = iomegag*_q.f[idxf] + omegag*geq[c];
                 }
             }
@@ -984,9 +984,9 @@ namespace PANSLBM2 {
 
                 //  Pack f0, f, g0 and g
                 __m256d __f[P<double>::nc], __g[Q<double>::nc];
-                __m256d __f[0] = _mm256_load_pd(&_p.f0[idx]);
+                __f[0] = _mm256_load_pd(&_p.f0[idx]);
                 P<double>::ShuffleToSoA(&_p.f[P<double>::IndexF(idx, 1)], &__f[1]);
-                __m256d __g[0] = _mm256_load_pd(&_q.f0[idx]);
+                __g[0] = _mm256_load_pd(&_q.f0[idx]);
                 Q<double>::ShuffleToSoA(&_q.f[Q<double>::IndexF(idx, 1)], &__g[1]);
 
                 //  Update macro
@@ -1027,19 +1027,19 @@ namespace PANSLBM2 {
                 Q<double>::ShuffleToAoS(&_q.f[Q<double>::IndexF(idx, 1)], &__g[1]);
             }
             for (int idx = ne*P<double>::packsize; idx < _p.nxyz; ++idx) {
-                T omegag = 1.0/(3.0*_diffusivity[idx] + 0.5), iomegag = 1.0 - omegag;
+                double omegag = 1.0/(3.0*_diffusivity[idx] + 0.5), iomegag = 1.0 - omegag;
 
                 //  Update macro
-                T rho, ux, uy, uz;
-                NS::Macro<T, P>(rho, ux, uy, uz, _p.f0, _p.f, idx);
-                T tem, qx, qy, qz;
-                Macro<T, Q>(tem, qx, qy, qz, ux, uy, uz, _q.f0, _q.f, omegag, idx);
+                double rho, ux, uy, uz;
+                NS::Macro<double, P>(rho, ux, uy, uz, _p.f0, _p.f, idx);
+                double tem, qx, qy, qz;
+                Macro<double, Q>(tem, qx, qy, qz, ux, uy, uz, _q.f0, _q.f, omegag, idx);
 
                 //  External force with Brinkman model and natural convection
-                ExternalForceNaturalConvection<T, P>(tem, _gx, _gy, _gz, _tem0, _p.f, idx);
-                NS::ExternalForceBrinkman<T, P>(rho, ux, uy, uz, _alpha[idx], _p.f, idx);
-                NS::Macro<T, P>(rho, ux, uy, uz, _p.f0, _p.f, idx);
-                Macro<T, Q>(tem, qx, qy, qz, ux, uy, uz, _q.f0, _q.f, omegag, idx);
+                ExternalForceNaturalConvection<double, P>(tem, _gx, _gy, _gz, _tem0, _p.f, idx);
+                NS::ExternalForceBrinkman<double, P>(rho, ux, uy, uz, _alpha[idx], _p.f, idx);
+                NS::Macro<double, P>(rho, ux, uy, uz, _p.f0, _p.f, idx);
+                Macro<double, Q>(tem, qx, qy, qz, ux, uy, uz, _q.f0, _q.f, omegag, idx);
 
                 //  Save macro if need
                 if (_issave) {
@@ -1054,16 +1054,16 @@ namespace PANSLBM2 {
                 }
 
                 //  Collide
-                NS::Equilibrium<T, P>(feq, rho, ux, uy, uz);
+                NS::Equilibrium<double, P>(feq, rho, ux, uy, uz);
                 _p.f0[idx] = iomegaf*_p.f0[idx] + omegaf*feq[0];
-                for (int c = 1; c < P<T>::nc; ++c) {
-                    int idxf = P<T>::IndexF(idx, c);
+                for (int c = 1; c < P<double>::nc; ++c) {
+                    int idxf = P<double>::IndexF(idx, c);
                     _p.f[idxf] = iomegaf*_p.f[idxf] + omegaf*feq[c];
                 }
-                Equilibrium<T, Q>(geq, tem, ux, uy, uz);
+                Equilibrium<double, Q>(geq, tem, ux, uy, uz);
                 _q.f0[idx] = iomegag*_q.f0[idx] + omegag*geq[0];
-                for (int c = 1; c < Q<T>::nc; ++c) {
-                    int idxf = Q<T>::IndexF(idx, c); 
+                for (int c = 1; c < Q<double>::nc; ++c) {
+                    int idxf = Q<double>::IndexF(idx, c); 
                     _q.f[idxf] = iomegag*_q.f[idxf] + omegag*geq[c];
                 }
             }

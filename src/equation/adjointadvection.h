@@ -6,9 +6,10 @@
 //*****************************************************************************
 
 #pragma once
-#include <cmath>
-#include <cassert>
 #include "adjointnavierstokes.h"
+#ifdef _USE_AVX_DEFINES
+    #include "../equation_avx/adjointadvection_avx.h"
+#endif
 
 namespace {
     const int SetT = 1;

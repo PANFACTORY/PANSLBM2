@@ -6,7 +6,6 @@
 //*****************************************************************************
 
 #pragma once
-#include <cassert>
 #include "navierstokes.h"
 #ifdef _USE_AVX_DEFINES
     #include "../equation_avx/advection_avx.h"

@@ -964,11 +964,11 @@ namespace PANSLBM2 {
         }
 
         //  Function of Update macro and Collide of Brinkman and natural convection for 3D
-        template<class T, template<class>class P, template<class>class Q>
+        template<template<class>class P, template<class>class Q>
         void MacroBrinkmanCollideNaturalConvection(
-            P<T>& _p, T *_rho, T *_ux, T *_uy, T *_uz, const T *_alpha, T _viscosity,
-            Q<T>& _q, T *_tem, T *_qx, T *_qy, T *_qz, const T *_diffusivity, 
-            T _gx, T _gy, T _gz, T _tem0, bool _issave = false
+            P<double>& _p, double *_rho, double *_ux, double *_uy, double *_uz, const double *_alpha, double _viscosity,
+            Q<double>& _q, double *_tem, double *_qx, double *_qy, double *_qz, const double *_diffusivity, 
+            double _gx, double _gy, double _gz, double _tem0, bool _issave = false
         ) {
             const int ne = _p.nxyz/P<double>::packsize;
             double omegaf = 1.0/(3.0*_viscosity + 0.5), iomegaf = 1.0 - omegaf, feq[P<double>::nc], geq[Q<double>::nc];

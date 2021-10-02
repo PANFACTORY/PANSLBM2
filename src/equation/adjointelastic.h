@@ -80,7 +80,7 @@ namespace PANSLBM2 {
         template<class T, template<class>class P>
         void InitialCondition(P<T>& _p, const T *_irho, const T *_imx, const T *_imy, const T *_isxx, const T *_isxy, const T *_isyx, const T *_isyy, const T *_gamma) {
             T feq[P<T>::nc];
-            for (int idx = 0; idx < _p.nxy; ++idx) {
+            for (int idx = 0; idx < _p.nxyz; ++idx) {
                 Equilibrium<T, P>(feq, _irho[idx], _imx[idx], _imy[idx], _isxx[idx], _isxy[idx], _isyx[idx], _isyy[idx], _gamma[idx]);
                 _p.f0[idx] = feq[0];
                 for (int c = 1; c < P<T>::nc; ++c) {

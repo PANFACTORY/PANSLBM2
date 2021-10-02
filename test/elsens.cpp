@@ -1,4 +1,5 @@
-#define _USE_MPI_DEFINES
+//#define _USE_MPI_DEFINES
+#define _USE_AVX_DEFINES
 #include <iostream>
 #include <cmath>
 #include <chrono>
@@ -9,7 +10,7 @@
 #include "../src/particle/d2q9.h"
 #include "../src/equation/elastic.h"
 #include "../src/equation/adjointelastic.h"
-#include "../src/utility/vtkexport.h"
+#include "../src/utility/vtkxmlexport.h"
 
 using namespace PANSLBM2;
 
@@ -37,7 +38,7 @@ int main(int argc, char** argv) {
     for (int i = 0; i < pf.nx; ++i) {
         for (int j = 0; j < pf.ny; ++j) {
             int idx = pf.Index(i, j);
-            s[idx] = pow((i + _p.offsetx) - 0.5*pf.lx, 2.0) + pow((j + _p.offsety), 2.0) < pow(0.15*pf.lx, 2.0) ? smin : smax;
+            s[idx] = pow((i + pf.offsetx) - 0.5*pf.lx, 2.0) + pow((j + pf.offsety), 2.0) < pow(0.15*pf.lx, 2.0) ? smin : smax;
         }
     }
     for (int idx = 0; idx < pf.nxyz; ++idx) {
@@ -60,8 +61,8 @@ int main(int argc, char** argv) {
         pf.Stream();
         pf.BoundaryCondition([=](int _i, int _j) { return _i == 0 ? 1 : 0; });
         EL::BoundaryConditionSetStress(pf, 
-            [=](int _i, int _j) { return (_i == lx - 1 && fabs(_j - 0.5*ly) < 0.08*ly) ? stress0 : 0.0; }, 
             [=](int _i, int _j) { return 0.0; }, 
+            [=](int _i, int _j) { return (_i == lx - 1 && fabs(_j - 0.5*ly) < 0.08*ly) ? stress0 : 0.0; }, 
             [=](int _i, int _j) { return _i != 0; }
         );
         pf.SmoothCorner();
@@ -78,8 +79,8 @@ int main(int argc, char** argv) {
         pf.iStream();
         pf.iBoundaryCondition([=](int _i, int _j) { return _i == 0 ? 1 : 0; });
         AEL::iBoundaryConditionSetStress(pf, 
-            [=](int _i, int _j) { return (_i == lx - 1 && fabs(_j - 0.5*ly) < 0.08*ly) ? stress0 : 0.0; }, 
             [=](int _i, int _j) { return 0.0; }, 
+            [=](int _i, int _j) { return (_i == lx - 1 && fabs(_j - 0.5*ly) < 0.08*ly) ? stress0 : 0.0; }, 
             rho, 
             [=](int _i, int _j) { return _i != 0; }
         );

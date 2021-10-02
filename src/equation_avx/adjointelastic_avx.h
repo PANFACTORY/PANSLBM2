@@ -13,12 +13,12 @@
 
 namespace PANSLBM2 {
     namespace AEL {
-        template<class T, template<class>class P>void Macro(T &, T &, T &, T &, T &, T &, T &, const T *);  //  Function of updating macroscopic values of AEL for 2D
-        template<class T, template<class>class P>void Equilibrium(T *, T, T, T, T, T, T, T, T);             //  Function of getting equilibrium of AEL for 2D
+        template<class T, template<class>class P>void Macro(T &, T &, T &, T &, T &, T &, T &, const T *, const T *, int);  //  Function of updating macroscopic values of AEL for 2D
+        template<class T, template<class>class P>void Equilibrium(T *, T, T, T, T, T, T, T, T);                             //  Function of getting equilibrium of AEL for 2D
 
         //  Function of updating macroscopic values of AEL for 2D
         template<class P>
-        void Macro(__m256d &__irho, __m256d &__imx, __m256d &__imy, __m256d &__isxx, __m256d &__isxy, __m256d &__isyx, __m256d &__isyy, const T *__f) {
+        void Macro(__m256d &__irho, __m256d &__imx, __m256d &__imy, __m256d &__isxx, __m256d &__isxy, __m256d &__isyx, __m256d &__isyy, const __m256d *__f) {
             __irho = _mm256_mul_pd(P::__ei[0], __f[0]);
             __imx = _mm256_setzero_pd();
             __imy = _mm256_setzero_pd();
@@ -49,7 +49,7 @@ namespace PANSLBM2 {
 
         //  Function of Update macro and Collide of AEL for 2D
         template<template<class>class P>
-        void MacroCollide(P<double>& _p, double *_irho, double *_imx, T *_imy, T *_isxx, T *_isxy, T *_isyx, T *_isyy, T _tau, const T *_gamma, bool _issave = false) {
+        void MacroCollide(P<double>& _p, double *_irho, double *_imx, double *_imy, double *_isxx, double *_isxy, double *_isyx, double *_isyy, double _tau, const double *_gamma, bool _issave = false) {
             const int ne = _p.nxyz/P<double>::packsize;
             double omega = 1.0/_tau, iomega = 1.0 - omega, feq[P<double>::nc];
             __m256d __omega = _mm256_set1_pd(omega), __iomega = _mm256_set1_pd(iomega);
@@ -64,14 +64,14 @@ namespace PANSLBM2 {
                 __m256d __gamma = _mm256_loadu_pd(&_gamma[idx]); 
 
                 //  Update macro
-                __m256d __irho, __iux, __iuy, __isxx, __isxy, __isyx, __isyy;
+                __m256d __irho, __imx, __imy, __isxx, __isxy, __isyx, __isyy;
                 Macro<P<double> >(__irho, __imx, __imy, __isxx, __isxy, __isyx, __isyy, __f);
 
                 //  Save macro if need
                 if (_issave) {
                     _mm256_storeu_pd(&_irho[idx], __irho);
-                    _mm256_storeu_pd(&_iux[idx], __iux);
-                    _mm256_storeu_pd(&_iuy[idx], __iuy);
+                    _mm256_storeu_pd(&_imx[idx], __imx);
+                    _mm256_storeu_pd(&_imy[idx], __imy);
                     _mm256_storeu_pd(&_isxx[idx], __isxx);
                     _mm256_storeu_pd(&_isxy[idx], __isxy);
                     _mm256_storeu_pd(&_isyx[idx], __isyx);

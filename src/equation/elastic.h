@@ -89,7 +89,7 @@ namespace PANSLBM2 {
 
         //  Function of Update macro and Collide of EL with topology optimization for 2D
         template<class T, template<class>class P>
-        void MacroExtendedCollideStream(P<T>& _p, T *_rho, T *_ux, T *_uy, T *_sxx, T *_sxy, T *_syx, T *_syy, T _tau, const T *_gamma, bool _issave = false) {
+        void MacroExtendedCollide(P<T>& _p, T *_rho, T *_ux, T *_uy, T *_sxx, T *_sxy, T *_syx, T *_syy, T _tau, const T *_gamma, bool _issave = false) {
             T omega = 1.0/_tau, iomega = 1.0 - omega, feq[P<T>::nc];
             #pragma omp parallel for private(feq)
             for (int idx = 0; idx < _p.nxyz; ++idx) {

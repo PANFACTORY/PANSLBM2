@@ -52,9 +52,17 @@ public:
         }
         D2Q9(const D2Q9<T>& _p) = delete;
         ~D2Q9() {
-            delete[] this->f0, this->f, this->fnext;
-            delete[] this->fsend_xmin, this->fsend_xmax, this->fsend_ymin, this->fsend_ymax;
-            delete[] this->frecv_xmin, this->frecv_xmax, this->frecv_ymin, this->frecv_ymax;
+            delete[] this->f0;
+            delete[] this->f;
+            delete[] this->fnext;
+            delete[] this->fsend_xmin;
+            delete[] this->fsend_xmax;
+            delete[] this->fsend_ymin;
+            delete[] this->fsend_ymax;
+            delete[] this->frecv_xmin;
+            delete[] this->frecv_xmax;
+            delete[] this->frecv_ymin;
+            delete[] this->frecv_ymax;
         }
         
         int Index(int _i, int _j) const {

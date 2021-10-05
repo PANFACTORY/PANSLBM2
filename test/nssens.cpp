@@ -1,6 +1,8 @@
-#define _USE_MPI_DEFINES
+//#define _USE_MPI_DEFINES
+#define _USE_AVX_DEFINES
 #include <iostream>
 #include <cmath>
+#include <chrono>
 #ifdef _USE_MPI_DEFINES
     #include "mpi.h"
 #endif
@@ -44,6 +46,8 @@ int main(int argc, char** argv) {
         irho[idx] = 0.0;    iux[idx] = 0.0; iuy[idx] = 0.0; imx[idx] = 0.0; imy[idx] = 0.0;
         alpha[idx] = amax/(double)(pf.lx - 1)*q*(1.0 - s[idx])/(s[idx] + q);
     }
+
+    std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
 
     //--------------------Direct analyze--------------------
     NS::InitialCondition(pf, rho, ux, uy);
@@ -101,6 +105,11 @@ int main(int argc, char** argv) {
 #endif
     for (int idx = 0; idx < pf.nxyz; ++idx) {  
         dfds[idx] /= dfdsmaxall;
+    }
+
+    std::chrono::system_clock::time_point end = std::chrono::system_clock::now();
+    if (MyRank == 0) {
+        std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count() << std::endl;
     }
 
     //--------------------Export result--------------------

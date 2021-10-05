@@ -60,7 +60,7 @@ namespace PANSLBM2 {
             __m256d __1m15uu = _mm256_sub_pd(_mm256_set1_pd(1.0), _mm256_mul_pd(_mm256_set1_pd(1.5), _mm256_add_pd(_mm256_mul_pd(__ux, __ux), _mm256_mul_pd(__uy, __uy))));
             for (int c = 0; c < P::nc; ++c) {
                 __m256d __cu = _mm256_add_pd(_mm256_mul_pd(P::__cx[c], __ux), _mm256_mul_pd(P::__cy[c], __uy));
-                __feq[c] = _mm256_mul_pd(P::__ei[_c], _mm256_mul_pd(__rho, _mm256_add_pd(__1m15uu, _mm256_add_pd(_mm256_mul_pd(_mm256_set1_pd(3.0), __cu), _mm256_mul_pd(_mm256_set1_pd(4.5), _mm256_mul_pd(__cu, __cu))))));
+                __feq[c] = _mm256_mul_pd(P::__ei[c], _mm256_mul_pd(__rho, _mm256_add_pd(__1m15uu, _mm256_add_pd(_mm256_mul_pd(_mm256_set1_pd(3.0), __cu), _mm256_mul_pd(_mm256_set1_pd(4.5), _mm256_mul_pd(__cu, __cu))))));
             }
         }
 
@@ -69,8 +69,8 @@ namespace PANSLBM2 {
         void Equilibrium(__m256d *__feq, const __m256d &__rho, const __m256d &__ux, const __m256d &__uy, const __m256d &__uz) {
             __m256d __1m15uu = _mm256_sub_pd(_mm256_set1_pd(1.0), _mm256_mul_pd(_mm256_set1_pd(1.5), _mm256_add_pd(_mm256_add_pd(_mm256_mul_pd(__ux, __ux), _mm256_mul_pd(__uy, __uy)), _mm256_mul_pd(__uz, __uz))));
             for (int c = 0; c < P::nc; ++c) {
-                __m256d __cu = _mm256_add_pd(_mm256_add_pd(_mm256_mul_pd(P::__cx[_c], __ux), _mm256_mul_pd(P::__cy[_c], __uy)), _mm256_mul_pd(P::__cz[_c], __uz));
-                __feq[c] = _mm256_mul_pd(P::__ei[_c], _mm256_mul_pd(__rho, _mm256_add_pd(__1m15uu, _mm256_add_pd(_mm256_mul_pd(_mm256_set1_pd(3.0), __cu), _mm256_mul_pd(_mm256_set1_pd(4.5), _mm256_mul_pd(__cu, __cu))))));
+                __m256d __cu = _mm256_add_pd(_mm256_add_pd(_mm256_mul_pd(P::__cx[c], __ux), _mm256_mul_pd(P::__cy[c], __uy)), _mm256_mul_pd(P::__cz[c], __uz));
+                __feq[c] = _mm256_mul_pd(P::__ei[c], _mm256_mul_pd(__rho, _mm256_add_pd(__1m15uu, _mm256_add_pd(_mm256_mul_pd(_mm256_set1_pd(3.0), __cu), _mm256_mul_pd(_mm256_set1_pd(4.5), _mm256_mul_pd(__cu, __cu))))));
             } 
         }
 

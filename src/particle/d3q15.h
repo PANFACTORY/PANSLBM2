@@ -7,949 +7,1577 @@
 
 #pragma once
 #include <cassert>
-
+#ifdef _USE_MPI_DEFINES
+    #include "mpi.h"
+#endif
+#ifdef _USE_AVX_DEFINES
+    #include <immintrin.h>
+#endif
 
 namespace PANSLBM2 {
-    enum BOUNDARYTYPE {
-        PERIODIC, OUTLET, BARRIER, MIRROR, OTHER,
-    };
+    namespace {
+        const int BARRIER = 1;
+        const int MIRROR = 2;
+    }
 
     template<class T>
     class D3Q15 {
 public:
         D3Q15() = delete;
-        D3Q15(int _nx, int _ny, int _nz);
-        D3Q15(const D3Q15<T>& _p);
-        ~D3Q15();
+        D3Q15(int _lx, int _ly, int _lz, int _PEid = 0, int _mx = 1, int _my = 1, int _mz = 1) :
+            lx(_lx), ly(_ly), lz(_lz), PEid(_PEid), mx(_mx), my(_my), mz(_mz), 
+            PEx(this->PEid%this->mx), PEy((this->PEid/this->mx)%this->my), PEz(this->PEid/(this->mx*this->my)),
+            nx((this->lx + this->PEx)/this->mx), ny((this->ly + this->PEy)/this->my), nz((this->lz + this->PEz)/this->mz),
+            nxyz(this->nx*this->ny*this->nz),
+            offsetx(this->mx - this->PEx > this->lx%this->mx ? this->PEx*this->nx : this->lx - (this->mx - this->PEx)*this->nx),
+            offsety(this->my - this->PEy > this->ly%this->my ? this->PEy*this->ny : this->ly - (this->my - this->PEy)*this->ny),
+            offsetz(this->mz - this->PEz > this->lz%this->mz ? this->PEz*this->nz : this->lz - (this->mz - this->PEz)*this->nz)
+        {
+            assert(0 < _lx && 0 < _ly && 0 < _lz && 0 <= _PEid && 0 < _mx && 0 < _my && 0 < _mz);
 
-        void SetBarrier(int _i, int _j, int _k, bool _isbarrier);
-        void SetBoundary(int _i, int _j, int _k, BOUNDARYTYPE _boundarytype);
-        void SetRho(int _i, int _j, int _k, T _rho, T _u0, T _u1);      //  Set boundary condition for NavierStokes  
-        void SetU(int _i, int _j, int _k, T _ux, T _uy, T _uz);
-        void SetTemperature(int _i, int _j, int _k, T _temperature);    //  Set boundary condition for Advection
-        void SetFlux(int _i, int _j, int _k, T _ux, T _uy, T _uz, T _q);
-        void SetiRho(int _i, int _j, int _k);                           //  Set boundary condition for Adjoint of NavierStokes  
-        void SetiU(int _i, int _j, int _k, T _ux, T _uy, T _uz);
+            this->f0 = new (std::align_val_t{32}) T[this->nxyz];
+            this->f = new (std::align_val_t{32}) T[this->nxyz*(D3Q15<T>::nc - 1)];
+            this->fnext = new (std::align_val_t{32}) T[this->nxyz*(D3Q15<T>::nc - 1)];
+            this->fsend_xmin = new T[this->ny*this->nz*5];
+            this->fsend_xmax = new T[this->ny*this->nz*5];
+            this->fsend_ymin = new T[this->nz*this->nx*5];
+            this->fsend_ymax = new T[this->nz*this->nx*5];
+            this->fsend_zmin = new T[this->nx*this->ny*5];
+            this->fsend_zmax = new T[this->nx*this->ny*5];
+            this->frecv_xmin = new T[this->ny*this->nz*5];
+            this->frecv_xmax = new T[this->ny*this->nz*5];
+            this->frecv_ymin = new T[this->nz*this->nx*5];
+            this->frecv_ymax = new T[this->nz*this->nx*5];
+            this->frecv_zmin = new T[this->nx*this->ny*5];
+            this->frecv_zmax = new T[this->nx*this->ny*5];
+            this->fsend_ymin_zmin = new T[this->nx*2];
+            this->fsend_ymin_zmax = new T[this->nx*2];
+            this->fsend_ymax_zmin = new T[this->nx*2];
+            this->fsend_ymax_zmax = new T[this->nx*2];
+            this->frecv_ymin_zmin = new T[this->nx*2];
+            this->frecv_ymin_zmax = new T[this->nx*2];
+            this->frecv_ymax_zmin = new T[this->nx*2];
+            this->frecv_ymax_zmax = new T[this->nx*2]; 
+            this->fsend_zmin_xmin = new T[this->ny*2];
+            this->fsend_zmin_xmax = new T[this->ny*2];
+            this->fsend_zmax_xmin = new T[this->ny*2];
+            this->fsend_zmax_xmax = new T[this->ny*2];
+            this->frecv_zmin_xmin = new T[this->ny*2];
+            this->frecv_zmin_xmax = new T[this->ny*2];
+            this->frecv_zmax_xmin = new T[this->ny*2];
+            this->frecv_zmax_xmax = new T[this->ny*2];
+            this->fsend_xmin_ymin = new T[this->nz*2];
+            this->fsend_xmin_ymax = new T[this->nz*2];
+            this->fsend_xmax_ymin = new T[this->nz*2];
+            this->fsend_xmax_ymax = new T[this->nz*2];
+            this->frecv_xmin_ymin = new T[this->nz*2];
+            this->frecv_xmin_ymax = new T[this->nz*2];
+            this->frecv_xmax_ymin = new T[this->nz*2];
+            this->frecv_xmax_ymax = new T[this->nz*2];
+#ifdef _USE_AVX_DEFINES
+            D3Q15<T>::LoadCxCyCzEi();
+#endif
+        }
+        D3Q15(const D3Q15<T>& _p) = delete;
+        ~D3Q15() {
+            delete[] this->f0, this->f, this->fnext;
+            delete[] this->fsend_xmin, this->fsend_xmax, this->fsend_ymin, this->fsend_ymax, this->fsend_zmin, this->fsend_zmax;
+            delete[] this->frecv_xmin, this->frecv_xmax, this->frecv_ymin, this->frecv_ymax, this->frecv_zmin, this->frecv_zmax;
+            delete[] this->fsend_ymin_zmin, this->fsend_ymin_zmax, this->fsend_ymax_zmin, this->fsend_ymax_zmax;
+            delete[] this->frecv_ymin_zmin, this->frecv_ymin_zmax, this->frecv_ymax_zmin, this->frecv_ymax_zmax; 
+            delete[] this->fsend_zmin_xmin, this->fsend_zmin_xmax, this->fsend_zmax_xmin, this->fsend_zmax_xmax;
+            delete[] this->frecv_zmin_xmin, this->frecv_zmin_xmax, this->frecv_zmax_xmin, this->frecv_zmax_xmax;
+            delete[] this->fsend_xmin_ymin, this->fsend_xmin_ymax, this->fsend_xmax_ymin, this->fsend_xmax_ymax;
+            delete[] this->frecv_xmin_ymin, this->frecv_xmin_ymax, this->frecv_xmax_ymin, this->frecv_xmax_ymax;  
+        }
+
+        int Index(int _i, int _j, int _k) const {
+            int i = _i == -1 ? this->nx - 1 : (_i == this->nx ? 0 : _i);
+            int j = _j == -1 ? this->ny - 1 : (_j == this->ny ? 0 : _j);
+            int k = _k == -1 ? this->nz - 1 : (_k == this->nz ? 0 : _k);
+            return i + this->nx*j + this->nx*this->ny*k;
+        }
+        static int IndexF(int _idx, int _c) {
+            return (D3Q15<T>::nc - 1)*_idx + (_c - 1);
+        }
+        int IndexPE(int _i, int _j, int _k) const {
+            int i = _i == -1 ? this->mx - 1 : (_i == this->mx ? 0 : _i);
+            int j = _j == -1 ? this->my - 1 : (_j == this->my ? 0 : _j);
+            int k = _k == -1 ? this->mz - 1 : (_k == this->mz ? 0 : _k);
+            return i + this->mx*j + this->mx*this->my*k;
+        }
+        int IndexBCx(int _j, int _k) const {
+            return _j + this->ny*_k;
+        }
+        int IndexBCy(int _k, int _i) const {
+            return _k + this->nz*_i;
+        }
+        int IndexBCz(int _i, int _j) const {
+            return _i + this->nx*_j;
+        }
 
         void Stream();
         void iStream();
-        
-        bool GetBarrier(int _i, int _j, int _k) const;
-        BOUNDARYTYPE GetBoundary(int _i, int _j, int _k) const;
-        int GetIndex(int _i, int _j, int _k) const;
-        
-        const int nx, ny, nz, np;                                       //  nx&ny&nz : number of points along x&y&z coordinate, np : number of all points
-        static const int nc = 15, nd = 3, cx[nc], cy[nc], cz[nc];       //  nc : number of particles, nd : number of dimensions
-        static const T ei[nc];
 
-        T dx, dt;
-        T *ft[nc], *ftp1[nc];
-        bool *barrier[nc];
-        BOUNDARYTYPE *btxmin, *btxmax, *btymin, *btymax, *btzmin, *btzmax;
+        template<class Ff>
+        void BoundaryCondition(Ff _bctype);
+        template<class Ff>
+        void iBoundaryCondition(Ff _bctype);
+        void SmoothCorner();
+
+        const int lx, ly, lz, PEid, mx, my, mz, PEx, PEy, PEz, nx, ny, nz, nxyz, offsetx, offsety, offsetz;
+        static const int nc = 15, nd = 3, cx[nc], cy[nc], cz[nc];
+        static const T ei[nc];
+        T *f0, *f;
+
+#ifdef _USE_AVX_DEFINES
+        static const int packsize = 32/sizeof(T);
+        static __m256d __cx[nc], __cy[nc], __cz[nc], __ei[nc];  //  If you use any type except double, cast these values.
+        static void LoadCxCyCzEi(); 
+        template<class mmT>
+        static void ShuffleToSoA(const T *_f_aos, mmT *_f_soa);
+        template<class mmT>
+        static void ShuffleToAoS(T *_f_aos, const mmT *_f_soa);
+#endif
+        
+private:
+        T *fnext;
+        T *fsend_xmin, *fsend_xmax, *fsend_ymin, *fsend_ymax, *fsend_zmin, *fsend_zmax, *frecv_xmin, *frecv_xmax, *frecv_ymin, *frecv_ymax, *frecv_zmin, *frecv_zmax;
+        T *fsend_ymin_zmin, *fsend_ymin_zmax, *fsend_ymax_zmin, *fsend_ymax_zmax, *frecv_ymin_zmin, *frecv_ymin_zmax, *frecv_ymax_zmin, *frecv_ymax_zmax; 
+        T *fsend_zmin_xmin, *fsend_zmin_xmax, *fsend_zmax_xmin, *fsend_zmax_xmax, *frecv_zmin_xmin, *frecv_zmin_xmax, *frecv_zmax_xmin, *frecv_zmax_xmax;
+        T *fsend_xmin_ymin, *fsend_xmin_ymax, *fsend_xmax_ymin, *fsend_xmax_ymax, *frecv_xmin_ymin, *frecv_xmin_ymax, *frecv_xmax_ymin, *frecv_xmax_ymax;  
+        T fsend_corner[8], frecv_corner[8];
+#ifdef _USE_MPI_DEFINES
+        MPI_Status status[52];
+        MPI_Request request[52];
+#endif
     };
 
-
-    template<class T>
-    const int D3Q15<T>::cx[D3Q15<T>::nc] = { 0, 1, 0, 0, -1, 0, 0, 1, -1, 1, 1, -1, 1, -1, -1 };
-
-
-    template<class T>
-    const int D3Q15<T>::cy[D3Q15<T>::nc] = { 0, 0, 1, 0, 0, -1, 0, 1, 1, -1, 1, -1, -1, 1, -1 };
-
-
-    template<class T>
-    const int D3Q15<T>::cz[D3Q15<T>::nc] = { 0, 0, 0, 1, 0, 0, -1, 1, 1, 1, -1, -1, -1, -1, 1 };
-
-
-    template<class T>
-    const T D3Q15<T>::ei[D3Q15<T>::nc] = { 2.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/72.0, 1.0/72.0, 1.0/72.0, 1.0/72.0, 1.0/72.0, 1.0/72.0, 1.0/72.0, 1.0/72.0 };
-
-
-    template<class T>
-    D3Q15<T>::D3Q15(int _nx, int _ny, int _nz) : nx(_nx), ny(_ny), nz(_nz), np(_nx*_ny*_nz) {
-        assert(0 < _nx && 0 < _ny && 0 < _nz);
-        this->dx = 1.0;
-        this->dt = 1.0;
-
-        for (int i = 0; i < D3Q15<T>::nc; i++) {
-            this->ft[i] = new T[this->np];
-            this->ftp1[i] = new T[this->np];
-            this->barrier[i] = new bool[this->np];
-
-            for (int j = 0; j < this->np; j++) {
-                this->ft[i][j] = D3Q15<T>::ei[i];
-                this->ftp1[i][j] = T();
-                this->barrier[i][j] = false;
-            }    
-        }
-
-        this->btxmin = new BOUNDARYTYPE[this->ny*this->nz];
-        this->btxmax = new BOUNDARYTYPE[this->ny*this->nz];
-        this->btymin = new BOUNDARYTYPE[this->nz*this->nx];
-        this->btymax = new BOUNDARYTYPE[this->nz*this->nx];
-        this->btzmin = new BOUNDARYTYPE[this->nx*this->ny];
-        this->btzmax = new BOUNDARYTYPE[this->nx*this->ny];
-
-        for (int i = 0; i < this->ny*this->nz; i++) {
-            this->btxmin[i] = PERIODIC;
-            this->btxmax[i] = PERIODIC;
-        }
-
-        for (int i = 0; i < this->nz*this->nx; i++) {
-            this->btymin[i] = PERIODIC;
-            this->btymax[i] = PERIODIC;
-        }
-
-        for (int i = 0; i < this->nx*this->ny; i++) {
-            this->btzmin[i] = PERIODIC;
-            this->btzmax[i] = PERIODIC;
-        }
-    }
-
-
-    template<class T>
-    D3Q15<T>::D3Q15(const D3Q15<T>& _p) : nx(_p.nx), ny(_p.ny), nz(_p.nz), np(_p.np) {
-        this->dx = _p.dx;
-        this->dt = _p.dt;
-        
-        for (int i = 0; i < D3Q15<T>::nc; i++) {
-            this->ft[i] = new T[this->np];
-            this->ftp1[i] = new T[this->np];
-            this->barrier[i] = new bool[this->np];
-
-            for (int j = 0; j < this->np; j++) {
-                this->ft[i][j] = _p.ft[i][j];
-                this->ftp1[i][j] = _p.ftp1[i][j];
-                this->barrier[i][j] = _p.barrier[i][j];
-            }    
-        }
-
-        this->btxmin = new BOUNDARYTYPE[this->ny*this->nz];
-        this->btxmax = new BOUNDARYTYPE[this->ny*this->nz];
-        this->btymin = new BOUNDARYTYPE[this->nz*this->nx];
-        this->btymax = new BOUNDARYTYPE[this->nz*this->nx];
-        this->btzmin = new BOUNDARYTYPE[this->nx*this->ny];
-        this->btzmax = new BOUNDARYTYPE[this->nx*this->ny];
-
-        for (int i = 0; i < this->ny*this->nz; i++) {
-            this->btxmin[i] = _p.btxmin[i];
-            this->btxmax[i] = _p.btxmax[i];
-        }
-
-        for (int i = 0; i < this->nz*this->nx; i++) {
-            this->btymin[i] = _p.btymin[i];
-            this->btymax[i] = _p.btymax[i];
-        }
-
-        for (int i = 0; i < this->nx*this->ny; i++) {
-            this->btzmin[i] = _p.btzmin[i];
-            this->btzmax[i] = _p.btzmax[i];
-        }
-    }
-
-
-    template<class T>
-    D3Q15<T>::~D3Q15() {
-        for (int i = 0; i < D3Q15<T>::nc; i++) {
-            delete[] this->ft[i];
-            delete[] this->ftp1[i];
-            delete[] this->barrier[i];
-        }
-        
-        delete[] this->btxmin;
-        delete[] this->btxmax;
-        delete[] this->btymin;
-        delete[] this->btymax;
-        delete[] this->btzmin;
-        delete[] this->btzmax;
-    }
-
-
-    template<class T>
-    void D3Q15<T>::SetBarrier(int _i, int _j, int _k, bool _isbarrier) {
-        for (int i = 0; i < D3Q15<T>::nc; i++) {
-            this->barrier[i][(_i + D3Q15<T>::cx[i]) + this->nx*(_j + D3Q15<T>::cy[i]) + this->nx*this->ny*(_k + D3Q15<T>::cz[i])] = _isbarrier;
-        }
-    }
-
-
-    template<class T>
-    void D3Q15<T>::SetBoundary(int _i, int _j, int _k, BOUNDARYTYPE _boundarytype) {
-        if (_i == 0) {
-            this->btxmin[_j + this->ny*_k] = _boundarytype;
-        } 
-        if (_i == this->nx - 1) {
-            this->btxmax[_j + this->ny*_k] = _boundarytype;
-        } 
-        if (_j == 0) {
-            this->btymin[_k + this->nz*_i] = _boundarytype;
-        } 
-        if (_j == this->ny - 1) {
-            this->btymax[_k + this->nz*_i] = _boundarytype;
-        }
-        if (_k == 0) {
-            this->btzmin[_i + this->nx*_j] = _boundarytype;
-        } 
-        if (_k == this->nz - 1) {
-            this->btzmax[_i + this->nx*_j] = _boundarytype;
-        } 
-        if (_i != 0 && _i != this->nx - 1 && _j != 0 && _j != this->ny - 1 && _k != 0 && _k != this->nz - 1) {
-            //  境界に沿っていないことを警告する
-        }
-    }
-
-
-    template<class T>
-    void D3Q15<T>::SetRho(int _i, int _j, int _k, T _rho, T _u0, T _u1) {
-        int ijk = _i + this->nx*_j + this->nx*this->ny*_k;
-        if (_i == 0) {
-            T ux = 1.0 - (this->ft[0][ijk] + this->ft[2][ijk] + this->ft[3][ijk] + this->ft[5][ijk] + this->ft[6][ijk] + 2.0*(this->ft[4][ijk] + this->ft[8][ijk] + this->ft[11][ijk] + this->ft[13][ijk] + this->ft[14][ijk]))/_rho;
-            T uy = _u0;
-            T uz = _u1;
-            this->ft[1][ijk] = this->ft[4][ijk] + 2.0*_rho*ux/3.0;
-            this->ft[7][ijk] = this->ft[11][ijk] + _rho*ux/12.0 - 0.25*(this->ft[2][ijk] - this->ft[5][ijk] - _rho*uy) - 0.25*(this->ft[3][ijk] - this->ft[6][ijk] - _rho*uz);
-            this->ft[9][ijk] = this->ft[13][ijk] + _rho*ux/12.0 + 0.25*(this->ft[2][ijk] - this->ft[5][ijk] - _rho*uy) - 0.25*(this->ft[3][ijk] - this->ft[6][ijk] - _rho*uz);
-            this->ft[10][ijk] = this->ft[14][ijk] + _rho*ux/12.0 - 0.25*(this->ft[2][ijk] - this->ft[5][ijk] - _rho*uy) + 0.25*(this->ft[3][ijk] - this->ft[6][ijk] - _rho*uz);
-            this->ft[12][ijk] = this->ft[8][ijk] + _rho*ux/12.0 + 0.25*(this->ft[2][ijk] - this->ft[5][ijk] - _rho*uy) + 0.25*(this->ft[3][ijk] - this->ft[6][ijk] - _rho*uz);
-        } else if (_i == this->nx - 1) {
-            T ux = -1.0 + (this->ft[0][ijk] + this->ft[2][ijk] + this->ft[3][ijk] + this->ft[5][ijk] + this->ft[6][ijk] + 2.0*(this->ft[1][ijk] + this->ft[7][ijk] + this->ft[9][ijk] + this->ft[10][ijk] + this->ft[12][ijk]))/_rho;
-            T uy = _u0;
-            T uz = _u1;
-            this->ft[4][ijk] = this->ft[1][ijk] - 2.0*_rho*ux/3.0;
-            this->ft[8][ijk] = this->ft[12][ijk] - _rho*ux/12.0 - 0.25*(this->ft[2][ijk] - this->ft[5][ijk] - _rho*uy) - 0.25*(this->ft[3][ijk] - this->ft[6][ijk] - _rho*uz);
-            this->ft[11][ijk] = this->ft[7][ijk] - _rho*ux/12.0 + 0.25*(this->ft[2][ijk] - this->ft[5][ijk] - _rho*uy) + 0.25*(this->ft[3][ijk] - this->ft[6][ijk] - _rho*uz);
-            this->ft[13][ijk] = this->ft[9][ijk] - _rho*ux/12.0 - 0.25*(this->ft[2][ijk] - this->ft[5][ijk] - _rho*uy) + 0.25*(this->ft[3][ijk] - this->ft[6][ijk] - _rho*uz);
-            this->ft[14][ijk] = this->ft[10][ijk] - _rho*ux/12.0 + 0.25*(this->ft[2][ijk] - this->ft[5][ijk] - _rho*uy) - 0.25*(this->ft[3][ijk] - this->ft[6][ijk] - _rho*uz);
-        } else if (_j == 0) {
-            T ux = _u1;
-            T uy = 1.0 - (this->ft[0][ijk] + this->ft[1][ijk] + this->ft[3][ijk] + this->ft[4][ijk] + this->ft[6][ijk] + 2.0*(this->ft[5][ijk] + this->ft[9][ijk] + this->ft[11][ijk] + this->ft[12][ijk] + this->ft[14][ijk]))/_rho;
-            T uz = _u0;
-            this->ft[2][ijk] = this->ft[5][ijk] + 2.0*_rho*uy/3.0;
-            this->ft[7][ijk] = this->ft[11][ijk] - 0.25*(this->ft[1][ijk] - this->ft[4][ijk] - _rho*ux)  + _rho*uy/12.0 - 0.25*(this->ft[3][ijk] - this->ft[6][ijk] - _rho*uz);
-            this->ft[8][ijk] = this->ft[12][ijk] + 0.25*(this->ft[1][ijk] - this->ft[4][ijk] - _rho*ux)  + _rho*uy/12.0 - 0.25*(this->ft[3][ijk] - this->ft[6][ijk] - _rho*uz);
-            this->ft[10][ijk] = this->ft[14][ijk] - 0.25*(this->ft[1][ijk] - this->ft[4][ijk] - _rho*ux)  + _rho*uy/12.0 + 0.25*(this->ft[3][ijk] - this->ft[6][ijk] - _rho*uz);
-            this->ft[13][ijk] = this->ft[9][ijk] + 0.25*(this->ft[1][ijk] - this->ft[4][ijk] - _rho*ux)  + _rho*uy/12.0 + 0.25*(this->ft[3][ijk] - this->ft[6][ijk] - _rho*uz);
-        } else if (_j == this->ny - 1) {
-            T ux = _u1;
-            T uy = -1.0 - (this->ft[0][ijk] + this->ft[1][ijk] + this->ft[3][ijk] + this->ft[4][ijk] + this->ft[6][ijk] + 2.0*(this->ft[2][ijk] + this->ft[7][ijk] + this->ft[8][ijk] + this->ft[10][ijk] + this->ft[13][ijk]))/_rho;
-            T uz = _u0;
-            this->ft[5][ijk] = this->ft[2][ijk] - 2.0*_rho*uy/3.0;
-            this->ft[9][ijk] = this->ft[13][ijk] - 0.25*(this->ft[1][ijk] - this->ft[4][ijk] - _rho*ux) - _rho*uy/12.0 - 0.25*(this->ft[3][ijk] - this->ft[6][ijk] - _rho*uz);
-            this->ft[11][ijk] = this->ft[7][ijk] + 0.25*(this->ft[1][ijk] - this->ft[4][ijk] - _rho*ux) - _rho*uy/12.0 + 0.25*(this->ft[3][ijk] - this->ft[6][ijk] - _rho*uz);
-            this->ft[12][ijk] = this->ft[8][ijk] - 0.25*(this->ft[1][ijk] - this->ft[4][ijk] - _rho*ux) - _rho*uy/12.0 + 0.25*(this->ft[3][ijk] - this->ft[6][ijk] - _rho*uz);
-            this->ft[14][ijk] = this->ft[10][ijk] + 0.25*(this->ft[1][ijk] - this->ft[4][ijk] - _rho*ux) - _rho*uy/12.0 - 0.25*(this->ft[3][ijk] - this->ft[6][ijk] - _rho*uz);
-        } else if (_k == 0) {
-            T ux = _u0;
-            T uy = _u1;
-            T uz = 1.0 - (this->ft[0][ijk] + this->ft[1][ijk] + this->ft[2][ijk] + this->ft[4][ijk] + this->ft[5][ijk] + 2.0*(this->ft[6][ijk] + this->ft[10][ijk] + this->ft[11][ijk] + this->ft[12][ijk] + this->ft[13][ijk]))/_rho;
-            this->ft[3][ijk] = this->ft[6][ijk] + 2.0*_rho*uz/3.0;
-            this->ft[7][ijk] = this->ft[11][ijk] - 0.25*(this->ft[1][ijk] - this->ft[4][ijk] - _rho*ux) - 0.25*(this->ft[2][ijk] - this->ft[5][ijk] - _rho*uy) + _rho*uz/12.0;
-            this->ft[8][ijk] = this->ft[12][ijk] + 0.25*(this->ft[1][ijk] - this->ft[4][ijk] - _rho*ux) - 0.25*(this->ft[2][ijk] - this->ft[5][ijk] - _rho*uy) + _rho*uz/12.0;
-            this->ft[9][ijk] = this->ft[13][ijk] - 0.25*(this->ft[1][ijk] - this->ft[4][ijk] - _rho*ux) + 0.25*(this->ft[2][ijk] - this->ft[5][ijk] - _rho*uy) + _rho*uz/12.0;
-            this->ft[14][ijk] = this->ft[10][ijk] + 0.25*(this->ft[1][ijk] - this->ft[4][ijk] - _rho*ux) + 0.25*(this->ft[2][ijk] - this->ft[5][ijk] - _rho*uy) + _rho*uz/12.0;
-        } else if (_k == this->nz - 1) {
-            T ux = _u0;
-            T uy = _u1;
-            T uz = -1.0 - (this->ft[0][ijk] + this->ft[1][ijk] + this->ft[2][ijk] + this->ft[4][ijk] + this->ft[5][ijk] + 2.0*(this->ft[3][ijk] + this->ft[7][ijk] + this->ft[8][ijk] + this->ft[9][ijk] + this->ft[14][ijk]))/_rho;
-            this->ft[6][ijk] = this->ft[3][ijk] - 2.0*_rho*uz/3.0;
-            this->ft[10][ijk] = this->ft[14][ijk] - 0.25*(this->ft[1][ijk] - this->ft[4][ijk] - _rho*ux) - 0.25*(this->ft[2][ijk] - this->ft[5][ijk] - _rho*uy) - _rho*uz/12.0;
-            this->ft[11][ijk] = this->ft[7][ijk] + 0.25*(this->ft[1][ijk] - this->ft[4][ijk] - _rho*ux) + 0.25*(this->ft[2][ijk] - this->ft[5][ijk] - _rho*uy) - _rho*uz/12.0;
-            this->ft[12][ijk] = this->ft[8][ijk] - 0.25*(this->ft[1][ijk] - this->ft[4][ijk] - _rho*ux) + 0.25*(this->ft[2][ijk] - this->ft[5][ijk] - _rho*uy) - _rho*uz/12.0;
-            this->ft[13][ijk] = this->ft[9][ijk] + 0.25*(this->ft[1][ijk] - this->ft[4][ijk] - _rho*ux) - 0.25*(this->ft[2][ijk] - this->ft[5][ijk] - _rho*uy) - _rho*uz/12.0;
-        } else {
-            //  境界に沿っていないことを警告する
-        }
-    }
-
-
-    template<class T>
-    void D3Q15<T>::SetU(int _i, int _j, int _k, T _ux, T _uy, T _uz) {
-        int ijk = _i + this->nx*_j + this->nx*this->ny*_k;
-        if (_i == 0) {
-            T rho = (this->ft[0][ijk] + this->ft[2][ijk] + this->ft[3][ijk] + this->ft[5][ijk] + this->ft[6][ijk] + 2.0*(this->ft[4][ijk] + this->ft[8][ijk] + this->ft[11][ijk] + this->ft[13][ijk] + this->ft[14][ijk]))/(1.0 - _ux);
-            this->ft[1][ijk] = this->ft[4][ijk] + 2.0*rho*_ux/3.0;
-            this->ft[7][ijk] = this->ft[11][ijk] + rho*_ux/12.0 - 0.25*(this->ft[2][ijk] - this->ft[5][ijk] - rho*_uy) - 0.25*(this->ft[3][ijk] - this->ft[6][ijk] - rho*_uz);
-            this->ft[9][ijk] = this->ft[13][ijk] + rho*_ux/12.0 + 0.25*(this->ft[2][ijk] - this->ft[5][ijk] - rho*_uy) - 0.25*(this->ft[3][ijk] - this->ft[6][ijk] - rho*_uz);
-            this->ft[10][ijk] = this->ft[14][ijk] + rho*_ux/12.0 - 0.25*(this->ft[2][ijk] - this->ft[5][ijk] - rho*_uy) + 0.25*(this->ft[3][ijk] - this->ft[6][ijk] - rho*_uz);
-            this->ft[12][ijk] = this->ft[8][ijk] + rho*_ux/12.0 + 0.25*(this->ft[2][ijk] - this->ft[5][ijk] - rho*_uy) + 0.25*(this->ft[3][ijk] - this->ft[6][ijk] - rho*_uz);
-        } else if (_i == this->nx - 1) {
-            T rho = (this->ft[0][ijk] + this->ft[2][ijk] + this->ft[3][ijk] + this->ft[5][ijk] + this->ft[6][ijk] + 2.0*(this->ft[1][ijk] + this->ft[7][ijk] + this->ft[9][ijk] + this->ft[10][ijk] + this->ft[12][ijk]))/(1.0 + _ux);
-            this->ft[4][ijk] = this->ft[1][ijk] - 2.0*rho*_ux/3.0;
-            this->ft[8][ijk] = this->ft[12][ijk] - rho*_ux/12.0 - 0.25*(this->ft[2][ijk] - this->ft[5][ijk] - rho*_uy) - 0.25*(this->ft[3][ijk] - this->ft[6][ijk] - rho*_uz);
-            this->ft[11][ijk] = this->ft[7][ijk] - rho*_ux/12.0 + 0.25*(this->ft[2][ijk] - this->ft[5][ijk] - rho*_uy) + 0.25*(this->ft[3][ijk] - this->ft[6][ijk] - rho*_uz);
-            this->ft[13][ijk] = this->ft[9][ijk] - rho*_ux/12.0 - 0.25*(this->ft[2][ijk] - this->ft[5][ijk] - rho*_uy) + 0.25*(this->ft[3][ijk] - this->ft[6][ijk] - rho*_uz);
-            this->ft[14][ijk] = this->ft[10][ijk] - rho*_ux/12.0 + 0.25*(this->ft[2][ijk] - this->ft[5][ijk] - rho*_uy) - 0.25*(this->ft[3][ijk] - this->ft[6][ijk] - rho*_uz);
-        } else if (_j == 0) {
-            T rho = (this->ft[0][ijk] + this->ft[1][ijk] + this->ft[3][ijk] + this->ft[4][ijk] + this->ft[6][ijk] + 2.0*(this->ft[5][ijk] + this->ft[9][ijk] + this->ft[11][ijk] + this->ft[12][ijk] + this->ft[14][ijk]))/(1.0 - _uy);
-            this->ft[2][ijk] = this->ft[5][ijk] + 2.0*rho*_uy/3.0;
-            this->ft[7][ijk] = this->ft[11][ijk] - 0.25*(this->ft[1][ijk] - this->ft[4][ijk] - rho*_ux)  + rho*_uy/12.0 - 0.25*(this->ft[3][ijk] - this->ft[6][ijk] - rho*_uz);
-            this->ft[8][ijk] = this->ft[12][ijk] + 0.25*(this->ft[1][ijk] - this->ft[4][ijk] - rho*_ux)  + rho*_uy/12.0 - 0.25*(this->ft[3][ijk] - this->ft[6][ijk] - rho*_uz);
-            this->ft[10][ijk] = this->ft[14][ijk] - 0.25*(this->ft[1][ijk] - this->ft[4][ijk] - rho*_ux)  + rho*_uy/12.0 + 0.25*(this->ft[3][ijk] - this->ft[6][ijk] - rho*_uz);
-            this->ft[13][ijk] = this->ft[9][ijk] + 0.25*(this->ft[1][ijk] - this->ft[4][ijk] - rho*_ux)  + rho*_uy/12.0 + 0.25*(this->ft[3][ijk] - this->ft[6][ijk] - rho*_uz);
-        } else if (_j == this->ny - 1) {
-            T rho = (this->ft[0][ijk] + this->ft[1][ijk] + this->ft[3][ijk] + this->ft[4][ijk] + this->ft[6][ijk] + 2.0*(this->ft[2][ijk] + this->ft[7][ijk] + this->ft[8][ijk] + this->ft[10][ijk] + this->ft[13][ijk]))/(1.0 + _uy);
-            this->ft[5][ijk] = this->ft[2][ijk] - 2.0*rho*_uy/3.0;
-            this->ft[9][ijk] = this->ft[13][ijk] - 0.25*(this->ft[1][ijk] - this->ft[4][ijk] - rho*_ux) - rho*_uy/12.0 - 0.25*(this->ft[3][ijk] - this->ft[6][ijk] - rho*_uz);
-            this->ft[11][ijk] = this->ft[7][ijk] + 0.25*(this->ft[1][ijk] - this->ft[4][ijk] - rho*_ux) - rho*_uy/12.0 + 0.25*(this->ft[3][ijk] - this->ft[6][ijk] - rho*_uz);
-            this->ft[12][ijk] = this->ft[8][ijk] - 0.25*(this->ft[1][ijk] - this->ft[4][ijk] - rho*_ux) - rho*_uy/12.0 + 0.25*(this->ft[3][ijk] - this->ft[6][ijk] - rho*_uz);
-            this->ft[14][ijk] = this->ft[10][ijk] + 0.25*(this->ft[1][ijk] - this->ft[4][ijk] - rho*_ux) - rho*_uy/12.0 - 0.25*(this->ft[3][ijk] - this->ft[6][ijk] - rho*_uz);
-        } else if (_k == 0) {
-            T rho = (this->ft[0][ijk] + this->ft[1][ijk] + this->ft[2][ijk] + this->ft[4][ijk] + this->ft[5][ijk] + 2.0*(this->ft[6][ijk] + this->ft[10][ijk] + this->ft[11][ijk] + this->ft[12][ijk] + this->ft[13][ijk]))/(1.0 - _uz);
-            this->ft[3][ijk] = this->ft[6][ijk] + 2.0*rho*_uz/3.0;
-            this->ft[7][ijk] = this->ft[11][ijk] - 0.25*(this->ft[1][ijk] - this->ft[4][ijk] - rho*_ux) - 0.25*(this->ft[2][ijk] - this->ft[5][ijk] - rho*_uy) + rho*_uz/12.0;
-            this->ft[8][ijk] = this->ft[12][ijk] + 0.25*(this->ft[1][ijk] - this->ft[4][ijk] - rho*_ux) - 0.25*(this->ft[2][ijk] - this->ft[5][ijk] - rho*_uy) + rho*_uz/12.0;
-            this->ft[9][ijk] = this->ft[13][ijk] - 0.25*(this->ft[1][ijk] - this->ft[4][ijk] - rho*_ux) + 0.25*(this->ft[2][ijk] - this->ft[5][ijk] - rho*_uy) + rho*_uz/12.0;
-            this->ft[14][ijk] = this->ft[10][ijk] + 0.25*(this->ft[1][ijk] - this->ft[4][ijk] - rho*_ux) + 0.25*(this->ft[2][ijk] - this->ft[5][ijk] - rho*_uy) + rho*_uz/12.0;
-        } else if (_k == this->nz - 1) {
-            T rho = (this->ft[0][ijk] + this->ft[1][ijk] + this->ft[2][ijk] + this->ft[4][ijk] + this->ft[5][ijk] + 2.0*(this->ft[3][ijk] + this->ft[7][ijk] + this->ft[8][ijk] + this->ft[9][ijk] + this->ft[14][ijk]))/(1.0 + _uz);
-            this->ft[6][ijk] = this->ft[3][ijk] - 2.0*rho*_uz/3.0;
-            this->ft[10][ijk] = this->ft[14][ijk] - 0.25*(this->ft[1][ijk] - this->ft[4][ijk] - rho*_ux) - 0.25*(this->ft[2][ijk] - this->ft[5][ijk] - rho*_uy) - rho*_uz/12.0;
-            this->ft[11][ijk] = this->ft[7][ijk] + 0.25*(this->ft[1][ijk] - this->ft[4][ijk] - rho*_ux) + 0.25*(this->ft[2][ijk] - this->ft[5][ijk] - rho*_uy) - rho*_uz/12.0;
-            this->ft[12][ijk] = this->ft[8][ijk] - 0.25*(this->ft[1][ijk] - this->ft[4][ijk] - rho*_ux) + 0.25*(this->ft[2][ijk] - this->ft[5][ijk] - rho*_uy) - rho*_uz/12.0;
-            this->ft[13][ijk] = this->ft[9][ijk] + 0.25*(this->ft[1][ijk] - this->ft[4][ijk] - rho*_ux) - 0.25*(this->ft[2][ijk] - this->ft[5][ijk] - rho*_uy) - rho*_uz/12.0;
-        } else {
-            //  境界に沿っていないことを警告する
-        }
-    }
-
-
-    template<class T>
-    void D3Q15<T>::SetTemperature(int _i, int _j, int _k, T _temperature) {
-        int ijk = _i + this->nx*_j + this->nx*this->ny*_k;
-        if (_i == 0) {
-            T temperature0 = 6.0*(_temperature - this->ft[0][ijk] - this->ft[2][ijk] - this->ft[3][ijk] - this->ft[4][ijk] - this->ft[5][ijk] - this->ft[6][ijk] - this->ft[8][ijk] - this->ft[11][ijk] - this->ft[13][ijk] - this->ft[14][ijk]);
-            this->ft[1][ijk] = temperature0/9.0;
-            this->ft[7][ijk] = temperature0/72.0;
-            this->ft[9][ijk] = temperature0/72.0;
-            this->ft[10][ijk] = temperature0/72.0;
-            this->ft[12][ijk] = temperature0/72.0;
-        } else if (_i == this->nx - 1) {
-            T temperature0 = 6.0*(_temperature - this->ft[0][ijk] - this->ft[1][ijk] - this->ft[2][ijk] - this->ft[3][ijk] - this->ft[5][ijk] - this->ft[6][ijk] - this->ft[7][ijk] - this->ft[9][ijk] - this->ft[10][ijk] - this->ft[12][ijk]);
-            this->ft[4][ijk] = temperature0/9.0;
-            this->ft[8][ijk] = temperature0/72.0;
-            this->ft[11][ijk] = temperature0/72.0;
-            this->ft[13][ijk] = temperature0/72.0;
-            this->ft[14][ijk] = temperature0/72.0;
-        } else if (_j == 0) {
-            T temperature0 = 6.0*(_temperature - this->ft[0][ijk] - this->ft[1][ijk] - this->ft[3][ijk] - this->ft[4][ijk] - this->ft[5][ijk] - this->ft[6][ijk] - this->ft[9][ijk] - this->ft[11][ijk] - this->ft[12][ijk] - this->ft[14][ijk]);
-            this->ft[2][ijk] = temperature0/9.0;
-            this->ft[7][ijk] = temperature0/72.0;
-            this->ft[8][ijk] = temperature0/72.0;
-            this->ft[10][ijk] = temperature0/72.0;
-            this->ft[13][ijk] = temperature0/72.0;
-        } else if (_j == this->ny - 1) {
-            T temperature0 = 6.0*(_temperature - this->ft[0][ijk] - this->ft[1][ijk] - this->ft[2][ijk] - this->ft[3][ijk] - this->ft[4][ijk] - this->ft[6][ijk] - this->ft[7][ijk] - this->ft[8][ijk] - this->ft[10][ijk] - this->ft[13][ijk]);
-            this->ft[5][ijk] = temperature0/9.0;
-            this->ft[9][ijk] = temperature0/72.0;
-            this->ft[11][ijk] = temperature0/72.0;
-            this->ft[12][ijk] = temperature0/72.0;
-            this->ft[14][ijk] = temperature0/72.0;
-        } else if (_k == 0) {
-            T temperature0 = 6.0*(_temperature - this->ft[0][ijk] - this->ft[1][ijk] - this->ft[2][ijk] - this->ft[4][ijk] - this->ft[5][ijk] - this->ft[6][ijk] - this->ft[10][ijk] - this->ft[11][ijk] - this->ft[12][ijk] - this->ft[13][ijk]);
-            this->ft[3][ijk] = temperature0/9.0;
-            this->ft[7][ijk] = temperature0/72.0;
-            this->ft[8][ijk] = temperature0/72.0;
-            this->ft[9][ijk] = temperature0/72.0;
-            this->ft[14][ijk] = temperature0/72.0;
-        } else if (_k == this->nz - 1) {
-            T temperature0 = 6.0*(_temperature - this->ft[0][ijk] - this->ft[1][ijk] - this->ft[2][ijk] - this->ft[3][ijk] - this->ft[4][ijk] - this->ft[5][ijk] - this->ft[7][ijk] - this->ft[8][ijk] - this->ft[9][ijk] - this->ft[14][ijk]);
-            this->ft[6][ijk] = temperature0/9.0;
-            this->ft[10][ijk] = temperature0/72.0;
-            this->ft[11][ijk] = temperature0/72.0;
-            this->ft[12][ijk] = temperature0/72.0;
-            this->ft[13][ijk] = temperature0/72.0;
-        } else {
-            //  境界に沿っていないことを警告する
-        }
-    }
-    
-    
-    template<class T>
-    void D3Q15<T>::SetFlux(int _i, int _j, int _k, T _ux, T _uy, T _uz, T _q) {
-        int ijk = _i + this->nx*_j + this->nx*this->ny*_k;
-        if (_i == 0) {
-            T temperature0 = 6.0*(_q + this->ft[4][ijk] + this->ft[8][ijk] + this->ft[11][ijk] + this->ft[13][ijk] + this->ft[14][ijk])/(1.0 - 3.0*_ux);
-            this->ft[1][ijk] = temperature0*(1.0 + 3.0*_ux)/9.0;
-            this->ft[7][ijk] = temperature0*(1.0 + 3.0*_ux + 3.0*_uy + 3.0*_uz)/72.0;
-            this->ft[9][ijk] = temperature0*(1.0 + 3.0*_ux - 3.0*_uy + 3.0*_uz)/72.0;
-            this->ft[10][ijk] = temperature0*(1.0 + 3.0*_ux + 3.0*_uy - 3.0*_uz)/72.0;
-            this->ft[12][ijk] = temperature0*(1.0 + 3.0*_ux - 3.0*_uy - 3.0*_uz)/72.0;
-        } else if (_i == this->nx - 1) {
-            T temperature0 = 6.0*(-_q + this->ft[1][ijk] + this->ft[7][ijk] + this->ft[9][ijk] + this->ft[10][ijk] + this->ft[12][ijk])/(1.0 + 3.0*_ux);
-            this->ft[4][ijk] = temperature0*(1.0 - 3.0*_ux)/9.0;
-            this->ft[8][ijk] = temperature0*(1.0 - 3.0*_ux + 3.0*_uy + 3.0*_uz)/72.0;
-            this->ft[11][ijk] = temperature0*(1.0 - 3.0*_ux - 3.0*_uy - 3.0*_uz)/72.0;
-            this->ft[13][ijk] = temperature0*(1.0 - 3.0*_ux + 3.0*_uy - 3.0*_uz)/72.0;
-            this->ft[14][ijk] = temperature0*(1.0 - 3.0*_ux - 3.0*_uy + 3.0*_uz)/72.0;
-        } else if (_j == 0) {
-            T temperature0 = 6.0*(_q + this->ft[5][ijk] + this->ft[9][ijk] + this->ft[11][ijk] + this->ft[12][ijk] + this->ft[14][ijk])/(1.0 - 3.0*_uy);
-            this->ft[2][ijk] = temperature0*(1.0 + 3.0*_uy)/9.0;
-            this->ft[7][ijk] = temperature0*(1.0 + 3.0*_ux + 3.0*_uy + 3.0*_uz)/72.0;
-            this->ft[8][ijk] = temperature0*(1.0 - 3.0*_ux + 3.0*_uy + 3.0*_uz)/72.0;
-            this->ft[10][ijk] = temperature0*(1.0 + 3.0*_ux + 3.0*_uy - 3.0*_uz)/72.0;
-            this->ft[13][ijk] = temperature0*(1.0 - 3.0*_ux + 3.0*_uy - 3.0*_uz)/72.0;
-        } else if (_j == this->ny - 1) {
-            T temperature0 = 6.0*(-_q + this->ft[2][ijk] + this->ft[7][ijk] + this->ft[8][ijk] + this->ft[10][ijk] + this->ft[13][ijk])/(1.0 + 3.0*_uy);
-            this->ft[5][ijk] = temperature0*(1.0 - 3.0*_uy)/9.0;
-            this->ft[9][ijk] = temperature0*(1.0 + 3.0*_ux - 3.0*_uy + 3.0*_uz)/72.0;
-            this->ft[11][ijk] = temperature0*(1.0 - 3.0*_ux - 3.0*_uy - 3.0*_uz)/72.0;
-            this->ft[12][ijk] = temperature0*(1.0 + 3.0*_ux - 3.0*_uy - 3.0*_uz)/72.0;
-            this->ft[14][ijk] = temperature0*(1.0 - 3.0*_ux - 3.0*_uy + 3.0*_uz)/72.0;
-        } else if (_k == 0) {
-            T temperature0 = 6.0*(_q + this->ft[6][ijk] + this->ft[10][ijk] + this->ft[11][ijk] + this->ft[12][ijk] + this->ft[13][ijk])/(1.0 - 3.0*_uz);
-            this->ft[3][ijk] = temperature0*(1.0 + 3.0*_uz)/9.0;
-            this->ft[7][ijk] = temperature0*(1.0 + 3.0*_ux + 3.0*_uy + 3.0*_uz)/72.0;
-            this->ft[8][ijk] = temperature0*(1.0 - 3.0*_ux + 3.0*_uy + 3.0*_uz)/72.0;
-            this->ft[9][ijk] = temperature0*(1.0 + 3.0*_ux - 3.0*_uy + 3.0*_uz)/72.0;
-            this->ft[14][ijk] = temperature0*(1.0 - 3.0*_ux - 3.0*_uy + 3.0*_uz)/72.0;
-        } else if (_k == this->nz - 1) {
-            T temperature0 = 6.0*(-_q + this->ft[3][ijk] + this->ft[7][ijk] + this->ft[8][ijk] + this->ft[9][ijk] + this->ft[14][ijk])/(1.0 + 3.0*_uz);
-            this->ft[6][ijk] = temperature0*(1.0 - 3.0*_uz)/9.0;
-            this->ft[10][ijk] = temperature0*(1.0 + 3.0*_ux + 3.0*_uy - 3.0*_uz)/72.0;
-            this->ft[11][ijk] = temperature0*(1.0 - 3.0*_ux - 3.0*_uy - 3.0*_uz)/72.0;
-            this->ft[12][ijk] = temperature0*(1.0 + 3.0*_ux - 3.0*_uy - 3.0*_uz)/72.0;
-            this->ft[13][ijk] = temperature0*(1.0 - 3.0*_ux + 3.0*_uy - 3.0*_uz)/72.0;
-        } else {
-            //  境界に沿っていないことを警告する
-        }
-    }
-
-
-    template<class T>
-    void D3Q15<T>::SetiRho(int _i, int _j, int _k) {
-        int ijk = _i + this->nx*_j + this->nx*this->ny*_k;
-        if (_i == 0) {
-            this->ft[4][ijk] = this->ft[1][ijk] - (8.0*this->ft[1][ijk] + this->ft[7][ijk] + this->ft[9][ijk] + this->ft[10][ijk] + this->ft[12][ijk])/6.0;
-            this->ft[8][ijk] = this->ft[12][ijk] - (8.0*this->ft[1][ijk] + this->ft[7][ijk] + this->ft[9][ijk] + this->ft[10][ijk] + this->ft[12][ijk])/6.0;
-            this->ft[11][ijk] = this->ft[7][ijk] - (8.0*this->ft[1][ijk] + this->ft[7][ijk] + this->ft[9][ijk] + this->ft[10][ijk] + this->ft[12][ijk])/6.0;
-            this->ft[13][ijk] = this->ft[9][ijk] - (8.0*this->ft[1][ijk] + this->ft[7][ijk] + this->ft[9][ijk] + this->ft[10][ijk] + this->ft[12][ijk])/6.0;
-            this->ft[14][ijk] = this->ft[10][ijk] - (8.0*this->ft[1][ijk] + this->ft[7][ijk] + this->ft[9][ijk] + this->ft[10][ijk] + this->ft[12][ijk])/6.0;
-        } else if (_i == this->nx - 1) {
-            this->ft[1][ijk] = this->ft[4][ijk] - (8.0*this->ft[4][ijk] + this->ft[8][ijk] + this->ft[11][ijk] + this->ft[13][ijk] + this->ft[14][ijk])/6.0;
-            this->ft[7][ijk] = this->ft[11][ijk] - (8.0*this->ft[4][ijk] + this->ft[8][ijk] + this->ft[11][ijk] + this->ft[13][ijk] + this->ft[14][ijk])/6.0;
-            this->ft[9][ijk] = this->ft[13][ijk] - (8.0*this->ft[4][ijk] + this->ft[8][ijk] + this->ft[11][ijk] + this->ft[13][ijk] + this->ft[14][ijk])/6.0;
-            this->ft[10][ijk] = this->ft[14][ijk] - (8.0*this->ft[4][ijk] + this->ft[8][ijk] + this->ft[11][ijk] + this->ft[13][ijk] + this->ft[14][ijk])/6.0;
-            this->ft[12][ijk] = this->ft[8][ijk] - (8.0*this->ft[4][ijk] + this->ft[8][ijk] + this->ft[11][ijk] + this->ft[13][ijk] + this->ft[14][ijk])/6.0;
-        } else if (_j == 0) {
-            this->ft[5][ijk] = this->ft[2][ijk] - (8.0*this->ft[2][ijk] + this->ft[7][ijk] + this->ft[8][ijk] + this->ft[10][ijk] + this->ft[13][ijk])/6.0;
-            this->ft[9][ijk] = this->ft[13][ijk] - (8.0*this->ft[2][ijk] + this->ft[7][ijk] + this->ft[8][ijk] + this->ft[10][ijk] + this->ft[13][ijk])/6.0;
-            this->ft[11][ijk] = this->ft[7][ijk] - (8.0*this->ft[2][ijk] + this->ft[7][ijk] + this->ft[8][ijk] + this->ft[10][ijk] + this->ft[13][ijk])/6.0;
-            this->ft[12][ijk] = this->ft[8][ijk] - (8.0*this->ft[2][ijk] + this->ft[7][ijk] + this->ft[8][ijk] + this->ft[10][ijk] + this->ft[13][ijk])/6.0;
-            this->ft[14][ijk] = this->ft[10][ijk] - (8.0*this->ft[2][ijk] + this->ft[7][ijk] + this->ft[8][ijk] + this->ft[10][ijk] + this->ft[13][ijk])/6.0;
-        } else if (_j == this->ny - 1) {
-            this->ft[2][ijk] = this->ft[5][ijk] - (8.0*this->ft[5][ijk] + this->ft[9][ijk] + this->ft[11][ijk] + this->ft[12][ijk] + this->ft[14][ijk])/6.0;
-            this->ft[7][ijk] = this->ft[11][ijk] - (8.0*this->ft[5][ijk] + this->ft[9][ijk] + this->ft[11][ijk] + this->ft[12][ijk] + this->ft[14][ijk])/6.0;
-            this->ft[8][ijk] = this->ft[12][ijk] - (8.0*this->ft[5][ijk] + this->ft[9][ijk] + this->ft[11][ijk] + this->ft[12][ijk] + this->ft[14][ijk])/6.0;
-            this->ft[10][ijk] = this->ft[14][ijk] - (8.0*this->ft[5][ijk] + this->ft[9][ijk] + this->ft[11][ijk] + this->ft[12][ijk] + this->ft[14][ijk])/6.0;
-            this->ft[13][ijk] = this->ft[9][ijk] - (8.0*this->ft[5][ijk] + this->ft[9][ijk] + this->ft[11][ijk] + this->ft[12][ijk] + this->ft[14][ijk])/6.0;
-        } else if (_k == 0) {
-            this->ft[6][ijk] = this->ft[3][ijk] - (8.0*this->ft[3][ijk] + this->ft[7][ijk] + this->ft[8][ijk] + this->ft[9][ijk] + this->ft[14][ijk])/6.0;
-            this->ft[10][ijk] = this->ft[14][ijk] - (8.0*this->ft[3][ijk] + this->ft[7][ijk] + this->ft[8][ijk] + this->ft[9][ijk] + this->ft[14][ijk])/6.0;
-            this->ft[11][ijk] = this->ft[7][ijk] - (8.0*this->ft[3][ijk] + this->ft[7][ijk] + this->ft[8][ijk] + this->ft[9][ijk] + this->ft[14][ijk])/6.0;
-            this->ft[12][ijk] = this->ft[8][ijk] - (8.0*this->ft[3][ijk] + this->ft[7][ijk] + this->ft[8][ijk] + this->ft[9][ijk] + this->ft[14][ijk])/6.0;
-            this->ft[13][ijk] = this->ft[9][ijk] - (8.0*this->ft[3][ijk] + this->ft[7][ijk] + this->ft[8][ijk] + this->ft[9][ijk] + this->ft[14][ijk])/6.0;
-        } else if (_k == this->nz - 1) {
-            this->ft[3][ijk] = this->ft[6][ijk] - (8.0*this->ft[6][ijk] + this->ft[10][ijk] + this->ft[11][ijk] + this->ft[12][ijk] + this->ft[13][ijk])/6.0;
-            this->ft[7][ijk] = this->ft[11][ijk] - (8.0*this->ft[6][ijk] + this->ft[10][ijk] + this->ft[11][ijk] + this->ft[12][ijk] + this->ft[13][ijk])/6.0;
-            this->ft[8][ijk] = this->ft[12][ijk] - (8.0*this->ft[6][ijk] + this->ft[10][ijk] + this->ft[11][ijk] + this->ft[12][ijk] + this->ft[13][ijk])/6.0;
-            this->ft[9][ijk] = this->ft[13][ijk] - (8.0*this->ft[6][ijk] + this->ft[10][ijk] + this->ft[11][ijk] + this->ft[12][ijk] + this->ft[13][ijk])/6.0;
-            this->ft[14][ijk] = this->ft[10][ijk] - (8.0*this->ft[6][ijk] + this->ft[10][ijk] + this->ft[11][ijk] + this->ft[12][ijk] + this->ft[13][ijk])/6.0;
-        } else {
-            //  境界に沿っていないことを警告する
-        }
-    }
-
-
-    template<class T>
-    void D3Q15<T>::SetiU(int _i, int _j, int _k, T _ux, T _uy, T _uz) {
-        int ijk = _i + this->nx*_j + this->nx*this->ny*_k;
-        if (_i == 0) {
-            T rho = (-4.0 + _ux*(8.0*this->ft[1][ijk] + this->ft[7][ijk] + this->ft[9][ijk] + this->ft[10][ijk] + this->ft[12][ijk])
-                + 3.0*_uy*(this->ft[7][ijk] - this->ft[9][ijk] + this->ft[10][ijk] - this->ft[12][ijk])
-                + 3.0*_uz*(this->ft[7][ijk] + this->ft[9][ijk] - this->ft[10][ijk] - this->ft[12][ijk]))/(6.0*(1.0 - _ux));
-            this->ft[4][ijk] = this->ft[1][ijk] + rho;
-            this->ft[8][ijk] = this->ft[12][ijk] + rho;
-            this->ft[11][ijk] = this->ft[7][ijk] + rho;
-            this->ft[13][ijk] = this->ft[9][ijk] + rho;
-            this->ft[14][ijk] = this->ft[10][ijk] + rho;
-        } else if (_i == this->nx - 1) {
-            T rho = (-4.0 - _ux*(8.0*this->ft[4][ijk] + this->ft[8][ijk] + this->ft[11][ijk] + this->ft[13][ijk] + this->ft[14][ijk])
-                + 3.0*_uy*(this->ft[8][ijk] - this->ft[11][ijk] + this->ft[13][ijk] - this->ft[14][ijk])
-                + 3.0*_uz*(this->ft[8][ijk] - this->ft[11][ijk] - this->ft[13][ijk] + this->ft[14][ijk]))/(6.0*(1.0 + _ux));
-            this->ft[1][ijk] = this->ft[4][ijk] + rho;
-            this->ft[7][ijk] = this->ft[11][ijk] + rho;
-            this->ft[9][ijk] = this->ft[13][ijk] + rho;
-            this->ft[10][ijk] = this->ft[14][ijk] + rho;
-            this->ft[12][ijk] = this->ft[8][ijk] + rho;
-        } else if (_j == 0) {
-            T rho = (-4.0 + 3.0*_ux*(this->ft[7][ijk] - this->ft[8][ijk] + this->ft[10][ijk] - this->ft[13][ijk]) 
-                + _uy*(8.0*this->ft[2][ijk] + this->ft[7][ijk] + this->ft[8][ijk] + this->ft[10][ijk] + this->ft[13][ijk])
-                + 3.0*_uz*(this->ft[7][ijk] + this->ft[8][ijk] - this->ft[10][ijk] - this->ft[13][ijk]))/(6.0*(1.0 - _uy));
-            this->ft[5][ijk] = this->ft[2][ijk] + rho;
-            this->ft[9][ijk] = this->ft[13][ijk] + rho;
-            this->ft[11][ijk] = this->ft[7][ijk] + rho;
-            this->ft[12][ijk] = this->ft[8][ijk] + rho;
-            this->ft[14][ijk] = this->ft[10][ijk] + rho;
-        } else if (_j == this->ny - 1) {
-            T rho = (-4.0 + 3.0*_ux*(this->ft[9][ijk] - this->ft[11][ijk] + this->ft[12][ijk] - this->ft[14][ijk]) 
-                - _uy*(8.0*this->ft[5][ijk] + this->ft[9][ijk] + this->ft[11][ijk] + this->ft[12][ijk] + this->ft[14][ijk])
-                + 3.0*_uz*(this->ft[9][ijk] - this->ft[11][ijk] - this->ft[12][ijk] + this->ft[14][ijk]))/(6.0*(1.0 + _uy));
-            this->ft[2][ijk] = this->ft[5][ijk] + rho;
-            this->ft[7][ijk] = this->ft[11][ijk] + rho;
-            this->ft[8][ijk] = this->ft[12][ijk] + rho;
-            this->ft[10][ijk] = this->ft[14][ijk] + rho;
-            this->ft[13][ijk] = this->ft[9][ijk] + rho;
-        } else if (_k == 0) {
-            T rho = (-4.0 + 3.0*_ux*(this->ft[7][ijk] - this->ft[8][ijk] + this->ft[9][ijk] - this->ft[14][ijk])
-                + 3.0*_uy*(this->ft[7][ijk] + this->ft[8][ijk] - this->ft[9][ijk] - this->ft[14][ijk])
-                + _uz*(8.0*this->ft[3][ijk] + this->ft[7][ijk] + this->ft[8][ijk] + this->ft[9][ijk] + this->ft[14][ijk]))/(6.0*(1.0 - _uz));
-            this->ft[6][ijk] = this->ft[3][ijk] + rho;
-            this->ft[10][ijk] = this->ft[14][ijk] + rho;
-            this->ft[11][ijk] = this->ft[7][ijk] + rho;
-            this->ft[12][ijk] = this->ft[8][ijk] + rho;
-            this->ft[13][ijk] = this->ft[9][ijk] + rho;
-        } else if (_k == this->nz - 1) {
-            T rho = (-4.0 + 3.0*_ux*(this->ft[10][ijk] - this->ft[11][ijk] + this->ft[12][ijk] - this->ft[13][ijk])
-                + 3.0*_uy*(this->ft[10][ijk] - this->ft[11][ijk] - this->ft[12][ijk] + this->ft[13][ijk])
-                - _uz*(8.0*this->ft[6][ijk] + this->ft[10][ijk] + this->ft[11][ijk] + this->ft[12][ijk] + this->ft[13][ijk]))/(6.0*(1.0 + _uz));
-            this->ft[3][ijk] = this->ft[6][ijk] + rho;
-            this->ft[7][ijk] = this->ft[11][ijk] + rho;
-            this->ft[8][ijk] = this->ft[12][ijk] + rho;
-            this->ft[9][ijk] = this->ft[13][ijk] + rho;
-            this->ft[14][ijk] = this->ft[10][ijk] + rho;
-        } else {
-            //  境界に沿っていないことを警告する
-        }
-    }
-
+    template<class T>const int D3Q15<T>::cx[D3Q15<T>::nc] = { 0, 1, 0, 0, -1, 0, 0, 1, -1, 1, 1, -1, 1, -1, -1 };
+    template<class T>const int D3Q15<T>::cy[D3Q15<T>::nc] = { 0, 0, 1, 0, 0, -1, 0, 1, 1, -1, 1, -1, -1, 1, -1 };
+    template<class T>const int D3Q15<T>::cz[D3Q15<T>::nc] = { 0, 0, 0, 1, 0, 0, -1, 1, 1, 1, -1, -1, -1, -1, 1 };
+    template<class T>const T D3Q15<T>::ei[D3Q15<T>::nc] = { 2.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/72.0, 1.0/72.0, 1.0/72.0, 1.0/72.0, 1.0/72.0, 1.0/72.0, 1.0/72.0, 1.0/72.0 };
 
     template<class T>
     void D3Q15<T>::Stream() {
-        //----------Stream and periodic boundary----------
-        for (int i = 0; i < this->nx; i++) {
-            for (int j = 0; j < this->ny; j++) {
-                for (int k = 0; k < this->nz; k++) {
-                    for (int l = 0; l < D3Q15<T>::nc; l++) {
-                        int ip1 = i - D3Q15<T>::cx[l] == -1 ? this->nx - 1 : (i - D3Q15<T>::cx[l] == this->nx ? 0 : i - D3Q15<T>::cx[l]);
-                        int jp1 = j - D3Q15<T>::cy[l] == -1 ? this->ny - 1 : (j - D3Q15<T>::cy[l] == this->ny ? 0 : j - D3Q15<T>::cy[l]);
-                        int kp1 = k - D3Q15<T>::cz[l] == -1 ? this->nz - 1 : (k - D3Q15<T>::cz[l] == this->nz ? 0 : k - D3Q15<T>::cz[l]);
-                        this->ft[l][i + this->nx*j + this->nx*this->ny*k] = this->ftp1[l][ip1 + this->nx*jp1 + this->nx*this->ny*kp1];
+        //  Stream
+#pragma omp parallel for
+        for (int k = 0; k < this->nz; ++k) {
+            for (int j = 0; j < this->ny; ++j) {
+                for (int i = 0; i < this->nx; ++i) {
+                    int idx = this->Index(i, j, k);
+                    for (int c = 1; c < D3Q15<T>::nc; ++c) {
+                        int idxstream = this->Index(i - D3Q15<T>::cx[c], j - D3Q15<T>::cy[c], k - D3Q15<T>::cz[c]);
+                        this->fnext[D3Q15<T>::IndexF(idx, c)] = this->f[D3Q15<T>::IndexF(idxstream, c)];
                     }
                 }
             }
         }
         
-        //----------Bouns-Back (inner boundary)----------
-        for (int i = 0; i < this->np; i++) {
-            if (this->barrier[1][i])    {   this->ft[1][i] = this->ftp1[4][i];      }
-            if (this->barrier[2][i])    {   this->ft[2][i] = this->ftp1[5][i];      }
-            if (this->barrier[3][i])    {   this->ft[3][i] = this->ftp1[6][i];      }
-            if (this->barrier[4][i])    {   this->ft[4][i] = this->ftp1[1][i];      }
-            if (this->barrier[5][i])    {   this->ft[5][i] = this->ftp1[2][i];      }
-            if (this->barrier[6][i])    {   this->ft[6][i] = this->ftp1[3][i];      }
-            if (this->barrier[7][i])    {   this->ft[7][i] = this->ftp1[11][i];     }
-            if (this->barrier[8][i])    {   this->ft[8][i] = this->ftp1[12][i];     }
-            if (this->barrier[9][i])    {   this->ft[9][i] = this->ftp1[13][i];     }
-            if (this->barrier[10][i])   {   this->ft[10][i] = this->ftp1[14][i];    }
-            if (this->barrier[11][i])   {   this->ft[11][i] = this->ftp1[7][i];     }
-            if (this->barrier[12][i])   {   this->ft[12][i] = this->ftp1[8][i];     }
-            if (this->barrier[13][i])   {   this->ft[13][i] = this->ftp1[9][i];     }
-            if (this->barrier[14][i])   {   this->ft[14][i] = this->ftp1[10][i];    }
-        }
+        //  Swap
+        T *tmp = this->f;
+        this->f = this->fnext;
+        this->fnext = tmp;
 
-        //----------boundary (Bouns-Back, Outlet and Mirror)----------
-        //  xmin and xmax
-        for (int j = 0; j < this->ny; j++) {
-            for (int k = 0; k < this->nz; k++) {
-                int jk = j + this->ny*k;
+#ifdef _USE_MPI_DEFINES
+        int idx, idxface;
 
-                //.....xmin.....
-                int minjk = 0 + this->nx*j + this->nx*this->ny*k;
-                int minp1jk = 1 + this->nx*j + this->nx*this->ny*k;
-                if (this->btxmin[jk] == OUTLET) {
-                    this->ft[1][minjk] = this->ft[1][minp1jk];
-                    this->ft[7][minjk] = this->ft[7][minp1jk];
-                    this->ft[9][minjk] = this->ft[9][minp1jk];
-                    this->ft[10][minjk] = this->ft[10][minp1jk];
-                    this->ft[12][minjk] = this->ft[12][minp1jk];
-                } else if (this->btxmin[jk] == BARRIER) {
-                    this->ft[1][minjk] = this->ftp1[4][minjk];
-                    this->ft[7][minjk] = this->ftp1[11][minjk];
-                    this->ft[9][minjk] = this->ftp1[13][minjk];
-                    this->ft[10][minjk] = this->ftp1[14][minjk];
-                    this->ft[12][minjk] = this->ftp1[8][minjk];
-                } else if (this->btxmin[jk] == MIRROR) {
-                    this->ft[1][minjk] = this->ftp1[4][minjk];
-                    this->ft[7][minjk] = this->ftp1[8][minjk];
-                    this->ft[9][minjk] = this->ftp1[14][minjk];
-                    this->ft[10][minjk] = this->ftp1[13][minjk];
-                    this->ft[12][minjk] = this->ftp1[11][minjk];
-                }
+        //  Copy from f to fsend along edge or at corner
+        if (this->mx != 1) {
+            for (int j = 0; j < this->ny; ++j) {
+                for (int k = 0; k < this->nz; ++k) {
+                    //  Face on xmin
+                    idx = this->Index(this->nx - 1, j, k);
+                    idxface = this->IndexBCx(j, k);
+                    this->fsend_xmin[idxface*5 + 0] = this->f[D3Q15<T>::IndexF(idx, 4)];
+                    this->fsend_xmin[idxface*5 + 1] = this->f[D3Q15<T>::IndexF(idx, 8)];
+                    this->fsend_xmin[idxface*5 + 2] = this->f[D3Q15<T>::IndexF(idx, 11)];
+                    this->fsend_xmin[idxface*5 + 3] = this->f[D3Q15<T>::IndexF(idx, 13)];
+                    this->fsend_xmin[idxface*5 + 4] = this->f[D3Q15<T>::IndexF(idx, 14)];
 
-                //.....xmax.....
-                int maxjk = (this->nx - 1) + this->nx*j + this->nx*this->ny*k;
-                int maxm1jk = (this->nx - 2) + this->nx*j + this->nx*this->ny*k;
-                if (this->btxmax[jk] == OUTLET) {
-                    this->ft[4][maxjk] = this->ft[4][maxm1jk];
-                    this->ft[8][maxjk] = this->ft[8][maxm1jk];
-                    this->ft[11][maxjk] = this->ft[11][maxm1jk];
-                    this->ft[13][maxjk] = this->ft[13][maxm1jk];
-                    this->ft[14][maxjk] = this->ft[14][maxm1jk];
-                } else if (this->btxmax[jk] == BARRIER) {
-                    this->ft[4][maxjk] = this->ftp1[1][maxjk];
-                    this->ft[8][maxjk] = this->ftp1[12][maxjk];
-                    this->ft[11][maxjk] = this->ftp1[7][maxjk];
-                    this->ft[13][maxjk] = this->ftp1[9][maxjk];
-                    this->ft[14][maxjk] = this->ftp1[10][maxjk];
-                } else if (this->btxmax[jk] == MIRROR) {
-                    this->ft[4][maxjk] = this->ftp1[1][maxjk];
-                    this->ft[8][maxjk] = this->ftp1[7][maxjk];
-                    this->ft[11][maxjk] = this->ftp1[12][maxjk];
-                    this->ft[13][maxjk] = this->ftp1[10][maxjk];
-                    this->ft[14][maxjk] = this->ftp1[9][maxjk];
+                    //  Face on xmax
+                    idx = this->Index(0, j, k);
+                    idxface = this->IndexBCx(j, k);
+                    this->fsend_xmax[idxface*5 + 0] = this->f[D3Q15<T>::IndexF(idx, 1)];
+                    this->fsend_xmax[idxface*5 + 1] = this->f[D3Q15<T>::IndexF(idx, 7)];
+                    this->fsend_xmax[idxface*5 + 2] = this->f[D3Q15<T>::IndexF(idx, 9)];
+                    this->fsend_xmax[idxface*5 + 3] = this->f[D3Q15<T>::IndexF(idx, 10)];
+                    this->fsend_xmax[idxface*5 + 4] = this->f[D3Q15<T>::IndexF(idx, 12)];
                 }
             }
         }
+        if (this->my != 1) {
+            for (int k = 0; k < this->nz; ++k) {
+                for (int i = 0; i < this->nx; ++i) {
+                    //  Face on ymin
+                    idx = this->Index(i, this->ny - 1, k);
+                    idxface = this->IndexBCy(k, i);
+                    this->fsend_ymin[idxface*5 + 0] = this->f[D3Q15<T>::IndexF(idx, 5)];
+                    this->fsend_ymin[idxface*5 + 1] = this->f[D3Q15<T>::IndexF(idx, 9)];
+                    this->fsend_ymin[idxface*5 + 2] = this->f[D3Q15<T>::IndexF(idx, 11)];
+                    this->fsend_ymin[idxface*5 + 3] = this->f[D3Q15<T>::IndexF(idx, 12)];
+                    this->fsend_ymin[idxface*5 + 4] = this->f[D3Q15<T>::IndexF(idx, 14)];
 
-        //  ymin and ymax
-        for (int k = 0; k < this->nz; k++) {
-            for (int i = 0; i < this->nx; i++) {
-                int ki = k + this->nz*i;
-
-                //.....ymin.....
-                int imink = i + this->nx*0 + this->nx*this->ny*k;
-                int iminp1k = i + this->nx*1 + this->nx*this->ny*k;
-                if (this->btymin[ki] == OUTLET) {
-                    this->ft[2][imink] = this->ft[2][iminp1k];
-                    this->ft[7][imink] = this->ft[7][iminp1k];
-                    this->ft[8][imink] = this->ft[8][iminp1k];
-                    this->ft[10][imink] = this->ft[10][iminp1k];
-                    this->ft[13][imink] = this->ft[13][iminp1k];
-                } else if (this->btymin[ki] == BARRIER) {
-                    this->ft[2][imink] = this->ftp1[5][imink];
-                    this->ft[7][imink] = this->ftp1[11][imink];
-                    this->ft[8][imink] = this->ftp1[12][imink];
-                    this->ft[10][imink] = this->ftp1[14][imink];
-                    this->ft[13][imink] = this->ftp1[9][imink];
-                } else if (this->btymin[ki] == MIRROR) {
-                    this->ft[2][imink] = this->ftp1[5][imink];
-                    this->ft[7][imink] = this->ftp1[9][imink];
-                    this->ft[8][imink] = this->ftp1[14][imink];
-                    this->ft[10][imink] = this->ftp1[12][imink];
-                    this->ft[13][imink] = this->ftp1[11][imink];
-                }
-
-                //.....ymax.....
-                int imaxk = i + this->nx*(this->ny - 1) + this->nx*this->ny*k;
-                int imaxm1k = i + this->nx*(this->ny - 2) + this->nx*this->ny*k;
-                if (this->btymax[ki] == OUTLET) {
-                    this->ft[5][imaxk] = this->ft[5][imaxm1k];
-                    this->ft[9][imaxk] = this->ft[9][imaxm1k];
-                    this->ft[11][imaxk] = this->ft[11][imaxm1k];
-                    this->ft[12][imaxk] = this->ft[12][imaxm1k];
-                    this->ft[14][imaxk] = this->ft[14][imaxm1k];
-                } else if (this->btymax[ki] == BARRIER) {
-                    this->ft[5][imaxk] = this->ftp1[2][imaxk];
-                    this->ft[9][imaxk] = this->ftp1[13][imaxk];
-                    this->ft[11][imaxk] = this->ftp1[7][imaxk];
-                    this->ft[12][imaxk] = this->ftp1[8][imaxk];
-                    this->ft[14][imaxk] = this->ftp1[10][imaxk];
-                } else if (this->btymax[ki] == MIRROR) {
-                    this->ft[5][imaxk] = this->ftp1[2][imaxk];
-                    this->ft[9][imaxk] = this->ftp1[7][imaxk];
-                    this->ft[11][imaxk] = this->ftp1[13][imaxk];
-                    this->ft[12][imaxk] = this->ftp1[10][imaxk];
-                    this->ft[14][imaxk] = this->ftp1[8][imaxk];
+                    //  Face on ymax
+                    idx = this->Index(i, 0, k);
+                    idxface = this->IndexBCy(k, i);
+                    this->fsend_ymax[idxface*5 + 0] = this->f[D3Q15<T>::IndexF(idx, 2)];
+                    this->fsend_ymax[idxface*5 + 1] = this->f[D3Q15<T>::IndexF(idx, 7)];
+                    this->fsend_ymax[idxface*5 + 2] = this->f[D3Q15<T>::IndexF(idx, 8)];
+                    this->fsend_ymax[idxface*5 + 3] = this->f[D3Q15<T>::IndexF(idx, 10)];
+                    this->fsend_ymax[idxface*5 + 4] = this->f[D3Q15<T>::IndexF(idx, 13)];
                 }
             }
         }
+        if (this->mz != 1) {
+            for (int i = 0; i < this->nx; ++i) {
+                for (int j = 0; j < this->ny; ++j) {
+                    //  Face on zmin
+                    idx = this->Index(i, j, this->nz - 1);
+                    idxface = this->IndexBCz(i, j);
+                    this->fsend_zmin[idxface*5 + 0] = this->f[D3Q15<T>::IndexF(idx, 6)];
+                    this->fsend_zmin[idxface*5 + 1] = this->f[D3Q15<T>::IndexF(idx, 10)];
+                    this->fsend_zmin[idxface*5 + 2] = this->f[D3Q15<T>::IndexF(idx, 11)];
+                    this->fsend_zmin[idxface*5 + 3] = this->f[D3Q15<T>::IndexF(idx, 12)];
+                    this->fsend_zmin[idxface*5 + 4] = this->f[D3Q15<T>::IndexF(idx, 13)];
 
-        //  zmin and zmax
-        for (int i = 0; i < this->nx; i++) {
-            for (int j = 0; j < this->ny; j++) {
-                int ij = i + this->nx*j;
-
-                //.....zmin.....
-                int ijmin = i + this->nx*j + this->nx*this->ny*0;
-                int ijminp1 = i + this->nx*j + this->nx*this->ny*1;
-                if (this->btzmin[ij] == OUTLET) {
-                    this->ft[3][ijmin] = this->ft[3][ijminp1];
-                    this->ft[7][ijmin] = this->ft[7][ijminp1];
-                    this->ft[8][ijmin] = this->ft[8][ijminp1];
-                    this->ft[9][ijmin] = this->ft[9][ijminp1];
-                    this->ft[14][ijmin] = this->ft[14][ijminp1];
-                } else if (this->btzmin[ij] == BARRIER) {
-                    this->ft[3][ijmin] = this->ftp1[6][ijmin];
-                    this->ft[7][ijmin] = this->ftp1[11][ijmin];
-                    this->ft[8][ijmin] = this->ftp1[12][ijmin];
-                    this->ft[9][ijmin] = this->ftp1[13][ijmin];
-                    this->ft[14][ijmin] = this->ftp1[10][ijmin];
-                } else if (this->btzmin[ij] == MIRROR) {
-                    this->ft[3][ijmin] = this->ftp1[6][ijmin];
-                    this->ft[7][ijmin] = this->ftp1[10][ijmin];
-                    this->ft[8][ijmin] = this->ftp1[13][ijmin];
-                    this->ft[9][ijmin] = this->ftp1[12][ijmin];
-                    this->ft[14][ijmin] = this->ftp1[11][ijmin];
-                }
-
-                //.....zmax.....
-                int ijmax = i + this->nx*j + this->nx*this->ny*(this->nz - 1);
-                int ijmaxm1 = i + this->nx*j + this->nx*this->ny*(this->nz - 2);
-                if (this->btzmax[ij] == OUTLET) {
-                    this->ft[6][ijmax] = this->ft[6][ijmaxm1];
-                    this->ft[10][ijmax] = this->ft[10][ijmaxm1];
-                    this->ft[11][ijmax] = this->ft[11][ijmaxm1];
-                    this->ft[12][ijmax] = this->ft[12][ijmaxm1];
-                    this->ft[13][ijmax] = this->ft[13][ijmaxm1];
-                } else if (this->btzmax[ij] == BARRIER) {
-                    this->ft[6][ijmax] = this->ftp1[3][ijmax];
-                    this->ft[10][ijmax] = this->ftp1[14][ijmax];
-                    this->ft[11][ijmax] = this->ftp1[7][ijmax];
-                    this->ft[12][ijmax] = this->ftp1[8][ijmax];
-                    this->ft[13][ijmax] = this->ftp1[9][ijmax];
-                } else if (this->btzmax[ij] == MIRROR) {
-                    this->ft[6][ijmax] = this->ftp1[3][ijmax];
-                    this->ft[10][ijmax] = this->ftp1[7][ijmax];
-                    this->ft[11][ijmax] = this->ftp1[14][ijmax];
-                    this->ft[12][ijmax] = this->ftp1[9][ijmax];
-                    this->ft[13][ijmax] = this->ftp1[8][ijmax];
+                    //  Face on zmax
+                    idx = this->Index(i, j, 0);
+                    idxface = this->IndexBCz(i, j);
+                    this->fsend_zmax[idxface*5 + 0] = this->f[D3Q15<T>::IndexF(idx, 3)];
+                    this->fsend_zmax[idxface*5 + 1] = this->f[D3Q15<T>::IndexF(idx, 7)];
+                    this->fsend_zmax[idxface*5 + 2] = this->f[D3Q15<T>::IndexF(idx, 8)];
+                    this->fsend_zmax[idxface*5 + 3] = this->f[D3Q15<T>::IndexF(idx, 9)];
+                    this->fsend_zmax[idxface*5 + 4] = this->f[D3Q15<T>::IndexF(idx, 14)];
                 }
             }
         }
+        if (this->my != 1 || this->mz != 1) {
+            for (int i = 0; i < this->nx; ++i) {
+                //  Edge on ymin and zmin
+                idx = this->Index(i, this->ny - 1, this->nz - 1);
+                this->fsend_ymin_zmin[i*2 + 0] = this->f[D3Q15<T>::IndexF(idx, 11)];
+                this->fsend_ymin_zmin[i*2 + 1] = this->f[D3Q15<T>::IndexF(idx, 12)];
+
+                //  Edge on ymin and zmax
+                idx = this->Index(i, this->ny - 1, 0);
+                this->fsend_ymin_zmax[i*2 + 0] = this->f[D3Q15<T>::IndexF(idx, 9)];
+                this->fsend_ymin_zmax[i*2 + 1] = this->f[D3Q15<T>::IndexF(idx, 14)];
+
+                //  Edge on ymax and zmin
+                idx = this->Index(i, 0, this->nz - 1);
+                this->fsend_ymax_zmin[i*2 + 0] = this->f[D3Q15<T>::IndexF(idx, 10)];
+                this->fsend_ymax_zmin[i*2 + 1] = this->f[D3Q15<T>::IndexF(idx, 13)];
+
+                //  Edge on ymax and zmax
+                idx = this->Index(i, 0, 0);
+                this->fsend_ymax_zmax[i*2 + 0] = this->f[D3Q15<T>::IndexF(idx, 7)];
+                this->fsend_ymax_zmax[i*2 + 1] = this->f[D3Q15<T>::IndexF(idx, 8)];
+            }
+        }
+        if (this->mz != 1 || this->mx != 1) {
+            for (int j = 0; j < this->ny; ++j) {
+                //  Edge on zmin and xmin
+                idx = this->Index(this->nx - 1, j, this->nz - 1);
+                this->fsend_zmin_xmin[j*2 + 0] = this->f[D3Q15<T>::IndexF(idx, 11)];
+                this->fsend_zmin_xmin[j*2 + 1] = this->f[D3Q15<T>::IndexF(idx, 13)];
+
+                //  Edge on zmin and xmax
+                idx = this->Index(0, j, this->nz - 1);
+                this->fsend_zmin_xmax[j*2 + 0] = this->f[D3Q15<T>::IndexF(idx, 10)];
+                this->fsend_zmin_xmax[j*2 + 1] = this->f[D3Q15<T>::IndexF(idx, 12)];
+
+                //  Edge on zmax and xmin
+                idx = this->Index(this->nx - 1, j, 0);
+                this->fsend_zmax_xmin[j*2 + 0] = this->f[D3Q15<T>::IndexF(idx, 8)];
+                this->fsend_zmax_xmin[j*2 + 1] = this->f[D3Q15<T>::IndexF(idx, 14)];
+
+                //  Edge on zmax and xmax
+                idx = this->Index(0, j, 0);
+                this->fsend_zmax_xmax[j*2 + 0] = this->f[D3Q15<T>::IndexF(idx, 7)];
+                this->fsend_zmax_xmax[j*2 + 1] = this->f[D3Q15<T>::IndexF(idx, 9)];
+            }
+        }
+        if (this->mx != 1 || this->my != 1) {
+            for (int k = 0; k < this->nz; ++k) {
+                //  Edge on xmin and ymin
+                idx = this->Index(this->nx - 1, this->ny - 1, k);
+                this->fsend_xmin_ymin[k*2 + 0] = this->f[D3Q15<T>::IndexF(idx, 11)];
+                this->fsend_xmin_ymin[k*2 + 1] = this->f[D3Q15<T>::IndexF(idx, 14)];
+
+                //  Edge on xmin and ymax
+                idx = this->Index(this->nx - 1, 0, k);
+                this->fsend_xmin_ymax[k*2 + 0] = this->f[D3Q15<T>::IndexF(idx, 8)];
+                this->fsend_xmin_ymax[k*2 + 1] = this->f[D3Q15<T>::IndexF(idx, 13)];
+
+                //  Edge on xmax and ymin
+                idx = this->Index(0, this->ny - 1, k);
+                this->fsend_xmax_ymin[k*2 + 0] = this->f[D3Q15<T>::IndexF(idx, 9)];
+                this->fsend_xmax_ymin[k*2 + 1] = this->f[D3Q15<T>::IndexF(idx, 12)];
+
+                //  Edge on xmax and ymax
+                idx = this->Index(0, 0, k);
+                this->fsend_xmax_ymax[k*2 + 0] = this->f[D3Q15<T>::IndexF(idx, 7)];
+                this->fsend_xmax_ymax[k*2 + 1] = this->f[D3Q15<T>::IndexF(idx, 10)];
+            }
+        }
+        if (this->mx != 1 || this->my != 1 || this->mz != 1) {
+            this->fsend_corner[0] = this->f[D3Q15<T>::IndexF(this->Index(this->nx - 1, this->ny - 1, this->nz - 1), 11)];   //  Corner at xmin, ymin and zmin
+            this->fsend_corner[1] = this->f[D3Q15<T>::IndexF(this->Index(0, this->ny - 1, this->nz - 1), 12)];              //  Corner at xmax, ymin and zmin
+            this->fsend_corner[2] = this->f[D3Q15<T>::IndexF(this->Index(this->nx - 1, 0, this->nz - 1), 13)];              //  Corner at xmin, ymax and zmin 
+            this->fsend_corner[3] = this->f[D3Q15<T>::IndexF(this->Index(0, 0, this->nz - 1), 10)];                         //  Corner at xmax, ymax and zmin
+            this->fsend_corner[4] = this->f[D3Q15<T>::IndexF(this->Index(this->nx - 1, this->ny - 1, 0), 14)];              //  Corner at xmin, ymin and zmax
+            this->fsend_corner[5] = this->f[D3Q15<T>::IndexF(this->Index(0, this->ny - 1, 0), 9)];                          //  Corner at xmax, ymin and zmax
+            this->fsend_corner[6] = this->f[D3Q15<T>::IndexF(this->Index(this->nx - 1, 0, 0), 8)];                          //  Corner at xmin, ymax and zmax
+            this->fsend_corner[7] = this->f[D3Q15<T>::IndexF(this->Index(0, 0, 0), 7)];                                     //  Corner at xmax, ymax and zmax
+        }
+
+        //  Communicate with other PE
+        int neib = 0;
+        if (this->mx != 1) {
+            //  To xmin
+            MPI_Isend(this->fsend_xmin, this->ny*this->nz*5, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy, this->PEz), 0, MPI_COMM_WORLD, &this->request[neib++]);
+            MPI_Irecv(this->frecv_xmax, this->ny*this->nz*5, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy, this->PEz), 0, MPI_COMM_WORLD, &this->request[neib++]);
+
+            //  To xmax
+            MPI_Isend(this->fsend_xmax, this->ny*this->nz*5, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy, this->PEz), 1, MPI_COMM_WORLD, &this->request[neib++]);
+            MPI_Irecv(this->frecv_xmin, this->ny*this->nz*5, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy, this->PEz), 1, MPI_COMM_WORLD, &this->request[neib++]);
+        }
+        if (this->my != 1) {
+            //  To ymin
+            MPI_Isend(this->fsend_ymin, this->nz*this->nx*5, MPI_DOUBLE, this->IndexPE(this->PEx, this->PEy - 1, this->PEz), 2, MPI_COMM_WORLD, &this->request[neib++]);
+            MPI_Irecv(this->frecv_ymax, this->nz*this->nx*5, MPI_DOUBLE, this->IndexPE(this->PEx, this->PEy + 1, this->PEz), 2, MPI_COMM_WORLD, &this->request[neib++]);
+
+            //  To ymax
+            MPI_Isend(this->fsend_ymax, this->nz*this->nx*5, MPI_DOUBLE, this->IndexPE(this->PEx, this->PEy + 1, this->PEz), 3, MPI_COMM_WORLD, &this->request[neib++]);
+            MPI_Irecv(this->frecv_ymin, this->nz*this->nx*5, MPI_DOUBLE, this->IndexPE(this->PEx, this->PEy - 1, this->PEz), 3, MPI_COMM_WORLD, &this->request[neib++]);
+        }
+        if (this->mz != 1) {
+            //  To zmin
+            MPI_Isend(this->fsend_zmin, this->nx*this->ny*5, MPI_DOUBLE, this->IndexPE(this->PEx, this->PEy, this->PEz - 1), 4, MPI_COMM_WORLD, &this->request[neib++]);
+            MPI_Irecv(this->frecv_zmax, this->nx*this->ny*5, MPI_DOUBLE, this->IndexPE(this->PEx, this->PEy, this->PEz + 1), 4, MPI_COMM_WORLD, &this->request[neib++]);
+
+            //  To zmax
+            MPI_Isend(this->fsend_zmax, this->nx*this->ny*5, MPI_DOUBLE, this->IndexPE(this->PEx, this->PEy, this->PEz + 1), 5, MPI_COMM_WORLD, &this->request[neib++]);
+            MPI_Irecv(this->frecv_zmin, this->nx*this->ny*5, MPI_DOUBLE, this->IndexPE(this->PEx, this->PEy, this->PEz - 1), 5, MPI_COMM_WORLD, &this->request[neib++]);
+        }
+        if (this->my != 1 || this->mz != 1) {
+            //  To ymin and zmin
+            MPI_Isend(this->fsend_ymin_zmin, this->nx*2, MPI_DOUBLE, this->IndexPE(this->PEx, this->PEy - 1, this->PEz - 1), 6, MPI_COMM_WORLD, &this->request[neib++]);
+            MPI_Irecv(this->frecv_ymax_zmax, this->nx*2, MPI_DOUBLE, this->IndexPE(this->PEx, this->PEy + 1, this->PEz + 1), 6, MPI_COMM_WORLD, &this->request[neib++]);
+                
+            //  To ymin and zmax
+            MPI_Isend(this->fsend_ymin_zmax, this->nx*2, MPI_DOUBLE, this->IndexPE(this->PEx, this->PEy - 1, this->PEz + 1), 7, MPI_COMM_WORLD, &this->request[neib++]);
+            MPI_Irecv(this->frecv_ymax_zmin, this->nx*2, MPI_DOUBLE, this->IndexPE(this->PEx, this->PEy + 1, this->PEz - 1), 7, MPI_COMM_WORLD, &this->request[neib++]);
+                
+            //  To ymax and zmin
+            MPI_Isend(this->fsend_ymax_zmin, this->nx*2, MPI_DOUBLE, this->IndexPE(this->PEx, this->PEy + 1, this->PEz - 1), 8, MPI_COMM_WORLD, &this->request[neib++]);
+            MPI_Irecv(this->frecv_ymin_zmax, this->nx*2, MPI_DOUBLE, this->IndexPE(this->PEx, this->PEy - 1, this->PEz + 1), 8, MPI_COMM_WORLD, &this->request[neib++]);
+                
+            //  To ymax and zmax
+            MPI_Isend(this->fsend_ymax_zmax, this->nx*2, MPI_DOUBLE, this->IndexPE(this->PEx, this->PEy + 1, this->PEz + 1), 9, MPI_COMM_WORLD, &this->request[neib++]);
+            MPI_Irecv(this->frecv_ymin_zmin, this->nx*2, MPI_DOUBLE, this->IndexPE(this->PEx, this->PEy - 1, this->PEz - 1), 9, MPI_COMM_WORLD, &this->request[neib++]);
+        }
+        if (this->mz != 1 || this->mx != 1) {
+            //  To zmin and xmin
+            MPI_Isend(this->fsend_zmin_xmin, this->ny*2, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy, this->PEz - 1), 10, MPI_COMM_WORLD, &this->request[neib++]);
+            MPI_Irecv(this->frecv_zmax_xmax, this->ny*2, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy, this->PEz + 1), 10, MPI_COMM_WORLD, &this->request[neib++]);
+                
+            //  To zmin and xmax
+            MPI_Isend(this->fsend_zmin_xmax, this->ny*2, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy, this->PEz - 1), 11, MPI_COMM_WORLD, &this->request[neib++]);
+            MPI_Irecv(this->frecv_zmax_xmin, this->ny*2, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy, this->PEz + 1), 11, MPI_COMM_WORLD, &this->request[neib++]);
+                 
+            //  To zmax and xmin
+            MPI_Isend(this->fsend_zmax_xmin, this->ny*2, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy, this->PEz + 1), 12, MPI_COMM_WORLD, &this->request[neib++]);
+            MPI_Irecv(this->frecv_zmin_xmax, this->ny*2, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy, this->PEz - 1), 12, MPI_COMM_WORLD, &this->request[neib++]);
+                             
+            //  To zmax and xmax
+            MPI_Isend(this->fsend_zmax_xmax, this->ny*2, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy, this->PEz + 1), 13, MPI_COMM_WORLD, &this->request[neib++]);
+            MPI_Irecv(this->frecv_zmin_xmin, this->ny*2, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy, this->PEz - 1), 13, MPI_COMM_WORLD, &this->request[neib++]);
+        }
+        if (this->mx != 1 || this->my != 1) {
+            //  To xmin and ymin
+            MPI_Isend(this->fsend_xmin_ymin, this->nz*2, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy - 1, this->PEz), 14, MPI_COMM_WORLD, &this->request[neib++]);
+            MPI_Irecv(this->frecv_xmax_ymax, this->nz*2, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy + 1, this->PEz), 14, MPI_COMM_WORLD, &this->request[neib++]);
+                             
+            //  To xmin and ymax
+            MPI_Isend(this->fsend_xmin_ymax, this->nz*2, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy + 1, this->PEz), 15, MPI_COMM_WORLD, &this->request[neib++]);
+            MPI_Irecv(this->frecv_xmax_ymin, this->nz*2, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy - 1, this->PEz), 15, MPI_COMM_WORLD, &this->request[neib++]);
+                           
+            //  To xmax and ymin
+            MPI_Isend(this->fsend_xmax_ymin, this->nz*2, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy - 1, this->PEz), 16, MPI_COMM_WORLD, &this->request[neib++]);
+            MPI_Irecv(this->frecv_xmin_ymax, this->nz*2, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy + 1, this->PEz), 16, MPI_COMM_WORLD, &this->request[neib++]);
+                           
+            //  To xmax and ymax
+            MPI_Isend(this->fsend_xmax_ymax, this->nz*2, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy + 1, this->PEz), 17, MPI_COMM_WORLD, &this->request[neib++]);
+            MPI_Irecv(this->frecv_xmin_ymin, this->nz*2, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy - 1, this->PEz), 17, MPI_COMM_WORLD, &this->request[neib++]);
+        }
+        if (this->mx != 1 || this->my != 1 || this->mz != 1) {
+            MPI_Isend(&this->fsend_corner[0], 1, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy - 1, this->PEz - 1), 18, MPI_COMM_WORLD, &this->request[neib++]);
+            MPI_Irecv(&this->frecv_corner[7], 1, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy - 1, this->PEz - 1), 18, MPI_COMM_WORLD, &this->request[neib++]);   //  Corner at xmin, ymin and zmin
+            MPI_Isend(&this->fsend_corner[1], 1, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy - 1, this->PEz - 1), 19, MPI_COMM_WORLD, &this->request[neib++]);
+            MPI_Irecv(&this->frecv_corner[6], 1, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy - 1, this->PEz - 1), 19, MPI_COMM_WORLD, &this->request[neib++]);   //  Corner at xmax, ymin and zmin
+            MPI_Isend(&this->fsend_corner[2], 1, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy + 1, this->PEz - 1), 20, MPI_COMM_WORLD, &this->request[neib++]);
+            MPI_Irecv(&this->frecv_corner[5], 1, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy + 1, this->PEz - 1), 20, MPI_COMM_WORLD, &this->request[neib++]);   //  Corner at xmin, ymax and zmin
+            MPI_Isend(&this->fsend_corner[3], 1, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy + 1, this->PEz - 1), 21, MPI_COMM_WORLD, &this->request[neib++]);
+            MPI_Irecv(&this->frecv_corner[4], 1, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy + 1, this->PEz - 1), 21, MPI_COMM_WORLD, &this->request[neib++]);   //  Corner at xmax, ymax and zmin
+            MPI_Isend(&this->fsend_corner[4], 1, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy - 1, this->PEz + 1), 22, MPI_COMM_WORLD, &this->request[neib++]);
+            MPI_Irecv(&this->frecv_corner[3], 1, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy - 1, this->PEz + 1), 22, MPI_COMM_WORLD, &this->request[neib++]);   //  Corner at xmin, ymin and zmax
+            MPI_Isend(&this->fsend_corner[5], 1, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy - 1, this->PEz + 1), 23, MPI_COMM_WORLD, &this->request[neib++]); 
+            MPI_Irecv(&this->frecv_corner[2], 1, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy - 1, this->PEz + 1), 23, MPI_COMM_WORLD, &this->request[neib++]);   //  Corner at xmax, ymin and zmax
+            MPI_Isend(&this->fsend_corner[6], 1, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy + 1, this->PEz + 1), 24, MPI_COMM_WORLD, &this->request[neib++]); 
+            MPI_Irecv(&this->frecv_corner[1], 1, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy + 1, this->PEz + 1), 24, MPI_COMM_WORLD, &this->request[neib++]);   //  Corner at xmin, ymax and zmax
+            MPI_Isend(&this->fsend_corner[7], 1, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy + 1, this->PEz + 1), 25, MPI_COMM_WORLD, &this->request[neib++]); 
+            MPI_Irecv(&this->frecv_corner[0], 1, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy + 1, this->PEz + 1), 25, MPI_COMM_WORLD, &this->request[neib++]);   //  Corner at xmax, ymax and zmax
+        }
+        if (neib > 0) {
+            MPI_Waitall(neib, this->request, this->status);
+        }
+
+        //  Copy to f from frecv along edge or at corner
+        if (this->mx != 1) {
+            for (int j = 0; j < this->ny; ++j) {
+                for (int k = 0; k < this->nz; ++k) {
+                    //  Face on xmin
+                    idx = this->Index(0, j, k);
+                    idxface = this->IndexBCx(j, k);
+                    this->f[D3Q15<T>::IndexF(idx, 1)] = this->frecv_xmin[idxface*5 + 0];
+                    this->f[D3Q15<T>::IndexF(idx, 7)] = this->frecv_xmin[idxface*5 + 1];
+                    this->f[D3Q15<T>::IndexF(idx, 9)] = this->frecv_xmin[idxface*5 + 2];
+                    this->f[D3Q15<T>::IndexF(idx, 10)] = this->frecv_xmin[idxface*5 + 3];
+                    this->f[D3Q15<T>::IndexF(idx, 12)] = this->frecv_xmin[idxface*5 + 4];
+
+                    //  Face on xmax
+                    idx = this->Index(this->nx - 1, j, k);
+                    idxface = this->IndexBCx(j, k);
+                    this->f[D3Q15<T>::IndexF(idx, 4)] = this->frecv_xmax[idxface*5 + 0];
+                    this->f[D3Q15<T>::IndexF(idx, 8)] = this->frecv_xmax[idxface*5 + 1];
+                    this->f[D3Q15<T>::IndexF(idx, 11)] = this->frecv_xmax[idxface*5 + 2];
+                    this->f[D3Q15<T>::IndexF(idx, 13)] = this->frecv_xmax[idxface*5 + 3];
+                    this->f[D3Q15<T>::IndexF(idx, 14)] = this->frecv_xmax[idxface*5 + 4];
+                }
+            }
+        }
+        if (this->my != 1) {
+            for (int k = 0; k < this->nz; ++k) {
+                for (int i = 0; i < this->nx; ++i) {
+                    //  Face on ymin
+                    idx = this->Index(i, 0, k);
+                    idxface = this->IndexBCy(k, i);
+                    this->f[D3Q15<T>::IndexF(idx, 2)] = this->frecv_ymin[idxface*5 + 0];
+                    this->f[D3Q15<T>::IndexF(idx, 7)] = this->frecv_ymin[idxface*5 + 1];
+                    this->f[D3Q15<T>::IndexF(idx, 8)] = this->frecv_ymin[idxface*5 + 2];
+                    this->f[D3Q15<T>::IndexF(idx, 10)] = this->frecv_ymin[idxface*5 + 3];
+                    this->f[D3Q15<T>::IndexF(idx, 13)] = this->frecv_ymin[idxface*5 + 4];
+
+                    //  Face on ymax
+                    idx = this->Index(i, this->ny - 1, k);
+                    idxface = this->IndexBCy(k, i);
+                    this->f[D3Q15<T>::IndexF(idx, 5)] = this->frecv_ymax[idxface*5 + 0];
+                    this->f[D3Q15<T>::IndexF(idx, 9)] = this->frecv_ymax[idxface*5 + 1];
+                    this->f[D3Q15<T>::IndexF(idx, 11)] = this->frecv_ymax[idxface*5 + 2];
+                    this->f[D3Q15<T>::IndexF(idx, 12)] = this->frecv_ymax[idxface*5 + 3];
+                    this->f[D3Q15<T>::IndexF(idx, 14)] = this->frecv_ymax[idxface*5 + 4];
+                }
+            }
+        }
+        if (this->mz != 1) {
+            for (int i = 0; i < this->nx; ++i) {
+                for (int j = 0; j < this->ny; ++j) {
+                    //  Face on zmin
+                    idx = this->Index(i, j, 0);
+                    idxface = this->IndexBCz(i, j);
+                    this->f[D3Q15<T>::IndexF(idx, 3)] = this->frecv_zmin[idxface*5 + 0];
+                    this->f[D3Q15<T>::IndexF(idx, 7)] = this->frecv_zmin[idxface*5 + 1];
+                    this->f[D3Q15<T>::IndexF(idx, 8)] = this->frecv_zmin[idxface*5 + 2];
+                    this->f[D3Q15<T>::IndexF(idx, 9)] = this->frecv_zmin[idxface*5 + 3];
+                    this->f[D3Q15<T>::IndexF(idx, 14)] = this->frecv_zmin[idxface*5 + 4];
+
+                    //  Face on zmax
+                    idx = this->Index(i, j, this->nz - 1);
+                    idxface = this->IndexBCz(i, j);
+                    this->f[D3Q15<T>::IndexF(idx, 6)] = this->frecv_zmax[idxface*5 + 0];
+                    this->f[D3Q15<T>::IndexF(idx, 10)] = this->frecv_zmax[idxface*5 + 1];
+                    this->f[D3Q15<T>::IndexF(idx, 11)] = this->frecv_zmax[idxface*5 + 2];
+                    this->f[D3Q15<T>::IndexF(idx, 12)] = this->frecv_zmax[idxface*5 + 3];
+                    this->f[D3Q15<T>::IndexF(idx, 13)] = this->frecv_zmax[idxface*5 + 4];
+                }
+            }
+        }
+        if (this->my != 1 || this->mz != 1) {
+            for (int i = 0; i < this->nx; ++i) {
+                //  Edge on ymin and zmin
+                idx = this->Index(i, 0, 0);
+                this->f[D3Q15<T>::IndexF(idx, 7)] = this->frecv_ymin_zmin[i*2 + 0];
+                this->f[D3Q15<T>::IndexF(idx, 8)] = this->frecv_ymin_zmin[i*2 + 1];
+
+                //  Edge on ymin and zmax
+                idx = this->Index(i, 0, this->nz - 1);
+                this->f[D3Q15<T>::IndexF(idx, 10)] = this->frecv_ymin_zmax[i*2 + 0];
+                this->f[D3Q15<T>::IndexF(idx, 13)] = this->frecv_ymin_zmax[i*2 + 1];
+
+                //  Edge on ymax and zmin
+                idx = this->Index(i, this->ny - 1, 0);
+                this->f[D3Q15<T>::IndexF(idx, 9)] = this->frecv_ymax_zmin[i*2 + 0];
+                this->f[D3Q15<T>::IndexF(idx, 14)] = this->frecv_ymax_zmin[i*2 + 1];
+
+                //  Edge on ymax and zmax
+                idx = this->Index(i, this->ny - 1, this->nz - 1);
+                this->f[D3Q15<T>::IndexF(idx, 11)] = this->frecv_ymax_zmax[i*2 + 0];
+                this->f[D3Q15<T>::IndexF(idx, 12)] = this->frecv_ymax_zmax[i*2 + 1];
+            }
+        }
+        if (this->mz != 1 || this->mx != 1) {
+            for (int j = 0; j < this->ny; ++j) {
+                //  Edge on zmin and xmin
+                idx = this->Index(0, j, 0);
+                this->f[D3Q15<T>::IndexF(idx, 7)] = this->frecv_zmin_xmin[j*2 + 0];
+                this->f[D3Q15<T>::IndexF(idx, 9)] = this->frecv_zmin_xmin[j*2 + 1];
+
+                //  Edge on zmin and xmax
+                idx = this->Index(this->nx - 1, j, 0);
+                this->f[D3Q15<T>::IndexF(idx, 8)] = this->frecv_zmin_xmax[j*2 + 0];
+                this->f[D3Q15<T>::IndexF(idx, 14)] = this->frecv_zmin_xmax[j*2 + 1];
+
+                //  Edge on zmax and xmin
+                idx = this->Index(0, j, this->nz - 1);
+                this->f[D3Q15<T>::IndexF(idx, 10)] = this->frecv_zmax_xmin[j*2 + 0];
+                this->f[D3Q15<T>::IndexF(idx, 12)] = this->frecv_zmax_xmin[j*2 + 1];
+
+                //  Edge on zmax and xmax
+                idx = this->Index(this->nx - 1, j, this->nz - 1);
+                this->f[D3Q15<T>::IndexF(idx, 11)] = this->frecv_zmax_xmax[j*2 + 0];
+                this->f[D3Q15<T>::IndexF(idx, 13)] = this->frecv_zmax_xmax[j*2 + 1];
+            }
+        }
+        if (this->mx != 1 || this->my != 1) {
+            for (int k = 0; k < this->nz; ++k) {
+                //  Edge on xmin and ymin
+                idx = this->Index(0, 0, k);
+                this->f[D3Q15<T>::IndexF(idx, 7)] = this->frecv_xmin_ymin[k*2 + 0];
+                this->f[D3Q15<T>::IndexF(idx, 10)] = this->frecv_xmin_ymin[k*2 + 1];
+
+                //  Edge on xmin and ymax
+                idx = this->Index(0, this->ny - 1, k);
+                this->f[D3Q15<T>::IndexF(idx, 9)] = this->frecv_xmin_ymax[k*2 + 0];
+                this->f[D3Q15<T>::IndexF(idx, 12)] = this->frecv_xmin_ymax[k*2 + 1];
+
+                //  Edge on xmax and ymin
+                idx = this->Index(this->nx - 1, 0, k);
+                this->f[D3Q15<T>::IndexF(idx, 8)] = this->frecv_xmax_ymin[k*2 + 0];
+                this->f[D3Q15<T>::IndexF(idx, 13)] = this->frecv_xmax_ymin[k*2 + 1];
+
+                //  Edge on xmax and ymax
+                idx = this->Index(this->nx - 1, this->ny - 1, k);
+                this->f[D3Q15<T>::IndexF(idx, 11)] = this->frecv_xmax_ymax[k*2 + 0];
+                this->f[D3Q15<T>::IndexF(idx, 14)] = this->frecv_xmax_ymax[k*2 + 1];
+            }
+        }
+        if (this->mx != 1 || this->my != 1 || this->mz != 1) {
+            this->f[D3Q15<T>::IndexF(this->Index(0, 0, 0), 7)] = this->frecv_corner[0];                                     //  Corner at xmin, ymin and zmin
+            this->f[D3Q15<T>::IndexF(this->Index(this->nx - 1, 0, 0), 8)] = this->frecv_corner[1];                          //  Corner at xmax, ymin and zmin
+            this->f[D3Q15<T>::IndexF(this->Index(0, this->ny - 1, 0), 9)] = this->frecv_corner[2];                          //  Corner at xmin, ymax and zmin 
+            this->f[D3Q15<T>::IndexF(this->Index(this->nx - 1, this->ny - 1, 0), 14)] = this->frecv_corner[3];              //  Corner at xmax, ymax and zmin
+            this->f[D3Q15<T>::IndexF(this->Index(0, 0, this->nz - 1), 10)] = this->frecv_corner[4];                         //  Corner at xmin, ymin and zmax
+            this->f[D3Q15<T>::IndexF(this->Index(this->nx - 1, 0, this->nz - 1), 13)] = this->frecv_corner[5];              //  Corner at xmax, ymin and zmax
+            this->f[D3Q15<T>::IndexF(this->Index(0, this->ny - 1, this->nz - 1), 12)] = this->frecv_corner[6];              //  Corner at xmin, ymax and zmax
+            this->f[D3Q15<T>::IndexF(this->Index(this->nx - 1, this->ny - 1, this->nz - 1), 11)] = this->frecv_corner[7];   //  Corner at xmax, ymax and zmax
+        }
+#endif
     }
-
 
     template<class T>
     void D3Q15<T>::iStream() {
-        //----------Stream and periodic boundary----------
-        for (int i = 0; i < this->nx; i++) {
-            for (int j = 0; j < this->ny; j++) {
-                for (int k = 0; k < this->nz; k++) {
-                    for (int l = 0; l < D3Q15<T>::nc; l++) {
-                        int ip1 = i + D3Q15<T>::cx[l] == -1 ? this->nx - 1 : (i + D3Q15<T>::cx[l] == this->nx ? 0 : i + D3Q15<T>::cx[l]);
-                        int jp1 = j + D3Q15<T>::cy[l] == -1 ? this->ny - 1 : (j + D3Q15<T>::cy[l] == this->ny ? 0 : j + D3Q15<T>::cy[l]);
-                        int kp1 = k + D3Q15<T>::cz[l] == -1 ? this->nz - 1 : (k + D3Q15<T>::cz[l] == this->nz ? 0 : k + D3Q15<T>::cz[l]);
-                        this->ft[l][i + this->nx*j + this->nx*this->ny*k] = this->ftp1[l][ip1 + this->nx*jp1 + this->nx*this->ny*kp1];
+        //  Stream
+#pragma omp parallel for
+        for (int k = 0; k < this->nz; ++k) {
+            for (int j = 0; j < this->ny; ++j) {
+                for (int i = 0; i < this->nx; ++i) {
+                    int idx = this->Index(i, j, k);
+                    for (int c = 1; c < D3Q15<T>::nc; ++c) {
+                        int idxstream = this->Index(i + D3Q15<T>::cx[c], j + D3Q15<T>::cy[c], k + D3Q15<T>::cz[c]);
+                        this->fnext[D3Q15<T>::IndexF(idx, c)] = this->f[D3Q15<T>::IndexF(idxstream, c)];
                     }
                 }
             }
         }
         
-        //----------Bouns-Back (inner boundary)----------
-        for (int i = 0; i < this->np; i++) {
-            if (this->barrier[1][i])    {   this->ft[4][i] = this->ftp1[1][i];      }
-            if (this->barrier[2][i])    {   this->ft[5][i] = this->ftp1[2][i];      }
-            if (this->barrier[3][i])    {   this->ft[6][i] = this->ftp1[3][i];      }
-            if (this->barrier[4][i])    {   this->ft[1][i] = this->ftp1[4][i];      }
-            if (this->barrier[5][i])    {   this->ft[2][i] = this->ftp1[5][i];      }
-            if (this->barrier[6][i])    {   this->ft[3][i] = this->ftp1[6][i];      }
-            if (this->barrier[7][i])    {   this->ft[11][i] = this->ftp1[7][i];     }
-            if (this->barrier[8][i])    {   this->ft[12][i] = this->ftp1[8][i];     }
-            if (this->barrier[9][i])    {   this->ft[13][i] = this->ftp1[9][i];     }
-            if (this->barrier[10][i])   {   this->ft[14][i] = this->ftp1[10][i];    }
-            if (this->barrier[11][i])   {   this->ft[7][i] = this->ftp1[11][i];     }
-            if (this->barrier[12][i])   {   this->ft[8][i] = this->ftp1[12][i];     }
-            if (this->barrier[13][i])   {   this->ft[9][i] = this->ftp1[13][i];     }
-            if (this->barrier[14][i])   {   this->ft[10][i] = this->ftp1[14][i];    }
-        }
+        //  Swap
+        T *tmp = this->f;
+        this->f = this->fnext;
+        this->fnext = tmp;
 
-        //----------boundary (Bouns-Back, Outlet and Mirror)----------
-        //  xmin and xmax
-        for (int j = 0; j < this->ny; j++) {
-            for (int k = 0; k < this->nz; k++) {
-                int jk = j + this->ny*k;
+#ifdef _USE_MPI_DEFINES
+        int idx, idxface;
 
-                //.....xmin.....
-                int minjk = 0 + this->nx*j + this->nx*this->ny*k;
-                int minp1jk = 1 + this->nx*j + this->nx*this->ny*k;
-                if (this->btxmin[jk] == OUTLET) {
-                    this->ft[4][minjk] = this->ft[4][minp1jk];
-                    this->ft[8][minjk] = this->ft[8][minp1jk];
-                    this->ft[11][minjk] = this->ft[11][minp1jk];
-                    this->ft[13][minjk] = this->ft[13][minp1jk];
-                    this->ft[14][minjk] = this->ft[14][minp1jk];
-                } else if (this->btxmin[jk] == BARRIER) {
-                    this->ft[4][minjk] = this->ftp1[1][minjk];
-                    this->ft[8][minjk] = this->ftp1[12][minjk];
-                    this->ft[11][minjk] = this->ftp1[7][minjk];
-                    this->ft[13][minjk] = this->ftp1[9][minjk];
-                    this->ft[14][minjk] = this->ftp1[10][minjk];
-                } else if (this->btxmin[jk] == MIRROR) {
-                    this->ft[4][minjk] = this->ftp1[1][minjk];
-                    this->ft[8][minjk] = this->ftp1[7][minjk];
-                    this->ft[11][minjk] = this->ftp1[12][minjk];
-                    this->ft[13][minjk] = this->ftp1[10][minjk];
-                    this->ft[14][minjk] = this->ftp1[9][minjk];
-                }
+        //  Copy from f to fsend along edge or at corner
+        if (this->mx != 1) {
+            for (int j = 0; j < this->ny; ++j) {
+                for (int k = 0; k < this->nz; ++k) {
+                    //  Face on xmin
+                    idx = this->Index(this->nx - 1, j, k);
+                    idxface = this->IndexBCx(j, k);
+                    this->fsend_xmin[idxface*5 + 0] = this->f[D3Q15<T>::IndexF(idx, 1)];
+                    this->fsend_xmin[idxface*5 + 1] = this->f[D3Q15<T>::IndexF(idx, 7)];
+                    this->fsend_xmin[idxface*5 + 2] = this->f[D3Q15<T>::IndexF(idx, 9)];
+                    this->fsend_xmin[idxface*5 + 3] = this->f[D3Q15<T>::IndexF(idx, 10)];
+                    this->fsend_xmin[idxface*5 + 4] = this->f[D3Q15<T>::IndexF(idx, 12)];
 
-                //.....xmax.....
-                int maxjk = (this->nx - 1) + this->nx*j + this->nx*this->ny*k;
-                int maxm1jk = (this->nx - 2) + this->nx*j + this->nx*this->ny*k;
-                if (this->btxmax[jk] == OUTLET) {
-                    this->ft[1][maxjk] = this->ft[1][maxm1jk];
-                    this->ft[7][maxjk] = this->ft[7][maxm1jk];
-                    this->ft[9][maxjk] = this->ft[9][maxm1jk];
-                    this->ft[10][maxjk] = this->ft[10][maxm1jk];
-                    this->ft[12][maxjk] = this->ft[12][maxm1jk];
-                } else if (this->btxmax[jk] == BARRIER) {
-                    this->ft[1][maxjk] = this->ftp1[4][maxjk];
-                    this->ft[7][maxjk] = this->ftp1[11][maxjk];
-                    this->ft[9][maxjk] = this->ftp1[13][maxjk];
-                    this->ft[10][maxjk] = this->ftp1[14][maxjk];
-                    this->ft[12][maxjk] = this->ftp1[8][maxjk];
-                } else if (this->btxmax[jk] == MIRROR) {
-                    this->ft[1][maxjk] = this->ftp1[4][maxjk];
-                    this->ft[7][maxjk] = this->ftp1[8][maxjk];
-                    this->ft[9][maxjk] = this->ftp1[14][maxjk];
-                    this->ft[10][maxjk] = this->ftp1[13][maxjk];
-                    this->ft[12][maxjk] = this->ftp1[11][maxjk];
+                    //  Face on xmax
+                    idx = this->Index(0, j, k);
+                    idxface = this->IndexBCx(j, k);
+                    this->fsend_xmax[idxface*5 + 0] = this->f[D3Q15<T>::IndexF(idx, 4)];
+                    this->fsend_xmax[idxface*5 + 1] = this->f[D3Q15<T>::IndexF(idx, 8)];
+                    this->fsend_xmax[idxface*5 + 2] = this->f[D3Q15<T>::IndexF(idx, 11)];
+                    this->fsend_xmax[idxface*5 + 3] = this->f[D3Q15<T>::IndexF(idx, 13)];
+                    this->fsend_xmax[idxface*5 + 4] = this->f[D3Q15<T>::IndexF(idx, 14)];
                 }
             }
         }
+        if (this->my != 1) {
+            for (int k = 0; k < this->nz; ++k) {
+                for (int i = 0; i < this->nx; ++i) {
+                    //  Face on ymin
+                    idx = this->Index(i, this->ny - 1, k);
+                    idxface = this->IndexBCy(k, i);
+                    this->fsend_ymin[idxface*5 + 0] = this->f[D3Q15<T>::IndexF(idx, 2)];
+                    this->fsend_ymin[idxface*5 + 1] = this->f[D3Q15<T>::IndexF(idx, 7)];
+                    this->fsend_ymin[idxface*5 + 2] = this->f[D3Q15<T>::IndexF(idx, 8)];
+                    this->fsend_ymin[idxface*5 + 3] = this->f[D3Q15<T>::IndexF(idx, 10)];
+                    this->fsend_ymin[idxface*5 + 4] = this->f[D3Q15<T>::IndexF(idx, 13)];
 
-        //  ymin and ymax
-        for (int k = 0; k < this->nz; k++) {
-            for (int i = 0; i < this->nx; i++) {
-                int ki = k + this->nz*i;
-
-                //.....ymin.....
-                int imink = i + this->nx*0 + this->nx*this->ny*k;
-                int iminp1k = i + this->nx*1 + this->nx*this->ny*k;
-                if (this->btymin[ki] == OUTLET) {
-                    this->ft[5][imink] = this->ft[5][iminp1k];
-                    this->ft[9][imink] = this->ft[9][iminp1k];
-                    this->ft[11][imink] = this->ft[11][iminp1k];
-                    this->ft[12][imink] = this->ft[12][iminp1k];
-                    this->ft[14][imink] = this->ft[14][iminp1k];
-                } else if (this->btymin[ki] == BARRIER) {
-                    this->ft[5][imink] = this->ftp1[2][imink];
-                    this->ft[9][imink] = this->ftp1[13][imink];
-                    this->ft[11][imink] = this->ftp1[7][imink];
-                    this->ft[12][imink] = this->ftp1[8][imink];
-                    this->ft[14][imink] = this->ftp1[10][imink];
-                } else if (this->btymin[ki] == MIRROR) {
-                    this->ft[5][imink] = this->ftp1[2][imink];
-                    this->ft[9][imink] = this->ftp1[7][imink];
-                    this->ft[11][imink] = this->ftp1[13][imink];
-                    this->ft[12][imink] = this->ftp1[10][imink];
-                    this->ft[14][imink] = this->ftp1[8][imink];
-                }
-
-                //.....ymax.....
-                int imaxk = i + this->nx*(this->ny - 1) + this->nx*this->ny*k;
-                int imaxm1k = i + this->nx*(this->ny - 2) + this->nx*this->ny*k;
-                if (this->btymax[ki] == OUTLET) {
-                    this->ft[2][imaxk] = this->ft[2][imaxm1k];
-                    this->ft[7][imaxk] = this->ft[7][imaxm1k];
-                    this->ft[8][imaxk] = this->ft[8][imaxm1k];
-                    this->ft[10][imaxk] = this->ft[10][imaxm1k];
-                    this->ft[13][imaxk] = this->ft[13][imaxm1k];
-                } else if (this->btymax[ki] == BARRIER) {
-                    this->ft[2][imaxk] = this->ftp1[5][imaxk];
-                    this->ft[7][imaxk] = this->ftp1[11][imaxk];
-                    this->ft[8][imaxk] = this->ftp1[12][imaxk];
-                    this->ft[10][imaxk] = this->ftp1[14][imaxk];
-                    this->ft[13][imaxk] = this->ftp1[9][imaxk];
-                } else if (this->btymax[ki] == MIRROR) {
-                    this->ft[2][imaxk] = this->ftp1[5][imaxk];
-                    this->ft[7][imaxk] = this->ftp1[9][imaxk];
-                    this->ft[8][imaxk] = this->ftp1[14][imaxk];
-                    this->ft[10][imaxk] = this->ftp1[12][imaxk];
-                    this->ft[13][imaxk] = this->ftp1[11][imaxk];
+                    //  Face on ymax
+                    idx = this->Index(i, 0, k);
+                    idxface = this->IndexBCy(k, i);
+                    this->fsend_ymax[idxface*5 + 0] = this->f[D3Q15<T>::IndexF(idx, 5)];
+                    this->fsend_ymax[idxface*5 + 1] = this->f[D3Q15<T>::IndexF(idx, 9)];
+                    this->fsend_ymax[idxface*5 + 2] = this->f[D3Q15<T>::IndexF(idx, 11)];
+                    this->fsend_ymax[idxface*5 + 3] = this->f[D3Q15<T>::IndexF(idx, 12)];
+                    this->fsend_ymax[idxface*5 + 4] = this->f[D3Q15<T>::IndexF(idx, 14)];
                 }
             }
         }
+        if (this->mz != 1) {
+            for (int i = 0; i < this->nx; ++i) {
+                for (int j = 0; j < this->ny; ++j) {
+                    //  Face on zmin
+                    idx = this->Index(i, j, this->nz - 1);
+                    idxface = this->IndexBCz(i, j);
+                    this->fsend_zmin[idxface*5 + 0] = this->f[D3Q15<T>::IndexF(idx, 3)];
+                    this->fsend_zmin[idxface*5 + 1] = this->f[D3Q15<T>::IndexF(idx, 7)];
+                    this->fsend_zmin[idxface*5 + 2] = this->f[D3Q15<T>::IndexF(idx, 8)];
+                    this->fsend_zmin[idxface*5 + 3] = this->f[D3Q15<T>::IndexF(idx, 9)];
+                    this->fsend_zmin[idxface*5 + 4] = this->f[D3Q15<T>::IndexF(idx, 14)];
 
-        //  zmin and zmax
-        for (int i = 0; i < this->nx; i++) {
-            for (int j = 0; j < this->ny; j++) {
-                int ij = i + this->nx*j;
-
-                //.....zmin.....
-                int ijmin = i + this->nx*j + this->nx*this->ny*0;
-                int ijminp1 = i + this->nx*j + this->nx*this->ny*1;
-                if (this->btzmin[ij] == OUTLET) {
-                    this->ft[6][ijmin] = this->ft[6][ijminp1];
-                    this->ft[10][ijmin] = this->ft[10][ijminp1];
-                    this->ft[11][ijmin] = this->ft[11][ijminp1];
-                    this->ft[12][ijmin] = this->ft[12][ijminp1];
-                    this->ft[13][ijmin] = this->ft[13][ijminp1];
-                } else if (this->btzmin[ij] == BARRIER) {
-                    this->ft[6][ijmin] = this->ftp1[3][ijmin];
-                    this->ft[10][ijmin] = this->ftp1[14][ijmin];
-                    this->ft[11][ijmin] = this->ftp1[7][ijmin];
-                    this->ft[12][ijmin] = this->ftp1[8][ijmin];
-                    this->ft[13][ijmin] = this->ftp1[9][ijmin];
-                } else if (this->btzmin[ij] == MIRROR) {
-                    this->ft[6][ijmin] = this->ftp1[3][ijmin];
-                    this->ft[10][ijmin] = this->ftp1[7][ijmin];
-                    this->ft[11][ijmin] = this->ftp1[14][ijmin];
-                    this->ft[12][ijmin] = this->ftp1[9][ijmin];
-                    this->ft[13][ijmin] = this->ftp1[8][ijmin];
-                }
-
-                //.....zmax.....
-                int ijmax = i + this->nx*j + this->nx*this->ny*(this->nz - 1);
-                int ijmaxm1 = i + this->nx*j + this->nx*this->ny*(this->nz - 2);
-                if (this->btzmax[ij] == OUTLET) {
-                    this->ft[3][ijmax] = this->ft[3][ijmaxm1];
-                    this->ft[7][ijmax] = this->ft[7][ijmaxm1];
-                    this->ft[8][ijmax] = this->ft[8][ijmaxm1];
-                    this->ft[9][ijmax] = this->ft[9][ijmaxm1];
-                    this->ft[14][ijmax] = this->ft[14][ijmaxm1];
-                } else if (this->btzmax[ij] == BARRIER) {
-                    this->ft[3][ijmax] = this->ftp1[6][ijmax];
-                    this->ft[7][ijmax] = this->ftp1[11][ijmax];
-                    this->ft[8][ijmax] = this->ftp1[12][ijmax];
-                    this->ft[9][ijmax] = this->ftp1[13][ijmax];
-                    this->ft[14][ijmax] = this->ftp1[10][ijmax];
-                } else if (this->btzmax[ij] == MIRROR) {
-                    this->ft[3][ijmax] = this->ftp1[6][ijmax];
-                    this->ft[7][ijmax] = this->ftp1[10][ijmax];
-                    this->ft[8][ijmax] = this->ftp1[13][ijmax];
-                    this->ft[9][ijmax] = this->ftp1[12][ijmax];
-                    this->ft[14][ijmax] = this->ftp1[11][ijmax];
+                    //  Face on zmax
+                    idx = this->Index(i, j, 0);
+                    idxface = this->IndexBCz(i, j);
+                    this->fsend_zmax[idxface*5 + 0] = this->f[D3Q15<T>::IndexF(idx, 6)];
+                    this->fsend_zmax[idxface*5 + 1] = this->f[D3Q15<T>::IndexF(idx, 10)];
+                    this->fsend_zmax[idxface*5 + 2] = this->f[D3Q15<T>::IndexF(idx, 11)];
+                    this->fsend_zmax[idxface*5 + 3] = this->f[D3Q15<T>::IndexF(idx, 12)];
+                    this->fsend_zmax[idxface*5 + 4] = this->f[D3Q15<T>::IndexF(idx, 13)];
                 }
             }
         }
+        if (this->my != 1 || this->mz != 1) {
+            for (int i = 0; i < this->nx; ++i) {
+                //  Edge on ymin and zmin
+                idx = this->Index(i, this->ny - 1, this->nz - 1);
+                this->fsend_ymin_zmin[i*2 + 0] = this->f[D3Q15<T>::IndexF(idx, 7)];
+                this->fsend_ymin_zmin[i*2 + 1] = this->f[D3Q15<T>::IndexF(idx, 8)];
+
+                //  Edge on ymin and zmax
+                idx = this->Index(i, this->ny - 1, 0);
+                this->fsend_ymin_zmax[i*2 + 0] = this->f[D3Q15<T>::IndexF(idx, 10)];
+                this->fsend_ymin_zmax[i*2 + 1] = this->f[D3Q15<T>::IndexF(idx, 13)];
+
+                //  Edge on ymax and zmin
+                idx = this->Index(i, 0, this->nz - 1);
+                this->fsend_ymax_zmin[i*2 + 0] = this->f[D3Q15<T>::IndexF(idx, 9)];
+                this->fsend_ymax_zmin[i*2 + 1] = this->f[D3Q15<T>::IndexF(idx, 14)];
+
+                //  Edge on ymax and zmax
+                idx = this->Index(i, 0, 0);
+                this->fsend_ymax_zmax[i*2 + 0] = this->f[D3Q15<T>::IndexF(idx, 11)];
+                this->fsend_ymax_zmax[i*2 + 1] = this->f[D3Q15<T>::IndexF(idx, 12)];
+            }
+        }
+        if (this->mz != 1 || this->mx != 1) {
+            for (int j = 0; j < this->ny; ++j) {
+                //  Edge on zmin and xmin
+                idx = this->Index(this->nx - 1, j, this->nz - 1);
+                this->fsend_zmin_xmin[j*2 + 0] = this->f[D3Q15<T>::IndexF(idx, 7)];
+                this->fsend_zmin_xmin[j*2 + 1] = this->f[D3Q15<T>::IndexF(idx, 9)];
+
+                //  Edge on zmin and xmax
+                idx = this->Index(0, j, this->nz - 1);
+                this->fsend_zmin_xmax[j*2 + 0] = this->f[D3Q15<T>::IndexF(idx, 8)];
+                this->fsend_zmin_xmax[j*2 + 1] = this->f[D3Q15<T>::IndexF(idx, 14)];
+
+                //  Edge on zmax and xmin
+                idx = this->Index(this->nx - 1, j, 0);
+                this->fsend_zmax_xmin[j*2 + 0] = this->f[D3Q15<T>::IndexF(idx, 10)];
+                this->fsend_zmax_xmin[j*2 + 1] = this->f[D3Q15<T>::IndexF(idx, 12)];
+
+                //  Edge on zmax and xmax
+                idx = this->Index(0, j, 0);
+                this->fsend_zmax_xmax[j*2 + 0] = this->f[D3Q15<T>::IndexF(idx, 11)];
+                this->fsend_zmax_xmax[j*2 + 1] = this->f[D3Q15<T>::IndexF(idx, 13)];
+            }
+        }
+        if (this->mx != 1 || this->my != 1) {
+            for (int k = 0; k < this->nz; ++k) {
+                //  Edge on xmin and ymin
+                idx = this->Index(this->nx - 1, this->ny - 1, k);
+                this->fsend_xmin_ymin[k*2 + 0] = this->f[D3Q15<T>::IndexF(idx, 7)];
+                this->fsend_xmin_ymin[k*2 + 1] = this->f[D3Q15<T>::IndexF(idx, 10)];
+
+                //  Edge on xmin and ymax
+                idx = this->Index(this->nx - 1, 0, k);
+                this->fsend_xmin_ymax[k*2 + 0] = this->f[D3Q15<T>::IndexF(idx, 9)];
+                this->fsend_xmin_ymax[k*2 + 1] = this->f[D3Q15<T>::IndexF(idx, 12)];
+                
+                //  Edge on xmax and ymin
+                idx = this->Index(0, this->ny - 1, k);
+                this->fsend_xmax_ymin[k*2 + 0] = this->f[D3Q15<T>::IndexF(idx, 8)];
+                this->fsend_xmax_ymin[k*2 + 1] = this->f[D3Q15<T>::IndexF(idx, 13)];
+
+                //  Edge on xmax and ymax
+                idx = this->Index(0, 0, k);
+                this->fsend_xmax_ymax[k*2 + 0] = this->f[D3Q15<T>::IndexF(idx, 11)];
+                this->fsend_xmax_ymax[k*2 + 1] = this->f[D3Q15<T>::IndexF(idx, 14)];
+            }
+        }
+        if (this->mx != 1 || this->my != 1 || this->mz != 1) {
+            this->fsend_corner[0] = this->f[D3Q15<T>::IndexF(this->Index(this->nx - 1, this->ny - 1, this->nz - 1), 7)];    //  Corner at xmin, ymin and zmin
+            this->fsend_corner[1] = this->f[D3Q15<T>::IndexF(this->Index(0, this->ny - 1, this->nz - 1), 8)];               //  Corner at xmax, ymin and zmin
+            this->fsend_corner[2] = this->f[D3Q15<T>::IndexF(this->Index(this->nx - 1, 0, this->nz - 1), 9)];               //  Corner at xmin, ymax and zmin 
+            this->fsend_corner[3] = this->f[D3Q15<T>::IndexF(this->Index(0, 0, this->nz - 1), 14)];                         //  Corner at xmax, ymax and zmin
+            this->fsend_corner[4] = this->f[D3Q15<T>::IndexF(this->Index(this->nx - 1, this->ny - 1, 0), 10)];              //  Corner at xmin, ymin and zmax
+            this->fsend_corner[5] = this->f[D3Q15<T>::IndexF(this->Index(0, this->ny - 1, 0), 13)];                         //  Corner at xmax, ymin and zmax
+            this->fsend_corner[6] = this->f[D3Q15<T>::IndexF(this->Index(this->nx - 1, 0, 0), 12)];                         //  Corner at xmin, ymax and zmax
+            this->fsend_corner[7] = this->f[D3Q15<T>::IndexF(this->Index(0, 0, 0), 11)];                                    //  Corner at xmax, ymax and zmax
+        }
+
+        //  Communicate with other PE
+        int neib = 0;
+        if (this->mx != 1) {
+            //  To xmin
+            MPI_Isend(this->fsend_xmin, this->ny*this->nz*5, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy, this->PEz), 0, MPI_COMM_WORLD, &this->request[neib++]);
+            MPI_Irecv(this->frecv_xmax, this->ny*this->nz*5, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy, this->PEz), 0, MPI_COMM_WORLD, &this->request[neib++]);
+
+            //  To xmax
+            MPI_Isend(this->fsend_xmax, this->ny*this->nz*5, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy, this->PEz), 1, MPI_COMM_WORLD, &this->request[neib++]);
+            MPI_Irecv(this->frecv_xmin, this->ny*this->nz*5, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy, this->PEz), 1, MPI_COMM_WORLD, &this->request[neib++]);
+        }
+        if (this->my != 1) {
+            //  To ymin
+            MPI_Isend(this->fsend_ymin, this->nz*this->nx*5, MPI_DOUBLE, this->IndexPE(this->PEx, this->PEy - 1, this->PEz), 2, MPI_COMM_WORLD, &this->request[neib++]);
+            MPI_Irecv(this->frecv_ymax, this->nz*this->nx*5, MPI_DOUBLE, this->IndexPE(this->PEx, this->PEy + 1, this->PEz), 2, MPI_COMM_WORLD, &this->request[neib++]);
+
+            //  To ymax
+            MPI_Isend(this->fsend_ymax, this->nz*this->nx*5, MPI_DOUBLE, this->IndexPE(this->PEx, this->PEy + 1, this->PEz), 3, MPI_COMM_WORLD, &this->request[neib++]);
+            MPI_Irecv(this->frecv_ymin, this->nz*this->nx*5, MPI_DOUBLE, this->IndexPE(this->PEx, this->PEy - 1, this->PEz), 3, MPI_COMM_WORLD, &this->request[neib++]);
+        }
+        if (this->mz != 1) {
+            //  To zmin
+            MPI_Isend(this->fsend_zmin, this->nx*this->ny*5, MPI_DOUBLE, this->IndexPE(this->PEx, this->PEy, this->PEz - 1), 4, MPI_COMM_WORLD, &this->request[neib++]);
+            MPI_Irecv(this->frecv_zmax, this->nx*this->ny*5, MPI_DOUBLE, this->IndexPE(this->PEx, this->PEy, this->PEz + 1), 4, MPI_COMM_WORLD, &this->request[neib++]);
+
+            //  To zmax
+            MPI_Isend(this->fsend_zmax, this->nx*this->ny*5, MPI_DOUBLE, this->IndexPE(this->PEx, this->PEy, this->PEz + 1), 5, MPI_COMM_WORLD, &this->request[neib++]);
+            MPI_Irecv(this->frecv_zmin, this->nx*this->ny*5, MPI_DOUBLE, this->IndexPE(this->PEx, this->PEy, this->PEz - 1), 5, MPI_COMM_WORLD, &this->request[neib++]);
+        }
+        if (this->my != 1 || this->mz != 1) {
+            //  To ymin and zmin
+            MPI_Isend(this->fsend_ymin_zmin, this->nx*2, MPI_DOUBLE, this->IndexPE(this->PEx, this->PEy - 1, this->PEz - 1), 6, MPI_COMM_WORLD, &this->request[neib++]);
+            MPI_Irecv(this->frecv_ymax_zmax, this->nx*2, MPI_DOUBLE, this->IndexPE(this->PEx, this->PEy + 1, this->PEz + 1), 6, MPI_COMM_WORLD, &this->request[neib++]);
+                
+            //  To ymin and zmax
+            MPI_Isend(this->fsend_ymin_zmax, this->nx*2, MPI_DOUBLE, this->IndexPE(this->PEx, this->PEy - 1, this->PEz + 1), 7, MPI_COMM_WORLD, &this->request[neib++]);
+            MPI_Irecv(this->frecv_ymax_zmin, this->nx*2, MPI_DOUBLE, this->IndexPE(this->PEx, this->PEy + 1, this->PEz - 1), 7, MPI_COMM_WORLD, &this->request[neib++]);
+                
+            //  To ymax and zmin
+            MPI_Isend(this->fsend_ymax_zmin, this->nx*2, MPI_DOUBLE, this->IndexPE(this->PEx, this->PEy + 1, this->PEz - 1), 8, MPI_COMM_WORLD, &this->request[neib++]);
+            MPI_Irecv(this->frecv_ymin_zmax, this->nx*2, MPI_DOUBLE, this->IndexPE(this->PEx, this->PEy - 1, this->PEz + 1), 8, MPI_COMM_WORLD, &this->request[neib++]);
+                
+            //  To ymax and zmax
+            MPI_Isend(this->fsend_ymax_zmax, this->nx*2, MPI_DOUBLE, this->IndexPE(this->PEx, this->PEy + 1, this->PEz + 1), 9, MPI_COMM_WORLD, &this->request[neib++]);
+            MPI_Irecv(this->frecv_ymin_zmin, this->nx*2, MPI_DOUBLE, this->IndexPE(this->PEx, this->PEy - 1, this->PEz - 1), 9, MPI_COMM_WORLD, &this->request[neib++]);
+        }
+        if (this->mz != 1 || this->mx != 1) {
+            //  To zmin and xmin
+            MPI_Isend(this->fsend_zmin_xmin, this->ny*2, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy, this->PEz - 1), 10, MPI_COMM_WORLD, &this->request[neib++]);
+            MPI_Irecv(this->frecv_zmax_xmax, this->ny*2, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy, this->PEz + 1), 10, MPI_COMM_WORLD, &this->request[neib++]);
+                
+            //  To zmin and xmax
+            MPI_Isend(this->fsend_zmin_xmax, this->ny*2, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy, this->PEz - 1), 11, MPI_COMM_WORLD, &this->request[neib++]);
+            MPI_Irecv(this->frecv_zmax_xmin, this->ny*2, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy, this->PEz + 1), 11, MPI_COMM_WORLD, &this->request[neib++]);
+                 
+            //  To zmax and xmin
+            MPI_Isend(this->fsend_zmax_xmin, this->ny*2, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy, this->PEz + 1), 12, MPI_COMM_WORLD, &this->request[neib++]);
+            MPI_Irecv(this->frecv_zmin_xmax, this->ny*2, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy, this->PEz - 1), 12, MPI_COMM_WORLD, &this->request[neib++]);
+                             
+            //  To zmax and xmax
+            MPI_Isend(this->fsend_zmax_xmax, this->ny*2, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy, this->PEz + 1), 13, MPI_COMM_WORLD, &this->request[neib++]);
+            MPI_Irecv(this->frecv_zmin_xmin, this->ny*2, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy, this->PEz - 1), 13, MPI_COMM_WORLD, &this->request[neib++]);
+        }
+        if (this->mx != 1 || this->my != 1) {
+            //  To xmin and ymin
+            MPI_Isend(this->fsend_xmin_ymin, this->nz*2, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy - 1, this->PEz), 14, MPI_COMM_WORLD, &this->request[neib++]);
+            MPI_Irecv(this->frecv_xmax_ymax, this->nz*2, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy + 1, this->PEz), 14, MPI_COMM_WORLD, &this->request[neib++]);
+                             
+            //  To xmin and ymax
+            MPI_Isend(this->fsend_xmin_ymax, this->nz*2, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy + 1, this->PEz), 15, MPI_COMM_WORLD, &this->request[neib++]);
+            MPI_Irecv(this->frecv_xmax_ymin, this->nz*2, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy - 1, this->PEz), 15, MPI_COMM_WORLD, &this->request[neib++]);
+                           
+            //  To xmax and ymin
+            MPI_Isend(this->fsend_xmax_ymin, this->nz*2, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy - 1, this->PEz), 16, MPI_COMM_WORLD, &this->request[neib++]);
+            MPI_Irecv(this->frecv_xmin_ymax, this->nz*2, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy + 1, this->PEz), 16, MPI_COMM_WORLD, &this->request[neib++]);
+                           
+            //  To xmax and ymax
+            MPI_Isend(this->fsend_xmax_ymax, this->nz*2, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy + 1, this->PEz), 17, MPI_COMM_WORLD, &this->request[neib++]);
+            MPI_Irecv(this->frecv_xmin_ymin, this->nz*2, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy - 1, this->PEz), 17, MPI_COMM_WORLD, &this->request[neib++]);
+        }
+        if (this->mx != 1 || this->my != 1 || this->mz != 1) {
+            MPI_Isend(&this->fsend_corner[0], 1, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy - 1, this->PEz - 1), 18, MPI_COMM_WORLD, &this->request[neib++]);
+            MPI_Irecv(&this->frecv_corner[7], 1, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy - 1, this->PEz - 1), 18, MPI_COMM_WORLD, &this->request[neib++]);   //  Corner at xmin, ymin and zmin
+            MPI_Isend(&this->fsend_corner[1], 1, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy - 1, this->PEz - 1), 19, MPI_COMM_WORLD, &this->request[neib++]);
+            MPI_Irecv(&this->frecv_corner[6], 1, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy - 1, this->PEz - 1), 19, MPI_COMM_WORLD, &this->request[neib++]);   //  Corner at xmax, ymin and zmin
+            MPI_Isend(&this->fsend_corner[2], 1, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy + 1, this->PEz - 1), 20, MPI_COMM_WORLD, &this->request[neib++]);
+            MPI_Irecv(&this->frecv_corner[5], 1, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy + 1, this->PEz - 1), 20, MPI_COMM_WORLD, &this->request[neib++]);   //  Corner at xmin, ymax and zmin
+            MPI_Isend(&this->fsend_corner[3], 1, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy + 1, this->PEz - 1), 21, MPI_COMM_WORLD, &this->request[neib++]);
+            MPI_Irecv(&this->frecv_corner[4], 1, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy + 1, this->PEz - 1), 21, MPI_COMM_WORLD, &this->request[neib++]);   //  Corner at xmax, ymax and zmin
+            MPI_Isend(&this->fsend_corner[4], 1, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy - 1, this->PEz + 1), 22, MPI_COMM_WORLD, &this->request[neib++]);
+            MPI_Irecv(&this->frecv_corner[3], 1, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy - 1, this->PEz + 1), 22, MPI_COMM_WORLD, &this->request[neib++]);   //  Corner at xmin, ymin and zmax
+            MPI_Isend(&this->fsend_corner[5], 1, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy - 1, this->PEz + 1), 23, MPI_COMM_WORLD, &this->request[neib++]); 
+            MPI_Irecv(&this->frecv_corner[2], 1, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy - 1, this->PEz + 1), 23, MPI_COMM_WORLD, &this->request[neib++]);   //  Corner at xmax, ymin and zmax
+            MPI_Isend(&this->fsend_corner[6], 1, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy + 1, this->PEz + 1), 24, MPI_COMM_WORLD, &this->request[neib++]); 
+            MPI_Irecv(&this->frecv_corner[1], 1, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy + 1, this->PEz + 1), 24, MPI_COMM_WORLD, &this->request[neib++]);   //  Corner at xmin, ymax and zmax
+            MPI_Isend(&this->fsend_corner[7], 1, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy + 1, this->PEz + 1), 25, MPI_COMM_WORLD, &this->request[neib++]); 
+            MPI_Irecv(&this->frecv_corner[0], 1, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy + 1, this->PEz + 1), 25, MPI_COMM_WORLD, &this->request[neib++]);   //  Corner at xmax, ymax and zmax
+        }
+        if (neib > 0) {
+            MPI_Waitall(neib, this->request, this->status);
+        }
+
+        //  Copy to f from frecv along edge or at corner
+        if (this->mx != 1) {
+            for (int j = 0; j < this->ny; ++j) {
+                for (int k = 0; k < this->nz; ++k) {
+                    //  Face on xmin
+                    idx = this->Index(0, j, k);
+                    idxface = this->IndexBCx(j, k);
+                    this->f[D3Q15<T>::IndexF(idx, 4)] = this->frecv_xmin[idxface*5 + 0];
+                    this->f[D3Q15<T>::IndexF(idx, 8)] = this->frecv_xmin[idxface*5 + 1];
+                    this->f[D3Q15<T>::IndexF(idx, 11)] = this->frecv_xmin[idxface*5 + 2];
+                    this->f[D3Q15<T>::IndexF(idx, 13)] = this->frecv_xmin[idxface*5 + 3];
+                    this->f[D3Q15<T>::IndexF(idx, 14)] = this->frecv_xmin[idxface*5 + 4];
+
+                    //  Face on xmax
+                    idx = this->Index(this->nx - 1, j, k);
+                    idxface = this->IndexBCx(j, k);
+                    this->f[D3Q15<T>::IndexF(idx, 1)] = this->frecv_xmax[idxface*5 + 0];
+                    this->f[D3Q15<T>::IndexF(idx, 7)] = this->frecv_xmax[idxface*5 + 1];
+                    this->f[D3Q15<T>::IndexF(idx, 9)] = this->frecv_xmax[idxface*5 + 2];
+                    this->f[D3Q15<T>::IndexF(idx, 10)] = this->frecv_xmax[idxface*5 + 3];
+                    this->f[D3Q15<T>::IndexF(idx, 12)] = this->frecv_xmax[idxface*5 + 4];
+                }
+            }
+        }
+        if (this->my != 1) {
+            for (int k = 0; k < this->nz; ++k) {
+                for (int i = 0; i < this->nx; ++i) {
+                    //  Face on ymin
+                    idx = this->Index(i, 0, k);
+                    idxface = this->IndexBCy(k, i);
+                    this->f[D3Q15<T>::IndexF(idx, 5)] = this->frecv_ymin[idxface*5 + 0];
+                    this->f[D3Q15<T>::IndexF(idx, 9)] = this->frecv_ymin[idxface*5 + 1];
+                    this->f[D3Q15<T>::IndexF(idx, 11)] = this->frecv_ymin[idxface*5 + 2];
+                    this->f[D3Q15<T>::IndexF(idx, 12)] = this->frecv_ymin[idxface*5 + 3];
+                    this->f[D3Q15<T>::IndexF(idx, 14)] = this->frecv_ymin[idxface*5 + 4];
+
+                    //  Face on ymax
+                    idx = this->Index(i, this->ny - 1, k);
+                    idxface = this->IndexBCy(k, i);
+                    this->f[D3Q15<T>::IndexF(idx, 2)] = this->frecv_ymax[idxface*5 + 0];
+                    this->f[D3Q15<T>::IndexF(idx, 7)] = this->frecv_ymax[idxface*5 + 1];
+                    this->f[D3Q15<T>::IndexF(idx, 8)] = this->frecv_ymax[idxface*5 + 2];
+                    this->f[D3Q15<T>::IndexF(idx, 10)] = this->frecv_ymax[idxface*5 + 3];
+                    this->f[D3Q15<T>::IndexF(idx, 13)] = this->frecv_ymax[idxface*5 + 4];
+                }
+            }
+        }
+        if (this->mz != 1) {
+            for (int i = 0; i < this->nx; ++i) {
+                for (int j = 0; j < this->ny; ++j) {
+                    //  Face on zmin
+                    idx = this->Index(i, j, 0);
+                    idxface = this->IndexBCz(i, j);
+                    this->f[D3Q15<T>::IndexF(idx, 6)] = this->frecv_zmin[idxface*5 + 0];
+                    this->f[D3Q15<T>::IndexF(idx, 10)] = this->frecv_zmin[idxface*5 + 1];
+                    this->f[D3Q15<T>::IndexF(idx, 11)] = this->frecv_zmin[idxface*5 + 2];
+                    this->f[D3Q15<T>::IndexF(idx, 12)] = this->frecv_zmin[idxface*5 + 3];
+                    this->f[D3Q15<T>::IndexF(idx, 13)] = this->frecv_zmin[idxface*5 + 4];
+
+                    //  Face on zmax
+                    idx = this->Index(i, j, this->nz - 1);
+                    idxface = this->IndexBCz(i, j);
+                    this->f[D3Q15<T>::IndexF(idx, 3)] = this->frecv_zmax[idxface*5 + 0];
+                    this->f[D3Q15<T>::IndexF(idx, 7)] = this->frecv_zmax[idxface*5 + 1];
+                    this->f[D3Q15<T>::IndexF(idx, 8)] = this->frecv_zmax[idxface*5 + 2];
+                    this->f[D3Q15<T>::IndexF(idx, 9)] = this->frecv_zmax[idxface*5 + 3];
+                    this->f[D3Q15<T>::IndexF(idx, 14)] = this->frecv_zmax[idxface*5 + 4];
+                }
+            }
+        }
+        if (this->my != 1 || this->mz != 1) {
+            for (int i = 0; i < this->nx; ++i) {
+                //  Edge on ymin and zmin
+                idx = this->Index(i, 0, 0);
+                this->f[D3Q15<T>::IndexF(idx, 11)] = this->frecv_ymin_zmin[i*2 + 0];
+                this->f[D3Q15<T>::IndexF(idx, 12)] = this->frecv_ymin_zmin[i*2 + 1];
+
+                //  Edge on ymin and zmax
+                idx = this->Index(i, 0, this->nz - 1);
+                this->f[D3Q15<T>::IndexF(idx, 9)] = this->frecv_ymin_zmax[i*2 + 0];
+                this->f[D3Q15<T>::IndexF(idx, 14)] = this->frecv_ymin_zmax[i*2 + 1];
+
+                //  Edge on ymax and zmin
+                idx = this->Index(i, this->ny - 1, 0);
+                this->f[D3Q15<T>::IndexF(idx, 10)] = this->frecv_ymax_zmin[i*2 + 0];
+                this->f[D3Q15<T>::IndexF(idx, 13)] = this->frecv_ymax_zmin[i*2 + 1];
+
+                //  Edge on ymax and zmax
+                idx = this->Index(i, this->ny - 1, this->nz - 1);
+                this->f[D3Q15<T>::IndexF(idx, 7)] = this->frecv_ymax_zmax[i*2 + 0];
+                this->f[D3Q15<T>::IndexF(idx, 8)] = this->frecv_ymax_zmax[i*2 + 1];
+            }
+        }
+        if (this->mz != 1 || this->mx != 1) {
+            for (int j = 0; j < this->ny; ++j) {
+                //  Edge on zmin and xmin
+                idx = this->Index(0, j, 0);
+                this->f[D3Q15<T>::IndexF(idx, 11)] = this->frecv_zmin_xmin[j*2 + 0];
+                this->f[D3Q15<T>::IndexF(idx, 13)] = this->frecv_zmin_xmin[j*2 + 1];
+
+                //  Edge on zmin and xmax
+                idx = this->Index(this->nx - 1, j, 0);
+                this->f[D3Q15<T>::IndexF(idx, 10)] = this->frecv_zmin_xmax[j*2 + 0];
+                this->f[D3Q15<T>::IndexF(idx, 12)] = this->frecv_zmin_xmax[j*2 + 1];
+
+                //  Edge on zmax and xmin
+                idx = this->Index(0, j, this->nz - 1);
+                this->f[D3Q15<T>::IndexF(idx, 8)] = this->frecv_zmax_xmin[j*2 + 0];
+                this->f[D3Q15<T>::IndexF(idx, 14)] = this->frecv_zmax_xmin[j*2 + 1];
+
+                //  Edge on zmax and xmax
+                idx = this->Index(this->nx - 1, j, this->nz - 1);
+                this->f[D3Q15<T>::IndexF(idx, 7)] = this->frecv_zmax_xmax[j*2 + 0];
+                this->f[D3Q15<T>::IndexF(idx, 9)] = this->frecv_zmax_xmax[j*2 + 1];
+            }
+        }
+        if (this->mx != 1 || this->my != 1) {
+            for (int k = 0; k < this->nz; ++k) {
+                //  Edge on xmin and ymin
+                idx = this->Index(0, 0, k);
+                this->f[D3Q15<T>::IndexF(idx, 11)] = this->frecv_xmin_ymin[k*2 + 0];
+                this->f[D3Q15<T>::IndexF(idx, 14)] = this->frecv_xmin_ymin[k*2 + 1];
+
+                //  Edge on xmin and ymax
+                idx = this->Index(0, this->ny - 1, k);
+                this->f[D3Q15<T>::IndexF(idx, 8)] = this->frecv_xmin_ymax[k*2 + 0];
+                this->f[D3Q15<T>::IndexF(idx, 13)] = this->frecv_xmin_ymax[k*2 + 1];
+
+                //  Edge on xmax and ymin
+                idx = this->Index(this->nx - 1, 0, k);
+                this->f[D3Q15<T>::IndexF(idx, 9)] = this->frecv_xmax_ymin[k*2 + 0];
+                this->f[D3Q15<T>::IndexF(idx, 12)] = this->frecv_xmax_ymin[k*2 + 1];
+
+                //  Edge on xmax and ymax
+                idx = this->Index(this->nx - 1, this->ny - 1, k);
+                this->f[D3Q15<T>::IndexF(idx, 7)] = this->frecv_xmax_ymax[k*2 + 0];
+                this->f[D3Q15<T>::IndexF(idx, 10)] = this->frecv_xmax_ymax[k*2 + 1];
+            }
+        }
+        if (this->mx != 1 || this->my != 1 || this->mz != 1) {
+            this->f[D3Q15<T>::IndexF(this->Index(0, 0, 0), 11)] = this->frecv_corner[0];                                    //  Corner at xmin, ymin and zmin
+            this->f[D3Q15<T>::IndexF(this->Index(this->nx - 1, 0, 0), 12)] = this->frecv_corner[1];                         //  Corner at xmax, ymin and zmin
+            this->f[D3Q15<T>::IndexF(this->Index(0, this->ny - 1, 0), 13)] = this->frecv_corner[2];                         //  Corner at xmin, ymax and zmin 
+            this->f[D3Q15<T>::IndexF(this->Index(this->nx - 1, this->ny - 1, 0), 10)] = this->frecv_corner[3];              //  Corner at xmax, ymax and zmin
+            this->f[D3Q15<T>::IndexF(this->Index(0, 0, this->nz - 1), 14)] = this->frecv_corner[4];                         //  Corner at xmin, ymin and zmax
+            this->f[D3Q15<T>::IndexF(this->Index(this->nx - 1, 0, this->nz - 1), 9)] = this->frecv_corner[5];               //  Corner at xmax, ymin and zmax
+            this->f[D3Q15<T>::IndexF(this->Index(0, this->ny - 1, this->nz - 1), 8)] = this->frecv_corner[6];               //  Corner at xmin, ymax and zmax
+            this->f[D3Q15<T>::IndexF(this->Index(this->nx - 1, this->ny - 1, this->nz - 1), 7)] = this->frecv_corner[7];    //  Corner at xmax, ymax and zmax
+        }
+#endif
     }
-
 
     template<class T>
-    bool D3Q15<T>::GetBarrier(int _i, int _j, int _k) const {
-        assert(0 <= _i && _i < this->nx && 0 <= _j && _j < this->ny && 0 <= _k && _k < this->nz);
-        return this->barrier[0][_i + this->nx*_j + this->nx*this->ny*_k];
-    }
-
-
-    template<class T>
-    BOUNDARYTYPE D3Q15<T>::GetBoundary(int _i, int _j, int _k) const {
-        assert(0 <= _i && _i < this->nx && 0 <= _j && _j < this->ny && 0 <= _k && _k < this->nz);
-        if (_i == 0) {
-            return this->btxmin[_j + this->ny*_k];
-        } else if (_i == this->nx - 1) {
-            return this->btxmax[_j + this->ny*_k];
-        } else if (_j == 0) {
-            return this->btymin[_k + this->nz*_i];
-        } else if (_j == this->ny - 1) {
-            return this->btymax[_k + this->nz*_i];
-        } else if (_k == 0) {
-            return this->btzmin[_i + this->nx*_j];
-        } else if (_k == this->nz - 1) {
-            return this->btzmax[_i + this->nx*_j];
-        } else {
-            if (this->barrier[0][_i + this->nx*_j + this->nx*this->ny*_k]) {
-                return BARRIER;
-            } else {
-                return OTHER;
+    template<class Ff>
+    void D3Q15<T>::BoundaryCondition(Ff _bctype) {
+        //  On xmin
+        if (this->PEx == 0) {
+            for (int j = 0; j < this->ny; ++j) {
+                for (int k = 0; k < this->nz; ++k) {
+                    if (_bctype(0 + this->offsetx, j + this->offsety, k + this->offsetz) == BARRIER) {
+                        int idx = this->Index(0, j, k);
+                        this->f[D3Q15<T>::IndexF(idx, 1)] = this->f[D3Q15<T>::IndexF(idx, 4)];
+                        this->f[D3Q15<T>::IndexF(idx, 7)] = this->f[D3Q15<T>::IndexF(idx, 11)];
+                        this->f[D3Q15<T>::IndexF(idx, 9)] = this->f[D3Q15<T>::IndexF(idx, 13)];
+                        this->f[D3Q15<T>::IndexF(idx, 10)] = this->f[D3Q15<T>::IndexF(idx, 14)];
+                        this->f[D3Q15<T>::IndexF(idx, 12)] = this->f[D3Q15<T>::IndexF(idx, 8)];
+                    } else if (_bctype(0 + this->offsetx, j + this->offsety, k + this->offsetz) == MIRROR) {
+                        int idx = this->Index(0, j, k);
+                        this->f[D3Q15<T>::IndexF(idx, 1)] = this->f[D3Q15<T>::IndexF(idx, 4)];
+                        this->f[D3Q15<T>::IndexF(idx, 7)] = this->f[D3Q15<T>::IndexF(idx, 8)];
+                        this->f[D3Q15<T>::IndexF(idx, 9)] = this->f[D3Q15<T>::IndexF(idx, 14)];
+                        this->f[D3Q15<T>::IndexF(idx, 10)] = this->f[D3Q15<T>::IndexF(idx, 13)];
+                        this->f[D3Q15<T>::IndexF(idx, 12)] = this->f[D3Q15<T>::IndexF(idx, 11)];
+                    }
+                }
+            }
+        }
+        //  On xmax
+        if (this->PEx == this->mx - 1) {
+            for (int j = 0; j < this->ny; ++j) {
+                for (int k = 0; k < this->nz; ++k) {
+                    if (_bctype((this->nx - 1) + this->offsetx, j + this->offsety, k + this->offsetz) == BARRIER) {
+                        int idx = this->Index(this->nx - 1, j, k);
+                        this->f[D3Q15<T>::IndexF(idx, 4)] = this->f[D3Q15<T>::IndexF(idx, 1)];
+                        this->f[D3Q15<T>::IndexF(idx, 8)] = this->f[D3Q15<T>::IndexF(idx, 12)];
+                        this->f[D3Q15<T>::IndexF(idx, 11)] = this->f[D3Q15<T>::IndexF(idx, 7)];
+                        this->f[D3Q15<T>::IndexF(idx, 13)] = this->f[D3Q15<T>::IndexF(idx, 9)];
+                        this->f[D3Q15<T>::IndexF(idx, 14)] = this->f[D3Q15<T>::IndexF(idx, 10)];
+                    } else if (_bctype((this->nx - 1) + this->offsetx, j + this->offsety, k + this->offsetz) == MIRROR) {
+                        int idx = this->Index(this->nx - 1, j, k);
+                        this->f[D3Q15<T>::IndexF(idx, 4)] = this->f[D3Q15<T>::IndexF(idx, 1)];
+                        this->f[D3Q15<T>::IndexF(idx, 8)] = this->f[D3Q15<T>::IndexF(idx, 7)];
+                        this->f[D3Q15<T>::IndexF(idx, 11)] = this->f[D3Q15<T>::IndexF(idx, 12)];
+                        this->f[D3Q15<T>::IndexF(idx, 13)] = this->f[D3Q15<T>::IndexF(idx, 10)];
+                        this->f[D3Q15<T>::IndexF(idx, 14)] = this->f[D3Q15<T>::IndexF(idx, 9)];
+                    }
+                }
+            }
+        }
+        //  On ymin
+        if (this->PEy == 0) {
+            for (int k = 0; k < this->nz; ++k) {
+                for (int i = 0; i < this->nx; ++i) {
+                    if (_bctype(i + this->offsetx, 0 + this->offsety, k + this->offsetz) == BARRIER) {
+                        int idx = this->Index(i, 0, k);
+                        this->f[D3Q15<T>::IndexF(idx, 2)] = this->f[D3Q15<T>::IndexF(idx, 5)];
+                        this->f[D3Q15<T>::IndexF(idx, 7)] = this->f[D3Q15<T>::IndexF(idx, 11)];
+                        this->f[D3Q15<T>::IndexF(idx, 8)] = this->f[D3Q15<T>::IndexF(idx, 12)];
+                        this->f[D3Q15<T>::IndexF(idx, 10)] = this->f[D3Q15<T>::IndexF(idx, 14)];
+                        this->f[D3Q15<T>::IndexF(idx, 13)] = this->f[D3Q15<T>::IndexF(idx, 9)];
+                    } else if (_bctype(i + this->offsetx, 0 + this->offsety, k + this->offsetz) == MIRROR) {
+                        int idx = this->Index(i, 0, k);
+                        this->f[D3Q15<T>::IndexF(idx, 2)] = this->f[D3Q15<T>::IndexF(idx, 5)];
+                        this->f[D3Q15<T>::IndexF(idx, 7)] = this->f[D3Q15<T>::IndexF(idx, 9)];
+                        this->f[D3Q15<T>::IndexF(idx, 8)] = this->f[D3Q15<T>::IndexF(idx, 14)];
+                        this->f[D3Q15<T>::IndexF(idx, 10)] = this->f[D3Q15<T>::IndexF(idx, 12)];
+                        this->f[D3Q15<T>::IndexF(idx, 13)] = this->f[D3Q15<T>::IndexF(idx, 11)];
+                    }
+                }
+            }
+        }
+        //  On ymax
+        if (this->PEy == this->my - 1) {
+            for (int k = 0; k < this->nz; ++k) {
+                for (int i = 0; i < this->nx; ++i) {
+                    if (_bctype(i + this->offsetx, (this->ny - 1) + this->offsety, k + this->offsetz) == BARRIER) {
+                        int idx = this->Index(i, this->ny - 1, k);
+                        this->f[D3Q15<T>::IndexF(idx, 5)] = this->f[D3Q15<T>::IndexF(idx, 2)];
+                        this->f[D3Q15<T>::IndexF(idx, 9)] = this->f[D3Q15<T>::IndexF(idx, 13)];
+                        this->f[D3Q15<T>::IndexF(idx, 11)] = this->f[D3Q15<T>::IndexF(idx, 7)];
+                        this->f[D3Q15<T>::IndexF(idx, 12)] = this->f[D3Q15<T>::IndexF(idx, 8)];
+                        this->f[D3Q15<T>::IndexF(idx, 14)] = this->f[D3Q15<T>::IndexF(idx, 10)];
+                    } else if (_bctype(i + this->offsetx, (this->ny - 1) + this->offsety, k + this->offsetz) == MIRROR) {
+                        int idx = this->Index(i, this->ny - 1, k);
+                        this->f[D3Q15<T>::IndexF(idx, 5)] = this->f[D3Q15<T>::IndexF(idx, 2)];
+                        this->f[D3Q15<T>::IndexF(idx, 9)] = this->f[D3Q15<T>::IndexF(idx, 7)];
+                        this->f[D3Q15<T>::IndexF(idx, 11)] = this->f[D3Q15<T>::IndexF(idx, 13)];
+                        this->f[D3Q15<T>::IndexF(idx, 12)] = this->f[D3Q15<T>::IndexF(idx, 10)];
+                        this->f[D3Q15<T>::IndexF(idx, 14)] = this->f[D3Q15<T>::IndexF(idx, 8)];
+                    }
+                }
+            }
+        }
+        //  On zmin
+        if (this->PEz == 0) {
+            for (int i = 0; i < this->nx; ++i) {
+                for (int j = 0; j < this->ny; ++j) {
+                    if (_bctype(i + this->offsetx, j + this->offsety, 0 + this->offsetz) == BARRIER) {
+                        int idx = this->Index(i, j, 0);
+                        this->f[D3Q15<T>::IndexF(idx, 3)] = this->f[D3Q15<T>::IndexF(idx, 6)];
+                        this->f[D3Q15<T>::IndexF(idx, 7)] = this->f[D3Q15<T>::IndexF(idx, 11)];
+                        this->f[D3Q15<T>::IndexF(idx, 8)] = this->f[D3Q15<T>::IndexF(idx, 12)];
+                        this->f[D3Q15<T>::IndexF(idx, 9)] = this->f[D3Q15<T>::IndexF(idx, 13)];
+                        this->f[D3Q15<T>::IndexF(idx, 14)] = this->f[D3Q15<T>::IndexF(idx, 10)];
+                    } else if (_bctype(i + this->offsetx, j + this->offsety, 0 + this->offsetz) == MIRROR) {
+                        int idx = this->Index(i, j, 0);
+                        this->f[D3Q15<T>::IndexF(idx, 3)] = this->f[D3Q15<T>::IndexF(idx, 6)];
+                        this->f[D3Q15<T>::IndexF(idx, 7)] = this->f[D3Q15<T>::IndexF(idx, 10)];
+                        this->f[D3Q15<T>::IndexF(idx, 8)] = this->f[D3Q15<T>::IndexF(idx, 13)];
+                        this->f[D3Q15<T>::IndexF(idx, 9)] = this->f[D3Q15<T>::IndexF(idx, 12)];
+                        this->f[D3Q15<T>::IndexF(idx, 14)] = this->f[D3Q15<T>::IndexF(idx, 11)];
+                    }
+                }
+            }
+        }
+        //  On zmax
+        if (this->PEz == this->mz - 1) {
+            for (int i = 0; i < this->nx; ++i) {
+                for (int j = 0; j < this->ny; ++j) {                    
+                    if (_bctype(i + this->offsetx, j + this->offsety, (this->nz - 1) + this->offsetz) == BARRIER) {
+                        int idx = this->Index(i, j, this->nz - 1);
+                        this->f[D3Q15<T>::IndexF(idx, 6)] = this->f[D3Q15<T>::IndexF(idx, 3)];
+                        this->f[D3Q15<T>::IndexF(idx, 10)] = this->f[D3Q15<T>::IndexF(idx, 14)];
+                        this->f[D3Q15<T>::IndexF(idx, 11)] = this->f[D3Q15<T>::IndexF(idx, 7)];
+                        this->f[D3Q15<T>::IndexF(idx, 12)] = this->f[D3Q15<T>::IndexF(idx, 8)];
+                        this->f[D3Q15<T>::IndexF(idx, 13)] = this->f[D3Q15<T>::IndexF(idx, 9)];
+                    } else if (_bctype(i + this->offsetx, j + this->offsety, (this->nz - 1) + this->offsetz) == MIRROR) {
+                        int idx = this->Index(i, j, this->nz - 1);
+                        this->f[D3Q15<T>::IndexF(idx, 6)] = this->f[D3Q15<T>::IndexF(idx, 3)];
+                        this->f[D3Q15<T>::IndexF(idx, 10)] = this->f[D3Q15<T>::IndexF(idx, 7)];
+                        this->f[D3Q15<T>::IndexF(idx, 11)] = this->f[D3Q15<T>::IndexF(idx, 14)];
+                        this->f[D3Q15<T>::IndexF(idx, 12)] = this->f[D3Q15<T>::IndexF(idx, 9)];
+                        this->f[D3Q15<T>::IndexF(idx, 13)] = this->f[D3Q15<T>::IndexF(idx, 8)];
+                    }
+                }
             }
         }
     }
 
+    template<class T>
+    template<class Ff>
+    void D3Q15<T>::iBoundaryCondition(Ff _bctype) {
+        //  On xmin
+        if (this->PEx == 0) {
+            for (int j = 0; j < this->ny; ++j) {
+                for (int k = 0; k < this->nz; ++k) {
+                    if (_bctype(0 + this->offsetx, j + this->offsety, k + this->offsetz) == BARRIER) {
+                        int idx = this->Index(0, j, k);
+                        this->f[D3Q15<T>::IndexF(idx, 4)] = this->f[D3Q15<T>::IndexF(idx, 1)];
+                        this->f[D3Q15<T>::IndexF(idx, 8)] = this->f[D3Q15<T>::IndexF(idx, 12)];
+                        this->f[D3Q15<T>::IndexF(idx, 11)] = this->f[D3Q15<T>::IndexF(idx, 7)];
+                        this->f[D3Q15<T>::IndexF(idx, 13)] = this->f[D3Q15<T>::IndexF(idx, 9)];
+                        this->f[D3Q15<T>::IndexF(idx, 14)] = this->f[D3Q15<T>::IndexF(idx, 10)];
+                    } else if (_bctype(0 + this->offsetx, j + this->offsety, k + this->offsetz) == MIRROR) {
+                        int idx = this->Index(0, j, k);
+                        this->f[D3Q15<T>::IndexF(idx, 4)] = this->f[D3Q15<T>::IndexF(idx, 1)];
+                        this->f[D3Q15<T>::IndexF(idx, 8)] = this->f[D3Q15<T>::IndexF(idx, 7)];
+                        this->f[D3Q15<T>::IndexF(idx, 11)] = this->f[D3Q15<T>::IndexF(idx, 12)];
+                        this->f[D3Q15<T>::IndexF(idx, 13)] = this->f[D3Q15<T>::IndexF(idx, 10)];
+                        this->f[D3Q15<T>::IndexF(idx, 14)] = this->f[D3Q15<T>::IndexF(idx, 9)];
+                    }
+                }
+            }
+        }
+        //  On xmax
+        if (this->PEx == this->mx - 1) {
+            for (int j = 0; j < this->ny; ++j) {
+                for (int k = 0; k < this->nz; ++k) {
+                    if (_bctype((this->nx - 1) + this->offsetx, j + this->offsety, k + this->offsetz) == BARRIER) {
+                        int idx = this->Index(this->nx - 1, j, k);
+                        this->f[D3Q15<T>::IndexF(idx, 1)] = this->f[D3Q15<T>::IndexF(idx, 4)];
+                        this->f[D3Q15<T>::IndexF(idx, 7)] = this->f[D3Q15<T>::IndexF(idx, 11)];
+                        this->f[D3Q15<T>::IndexF(idx, 9)] = this->f[D3Q15<T>::IndexF(idx, 13)];
+                        this->f[D3Q15<T>::IndexF(idx, 10)] = this->f[D3Q15<T>::IndexF(idx, 14)];
+                        this->f[D3Q15<T>::IndexF(idx, 12)] = this->f[D3Q15<T>::IndexF(idx, 8)];
+                    } else if (_bctype((this->nx - 1) + this->offsetx, j + this->offsety, k + this->offsetz) == MIRROR) {
+                        int idx = this->Index(this->nx - 1, j, k);
+                        this->f[D3Q15<T>::IndexF(idx, 1)] = this->f[D3Q15<T>::IndexF(idx, 4)];
+                        this->f[D3Q15<T>::IndexF(idx, 7)] = this->f[D3Q15<T>::IndexF(idx, 8)];
+                        this->f[D3Q15<T>::IndexF(idx, 9)] = this->f[D3Q15<T>::IndexF(idx, 14)];
+                        this->f[D3Q15<T>::IndexF(idx, 10)] = this->f[D3Q15<T>::IndexF(idx, 13)];
+                        this->f[D3Q15<T>::IndexF(idx, 12)] = this->f[D3Q15<T>::IndexF(idx, 11)];
+                    }
+                }
+            }
+        }
+        //  On ymin
+        if (this->PEy == 0) {
+            for (int k = 0; k < this->nz; ++k) {
+                for (int i = 0; i < this->nx; ++i) {
+                    if (_bctype(i + this->offsetx, 0 + this->offsety, k + this->offsetz) == BARRIER) {
+                        int idx = this->Index(i, 0, k);
+                        this->f[D3Q15<T>::IndexF(idx, 5)] = this->f[D3Q15<T>::IndexF(idx, 2)];
+                        this->f[D3Q15<T>::IndexF(idx, 9)] = this->f[D3Q15<T>::IndexF(idx, 13)];
+                        this->f[D3Q15<T>::IndexF(idx, 11)] = this->f[D3Q15<T>::IndexF(idx, 7)];
+                        this->f[D3Q15<T>::IndexF(idx, 12)] = this->f[D3Q15<T>::IndexF(idx, 8)];
+                        this->f[D3Q15<T>::IndexF(idx, 14)] = this->f[D3Q15<T>::IndexF(idx, 10)];
+                    } else if (_bctype(i + this->offsetx, 0 + this->offsety, k + this->offsetz) == MIRROR) {
+                        int idx = this->Index(i, 0, k);
+                        this->f[D3Q15<T>::IndexF(idx, 5)] = this->f[D3Q15<T>::IndexF(idx, 2)];
+                        this->f[D3Q15<T>::IndexF(idx, 9)] = this->f[D3Q15<T>::IndexF(idx, 7)];
+                        this->f[D3Q15<T>::IndexF(idx, 11)] = this->f[D3Q15<T>::IndexF(idx, 13)];
+                        this->f[D3Q15<T>::IndexF(idx, 12)] = this->f[D3Q15<T>::IndexF(idx, 10)];
+                        this->f[D3Q15<T>::IndexF(idx, 14)] = this->f[D3Q15<T>::IndexF(idx, 8)];
+                    }
+                }
+            }
+        }
+        //  On ymax
+        if (this->PEy == this->my - 1) {
+            for (int k = 0; k < this->nz; ++k) {
+                for (int i = 0; i < this->nx; ++i) {
+                    if (_bctype(i + this->offsetx, (this->ny - 1) + this->offsety, k + this->offsetz) == BARRIER) {
+                        int idx = this->Index(i, this->ny - 1, k);
+                        this->f[D3Q15<T>::IndexF(idx, 2)] = this->f[D3Q15<T>::IndexF(idx, 5)];
+                        this->f[D3Q15<T>::IndexF(idx, 7)] = this->f[D3Q15<T>::IndexF(idx, 11)];
+                        this->f[D3Q15<T>::IndexF(idx, 8)] = this->f[D3Q15<T>::IndexF(idx, 12)];
+                        this->f[D3Q15<T>::IndexF(idx, 10)] = this->f[D3Q15<T>::IndexF(idx, 14)];
+                        this->f[D3Q15<T>::IndexF(idx, 13)] = this->f[D3Q15<T>::IndexF(idx, 9)];
+                    } else if (_bctype(i + this->offsetx, (this->ny - 1) + this->offsety, k + this->offsetz) == MIRROR) {
+                        int idx = this->Index(i, this->ny - 1, k);
+                        this->f[D3Q15<T>::IndexF(idx, 2)] = this->f[D3Q15<T>::IndexF(idx, 5)];
+                        this->f[D3Q15<T>::IndexF(idx, 7)] = this->f[D3Q15<T>::IndexF(idx, 9)];
+                        this->f[D3Q15<T>::IndexF(idx, 8)] = this->f[D3Q15<T>::IndexF(idx, 14)];
+                        this->f[D3Q15<T>::IndexF(idx, 10)] = this->f[D3Q15<T>::IndexF(idx, 12)];
+                        this->f[D3Q15<T>::IndexF(idx, 13)] = this->f[D3Q15<T>::IndexF(idx, 11)];
+                    }
+                }
+            }
+        }
+        //  On zmin
+        if (this->PEz == 0) {
+            for (int i = 0; i < this->nx; ++i) {
+                for (int j = 0; j < this->ny; ++j) {
+                    if (_bctype(i + this->offsetx, j + this->offsety, 0 + this->offsetz) == BARRIER) {
+                        int idx = this->Index(i, j, 0);
+                        this->f[D3Q15<T>::IndexF(idx, 6)] = this->f[D3Q15<T>::IndexF(idx, 3)];
+                        this->f[D3Q15<T>::IndexF(idx, 10)] = this->f[D3Q15<T>::IndexF(idx, 14)];
+                        this->f[D3Q15<T>::IndexF(idx, 11)] = this->f[D3Q15<T>::IndexF(idx, 7)];
+                        this->f[D3Q15<T>::IndexF(idx, 12)] = this->f[D3Q15<T>::IndexF(idx, 8)];
+                        this->f[D3Q15<T>::IndexF(idx, 13)] = this->f[D3Q15<T>::IndexF(idx, 9)];
+                    } else if (_bctype(i + this->offsetx, j + this->offsety, 0 + this->offsetz) == MIRROR) {
+                        int idx = this->Index(i, j, 0);
+                        this->f[D3Q15<T>::IndexF(idx, 6)] = this->f[D3Q15<T>::IndexF(idx, 3)];
+                        this->f[D3Q15<T>::IndexF(idx, 10)] = this->f[D3Q15<T>::IndexF(idx, 7)];
+                        this->f[D3Q15<T>::IndexF(idx, 11)] = this->f[D3Q15<T>::IndexF(idx, 14)];
+                        this->f[D3Q15<T>::IndexF(idx, 12)] = this->f[D3Q15<T>::IndexF(idx, 9)];
+                        this->f[D3Q15<T>::IndexF(idx, 13)] = this->f[D3Q15<T>::IndexF(idx, 8)];
+                    }
+                }
+            }
+        }
+        //  On zmax
+        if (this->PEz == this->mz - 1) {
+            for (int i = 0; i < this->nx; ++i) {
+                for (int j = 0; j < this->ny; ++j) {
+                    if (_bctype(i + this->offsetx, j + this->offsety, (this->nz - 1) + this->offsetz) == BARRIER) {
+                        int idx = this->Index(i, j, this->nz - 1);
+                        this->f[D3Q15<T>::IndexF(idx, 3)] = this->f[D3Q15<T>::IndexF(idx, 6)];
+                        this->f[D3Q15<T>::IndexF(idx, 7)] = this->f[D3Q15<T>::IndexF(idx, 11)];
+                        this->f[D3Q15<T>::IndexF(idx, 8)] = this->f[D3Q15<T>::IndexF(idx, 12)];
+                        this->f[D3Q15<T>::IndexF(idx, 9)] = this->f[D3Q15<T>::IndexF(idx, 13)];
+                        this->f[D3Q15<T>::IndexF(idx, 14)] = this->f[D3Q15<T>::IndexF(idx, 10)];
+                    } else if (_bctype(i + this->offsetx, j + this->offsety, (this->nz - 1) + this->offsetz) == MIRROR) {
+                        int idx = this->Index(i, j, this->nz - 1);
+                        this->f[D3Q15<T>::IndexF(idx, 3)] = this->f[D3Q15<T>::IndexF(idx, 6)];
+                        this->f[D3Q15<T>::IndexF(idx, 7)] = this->f[D3Q15<T>::IndexF(idx, 10)];
+                        this->f[D3Q15<T>::IndexF(idx, 8)] = this->f[D3Q15<T>::IndexF(idx, 13)];
+                        this->f[D3Q15<T>::IndexF(idx, 9)] = this->f[D3Q15<T>::IndexF(idx, 12)];
+                        this->f[D3Q15<T>::IndexF(idx, 14)] = this->f[D3Q15<T>::IndexF(idx, 11)];
+                    }
+                }
+            }
+        }
+    }
 
     template<class T>
-    int D3Q15<T>::GetIndex(int _i, int _j, int _k) const {
-        assert(0 <= _i && _i < this->nx && 0 <= _j && _j < this->ny && 0 <= _k & _k < this->nz);
-        return _i + this->nx*_j + this->nx*this->ny*_k;
+    void D3Q15<T>::SmoothCorner() {
+        //  Along line ymin and zmin
+        if (this->PEy == 0 && this->PEz == 0) {
+            for (int i = 0; i < this->nx; ++i) {
+                int idx = this->Index(i, 0, 0), idxy = this->Index(i, 1, 0), idxz = this->Index(i, 0, 1);
+                this->f0[idx] = 0.5*(this->f0[idxy] + this->f0[idxz]);
+                for (int c = 1; c < D3Q15<T>::nc; ++c) {
+                    this->f[D3Q15<T>::IndexF(idx, c)] = 0.5*(this->f[D3Q15<T>::IndexF(idxy, c)] + this->f[D3Q15<T>::IndexF(idxz, c)]);
+                }
+            }
+        }
+        //  Along line ymax and zmin
+        if (this->PEy == this->my - 1 && this->PEz == 0) {
+            for (int i = 0; i < this->nx; ++i) {
+                int idx = this->Index(i, this->ny - 1, 0), idxy = this->Index(i, this->ny - 2, 0), idxz = this->Index(i, this->ny - 1, 1);
+                this->f0[idx] = 0.5*(this->f0[idxy] + this->f0[idxz]);
+                for (int c = 1; c < D3Q15<T>::nc; ++c) {
+                    this->f[D3Q15<T>::IndexF(idx, c)] = 0.5*(this->f[D3Q15<T>::IndexF(idxy, c)] + this->f[D3Q15<T>::IndexF(idxz, c)]);
+                }
+            }
+        }
+        //  Along line ymax and zmax
+        if (this->PEy == this->my - 1 && this->PEz == this->mz - 1) {
+            for (int i = 0; i < this->nx; ++i) {
+                int idx = this->Index(i, this->ny - 1, this->nz - 1), idxy = this->Index(i, this->ny - 2, this->nz - 1), idxz = this->Index(i, this->ny - 1, this->nz - 2);
+                this->f0[idx] = 0.5*(this->f0[idxy] + this->f0[idxz]);
+                for (int c = 1; c < D3Q15<T>::nc; ++c) {
+                    this->f[D3Q15<T>::IndexF(idx, c)] = 0.5*(this->f[D3Q15<T>::IndexF(idxy, c)] + this->f[D3Q15<T>::IndexF(idxz, c)]);
+                }
+            }
+        }
+        //  Along line ymin and zmax
+        if (this->PEy == 0 && this->PEz == this->mz - 1) {
+            for (int i = 0; i < this->nx; ++i) {
+                int idx = this->Index(i, 0, this->nz - 1), idxy = this->Index(i, 1, this->nz - 1), idxz = this->Index(i, 0, this->nz - 2);
+                this->f0[idx] = 0.5*(this->f0[idxy] + this->f0[idxz]);
+                for (int c = 1; c < D3Q15<T>::nc; ++c) {
+                    this->f[D3Q15<T>::IndexF(idx, c)] = 0.5*(this->f[D3Q15<T>::IndexF(idxy, c)] + this->f[D3Q15<T>::IndexF(idxz, c)]);
+                }
+            }
+        }
+
+        //  Along line zmin and xmin
+        if (this->PEz == 0 && this->PEx == 0) {
+            for (int j = 0; j < this->ny; ++j) {
+                int idx = this->Index(0, j, 0), idxz = this->Index(1, j, 0), idxx = this->Index(0, j, 1);
+                this->f0[idx] = 0.5*(this->f0[idxz] + this->f0[idxx]);
+                for (int c = 1; c < D3Q15<T>::nc; ++c) {
+                    this->f[D3Q15<T>::IndexF(idx, c)] = 0.5*(this->f[D3Q15<T>::IndexF(idxz, c)] + this->f[D3Q15<T>::IndexF(idxx, c)]);
+                }
+            }
+        }
+        //  Along line zmax and xmin
+        if (this->PEz == this->mz - 1 && this->PEx == 0) {
+            for (int j = 0; j < this->ny; ++j) {                
+                int idx = this->Index(0, j, this->nz - 1), idxz = this->Index(0, j, this->nz - 2), idxx = this->Index(1, j, this->nz - 1);
+                this->f0[idx] = 0.5*(this->f0[idxz] + this->f0[idxx]);
+                for (int c = 1; c < D3Q15<T>::nc; ++c) {
+                    this->f[D3Q15<T>::IndexF(idx, c)] = 0.5*(this->f[D3Q15<T>::IndexF(idxz, c)] + this->f[D3Q15<T>::IndexF(idxx, c)]);
+                }
+            }
+        }
+        //  Along line zmax and xmax
+        if (this->PEz == this->mz - 1 && this->PEx == this->mx - 1) {
+            for (int j = 0; j < this->ny; ++j) {                                        
+                int idx = this->Index(this->nx - 1, j, this->nz - 1), idxz = this->Index(this->nx - 1, j, this->nz - 2), idxx = this->Index(this->nx - 2, j, this->nz - 1);
+                this->f0[idx] = 0.5*(this->f0[idxz] + this->f0[idxx]);
+                for (int c = 1; c < D3Q15<T>::nc; ++c) {
+                    this->f[D3Q15<T>::IndexF(idx, c)] = 0.5*(this->f[D3Q15<T>::IndexF(idxz, c)] + this->f[D3Q15<T>::IndexF(idxx, c)]);
+                }
+            }
+        }
+        //  Along line zmin and xmax
+        if (this->PEz == 0 && this->PEx == this->mx - 1) {
+            for (int j = 0; j < this->ny; ++j) {                                        
+                int idx = this->Index(this->nx - 1, j, 0), idxz = this->Index(this->nx - 1, j, 1), idxx = this->Index(this->nx - 2, j, 0);
+                this->f0[idx] = 0.5*(this->f0[idxz] + this->f0[idxx]);
+                for (int c = 1; c < D3Q15<T>::nc; ++c) {
+                    this->f[D3Q15<T>::IndexF(idx, c)] = 0.5*(this->f[D3Q15<T>::IndexF(idxz, c)] + this->f[D3Q15<T>::IndexF(idxx, c)]);
+                }
+            }
+        }
+        
+        //  Along line xmin and ymin
+        if (this->PEx == 0 && this->PEy == 0) {
+            for (int k = 0; k < this->nz; ++k) {
+                int idx = this->Index(0, 0, k), idxx = this->Index(1, 0, k), idxy = this->Index(0, 1, k);
+                this->f0[idx] = 0.5*(this->f0[idxx] + this->f0[idxy]);
+                for (int c = 1; c < D3Q15<T>::nc; ++c) {
+                    this->f[D3Q15<T>::IndexF(idx, c)] = 0.5*(this->f[D3Q15<T>::IndexF(idxx, c)] + this->f[D3Q15<T>::IndexF(idxy, c)]);
+                }
+            }
+        }
+        //  Along line xmax and ymin
+        if (this->PEx == this->mx - 1 && this->PEy == 0) {
+            for (int k = 0; k < this->nz; ++k) {               
+                int idx = this->Index(this->nx - 1, 0, k), idxx = this->Index(this->nx - 2, 0, k), idxy = this->Index(this->nx - 1, 1, k);
+                this->f0[idx] = 0.5*(this->f0[idxx] + this->f0[idxy]);
+                for (int c = 1; c < D3Q15<T>::nc; ++c) {
+                    this->f[D3Q15<T>::IndexF(idx, c)] = 0.5*(this->f[D3Q15<T>::IndexF(idxx, c)] + this->f[D3Q15<T>::IndexF(idxy, c)]);
+                }
+            }
+        }
+        //  Along line xmax and ymax
+        if (this->PEx == this->mx - 1 && this->PEy == this->my - 1) {
+            for (int k = 0; k < this->nz; ++k) {               
+                int idx = this->Index(this->nx - 1, this->ny - 1, k), idxx = this->Index(this->nx - 2, this->ny - 1, k), idxy = this->Index(this->nx - 1, this->ny - 2, k);
+                this->f0[idx] = 0.5*(this->f0[idxx] + this->f0[idxy]);
+                for (int c = 1; c < D3Q15<T>::nc; ++c) {
+                    this->f[D3Q15<T>::IndexF(idx, c)] = 0.5*(this->f[D3Q15<T>::IndexF(idxx, c)] + this->f[D3Q15<T>::IndexF(idxy, c)]);
+                }
+            }
+        }
+        //  Along line xmin and ymax
+        if (this->PEx == 0 && this->PEy == this->my - 1) {
+            for (int k = 0; k < this->nz; ++k) {               
+                int idx = this->Index(0, this->ny - 1, k), idxx = this->Index(1, this->ny - 1, k), idxy = this->Index(0, this->ny - 2, k);
+                this->f0[idx] = 0.5*(this->f0[idxx] + this->f0[idxy]);
+                for (int c = 1; c < D3Q15<T>::nc; ++c) {
+                    this->f[D3Q15<T>::IndexF(idx, c)] = 0.5*(this->f[D3Q15<T>::IndexF(idxx, c)] + this->f[D3Q15<T>::IndexF(idxy, c)]);
+                }
+            }
+        }
+        
+        //  Corner at xmin, ymin and zmin
+        if (this->PEx == 0 && this->PEy == 0 && this->PEz == 0) {
+            int idx = this->Index(0, 0, 0), idxx = this->Index(1, 0, 0), idxy = this->Index(0, 1, 0), idxz = this->Index(0, 0, 1);
+            this->f0[idx] = (this->f0[idxx] + this->f0[idxy] + this->f0[idxz])/3.0;
+            for (int c = 1; c < D3Q15<T>::nc; ++c) {
+                this->f[D3Q15<T>::IndexF(idx, c)] = (this->f[D3Q15<T>::IndexF(idxx, c)] + this->f[D3Q15<T>::IndexF(idxy, c)] + this->f[D3Q15<T>::IndexF(idxz, c)])/3.0;
+            }
+        }
+        //  Corner at xmax, ymin and zmin
+        if (this->PEx == this->mx - 1 && this->PEy == 0 && this->PEz == 0) {
+            int idx = this->Index(this->nx - 1, 0, 0), idxx = this->Index(this->nx - 2, 0, 0), idxy = this->Index(this->nx - 1, 1, 0), idxz = this->Index(this->nx - 1, 0, 1);
+            this->f0[idx] = (this->f0[idxx] + this->f0[idxy] + this->f0[idxz])/3.0;
+            for (int c = 1; c < D3Q15<T>::nc; ++c) {
+                this->f[D3Q15<T>::IndexF(idx, c)] = (this->f[D3Q15<T>::IndexF(idxx, c)] + this->f[D3Q15<T>::IndexF(idxy, c)] + this->f[D3Q15<T>::IndexF(idxz, c)])/3.0;
+            }
+        }
+        //  Corner at xmax, ymax and zmin
+        if (this->PEx == this->mx - 1 && this->PEy == this->my - 1 && this->PEz == 0) {
+            int idx = this->Index(this->nx - 1, this->ny - 1, 0), idxx = this->Index(this->nx - 2, this->ny - 1, 0), idxy = this->Index(this->nx - 1, this->ny - 2, 0), idxz = this->Index(this->nx - 1, this->ny - 1, 1);
+            this->f0[idx] = (this->f0[idxx] + this->f0[idxy] + this->f0[idxz])/3.0;
+            for (int c = 1; c < D3Q15<T>::nc; ++c) {
+                this->f[D3Q15<T>::IndexF(idx, c)] = (this->f[D3Q15<T>::IndexF(idxx, c)] + this->f[D3Q15<T>::IndexF(idxy, c)] + this->f[D3Q15<T>::IndexF(idxz, c)])/3.0;
+            }
+        }
+        //  Corner at xmin, ymax and zmin
+        if (this->PEx == 0 && this->PEy == this->my - 1 && this->PEz == 0) {
+            int idx = this->Index(0, this->ny - 1, 0), idxx = this->Index(1, this->ny - 1, 0), idxy = this->Index(0, this->ny - 2, 0), idxz = this->Index(0, this->ny - 1, 1);
+            this->f0[idx] = (this->f0[idxx] + this->f0[idxy] + this->f0[idxz])/3.0;
+            for (int c = 1; c < D3Q15<T>::nc; ++c) {
+                this->f[D3Q15<T>::IndexF(idx, c)] = (this->f[D3Q15<T>::IndexF(idxx, c)] + this->f[D3Q15<T>::IndexF(idxy, c)] + this->f[D3Q15<T>::IndexF(idxz, c)])/3.0;
+            }
+        }
+        //  Corner at xmin, ymin and zmax
+        if (this->PEx == 0 && this->PEy == 0 && this->PEz == this->mz - 1) {
+            int idx = this->Index(0, 0, this->nz - 1), idxx = this->Index(1, 0, this->nz - 1), idxy = this->Index(0, 1, this->nz - 1), idxz = this->Index(0, 0, this->nz - 2);
+            this->f0[idx] = (this->f0[idxx] + this->f0[idxy] + this->f0[idxz])/3.0;
+            for (int c = 1; c < D3Q15<T>::nc; ++c) {
+                this->f[D3Q15<T>::IndexF(idx, c)] = (this->f[D3Q15<T>::IndexF(idxx, c)] + this->f[D3Q15<T>::IndexF(idxy, c)] + this->f[D3Q15<T>::IndexF(idxz, c)])/3.0;
+            }
+        }
+        //  Corner at xmax, ymin and zmax
+        if (this->PEx == this->mx - 1 && this->PEy == 0 && this->PEz == this->mz - 1) {
+            int idx = this->Index(this->nx - 1, 0, this->nz - 1), idxx = this->Index(this->nx - 2, 0, this->nz - 1), idxy = this->Index(this->nx - 1, 1, this->nz - 1), idxz = this->Index(this->nx - 1, 0, this->nz - 2);
+            this->f0[idx] = (this->f0[idxx] + this->f0[idxy] + this->f0[idxz])/3.0;
+            for (int c = 1; c < D3Q15<T>::nc; ++c) {
+                this->f[D3Q15<T>::IndexF(idx, c)] = (this->f[D3Q15<T>::IndexF(idxx, c)] + this->f[D3Q15<T>::IndexF(idxy, c)] + this->f[D3Q15<T>::IndexF(idxz, c)])/3.0;
+            }
+        }
+        //  Corner at xmax, ymax and zmax
+        if (this->PEx == this->mx - 1 && this->PEy == this->my - 1 && this->PEz == this->mz - 1) {
+            int idx = this->Index(this->nx - 1, this->ny - 1, this->nz - 1), idxx = this->Index(this->nx - 2, this->ny - 1, this->nz - 1), idxy = this->Index(this->nx - 1, this->ny - 2, this->nz - 1), idxz = this->Index(this->nx - 1, this->ny - 1, this->nz - 2);
+            this->f0[idx] = (this->f0[idxx] + this->f0[idxy] + this->f0[idxz])/3.0;
+            for (int c = 1; c < D3Q15<T>::nc; ++c) {
+                this->f[D3Q15<T>::IndexF(idx, c)] = (this->f[D3Q15<T>::IndexF(idxx, c)] + this->f[D3Q15<T>::IndexF(idxy, c)] + this->f[D3Q15<T>::IndexF(idxz, c)])/3.0;
+            }
+        }
+        //  Corner at xmin, ymax and zmax
+        if (this->PEx == 0 && this->PEy == this->my - 1 && this->PEz == this->mz - 1) {
+            int idx = this->Index(0, this->ny - 1, this->nz - 1), idxx = this->Index(1, this->ny - 1, this->nz - 1), idxy = this->Index(0, this->ny - 2, this->nz - 1), idxz = this->Index(0, this->ny - 1, this->nz - 2);
+            this->f0[idx] = (this->f0[idxx] + this->f0[idxy] + this->f0[idxz])/3.0;
+            for (int c = 1; c < D3Q15<T>::nc; ++c) {
+                this->f[D3Q15<T>::IndexF(idx, c)] = (this->f[D3Q15<T>::IndexF(idxx, c)] + this->f[D3Q15<T>::IndexF(idxy, c)] + this->f[D3Q15<T>::IndexF(idxz, c)])/3.0;
+            }
+        }
     }
+
+#ifdef _USE_AVX_DEFINES
+    template<>__m256d D3Q15<double>::__cx[D3Q15<double>::nc] = { 0 };
+    template<>__m256d D3Q15<double>::__cy[D3Q15<double>::nc] = { 0 };
+    template<>__m256d D3Q15<double>::__cz[D3Q15<double>::nc] = { 0 };
+    template<>__m256d D3Q15<double>::__ei[D3Q15<double>::nc] = { 0 };
+
+    template<>
+    void D3Q15<double>::LoadCxCyCzEi() {
+        for (int c = 0; c < D3Q15<double>::nc; ++c) {
+            D3Q15<double>::__cx[c] = _mm256_set1_pd((double)D3Q15<double>::cx[c]);
+            D3Q15<double>::__cy[c] = _mm256_set1_pd((double)D3Q15<double>::cy[c]);
+            D3Q15<double>::__cz[c] = _mm256_set1_pd((double)D3Q15<double>::cz[c]);
+            D3Q15<double>::__ei[c] = _mm256_set1_pd((double)D3Q15<double>::ei[c]);
+        }
+    }
+
+    template<>
+    template<>
+    void D3Q15<double>::ShuffleToSoA<__m256d>(const double *_f_aos, __m256d *_f_soa) {
+        __m256d load0 = _mm256_load_pd(&_f_aos[ 0]);   //  f 4(0) f 3(0) f 2(0) f 1(0)
+        __m256d load1 = _mm256_load_pd(&_f_aos[ 4]);   //  f 8(0) f 7(0) f 6(0) f 5(0)
+        __m256d load2 = _mm256_load_pd(&_f_aos[ 8]);   //  f12(0) f11(0) f10(0) f 9(0)
+        __m256d load3 = _mm256_load_pd(&_f_aos[12]);   //  f 2(1) f 1(1) f14(0) f13(0)
+        __m256d load4 = _mm256_load_pd(&_f_aos[16]);   //  f 6(1) f 5(1) f 4(1) f 3(1)
+        __m256d load5 = _mm256_load_pd(&_f_aos[20]);   //  f10(1) f 9(1) f 8(1) f 7(1)
+        __m256d load6 = _mm256_load_pd(&_f_aos[24]);   //  f14(1) f13(1) f12(1) f11(1)
+        __m256d load7 = _mm256_load_pd(&_f_aos[28]);   //  f 4(2) f 3(2) f 2(2) f 1(2)
+        __m256d load8 = _mm256_load_pd(&_f_aos[32]);   //  f 8(2) f 7(2) f 6(2) f 5(2)
+        __m256d load9 = _mm256_load_pd(&_f_aos[36]);   //  f12(2) f11(2) f10(2) f 9(2)
+        __m256d load10 = _mm256_load_pd(&_f_aos[40]);  //  f 2(3) f 1(3) f14(2) f13(2)
+        __m256d load11 = _mm256_load_pd(&_f_aos[44]);  //  f 6(3) f 5(3) f 4(3) f 3(3)
+        __m256d load12 = _mm256_load_pd(&_f_aos[48]);  //  f10(3) f 9(3) f 8(3) f 7(3)
+        __m256d load13 = _mm256_load_pd(&_f_aos[52]);  //  f14(3) f13(3) f12(3) f11(3)
+        
+        const int mm0 = 2*16 + 0*1, mm1 = 3*16 + 1*1; 
+        __m256d permute0 = _mm256_permute2f128_pd(load0, load7, mm0);    //  f 2(2) f 1(2) f 2(0) f 1(0)
+        __m256d permute1 = _mm256_permute2f128_pd(load0, load7, mm1);    //  f 4(2) f 3(2) f 4(0) f 3(0)
+        __m256d permute2 = _mm256_permute2f128_pd(load1, load8, mm0);    //  f 6(2) f 5(2) f 6(0) f 5(0)
+        __m256d permute3 = _mm256_permute2f128_pd(load1, load8, mm1);    //  f 8(2) f 7(2) f 8(0) f 7(0)
+        __m256d permute4 = _mm256_permute2f128_pd(load2, load9, mm0);    //  f10(2) f 9(2) f10(0) f 9(0)
+        __m256d permute5 = _mm256_permute2f128_pd(load2, load9, mm1);    //  f12(2) f11(2) f12(0) f11(0)
+        __m256d permute6 = _mm256_permute2f128_pd(load3, load10, mm0);   //  f14(2) f13(2) f14(0) f13(0)
+        __m256d permute7 = _mm256_permute2f128_pd(load3, load10, mm1);   //  f 2(3) f 1(3) f 2(1) f 1(1)
+        __m256d permute8 = _mm256_permute2f128_pd(load4, load11, mm0);   //  f 4(3) f 3(3) f 4(1) f 3(1)
+        __m256d permute9 = _mm256_permute2f128_pd(load4, load11, mm1);   //  f 6(3) f 5(3) f 6(1) f 5(1)
+        __m256d permute10 = _mm256_permute2f128_pd(load5, load12, mm0);  //  f 8(3) f 7(3) f 8(1) f 7(1)
+        __m256d permute11 = _mm256_permute2f128_pd(load5, load12, mm1);  //  f10(3) f 9(3) f10(1) f 9(1)
+        __m256d permute12 = _mm256_permute2f128_pd(load6, load13, mm0);  //  f12(3) f11(3) f12(1) f11(1)
+        __m256d permute13 = _mm256_permute2f128_pd(load6, load13, mm1);  //  f14(3) f13(3) f14(1) f13(1)
+
+        _f_soa[ 0] = _mm256_unpacklo_pd(permute0, permute7);    //  f 1(3) f 1(2) f 1(1) f 1(0)
+        _f_soa[ 1] = _mm256_unpackhi_pd(permute0, permute7);    //  f 2(3) f 2(2) f 2(1) f 2(0)
+        _f_soa[ 2] = _mm256_unpacklo_pd(permute1, permute8);    //  f 3(3) f 3(2) f 3(1) f 3(0)
+        _f_soa[ 3] = _mm256_unpackhi_pd(permute1, permute8);    //  f 4(3) f 4(2) f 4(1) f 4(0)
+        _f_soa[ 4] = _mm256_unpacklo_pd(permute2, permute9);    //  f 5(3) f 5(2) f 5(1) f 5(0)
+        _f_soa[ 5] = _mm256_unpackhi_pd(permute2, permute9);    //  f 6(3) f 6(2) f 6(1) f 6(0)
+        _f_soa[ 6] = _mm256_unpacklo_pd(permute3, permute10);   //  f 7(3) f 7(2) f 7(1) f 7(0)
+        _f_soa[ 7] = _mm256_unpackhi_pd(permute3, permute10);   //  f 8(3) f 8(2) f 8(1) f 8(0)
+        _f_soa[ 8] = _mm256_unpacklo_pd(permute4, permute11);   //  f 9(3) f 9(2) f 9(1) f 9(0)
+        _f_soa[ 9] = _mm256_unpackhi_pd(permute4, permute11);   //  f10(3) f10(2) f10(1) f10(0)
+        _f_soa[10] = _mm256_unpacklo_pd(permute5, permute12);   //  f11(3) f11(2) f11(1) f11(0)
+        _f_soa[11] = _mm256_unpackhi_pd(permute5, permute12);   //  f12(3) f12(2) f12(1) f12(0)
+        _f_soa[12] = _mm256_unpacklo_pd(permute6, permute13);   //  f13(3) f13(2) f13(1) f13(0)
+        _f_soa[13] = _mm256_unpackhi_pd(permute6, permute13);   //  f14(3) f14(2) f14(1) f14(0)
+    }
+
+    template<>
+    template<>
+    void D3Q15<double>::ShuffleToAoS<__m256d>(double *_f_aos, const __m256d *_f_soa) {
+        __m256d unpack0 = _mm256_unpacklo_pd(_f_soa[0], _f_soa[1]);     //  f 2(2) f 1(2) f 2(0) f 1(0)
+        __m256d unpack1 = _mm256_unpackhi_pd(_f_soa[0], _f_soa[1]);     //  f 2(3) f 1(3) f 2(1) f 1(1)
+        __m256d unpack2 = _mm256_unpacklo_pd(_f_soa[2], _f_soa[3]);     //  f 4(2) f 3(2) f 4(0) f 3(0)
+        __m256d unpack3 = _mm256_unpackhi_pd(_f_soa[2], _f_soa[3]);     //  f 4(3) f 3(3) f 4(1) f 3(1)
+        __m256d unpack4 = _mm256_unpacklo_pd(_f_soa[4], _f_soa[5]);     //  f 6(2) f 5(2) f 6(0) f 5(0)
+        __m256d unpack5 = _mm256_unpackhi_pd(_f_soa[4], _f_soa[5]);     //  f 6(3) f 5(3) f 6(1) f 5(1)
+        __m256d unpack6 = _mm256_unpacklo_pd(_f_soa[6], _f_soa[7]);     //  f 8(2) f 7(2) f 8(0) f 7(0)
+        __m256d unpack7 = _mm256_unpackhi_pd(_f_soa[6], _f_soa[7]);     //  f 8(3) f 7(3) f 8(1) f 7(1)
+        __m256d unpack8 = _mm256_unpacklo_pd(_f_soa[8], _f_soa[9]);     //  f10(2) f 9(2) f10(0) f 9(0)
+        __m256d unpack9 = _mm256_unpackhi_pd(_f_soa[8], _f_soa[9]);     //  f10(3) f 9(3) f10(1) f 9(1)
+        __m256d unpack10 = _mm256_unpacklo_pd(_f_soa[10], _f_soa[11]);  //  f12(2) f11(2) f12(0) f11(0)
+        __m256d unpack11 = _mm256_unpackhi_pd(_f_soa[10], _f_soa[11]);  //  f12(3) f11(3) f12(1) f11(1)
+        __m256d unpack12 = _mm256_unpacklo_pd(_f_soa[12], _f_soa[13]);  //  f14(2) f13(2) f14(0) f13(0)
+        __m256d unpack13 = _mm256_unpackhi_pd(_f_soa[12], _f_soa[13]);  //  f14(3) f13(3) f14(1) f13(1)
+
+        const int mm0 = 2*16 + 0*1, mm1 = 3*16 + 1*1;
+        _mm256_store_pd(&_f_aos[ 0], _mm256_permute2f128_pd(unpack0, unpack2, mm0));    //  f 4(0) f 3(0) f 2(0) f 1(0)
+        _mm256_store_pd(&_f_aos[ 4], _mm256_permute2f128_pd(unpack4, unpack6, mm0));    //  f 8(0) f 7(0) f 6(0) f 5(0)
+        _mm256_store_pd(&_f_aos[ 8], _mm256_permute2f128_pd(unpack8, unpack10, mm0));   //  f12(0) f11(0) f10(0) f 9(0)
+        _mm256_store_pd(&_f_aos[12], _mm256_permute2f128_pd(unpack12, unpack1, mm0));   //  f 2(1) f 1(1) f14(0) f13(0)
+        _mm256_store_pd(&_f_aos[16], _mm256_permute2f128_pd(unpack3, unpack5, mm0));    //  f 6(1) f 5(1) f 4(1) f 3(1)
+        _mm256_store_pd(&_f_aos[20], _mm256_permute2f128_pd(unpack7, unpack9, mm0));    //  f10(1) f 9(1) f 8(1) f 7(1)
+        _mm256_store_pd(&_f_aos[24], _mm256_permute2f128_pd(unpack11, unpack13, mm0));  //  f14(1) f13(1) f12(1) f11(1)
+        _mm256_store_pd(&_f_aos[28], _mm256_permute2f128_pd(unpack0, unpack2, mm1));    //  f 4(2) f 3(2) f 2(2) f 1(2)
+        _mm256_store_pd(&_f_aos[32], _mm256_permute2f128_pd(unpack4, unpack6, mm1));    //  f 8(2) f 7(2) f 6(2) f 5(2)
+        _mm256_store_pd(&_f_aos[36], _mm256_permute2f128_pd(unpack8, unpack10, mm1));   //  f12(2) f11(2) f10(2) f 9(2)
+        _mm256_store_pd(&_f_aos[40], _mm256_permute2f128_pd(unpack12, unpack1, mm1));   //  f 2(3) f 1(3) f14(2) f13(2)
+        _mm256_store_pd(&_f_aos[44], _mm256_permute2f128_pd(unpack3, unpack5, mm1));    //  f 6(3) f 5(3) f 4(3) f 3(3)
+        _mm256_store_pd(&_f_aos[48], _mm256_permute2f128_pd(unpack7, unpack9, mm1));    //  f10(3) f 9(3) f 8(3) f 7(3)
+        _mm256_store_pd(&_f_aos[52], _mm256_permute2f128_pd(unpack11, unpack13, mm1));  //  f14(3) f13(3) f12(3) f11(3)
+    }
+#endif
 }

@@ -1,6 +1,6 @@
 *.exe
+*.out
+gprof
 .vscode
 result
 build
-gprof
-*.out

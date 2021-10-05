@@ -1,4 +1,4 @@
-#include "vtkimport.h"
+#include "../src/utility/vtkimport.h"
 
 using namespace PANSLBM2;
 

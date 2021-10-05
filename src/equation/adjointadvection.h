@@ -6,6 +6,7 @@
 //*****************************************************************************
 
 #pragma once
+#include <cmath>
 #include "adjointnavierstokes.h"
 #ifdef _USE_AVX_DEFINES
     #include "../equation_avx/adjointadvection_avx.h"
@@ -351,7 +352,7 @@ namespace PANSLBM2 {
                 Macro<T, Q>(item, iqx, iqy, _q.f0, _q.f, idx);
 
                 //  External force with Brinkman model
-                ExternalForceBrinkman<T, P>(_rho[idx], _ux[idx], _uy[idx], imx, imy, _tem, iqx, iqy, omegag, _p.f0, _p.f, _alpha[idx], idx);
+                ExternalForceBrinkman<T, P>(_rho[idx], _ux[idx], _uy[idx], imx, imy, _tem[idx], iqx, iqy, omegag, _p.f0, _p.f, _alpha[idx], idx);
                 ANS::Macro<T, P>(ip, iux, iuy, imx, imy, _rho[idx], _ux[idx], _uy[idx], _p.f0, _p.f, idx);
                 ExternalForceNaturalConvection<T, Q>(imx, imy, _gx, _gy, _q.f0, _q.f, idx);
                 Macro<T, Q>(item, iqx, iqy, _q.f0, _q.f, idx);

@@ -39,12 +39,13 @@ namespace PANSLBM2 {
 
         //  Function of getting equilibrium of AEL for 2D
         template<class P>
-        __m256d Equilibrium(__m256d __irho, __m256d __imx, __m256d __imy, __m256d __isxx, __m256d __isxy, __m256d __isyx, __m256d __isyy, __m256d __gamma, int _c) {
-            __m256d __3 = _mm256_set1_pd(3.0), __45 = _mm256_set1_pd(4.5), __15 = _mm256_set1_pd(1.5);
-            __m256d __mic = _mm256_add_pd(_mm256_mul_pd(__imx, P::__cx[_c]), _mm256_mul_pd(__imy, P::__cy[_c]));
-            __m256d __csc = _mm256_add_pd(_mm256_add_pd(_mm256_mul_pd(_mm256_mul_pd(P::__cx[_c], P::__cx[_c]), __isxx), _mm256_mul_pd(_mm256_mul_pd(P::__cx[_c], P::__cy[_c]), __isxy)), _mm256_add_pd(_mm256_mul_pd(_mm256_mul_pd(P::__cy[_c], P::__cx[_c]), __isyx), _mm256_mul_pd(_mm256_mul_pd(P::__cy[_c], P::__cy[_c]), __isyy)));
-            __m256d __trs = _mm256_mul_pd(__irho, _mm256_add_pd(_mm256_mul_pd(P::__cx[_c], P::__cx[_c]), _mm256_mul_pd(P::__cy[_c], P::__cy[_c])));
-            return _mm256_add_pd(_mm256_mul_pd(__3, __mic), _mm256_sub_pd(_mm256_mul_pd(__45, _mm256_mul_pd(__gamma, __csc)), _mm256_mul_pd(__15, _mm256_mul_pd(__gamma, __trs))));
+        void Equilibrium(__m256d *__feq, const __m256d &__irho, const __m256d &__imx, const __m256d &__imy, const __m256d &__isxx, const __m256d &__isxy, const __m256d &__isyx, const __m256d &__isyy, const __m256d &__gamma) {
+            for (int c = 0; c < P::nc; ++c) {
+                __m256d __mic = _mm256_add_pd(_mm256_mul_pd(__imx, P::__cx[c]), _mm256_mul_pd(__imy, P::__cy[c]));
+                __m256d __csc = _mm256_add_pd(_mm256_add_pd(_mm256_mul_pd(_mm256_mul_pd(P::__cx[c], P::__cx[c]), __isxx), _mm256_mul_pd(_mm256_mul_pd(P::__cx[c], P::__cy[c]), __isxy)), _mm256_add_pd(_mm256_mul_pd(_mm256_mul_pd(P::__cy[c], P::__cx[c]), __isyx), _mm256_mul_pd(_mm256_mul_pd(P::__cy[c], P::__cy[c]), __isyy)));
+                __m256d __trs = _mm256_mul_pd(__irho, _mm256_add_pd(_mm256_mul_pd(P::__cx[c], P::__cx[c]), _mm256_mul_pd(P::__cy[c], P::__cy[c])));
+                __feq[c] = _mm256_add_pd(_mm256_mul_pd(_mm256_set1_pd(3.0), __mic), _mm256_sub_pd(_mm256_mul_pd(_mm256_set1_pd(4.5), _mm256_mul_pd(__gamma, __csc)), _mm256_mul_pd(_mm256_set1_pd(1.5), _mm256_mul_pd(__gamma, __trs))));
+            }
         }
 
         //  Function of Update macro and Collide of AEL for 2D
@@ -52,7 +53,7 @@ namespace PANSLBM2 {
         void MacroCollide(P<double>& _p, double *_irho, double *_imx, double *_imy, double *_isxx, double *_isxy, double *_isyx, double *_isyy, double _tau, const double *_gamma, bool _issave = false) {
             const int ne = _p.nxyz/P<double>::packsize;
             double omega = 1.0/_tau, iomega = 1.0 - omega, feq[P<double>::nc];
-            __m256d __omega = _mm256_set1_pd(omega), __iomega = _mm256_set1_pd(iomega);
+            __m256d __omega = _mm256_set1_pd(omega), __iomega = _mm256_set1_pd(iomega), __feq[P<double>::nc];
             #pragma omp parallel for private(feq)
             for (int pidx = 0; pidx < ne; ++pidx) {
                 int idx = pidx*P<double>::packsize;
@@ -79,9 +80,10 @@ namespace PANSLBM2 {
                 }
 
                 //  Collide
-                _mm256_store_pd(&_p.f0[idx], _mm256_add_pd(_mm256_mul_pd(__iomega, __f[0]), _mm256_mul_pd(__omega, Equilibrium<P<double> >(__irho, __imx, __imy, __isxx, __isxy, __isyx, __isyy, __gamma, 0))));
+                Equilibrium<P<double> >(__feq, __irho, __imx, __imy, __isxx, __isxy, __isyx, __isyy, __gamma);
+                _mm256_store_pd(&_p.f0[idx], _mm256_add_pd(_mm256_mul_pd(__iomega, __f[0]), _mm256_mul_pd(__omega, __feq[0])));
                 for (int c = 1; c < P<double>::nc; ++c) {
-                    __f[c] = _mm256_add_pd(_mm256_mul_pd(__iomega, __f[c]), _mm256_mul_pd(__omega, Equilibrium<P<double> >(__irho, __imx, __imy, __isxx, __isxy, __isyx, __isyy, __gamma, c)));
+                    __f[c] = _mm256_add_pd(_mm256_mul_pd(__iomega, __f[c]), _mm256_mul_pd(__omega, __feq[c]));
                 }
                 P<double>::ShuffleToAoS(&_p.f[P<double>::IndexF(idx, 1)], &__f[1]);
             }

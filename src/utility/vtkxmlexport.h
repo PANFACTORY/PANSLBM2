@@ -2,6 +2,7 @@
 #include <string>
 #include <fstream>
 #include <cassert>
+#include <algorithm>
 #ifdef _USE_MPI_DEFINES
     #include "mpi.h"
 #endif

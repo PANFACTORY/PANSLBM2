@@ -80,15 +80,45 @@ public:
         }
         D3Q15(const D3Q15<T>& _p) = delete;
         ~D3Q15() {
-            delete[] this->f0, this->f, this->fnext;
-            delete[] this->fsend_xmin, this->fsend_xmax, this->fsend_ymin, this->fsend_ymax, this->fsend_zmin, this->fsend_zmax;
-            delete[] this->frecv_xmin, this->frecv_xmax, this->frecv_ymin, this->frecv_ymax, this->frecv_zmin, this->frecv_zmax;
-            delete[] this->fsend_ymin_zmin, this->fsend_ymin_zmax, this->fsend_ymax_zmin, this->fsend_ymax_zmax;
-            delete[] this->frecv_ymin_zmin, this->frecv_ymin_zmax, this->frecv_ymax_zmin, this->frecv_ymax_zmax; 
-            delete[] this->fsend_zmin_xmin, this->fsend_zmin_xmax, this->fsend_zmax_xmin, this->fsend_zmax_xmax;
-            delete[] this->frecv_zmin_xmin, this->frecv_zmin_xmax, this->frecv_zmax_xmin, this->frecv_zmax_xmax;
-            delete[] this->fsend_xmin_ymin, this->fsend_xmin_ymax, this->fsend_xmax_ymin, this->fsend_xmax_ymax;
-            delete[] this->frecv_xmin_ymin, this->frecv_xmin_ymax, this->frecv_xmax_ymin, this->frecv_xmax_ymax;  
+            delete[] this->f0;
+            delete[] this->f;
+            delete[] this->fnext;
+            delete[] this->fsend_xmin;
+            delete[] this->fsend_xmax;
+            delete[] this->fsend_ymin;
+            delete[] this->fsend_ymax;
+            delete[] this->fsend_zmin;
+            delete[] this->fsend_zmax;
+            delete[] this->frecv_xmin;
+            delete[] this->frecv_xmax;
+            delete[] this->frecv_ymin;
+            delete[] this->frecv_ymax;
+            delete[] this->frecv_zmin;
+            delete[] this->frecv_zmax;
+            delete[] this->fsend_ymin_zmin;
+            delete[] this->fsend_ymin_zmax;
+            delete[] this->fsend_ymax_zmin;
+            delete[] this->fsend_ymax_zmax;
+            delete[] this->frecv_ymin_zmin;
+            delete[] this->frecv_ymin_zmax;
+            delete[] this->frecv_ymax_zmin;
+            delete[] this->frecv_ymax_zmax; 
+            delete[] this->fsend_zmin_xmin;
+            delete[] this->fsend_zmin_xmax;
+            delete[] this->fsend_zmax_xmin;
+            delete[] this->fsend_zmax_xmax;
+            delete[] this->frecv_zmin_xmin;
+            delete[] this->frecv_zmin_xmax;
+            delete[] this->frecv_zmax_xmin;
+            delete[] this->frecv_zmax_xmax;
+            delete[] this->fsend_xmin_ymin;
+            delete[] this->fsend_xmin_ymax;
+            delete[] this->fsend_xmax_ymin;
+            delete[] this->fsend_xmax_ymax;
+            delete[] this->frecv_xmin_ymin;
+            delete[] this->frecv_xmin_ymax;
+            delete[] this->frecv_xmax_ymin;
+            delete[] this->frecv_xmax_ymax;  
         }
 
         int Index(int _i, int _j, int _k) const {

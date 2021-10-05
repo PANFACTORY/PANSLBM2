@@ -76,18 +76,18 @@ namespace PANSLBM2 {
         //  Function of applying external force of AD with natural convection for 2D
         template<class P>
         void ExternalForceNaturalConvection(const __m256d &__tem, const __m256d &__gx, const __m256d &__gy, const __m256d &__tem0, __m256d *__f) {
-            __m256d __coef = _mm256_mul_pd(_mm256_set1_pd(3.0), _mm256_mul_pd(P::__ei[0], _mm256_sub_pd(__tem, __tem0)));
+            __m256d __coef = _mm256_mul_pd(_mm256_set1_pd(3.0), _mm256_sub_pd(__tem, __tem0));
             for (int c = 1; c < P::nc; ++c) {
-                __f[c] = _mm256_add_pd(__f[c], _mm256_mul_pd(__coef, _mm256_add_pd(_mm256_mul_pd(P::__cx[c], __gx), _mm256_mul_pd(P::__cy[c], __gy))));
+                __f[c] = _mm256_add_pd(__f[c], _mm256_mul_pd(__coef, _mm256_mul_pd(P::__ei[c], _mm256_add_pd(_mm256_mul_pd(P::__cx[c], __gx), _mm256_mul_pd(P::__cy[c], __gy)))));
             }
         }
 
         //  Function of applying external force of AD with natural convection for 3D
         template<class P>
         void ExternalForceNaturalConvection(const __m256d &__tem, const __m256d &__gx, const __m256d &__gy, const __m256d &__gz, const __m256d &__tem0, __m256d *__f) {
-            __m256d __coef = _mm256_mul_pd(_mm256_set1_pd(3.0), _mm256_mul_pd(P::__ei[0], _mm256_sub_pd(__tem, __tem0)));
+            __m256d __coef = _mm256_mul_pd(_mm256_set1_pd(3.0), _mm256_sub_pd(__tem, __tem0));
             for (int c = 1; c < P::nc; ++c) {
-                __f[c] = _mm256_add_pd(__f[c], _mm256_mul_pd(__coef, _mm256_add_pd(_mm256_add_pd(_mm256_mul_pd(P::__cx[c], __gx), _mm256_mul_pd(P::__cy[c], __gy)), _mm256_mul_pd(P::__cz[c], __gz))));
+                __f[c] = _mm256_add_pd(__f[c], _mm256_mul_pd(__coef, _mm256_mul_pd(P::__ei[c], _mm256_add_pd(_mm256_add_pd(_mm256_mul_pd(P::__cx[c], __gx), _mm256_mul_pd(P::__cy[c], __gy)), _mm256_mul_pd(P::__cz[c], __gz)))));
             }
         }
 

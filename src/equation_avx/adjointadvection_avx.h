@@ -7,7 +7,6 @@
 
 #pragma once
 #include <immintrin.h>
-#include "adjointnavierstokes_avx.h"
 
 //  compile option for g++(MinGW) : -mavx
 
@@ -55,19 +54,25 @@ namespace PANSLBM2 {
 
         //  Function of getting equilibrium of AAD for 2D
         template<class Q>
-        __m256d Equilibrium(__m256d __item, __m256d __iqx, __m256d __iqy, __m256d __ux, __m256d __uy) {
-            return _mm256_add_pd(__item, _mm256_mul_pd(_mm256_set1_pd(3.0), _mm256_add_pd(_mm256_mul_pd(__iqx, __ux), _mm256_mul_pd(__iqy, __uy))));
+        void Equilibrium(__m256d *__geq, const __m256d &__item, const __m256d &__iqx, const __m256d &__iqy, const __m256d &__ux, const __m256d &__uy) {
+            __m256d __coef = _mm256_add_pd(__item, _mm256_mul_pd(_mm256_set1_pd(3.0), _mm256_add_pd(_mm256_mul_pd(__iqx, __ux), _mm256_mul_pd(__iqy, __uy))));
+            for (int c = 0; c < Q::nc; ++c) {
+                __geq[c] = __coef;
+            }
         }
 
         //  Function of getting equilibrium of AAD for 3D
         template<class Q>
-        __m256d Equilibrium(__m256d __item, __m256d __iqx, __m256d __iqy, __m256d __iqz, __m256d __ux, __m256d __uy, __m256d __uz) {
-            return _mm256_add_pd(__item, _mm256_mul_pd(_mm256_set1_pd(3.0), _mm256_add_pd(_mm256_add_pd(_mm256_mul_pd(__iqx, __ux), _mm256_mul_pd(__iqy, __uy)), _mm256_mul_pd(__iqz, __uz))));
+        void Equilibrium(__m256d *__geq, const __m256d &__item, const __m256d &__iqx, const __m256d &__iqy, const __m256d &__iqz, const __m256d &__ux, const __m256d &__uy, const __m256d &__uz) {
+            __m256d __coef = _mm256_add_pd(__item, _mm256_mul_pd(_mm256_set1_pd(3.0), _mm256_add_pd(_mm256_add_pd(_mm256_mul_pd(__iqx, __ux), _mm256_mul_pd(__iqy, __uy)), _mm256_mul_pd(__iqz, __uz))));
+            for (int c = 0; c < Q::nc; ++c) {
+                __geq[c] = __coef;
+            } 
         }
 
         //  Function of applying external force with Brinkman model and advection of AAD for 2D
         template<class P>
-        void ExternalForceBrinkman(__m256d __rho, __m256d __ux, __m256d __uy, __m256d __imx, __m256d __imy, __m256d __tem, __m256d __iqx, __m256d __iqy, __m256d __omegag, __m256d *__f, __m256d __alpha) {
+        void ExternalForceBrinkman(const __m256d &__rho, const __m256d &__ux, const __m256d &__uy, const __m256d &__imx, const __m256d &__imy, const __m256d &__tem, const __m256d &__iqx, const __m256d &__iqy, const __m256d &__omegag, __m256d *__f, const __m256d &__alpha) {
             __m256d __coef = _mm256_div_pd(_mm256_set1_pd(3.0), _mm256_add_pd(__rho, __alpha));
             __m256d __coefx = _mm256_sub_pd(_mm256_mul_pd(_mm256_mul_pd(__tem, __iqx), __omegag), _mm256_mul_pd(__alpha, __imx));
             __m256d __coefy = _mm256_sub_pd(_mm256_mul_pd(_mm256_mul_pd(__tem, __iqy), __omegag), _mm256_mul_pd(__alpha, __imy));
@@ -79,7 +84,7 @@ namespace PANSLBM2 {
 
         //  Function of applying external force with Brinkman model and advection of AAD for 3D
         template<class P>
-        void ExternalForceBrinkman(__m256d __rho, __m256d __ux, __m256d __uy, __m256d __uz, __m256d __imx, __m256d __imy, __m256d __imz, __m256d __tem, __m256d __iqx, __m256d __iqy, __m256d __iqz, __m256d __omegag, __m256d *__f, __m256d __alpha) {
+        void ExternalForceBrinkman(const __m256d &__rho, const __m256d &__ux, const __m256d &__uy, const __m256d &__uz, const __m256d &__imx, const __m256d &__imy, const __m256d &__imz, const __m256d &__tem, const __m256d &__iqx, const __m256d &__iqy, const __m256d &__iqz, const __m256d &__omegag, __m256d *__f, const __m256d &__alpha) {
             __m256d __coef = _mm256_div_pd(_mm256_set1_pd(3.0), _mm256_add_pd(__rho, __alpha));
             __m256d __coefx = _mm256_sub_pd(_mm256_mul_pd(_mm256_mul_pd(__tem, __iqx), __omegag), _mm256_mul_pd(__alpha, __imx));
             __m256d __coefy = _mm256_sub_pd(_mm256_mul_pd(_mm256_mul_pd(__tem, __iqy), __omegag), _mm256_mul_pd(__alpha, __imy));
@@ -99,7 +104,7 @@ namespace PANSLBM2 {
 
         //  Function of applying external force with heat exchange of AAD for 2D/3D
         template<class Q>
-        void ExternalForceHeatExchange(__m256d __item, __m256d *__g, __m256d __beta) {
+        void ExternalForceHeatExchange(const __m256d &__item, __m256d *__g, const __m256d &__beta) {
             __m256d __coef = _mm256_mul_pd(__beta, _mm256_div_pd(_mm256_add_pd(_mm256_set1_pd(1.0), __item), _mm256_add_pd(_mm256_set1_pd(1.0), __beta)));
             for (int c = 0; c < Q::nc; ++c) {
                 __g[c] = _mm256_sub_pd(__g[c], __coef);
@@ -108,7 +113,7 @@ namespace PANSLBM2 {
 
         //  Function of applying external force with natural convection of AAD for 2D
         template<class Q>
-        void ExternalForceNaturalConvection(__m256d __imx, __m256d __imy, __m256d __gx, __m256d __gy, __m256d *__g) {
+        void ExternalForceNaturalConvection(const __m256d &__imx, const __m256d &__imy, const __m256d &__gx, const __m256d &__gy, __m256d *__g) {
             __m256d __coef = _mm256_mul_pd(_mm256_set1_pd(3.0), _mm256_add_pd(_mm256_mul_pd(__imx, __gx), _mm256_mul_pd(__imy, __gy)));
             for (int c = 0; c < Q::nc; ++c) {
                 __g[c] = _mm256_add_pd(__g[c], __coef);
@@ -117,7 +122,7 @@ namespace PANSLBM2 {
 
         //  Function of applying external force with natural convection of AAD for 3D
         template<class Q>
-        void ExternalForceNaturalConvection(__m256d __imx, __m256d __imy, __m256d __imz, __m256d __gx, __m256d __gy, __m256d __gz, __m256d *__g) {
+        void ExternalForceNaturalConvection(const __m256d &__imx, const __m256d &__imy, const __m256d &__imz, const __m256d &__gx, const __m256d &__gy, const __m256d &__gz, __m256d *__g) {
             __m256d __coef = _mm256_mul_pd(_mm256_set1_pd(3.0), _mm256_add_pd(_mm256_add_pd(_mm256_mul_pd(__imx, __gx), _mm256_mul_pd(__imy, __gy)), _mm256_mul_pd(__imz, __gz)));
             for (int c = 0; c < Q::nc; ++c) {
                 __g[c] = _mm256_add_pd(__g[c], __coef);
@@ -132,10 +137,10 @@ namespace PANSLBM2 {
         ) {
             const int ne = _p.nxyz/P<double>::packsize;
             double omegaf = 1.0/(3.0*_viscosity + 0.5), iomegaf = 1.0 - omegaf, feq[P<double>::nc];
-            __m256d __omegaf = _mm256_set1_pd(omegaf), __iomegaf = _mm256_set1_pd(iomegaf);
+            __m256d __omegaf = _mm256_set1_pd(omegaf), __iomegaf = _mm256_set1_pd(iomegaf), __feq[P<double>::nc];
             double omegag = 1.0/(3.0*_diffusivity + 0.5), iomegag = 1.0 - omegag, geq[Q<double>::nc];
-            __m256d __omegag = _mm256_set1_pd(omegag), __iomegag = _mm256_set1_pd(iomegag);
-            #pragma omp parallel for
+            __m256d __omegag = _mm256_set1_pd(omegag), __iomegag = _mm256_set1_pd(iomegag), __geq[Q<double>::nc];
+            #pragma omp parallel for private(__feq, __geq)
             for (int pidx = 0; pidx < ne; ++pidx) {
                 int idx = pidx*P<double>::packsize;
 
@@ -174,14 +179,16 @@ namespace PANSLBM2 {
                 }
 
                 //  Collide
-                _mm256_store_pd(&_p.f0[idx], _mm256_add_pd(_mm256_mul_pd(__iomegaf, __f[0]), _mm256_mul_pd(__omegaf, ANS::Equilibrium<P<double> >(__ux, __uy, __ip, __iux, __iuy, 0))));
+                ANS::Equilibrium<P<double> >(__feq, __ux, __uy, __ip, __iux, __iuy);
+                _mm256_store_pd(&_p.f0[idx], _mm256_add_pd(_mm256_mul_pd(__iomegaf, __f[0]), _mm256_mul_pd(__omegaf, __feq[0])));
                 for (int c = 1; c < P<double>::nc; ++c) {
-                    __f[c] = _mm256_add_pd(_mm256_mul_pd(__iomegaf, __f[c]), _mm256_mul_pd(__omegaf, ANS::Equilibrium<P<double> >(__ux, __uy, __ip, __iux, __iuy, c)));
+                    __f[c] = _mm256_add_pd(_mm256_mul_pd(__iomegaf, __f[c]), _mm256_mul_pd(__omegaf, __feq[c]));
                 }
                 P<double>::ShuffleToAoS(&_p.f[P<double>::IndexF(idx, 1)], &__f[1]);
-                _mm256_store_pd(&_q.f0[idx], _mm256_add_pd(_mm256_mul_pd(__iomegag, __g[0]), _mm256_mul_pd(__omegag, Equilibrium<Q<double> >(__item, __iqx, __iqy, __ux, __uy, 0))));
+                Equilibrium<Q<double> >(__geq, __item, __iqx, __iqy, __ux, __uy);
+                _mm256_store_pd(&_q.f0[idx], _mm256_add_pd(_mm256_mul_pd(__iomegag, __g[0]), _mm256_mul_pd(__omegag, __geq[0])));
                 for (int c = 1; c < Q<double>::nc; ++c) {
-                    __g[c] = _mm256_add_pd(_mm256_mul_pd(__iomegag, __g[c]), _mm256_mul_pd(__omegag, Equilibrium<Q<double> >(__item, __iqx, __iqy, __ux, __uy, c)));
+                    __g[c] = _mm256_add_pd(_mm256_mul_pd(__iomegag, __g[c]), _mm256_mul_pd(__omegag, __geq[c]));
                 }
                 Q<double>::ShuffleToAoS(&_q.f[Q<double>::IndexF(idx, 1)], &__g[1]);
             }
@@ -234,10 +241,10 @@ namespace PANSLBM2 {
         ) {
             const int ne = _p.nxyz/P<double>::packsize;
             double omegaf = 1.0/(3.0*_viscosity + 0.5), iomegaf = 1.0 - omegaf, feq[P<double>::nc];
-            __m256d __omegaf = _mm256_set1_pd(omegaf), __iomegaf = _mm256_set1_pd(iomegaf);
+            __m256d __omegaf = _mm256_set1_pd(omegaf), __iomegaf = _mm256_set1_pd(iomegaf), __feq[P<double>::nc];
             double omegag = 1.0/(3.0*_diffusivity + 0.5), iomegag = 1.0 - omegag, geq[Q<double>::nc];
-            __m256d __omegag = _mm256_set1_pd(omegag), __iomegag = _mm256_set1_pd(iomegag);
-            #pragma omp parallel for
+            __m256d __omegag = _mm256_set1_pd(omegag), __iomegag = _mm256_set1_pd(iomegag), __geq[Q<double>::nc];
+            #pragma omp parallel for private(__feq, __geq)
             for (int pidx = 0; pidx < ne; ++pidx) {
                 int idx = pidx*P<double>::packsize;
 
@@ -279,14 +286,16 @@ namespace PANSLBM2 {
                 }
 
                 //  Collide
-                _mm256_store_pd(&_p.f0[idx], _mm256_add_pd(_mm256_mul_pd(__iomegaf, __f[0]), _mm256_mul_pd(__omegaf, ANS::Equilibrium<P<double> >(__ux, __uy, __uz, __ip, __iux, __iuy, __iuz, 0))));
+                ANS::Equilibrium<P<double> >(__feq, __ux, __uy, __uz, __ip, __iux, __iuy, __iuz);
+                _mm256_store_pd(&_p.f0[idx], _mm256_add_pd(_mm256_mul_pd(__iomegaf, __f[0]), _mm256_mul_pd(__omegaf, __feq[0])));
                 for (int c = 1; c < P<double>::nc; ++c) {
-                    __f[c] = _mm256_add_pd(_mm256_mul_pd(__iomegaf, __f[c]), _mm256_mul_pd(__omegaf, ANS::Equilibrium<P<double> >(__ux, __uy, __uz, __ip, __iux, __iuy, __iuz, c)));
+                    __f[c] = _mm256_add_pd(_mm256_mul_pd(__iomegaf, __f[c]), _mm256_mul_pd(__omegaf, __feq[c]));
                 }
                 P<double>::ShuffleToAoS(&_p.f[P<double>::IndexF(idx, 1)], &__f[1]);
-                _mm256_store_pd(&_q.f0[idx], _mm256_add_pd(_mm256_mul_pd(__iomegag, __g[0]), _mm256_mul_pd(__omegag, Equilibrium<Q<double> >(__item, __iqx, __iqy, __iqz, __ux, __uy, __uz, 0))));
+                Equilibrium<Q<double> >(__geq, __item, __iqx, __iqy, __iqz, __ux, __uy, __uz);
+                _mm256_store_pd(&_q.f0[idx], _mm256_add_pd(_mm256_mul_pd(__iomegag, __g[0]), _mm256_mul_pd(__omegag, __geq[0])));
                 for (int c = 1; c < Q<double>::nc; ++c) {
-                    __g[c] = _mm256_add_pd(_mm256_mul_pd(__iomegag, __g[c]), _mm256_mul_pd(__omegag, Equilibrium<Q<double> >(__item, __iqx, __iqy, __iqz, __ux, __uy, __uz, c)));
+                    __g[c] = _mm256_add_pd(_mm256_mul_pd(__iomegag, __g[c]), _mm256_mul_pd(__omegag, __geq[c]));
                 }
                 Q<double>::ShuffleToAoS(&_q.f[Q<double>::IndexF(idx, 1)], &__g[1]);
             }
@@ -342,8 +351,8 @@ namespace PANSLBM2 {
         ) {
             const int ne = _p.nxyz/P<double>::packsize;
             double omegaf = 1.0/(3.0*_viscosity + 0.5), iomegaf = 1.0 - omegaf, feq[P<double>::nc], geq[Q<double>::nc];
-            __m256d __omegaf = _mm256_set1_pd(omegaf), __iomegaf = _mm256_set1_pd(iomegaf);
-            #pragma omp parallel for
+            __m256d __omegaf = _mm256_set1_pd(omegaf), __iomegaf = _mm256_set1_pd(iomegaf), __feq[P<double>::nc], __geq[Q<double>::nc];
+            #pragma omp parallel for private(__feq, __geq)
             for (int pidx = 0; pidx < ne; ++pidx) {
                 int idx = pidx*P<double>::packsize;
 
@@ -383,14 +392,16 @@ namespace PANSLBM2 {
                 }
 
                 //  Collide
-                _mm256_store_pd(&_p.f0[idx], _mm256_add_pd(_mm256_mul_pd(__iomegaf, __f[0]), _mm256_mul_pd(__omegaf, ANS::Equilibrium<P<double> >(__ux, __uy, __ip, __iux, __iuy, 0))));
+                ANS::Equilibrium<P<double> >(__feq, __ux, __uy, __ip, __iux, __iuy);
+                _mm256_store_pd(&_p.f0[idx], _mm256_add_pd(_mm256_mul_pd(__iomegaf, __f[0]), _mm256_mul_pd(__omegaf, __feq[0])));
                 for (int c = 1; c < P<double>::nc; ++c) {
-                    __f[c] = _mm256_add_pd(_mm256_mul_pd(__iomegaf, __f[c]), _mm256_mul_pd(__omegaf, ANS::Equilibrium<P<double> >(__ux, __uy, __ip, __iux, __iuy, c)));
+                    __f[c] = _mm256_add_pd(_mm256_mul_pd(__iomegaf, __f[c]), _mm256_mul_pd(__omegaf, __feq[c]));
                 }
                 P<double>::ShuffleToAoS(&_p.f[P<double>::IndexF(idx, 1)], &__f[1]);
-                _mm256_store_pd(&_q.f0[idx], _mm256_add_pd(_mm256_mul_pd(__iomegag, __g[0]), _mm256_mul_pd(__omegag, Equilibrium<Q<double> >(__item, __iqx, __iqy, __ux, __uy, 0))));
+                Equilibrium<Q<double> >(__geq, __item, __iqx, __iqy, __ux, __uy);
+                _mm256_store_pd(&_q.f0[idx], _mm256_add_pd(_mm256_mul_pd(__iomegag, __g[0]), _mm256_mul_pd(__omegag, __geq[0])));
                 for (int c = 1; c < Q<double>::nc; ++c) {
-                    __g[c] = _mm256_add_pd(_mm256_mul_pd(__iomegag, __g[c]), _mm256_mul_pd(__omegag, Equilibrium<Q<double> >(__item, __iqx, __iqy, __ux, __uy, c)));
+                    __g[c] = _mm256_add_pd(_mm256_mul_pd(__iomegag, __g[c]), _mm256_mul_pd(__omegag, __geq[c]));
                 }
                 Q<double>::ShuffleToAoS(&_q.f[Q<double>::IndexF(idx, 1)], &__g[1]);
             }
@@ -443,8 +454,8 @@ namespace PANSLBM2 {
         ) {
             const int ne = _p.nxyz/P<double>::packsize;
             double omegaf = 1.0/(3.0*_viscosity + 0.5), iomegaf = 1.0 - omegaf, feq[P<double>::nc], geq[Q<double>::nc];
-            __m256d __omegaf = _mm256_set1_pd(omegaf), __iomegaf = _mm256_set1_pd(iomegaf);
-            #pragma omp parallel for
+            __m256d __omegaf = _mm256_set1_pd(omegaf), __iomegaf = _mm256_set1_pd(iomegaf), __feq[P<double>::nc], __geq[Q<double>::nc];
+            #pragma omp parallel for private(__feq, __geq)
             for (int pidx = 0; pidx < ne; ++pidx) {
                 int idx = pidx*P<double>::packsize;
 
@@ -487,14 +498,16 @@ namespace PANSLBM2 {
                 }
 
                 //  Collide
-                _mm256_store_pd(&_p.f0[idx], _mm256_add_pd(_mm256_mul_pd(__iomegaf, __f[0]), _mm256_mul_pd(__omegaf, ANS::Equilibrium<P<double> >(__ux, __uy, __uz, __ip, __iux, __iuy, __iuz, 0))));
+                ANS::Equilibrium<P<double> >(__feq, __ux, __uy, __uz, __ip, __iux, __iuy, __iuz);
+                _mm256_store_pd(&_p.f0[idx], _mm256_add_pd(_mm256_mul_pd(__iomegaf, __f[0]), _mm256_mul_pd(__omegaf, __feq[0])));
                 for (int c = 1; c < P<double>::nc; ++c) {
-                    __f[c] = _mm256_add_pd(_mm256_mul_pd(__iomegaf, __f[c]), _mm256_mul_pd(__omegaf, ANS::Equilibrium<P<double> >(__ux, __uy, __uz, __ip, __iux, __iuy, __iuz, c)));
+                    __f[c] = _mm256_add_pd(_mm256_mul_pd(__iomegaf, __f[c]), _mm256_mul_pd(__omegaf, __feq[c]));
                 }
                 P<double>::ShuffleToAoS(&_p.f[P<double>::IndexF(idx, 1)], &__f[1]);
-                _mm256_store_pd(&_q.f0[idx], _mm256_add_pd(_mm256_mul_pd(__iomegag, __g[0]), _mm256_mul_pd(__omegag, Equilibrium<Q<double> >(__item, __iqx, __iqy, __iqz, __ux, __uy, __uz, 0))));
+                Equilibrium<Q<double> >(__geq, __item, __iqx, __iqy, __iqz, __ux, __uy, __uz);
+                _mm256_store_pd(&_q.f0[idx], _mm256_add_pd(_mm256_mul_pd(__iomegag, __g[0]), _mm256_mul_pd(__omegag, __geq[0])));
                 for (int c = 1; c < Q<double>::nc; ++c) {
-                    __g[c] = _mm256_add_pd(_mm256_mul_pd(__iomegag, __g[c]), _mm256_mul_pd(__omegag, Equilibrium<Q<double> >(__item, __iqx, __iqy, __iqz, __ux, __uy, __uz, c)));
+                    __g[c] = _mm256_add_pd(_mm256_mul_pd(__iomegag, __g[c]), _mm256_mul_pd(__omegag, __geq[c]));
                 }
                 Q<double>::ShuffleToAoS(&_q.f[Q<double>::IndexF(idx, 1)], &__g[1]);
             }
@@ -549,9 +562,9 @@ namespace PANSLBM2 {
         ) {
             const int ne = _p.nxyz/P<double>::packsize;
             double omegaf = 1.0/(3.0*_viscosity + 0.5), iomegaf = 1.0 - omegaf, feq[P<double>::nc], geq[Q<double>::nc];
-            __m256d __omegaf = _mm256_set1_pd(omegaf), __iomegaf = _mm256_set1_pd(iomegaf);
+            __m256d __omegaf = _mm256_set1_pd(omegaf), __iomegaf = _mm256_set1_pd(iomegaf), __feq[P<double>::nc], __geq[Q<double>::nc];
             __m256d __gx = _mm256_set1_pd(_gx), __gy = _mm256_set1_pd(_gy);
-            #pragma omp parallel for
+            #pragma omp parallel for private(__feq, __geq)
             for (int pidx = 0; pidx < ne; ++pidx) {
                 int idx = pidx*P<double>::packsize;
 
@@ -593,14 +606,16 @@ namespace PANSLBM2 {
                 }
 
                 //  Collide
-                _mm256_store_pd(&_p.f0[idx], _mm256_add_pd(_mm256_mul_pd(__iomegaf, __f[0]), _mm256_mul_pd(__omegaf, ANS::Equilibrium<P<double> >(__ux, __uy, __ip, __iux, __iuy, 0))));
+                ANS::Equilibrium<P<double> >(__feq, __ux, __uy, __ip, __iux, __iuy);
+                _mm256_store_pd(&_p.f0[idx], _mm256_add_pd(_mm256_mul_pd(__iomegaf, __f[0]), _mm256_mul_pd(__omegaf, __feq[0])));
                 for (int c = 1; c < P<double>::nc; ++c) {
-                    __f[c] = _mm256_add_pd(_mm256_mul_pd(__iomegaf, __f[c]), _mm256_mul_pd(__omegaf, ANS::Equilibrium<P<double> >(__ux, __uy, __ip, __iux, __iuy, c)));
+                    __f[c] = _mm256_add_pd(_mm256_mul_pd(__iomegaf, __f[c]), _mm256_mul_pd(__omegaf, __feq[c]));
                 }
                 P<double>::ShuffleToAoS(&_p.f[P<double>::IndexF(idx, 1)], &__f[1]);
-                _mm256_store_pd(&_q.f0[idx], _mm256_add_pd(_mm256_mul_pd(__iomegag, __g[0]), _mm256_mul_pd(__omegag, Equilibrium<Q<double> >(__item, __iqx, __iqy, __ux, __uy, 0))));
+                Equilibrium<Q<double> >(__geq, __item, __iqx, __iqy, __ux, __uy);
+                _mm256_store_pd(&_q.f0[idx], _mm256_add_pd(_mm256_mul_pd(__iomegag, __g[0]), _mm256_mul_pd(__omegag, __geq[0])));
                 for (int c = 1; c < Q<double>::nc; ++c) {
-                    __g[c] = _mm256_add_pd(_mm256_mul_pd(__iomegag, __g[c]), _mm256_mul_pd(__omegag, Equilibrium<Q<double> >(__item, __iqx, __iqy, __ux, __uy, c)));
+                    __g[c] = _mm256_add_pd(_mm256_mul_pd(__iomegag, __g[c]), _mm256_mul_pd(__omegag, __geq[c]));
                 }
                 Q<double>::ShuffleToAoS(&_q.f[Q<double>::IndexF(idx, 1)], &__g[1]);
             }
@@ -655,9 +670,9 @@ namespace PANSLBM2 {
         ) {
             const int ne = _p.nxyz/P<double>::packsize;
             double omegaf = 1.0/(3.0*_viscosity + 0.5), iomegaf = 1.0 - omegaf, feq[P<double>::nc], geq[Q<double>::nc];
-            __m256d __omegaf = _mm256_set1_pd(omegaf), __iomegaf = _mm256_set1_pd(iomegaf);
+            __m256d __omegaf = _mm256_set1_pd(omegaf), __iomegaf = _mm256_set1_pd(iomegaf), __feq[P<double>::nc], __geq[Q<double>::nc];
             __m256d __gx = _mm256_set1_pd(_gx), __gy = _mm256_set1_pd(_gy);
-            #pragma omp parallel for
+            #pragma omp parallel for private(__feq, __geq)
             for (int pidx = 0; pidx < ne; ++pidx) {
                 int idx = pidx*P<double>::packsize;
 
@@ -702,14 +717,16 @@ namespace PANSLBM2 {
                 }
 
                 //  Collide
-                _mm256_store_pd(&_p.f0[idx], _mm256_add_pd(_mm256_mul_pd(__iomegaf, __f[0]), _mm256_mul_pd(__omegaf, ANS::Equilibrium<P<double> >(__ux, __uy, __uz, __ip, __iux, __iuy, __iuz, 0))));
+                ANS::Equilibrium<P<double> >(__feq, __ux, __uy, __uz, __ip, __iux, __iuy, __iuz);
+                _mm256_store_pd(&_p.f0[idx], _mm256_add_pd(_mm256_mul_pd(__iomegaf, __f[0]), _mm256_mul_pd(__omegaf, __feq[0])));
                 for (int c = 1; c < P<double>::nc; ++c) {
-                    __f[c] = _mm256_add_pd(_mm256_mul_pd(__iomegaf, __f[c]), _mm256_mul_pd(__omegaf, ANS::Equilibrium<P<double> >(__ux, __uy, __uz, __ip, __iux, __iuy, __iuz, c)));
+                    __f[c] = _mm256_add_pd(_mm256_mul_pd(__iomegaf, __f[c]), _mm256_mul_pd(__omegaf, __feq[c]));
                 }
                 P<double>::ShuffleToAoS(&_p.f[P<double>::IndexF(idx, 1)], &__f[1]);
-                _mm256_store_pd(&_q.f0[idx], _mm256_add_pd(_mm256_mul_pd(__iomegag, __g[0]), _mm256_mul_pd(__omegag, Equilibrium<Q<double> >(__item, __iqx, __iqy, __iqz, __ux, __uy, __uz, 0))));
+                Equilibrium<Q<double> >(__geq, __item, __iqx, __iqy, __iqz, __ux, __uy, __uz);
+                _mm256_store_pd(&_q.f0[idx], _mm256_add_pd(_mm256_mul_pd(__iomegag, __g[0]), _mm256_mul_pd(__omegag, __geq[0])));
                 for (int c = 1; c < Q<double>::nc; ++c) {
-                    __g[c] = _mm256_add_pd(_mm256_mul_pd(__iomegag, __g[c]), _mm256_mul_pd(__omegag, Equilibrium<Q<double> >(__item, __iqx, __iqy, __iqz, __ux, __uy, __uz, c)));
+                    __g[c] = _mm256_add_pd(_mm256_mul_pd(__iomegag, __g[c]), _mm256_mul_pd(__omegag, __geq[c]));
                 }
                 Q<double>::ShuffleToAoS(&_q.f[Q<double>::IndexF(idx, 1)], &__g[1]);
             }

@@ -100,7 +100,7 @@ namespace PANSLBM2 {
 
         //  Function of applying external force with Brinkman model of ANS for 3D
         template<class P>
-        void ExternalForceBrinkman(__m256d __rho, __m256d __ux, __m256d __uy, __m256d __uz, __m256d __imx, __m256d __imy, __m256d __imz, __m256d *__f, __m256d __alpha) {
+        void ExternalForceBrinkman(const __m256d &__rho, const __m256d &__ux, const __m256d &__uy, const __m256d &__uz, const __m256d &__imx, const __m256d &__imy, const __m256d &__imz, __m256d *__f, const __m256d &__alpha) {
             __m256d __3 = _mm256_set1_pd(3.0);
             __m256d __coef = _mm256_mul_pd(__3, _mm256_div_pd(__alpha, _mm256_add_pd(__rho, __alpha)));
             __f[0] = _mm256_add_pd(__f[0], _mm256_mul_pd(__coef, _mm256_add_pd(_mm256_add_pd(_mm256_mul_pd(__ux, __imx), _mm256_mul_pd(__uy, __imy)), _mm256_mul_pd(__uz, __imz))));

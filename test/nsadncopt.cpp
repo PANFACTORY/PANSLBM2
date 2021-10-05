@@ -33,8 +33,8 @@ int main(int argc, char** argv) {
 #endif
 
     //********************Parameters********************
-    int lx = 141, ly = 161, mx = 81, my = 101, nt = 100000, dt = 100, nk = 5, nb = 100;
-    double Pr = 6.0, Ra = 2.5e3, nu = 0.1, L = 4.0, tem0 = 0.0, qn = 1.0e-2, alphamax = 1.0e4;
+    int lx = 141, ly = 161, mx = 81, my = 101, nt = 100000, dt = 100, nk = 2000, nb = 100;
+    double Pr = 6.0, Ra = 2.5e4, nu = 0.1, L = 4.0, tem0 = 0.0, qn = 1.0e-2, alphamax = 1.0e4;
     double qf = 1e-2, qg = 1e0, movelimit = 0.2, weightlimit = 0.5, R = 1.5, eps = 1.0e-5, s0 = 0.5;
 
     double U = nu*sqrt(Ra/Pr)/(double)(ly - 1), diff_fluid = nu/Pr, diff_solid = diff_fluid*10.0, gx = 0.0, gy = U*U/(double)(ly - 1);
@@ -300,7 +300,7 @@ int main(int argc, char** argv) {
 
         //********************Check convergence********************
         if (MyRank == 0) {
-            std::cout << "\r" << std::fixed << std::setprecision(6) << k << "\t" << f << "\t" << g << "\t" << td << "\t" << ti << "\t" << dsmax  << " (" << imax << "," << jmax << ")\t" << qf << "\t" << qg << "\t" << mnd << std::endl;
+            std::cout << "\r" << std::fixed << std::setprecision(6) << k << " " << f << " " << g << " " << td << " " << ti << " " << dsmax  << " (" << imax << "," << jmax << ") " << qf << " " << qg << " " << mnd << std::endl;
         }
         if ((k > 1 && dsmax < 0.01 && g <= 0.0) || k == nk) {
             if (MyRank == 0) {

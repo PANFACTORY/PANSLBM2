@@ -54,7 +54,7 @@ namespace PANSLBM2 {
             const int ne = _p.nxyz/P<double>::packsize;
             double omega = 1.0/_tau, iomega = 1.0 - omega, feq[P<double>::nc];
             __m256d __omega = _mm256_set1_pd(omega), __iomega = _mm256_set1_pd(iomega), __feq[P<double>::nc];
-            #pragma omp parallel for private(feq)
+            #pragma omp parallel for private(__feq)
             for (int pidx = 0; pidx < ne; ++pidx) {
                 int idx = pidx*P<double>::packsize;
 

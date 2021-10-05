@@ -224,7 +224,7 @@ namespace PANSLBM2 {
                 }
 
                 //  Collide
-                Equilibrium<P<double> >(__feq, __ux, __uy, __uz, __ip, __iux, __iuy, __iuz)
+                Equilibrium<P<double> >(__feq, __ux, __uy, __uz, __ip, __iux, __iuy, __iuz);
                 _mm256_store_pd(&_p.f0[idx], _mm256_add_pd(_mm256_mul_pd(__iomega, __f[0]), _mm256_mul_pd(__omega, __feq[0])));
                 for (int c = 1; c < P<double>::nc; ++c) {
                     __f[c] = _mm256_add_pd(_mm256_mul_pd(__iomega, __f[c]), _mm256_mul_pd(__omega, __feq[c]));

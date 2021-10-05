@@ -183,7 +183,7 @@ namespace PANSLBM2 {
         //  Function of Update macro, External force(Brinkman, Heat exchange) and Collide of AAD for 3D
         template<class T, template<class>class P, template<class>class Q>
         void MacroBrinkmanCollideHeatExchange(
-            P<T>& _p, const T *_rho, const T *_ux, const T *_uy, const T *_uz, T *_ip, T *_iux, T *_iuy, T _iuz, T *_imx, T *_imy, T *_imz, const T *_alpha, T _viscosity,
+            P<T>& _p, const T *_rho, const T *_ux, const T *_uy, const T *_uz, T *_ip, T *_iux, T *_iuy, T *_iuz, T *_imx, T *_imy, T *_imz, const T *_alpha, T _viscosity,
             Q<T>& _q, const T *_tem, T *_item, T *_iqx, T *_iqy, T *_iqz, const T *_beta, T _diffusivity, bool _issave = false
         ) {
             T omegaf = 1.0/(3.0*_viscosity + 0.5), iomegaf = 1.0 - omegaf, feq[P<T>::nc];

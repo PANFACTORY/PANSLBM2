@@ -1,3 +1,4 @@
+//#define _USE_AVX_DEFINES
 #include <iostream>
 #include <cmath>
 #include <chrono>

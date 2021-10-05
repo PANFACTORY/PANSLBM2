@@ -146,14 +146,14 @@ namespace PANSLBM2 {
 
                 //  Pack f0, f, g0 and g
                 __m256d __f[P<double>::nc], __g[Q<double>::nc];
-                __m256d __f[0] = _mm256_load_pd(&_p.f0[idx]);
+                __f[0] = _mm256_load_pd(&_p.f0[idx]);
                 P<double>::ShuffleToSoA(&_p.f[P<double>::IndexF(idx, 1)], &__f[1]);
-                __m256d __g[0] = _mm256_load_pd(&_q.f0[idx]);
+                __g[0] = _mm256_load_pd(&_q.f0[idx]);
                 Q<double>::ShuffleToSoA(&_q.f[Q<double>::IndexF(idx, 1)], &__g[1]);
 
                 //  Update macro
                 __m256d __ip, __iux, __iuy, __imx, __imy;
-                __m256d __rho = _mm256_loadu_pd(&_rho[idx]), __ux = _mm256_loadu_pd(&_ux[idx]), __uy = _mm256_loadu_pd(&_uy[idx]);
+                __m256d __rho = _mm256_loadu_pd(&_rho[idx]), __ux = _mm256_loadu_pd(&_ux[idx]), __uy = _mm256_loadu_pd(&_uy[idx]), __tem = _mm256_loadu_pd(&_tem[idx]);
                 ANS::Macro<P<double> >(__ip, __iux, __iuy, __imx, __imy, __rho, __ux, __uy, __f);
                 __m256d __item, __iqx, __iqy;
                 Macro<Q<double> >(__item, __iqx, __iqy, __g);
@@ -236,7 +236,7 @@ namespace PANSLBM2 {
         //  Function of Update macro, External force(Brinkman, Heat exchange) and Collide of AAD for 3D
         template<template<class>class P, template<class>class Q>
         void MacroBrinkmanCollideHeatExchange(
-            P<double>& _p, const double *_rho, const double *_ux, const double *_uy, const double *_uz, double *_ip, double *_iux, double *_iuy, double _iuz, double *_imx, double *_imy, double *_imz, const double *_alpha, double _viscosity,
+            P<double>& _p, const double *_rho, const double *_ux, const double *_uy, const double *_uz, double *_ip, double *_iux, double *_iuy, double *_iuz, double *_imx, double *_imy, double *_imz, const double *_alpha, double _viscosity,
             Q<double>& _q, const double *_tem, double *_item, double *_iqx, double *_iqy, double *_iqz, const double *_beta, double _diffusivity, bool _issave = false
         ) {
             const int ne = _p.nxyz/P<double>::packsize;
@@ -250,14 +250,14 @@ namespace PANSLBM2 {
 
                 //  Pack f0, f, g0 and g
                 __m256d __f[P<double>::nc], __g[Q<double>::nc];
-                __m256d __f[0] = _mm256_load_pd(&_p.f0[idx]);
+                __f[0] = _mm256_load_pd(&_p.f0[idx]);
                 P<double>::ShuffleToSoA(&_p.f[P<double>::IndexF(idx, 1)], &__f[1]);
-                __m256d __g[0] = _mm256_load_pd(&_q.f0[idx]);
+                __g[0] = _mm256_load_pd(&_q.f0[idx]);
                 Q<double>::ShuffleToSoA(&_q.f[Q<double>::IndexF(idx, 1)], &__g[1]);
 
                 //  Update macro
                 __m256d __ip, __iux, __iuy, __iuz, __imx, __imy, __imz;
-                __m256d __rho = _mm256_loadu_pd(&_rho[idx]), __ux = _mm256_loadu_pd(&_ux[idx]), __uy = _mm256_loadu_pd(&_uy[idx]), __uz = _mm256_loadu_pd(&_uz[idx]);
+                __m256d __rho = _mm256_loadu_pd(&_rho[idx]), __ux = _mm256_loadu_pd(&_ux[idx]), __uy = _mm256_loadu_pd(&_uy[idx]), __uz = _mm256_loadu_pd(&_uz[idx]), __tem = _mm256_loadu_pd(&_tem[idx]);
                 ANS::Macro<P<double> >(__ip, __iux, __iuy, __iuz, __imx, __imy, __imz, __rho, __ux, __uy, __uz, __f);
                 __m256d __item, __iqx, __iqy, __iqz;
                 Macro<Q<double> >(__item, __iqx, __iqy, __iqz, __g);
@@ -362,14 +362,14 @@ namespace PANSLBM2 {
 
                 //  Pack f0, f, g0 and g
                 __m256d __f[P<double>::nc], __g[Q<double>::nc];
-                __m256d __f[0] = _mm256_load_pd(&_p.f0[idx]);
+                __f[0] = _mm256_load_pd(&_p.f0[idx]);
                 P<double>::ShuffleToSoA(&_p.f[P<double>::IndexF(idx, 1)], &__f[1]);
-                __m256d __g[0] = _mm256_load_pd(&_q.f0[idx]);
+                __g[0] = _mm256_load_pd(&_q.f0[idx]);
                 Q<double>::ShuffleToSoA(&_q.f[Q<double>::IndexF(idx, 1)], &__g[1]);
 
                 //  Update macro
                 __m256d __ip, __iux, __iuy, __imx, __imy;
-                __m256d __rho = _mm256_loadu_pd(&_rho[idx]), __ux = _mm256_loadu_pd(&_ux[idx]), __uy = _mm256_loadu_pd(&_uy[idx]);
+                __m256d __rho = _mm256_loadu_pd(&_rho[idx]), __ux = _mm256_loadu_pd(&_ux[idx]), __uy = _mm256_loadu_pd(&_uy[idx]), __tem = _mm256_loadu_pd(&_tem[idx]);
                 ANS::Macro<P<double> >(__ip, __iux, __iuy, __imx, __imy, __rho, __ux, __uy, __f);
                 __m256d __item, __iqx, __iqy;
                 Macro<Q<double> >(__item, __iqx, __iqy, __g);
@@ -465,14 +465,14 @@ namespace PANSLBM2 {
 
                 //  Pack f0, f, g0 and g
                 __m256d __f[P<double>::nc], __g[Q<double>::nc];
-                __m256d __f[0] = _mm256_load_pd(&_p.f0[idx]);
+                __f[0] = _mm256_load_pd(&_p.f0[idx]);
                 P<double>::ShuffleToSoA(&_p.f[P<double>::IndexF(idx, 1)], &__f[1]);
-                __m256d __g[0] = _mm256_load_pd(&_q.f0[idx]);
+                __g[0] = _mm256_load_pd(&_q.f0[idx]);
                 Q<double>::ShuffleToSoA(&_q.f[Q<double>::IndexF(idx, 1)], &__g[1]);
 
                 //  Update macro
                 __m256d __ip, __iux, __iuy, __iuz, __imx, __imy, __imz;
-                __m256d __rho = _mm256_loadu_pd(&_rho[idx]), __ux = _mm256_loadu_pd(&_ux[idx]), __uy = _mm256_loadu_pd(&_uy[idx]), __uz = _mm256_loadu_pd(&_uz[idx]);
+                __m256d __rho = _mm256_loadu_pd(&_rho[idx]), __ux = _mm256_loadu_pd(&_ux[idx]), __uy = _mm256_loadu_pd(&_uy[idx]), __uz = _mm256_loadu_pd(&_uz[idx]), __tem = _mm256_loadu_pd(&_tem[idx]);
                 ANS::Macro<P<double> >(__ip, __iux, __iuy, __iuz, __imx, __imy, __imz, __rho, __ux, __uy, __uz, __f);
                 __m256d __item, __iqx, __iqy, __iqz;
                 Macro<Q<double> >(__item, __iqx, __iqy, __iqz, __g);
@@ -574,14 +574,14 @@ namespace PANSLBM2 {
 
                 //  Pack f0, f, g0 and g
                 __m256d __f[P<double>::nc], __g[Q<double>::nc];
-                __m256d __f[0] = _mm256_load_pd(&_p.f0[idx]);
+                __f[0] = _mm256_load_pd(&_p.f0[idx]);
                 P<double>::ShuffleToSoA(&_p.f[P<double>::IndexF(idx, 1)], &__f[1]);
-                __m256d __g[0] = _mm256_load_pd(&_q.f0[idx]);
+                __g[0] = _mm256_load_pd(&_q.f0[idx]);
                 Q<double>::ShuffleToSoA(&_q.f[Q<double>::IndexF(idx, 1)], &__g[1]);
 
                 //  Update macro
                 __m256d __ip, __iux, __iuy, __imx, __imy;
-                __m256d __rho = _mm256_loadu_pd(&_rho[idx]), __ux = _mm256_loadu_pd(&_ux[idx]), __uy = _mm256_loadu_pd(&_uy[idx]);
+                __m256d __rho = _mm256_loadu_pd(&_rho[idx]), __ux = _mm256_loadu_pd(&_ux[idx]), __uy = _mm256_loadu_pd(&_uy[idx]), __tem = _mm256_loadu_pd(&_tem[idx]);
                 ANS::Macro<P<double> >(__ip, __iux, __iuy, __imx, __imy, __rho, __ux, __uy, __f);
                 __m256d __item, __iqx, __iqy;
                 Macro<Q<double> >(__item, __iqx, __iqy, __g);
@@ -671,7 +671,7 @@ namespace PANSLBM2 {
             const int ne = _p.nxyz/P<double>::packsize;
             double omegaf = 1.0/(3.0*_viscosity + 0.5), iomegaf = 1.0 - omegaf, feq[P<double>::nc], geq[Q<double>::nc];
             __m256d __omegaf = _mm256_set1_pd(omegaf), __iomegaf = _mm256_set1_pd(iomegaf), __feq[P<double>::nc], __geq[Q<double>::nc];
-            __m256d __gx = _mm256_set1_pd(_gx), __gy = _mm256_set1_pd(_gy);
+            __m256d __gx = _mm256_set1_pd(_gx), __gy = _mm256_set1_pd(_gy), __gz = _mm256_set1_pd(_gz);
             #pragma omp parallel for private(__feq, __geq)
             for (int pidx = 0; pidx < ne; ++pidx) {
                 int idx = pidx*P<double>::packsize;
@@ -682,14 +682,14 @@ namespace PANSLBM2 {
 
                 //  Pack f0, f, g0 and g
                 __m256d __f[P<double>::nc], __g[Q<double>::nc];
-                __m256d __f[0] = _mm256_load_pd(&_p.f0[idx]);
+                __f[0] = _mm256_load_pd(&_p.f0[idx]);
                 P<double>::ShuffleToSoA(&_p.f[P<double>::IndexF(idx, 1)], &__f[1]);
-                __m256d __g[0] = _mm256_load_pd(&_q.f0[idx]);
+                __g[0] = _mm256_load_pd(&_q.f0[idx]);
                 Q<double>::ShuffleToSoA(&_q.f[Q<double>::IndexF(idx, 1)], &__g[1]);
 
                 //  Update macro
                 __m256d __ip, __iux, __iuy, __iuz, __imx, __imy, __imz;
-                __m256d __rho = _mm256_loadu_pd(&_rho[idx]), __ux = _mm256_loadu_pd(&_ux[idx]), __uy = _mm256_loadu_pd(&_uy[idx]), __uz = _mm256_loadu_pd(&_uz[idx]);
+                __m256d __rho = _mm256_loadu_pd(&_rho[idx]), __ux = _mm256_loadu_pd(&_ux[idx]), __uy = _mm256_loadu_pd(&_uy[idx]), __uz = _mm256_loadu_pd(&_uz[idx]), __tem = _mm256_loadu_pd(&_tem[idx]);
                 ANS::Macro<P<double> >(__ip, __iux, __iuy, __iuz, __imx, __imy, __imz, __rho, __ux, __uy, __uz, __f);
                 __m256d __item, __iqx, __iqy, __iqz;
                 Macro<Q<double> >(__item, __iqx, __iqy, __iqz, __g);

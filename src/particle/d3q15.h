@@ -165,9 +165,9 @@ public:
         static __m256d __cx[nc], __cy[nc], __cz[nc], __ei[nc];  //  If you use any type except double, cast these values.
         static void LoadCxCyCzEi(); 
         template<class mmT>
-        static void ShuffleToSoA(const T *_f_aos, mmT *_f_soa);
+        void LoadF(int _idx, mmT *__f);
         template<class mmT>
-        static void ShuffleToAoS(T *_f_aos, const mmT *_f_soa);
+        void StoreF(int _idx, const mmT *__f);
 #endif
         
 private:
@@ -1527,21 +1527,22 @@ private:
 
     template<>
     template<>
-    void D3Q15<double>::ShuffleToSoA<__m256d>(const double *_f_aos, __m256d *_f_soa) {
-        __m256d load0 = _mm256_load_pd(&_f_aos[ 0]);   //  f 4(0) f 3(0) f 2(0) f 1(0)
-        __m256d load1 = _mm256_load_pd(&_f_aos[ 4]);   //  f 8(0) f 7(0) f 6(0) f 5(0)
-        __m256d load2 = _mm256_load_pd(&_f_aos[ 8]);   //  f12(0) f11(0) f10(0) f 9(0)
-        __m256d load3 = _mm256_load_pd(&_f_aos[12]);   //  f 2(1) f 1(1) f14(0) f13(0)
-        __m256d load4 = _mm256_load_pd(&_f_aos[16]);   //  f 6(1) f 5(1) f 4(1) f 3(1)
-        __m256d load5 = _mm256_load_pd(&_f_aos[20]);   //  f10(1) f 9(1) f 8(1) f 7(1)
-        __m256d load6 = _mm256_load_pd(&_f_aos[24]);   //  f14(1) f13(1) f12(1) f11(1)
-        __m256d load7 = _mm256_load_pd(&_f_aos[28]);   //  f 4(2) f 3(2) f 2(2) f 1(2)
-        __m256d load8 = _mm256_load_pd(&_f_aos[32]);   //  f 8(2) f 7(2) f 6(2) f 5(2)
-        __m256d load9 = _mm256_load_pd(&_f_aos[36]);   //  f12(2) f11(2) f10(2) f 9(2)
-        __m256d load10 = _mm256_load_pd(&_f_aos[40]);  //  f 2(3) f 1(3) f14(2) f13(2)
-        __m256d load11 = _mm256_load_pd(&_f_aos[44]);  //  f 6(3) f 5(3) f 4(3) f 3(3)
-        __m256d load12 = _mm256_load_pd(&_f_aos[48]);  //  f10(3) f 9(3) f 8(3) f 7(3)
-        __m256d load13 = _mm256_load_pd(&_f_aos[52]);  //  f14(3) f13(3) f12(3) f11(3)
+    void D3Q15<double>::LoadF<__m256d>(int _idx, __m256d *__f) {
+        const int offsetf = D3Q15<double>::IndexF(_idx, 1);
+        __m256d load0 = _mm256_load_pd(&this->f[offsetf +  0]);   //  f 4(0) f 3(0) f 2(0) f 1(0)
+        __m256d load1 = _mm256_load_pd(&this->f[offsetf +  4]);   //  f 8(0) f 7(0) f 6(0) f 5(0)
+        __m256d load2 = _mm256_load_pd(&this->f[offsetf +  8]);   //  f12(0) f11(0) f10(0) f 9(0)
+        __m256d load3 = _mm256_load_pd(&this->f[offsetf + 12]);   //  f 2(1) f 1(1) f14(0) f13(0)
+        __m256d load4 = _mm256_load_pd(&this->f[offsetf + 16]);   //  f 6(1) f 5(1) f 4(1) f 3(1)
+        __m256d load5 = _mm256_load_pd(&this->f[offsetf + 20]);   //  f10(1) f 9(1) f 8(1) f 7(1)
+        __m256d load6 = _mm256_load_pd(&this->f[offsetf + 24]);   //  f14(1) f13(1) f12(1) f11(1)
+        __m256d load7 = _mm256_load_pd(&this->f[offsetf + 28]);   //  f 4(2) f 3(2) f 2(2) f 1(2)
+        __m256d load8 = _mm256_load_pd(&this->f[offsetf + 32]);   //  f 8(2) f 7(2) f 6(2) f 5(2)
+        __m256d load9 = _mm256_load_pd(&this->f[offsetf + 36]);   //  f12(2) f11(2) f10(2) f 9(2)
+        __m256d load10 = _mm256_load_pd(&this->f[offsetf + 40]);  //  f 2(3) f 1(3) f14(2) f13(2)
+        __m256d load11 = _mm256_load_pd(&this->f[offsetf + 44]);  //  f 6(3) f 5(3) f 4(3) f 3(3)
+        __m256d load12 = _mm256_load_pd(&this->f[offsetf + 48]);  //  f10(3) f 9(3) f 8(3) f 7(3)
+        __m256d load13 = _mm256_load_pd(&this->f[offsetf + 52]);  //  f14(3) f13(3) f12(3) f11(3)
         
         const int mm0 = 2*16 + 0*1, mm1 = 3*16 + 1*1; 
         __m256d permute0 = _mm256_permute2f128_pd(load0, load7, mm0);    //  f 2(2) f 1(2) f 2(0) f 1(0)
@@ -1559,55 +1560,57 @@ private:
         __m256d permute12 = _mm256_permute2f128_pd(load6, load13, mm0);  //  f12(3) f11(3) f12(1) f11(1)
         __m256d permute13 = _mm256_permute2f128_pd(load6, load13, mm1);  //  f14(3) f13(3) f14(1) f13(1)
 
-        _f_soa[ 0] = _mm256_unpacklo_pd(permute0, permute7);    //  f 1(3) f 1(2) f 1(1) f 1(0)
-        _f_soa[ 1] = _mm256_unpackhi_pd(permute0, permute7);    //  f 2(3) f 2(2) f 2(1) f 2(0)
-        _f_soa[ 2] = _mm256_unpacklo_pd(permute1, permute8);    //  f 3(3) f 3(2) f 3(1) f 3(0)
-        _f_soa[ 3] = _mm256_unpackhi_pd(permute1, permute8);    //  f 4(3) f 4(2) f 4(1) f 4(0)
-        _f_soa[ 4] = _mm256_unpacklo_pd(permute2, permute9);    //  f 5(3) f 5(2) f 5(1) f 5(0)
-        _f_soa[ 5] = _mm256_unpackhi_pd(permute2, permute9);    //  f 6(3) f 6(2) f 6(1) f 6(0)
-        _f_soa[ 6] = _mm256_unpacklo_pd(permute3, permute10);   //  f 7(3) f 7(2) f 7(1) f 7(0)
-        _f_soa[ 7] = _mm256_unpackhi_pd(permute3, permute10);   //  f 8(3) f 8(2) f 8(1) f 8(0)
-        _f_soa[ 8] = _mm256_unpacklo_pd(permute4, permute11);   //  f 9(3) f 9(2) f 9(1) f 9(0)
-        _f_soa[ 9] = _mm256_unpackhi_pd(permute4, permute11);   //  f10(3) f10(2) f10(1) f10(0)
-        _f_soa[10] = _mm256_unpacklo_pd(permute5, permute12);   //  f11(3) f11(2) f11(1) f11(0)
-        _f_soa[11] = _mm256_unpackhi_pd(permute5, permute12);   //  f12(3) f12(2) f12(1) f12(0)
-        _f_soa[12] = _mm256_unpacklo_pd(permute6, permute13);   //  f13(3) f13(2) f13(1) f13(0)
-        _f_soa[13] = _mm256_unpackhi_pd(permute6, permute13);   //  f14(3) f14(2) f14(1) f14(0)
+        __f[ 0] = _mm256_load_pd(&this->f0[_idx]);          //  f 0(3) f 0(2) f 0(1) f 0(0)
+        __f[ 1] = _mm256_unpacklo_pd(permute0, permute7);   //  f 1(3) f 1(2) f 1(1) f 1(0)
+        __f[ 2] = _mm256_unpackhi_pd(permute0, permute7);   //  f 2(3) f 2(2) f 2(1) f 2(0)
+        __f[ 3] = _mm256_unpacklo_pd(permute1, permute8);   //  f 3(3) f 3(2) f 3(1) f 3(0)
+        __f[ 4] = _mm256_unpackhi_pd(permute1, permute8);   //  f 4(3) f 4(2) f 4(1) f 4(0)
+        __f[ 5] = _mm256_unpacklo_pd(permute2, permute9);   //  f 5(3) f 5(2) f 5(1) f 5(0)
+        __f[ 6] = _mm256_unpackhi_pd(permute2, permute9);   //  f 6(3) f 6(2) f 6(1) f 6(0)
+        __f[ 7] = _mm256_unpacklo_pd(permute3, permute10);  //  f 7(3) f 7(2) f 7(1) f 7(0)
+        __f[ 8] = _mm256_unpackhi_pd(permute3, permute10);  //  f 8(3) f 8(2) f 8(1) f 8(0)
+        __f[ 9] = _mm256_unpacklo_pd(permute4, permute11);  //  f 9(3) f 9(2) f 9(1) f 9(0)
+        __f[10] = _mm256_unpackhi_pd(permute4, permute11);  //  f10(3) f10(2) f10(1) f10(0)
+        __f[11] = _mm256_unpacklo_pd(permute5, permute12);  //  f11(3) f11(2) f11(1) f11(0)
+        __f[12] = _mm256_unpackhi_pd(permute5, permute12);  //  f12(3) f12(2) f12(1) f12(0)
+        __f[13] = _mm256_unpacklo_pd(permute6, permute13);  //  f13(3) f13(2) f13(1) f13(0)
+        __f[14] = _mm256_unpackhi_pd(permute6, permute13);  //  f14(3) f14(2) f14(1) f14(0)
     }
 
     template<>
     template<>
-    void D3Q15<double>::ShuffleToAoS<__m256d>(double *_f_aos, const __m256d *_f_soa) {
-        __m256d unpack0 = _mm256_unpacklo_pd(_f_soa[0], _f_soa[1]);     //  f 2(2) f 1(2) f 2(0) f 1(0)
-        __m256d unpack1 = _mm256_unpackhi_pd(_f_soa[0], _f_soa[1]);     //  f 2(3) f 1(3) f 2(1) f 1(1)
-        __m256d unpack2 = _mm256_unpacklo_pd(_f_soa[2], _f_soa[3]);     //  f 4(2) f 3(2) f 4(0) f 3(0)
-        __m256d unpack3 = _mm256_unpackhi_pd(_f_soa[2], _f_soa[3]);     //  f 4(3) f 3(3) f 4(1) f 3(1)
-        __m256d unpack4 = _mm256_unpacklo_pd(_f_soa[4], _f_soa[5]);     //  f 6(2) f 5(2) f 6(0) f 5(0)
-        __m256d unpack5 = _mm256_unpackhi_pd(_f_soa[4], _f_soa[5]);     //  f 6(3) f 5(3) f 6(1) f 5(1)
-        __m256d unpack6 = _mm256_unpacklo_pd(_f_soa[6], _f_soa[7]);     //  f 8(2) f 7(2) f 8(0) f 7(0)
-        __m256d unpack7 = _mm256_unpackhi_pd(_f_soa[6], _f_soa[7]);     //  f 8(3) f 7(3) f 8(1) f 7(1)
-        __m256d unpack8 = _mm256_unpacklo_pd(_f_soa[8], _f_soa[9]);     //  f10(2) f 9(2) f10(0) f 9(0)
-        __m256d unpack9 = _mm256_unpackhi_pd(_f_soa[8], _f_soa[9]);     //  f10(3) f 9(3) f10(1) f 9(1)
-        __m256d unpack10 = _mm256_unpacklo_pd(_f_soa[10], _f_soa[11]);  //  f12(2) f11(2) f12(0) f11(0)
-        __m256d unpack11 = _mm256_unpackhi_pd(_f_soa[10], _f_soa[11]);  //  f12(3) f11(3) f12(1) f11(1)
-        __m256d unpack12 = _mm256_unpacklo_pd(_f_soa[12], _f_soa[13]);  //  f14(2) f13(2) f14(0) f13(0)
-        __m256d unpack13 = _mm256_unpackhi_pd(_f_soa[12], _f_soa[13]);  //  f14(3) f13(3) f14(1) f13(1)
+    void D3Q15<double>::StoreF<__m256d>(int _idx, const __m256d *__f) {
+        __m256d unpack0 = _mm256_unpacklo_pd(__f[1], __f[2]);       //  f 2(2) f 1(2) f 2(0) f 1(0)
+        __m256d unpack1 = _mm256_unpackhi_pd(__f[1], __f[2]);       //  f 2(3) f 1(3) f 2(1) f 1(1)
+        __m256d unpack2 = _mm256_unpacklo_pd(__f[3], __f[4]);       //  f 4(2) f 3(2) f 4(0) f 3(0)
+        __m256d unpack3 = _mm256_unpackhi_pd(__f[3], __f[4]);       //  f 4(3) f 3(3) f 4(1) f 3(1)
+        __m256d unpack4 = _mm256_unpacklo_pd(__f[5], __f[6]);       //  f 6(2) f 5(2) f 6(0) f 5(0)
+        __m256d unpack5 = _mm256_unpackhi_pd(__f[5], __f[6]);       //  f 6(3) f 5(3) f 6(1) f 5(1)
+        __m256d unpack6 = _mm256_unpacklo_pd(__f[7], __f[8]);       //  f 8(2) f 7(2) f 8(0) f 7(0)
+        __m256d unpack7 = _mm256_unpackhi_pd(__f[7], __f[8]);       //  f 8(3) f 7(3) f 8(1) f 7(1)
+        __m256d unpack8 = _mm256_unpacklo_pd(__f[9], __f[10]);      //  f10(2) f 9(2) f10(0) f 9(0)
+        __m256d unpack9 = _mm256_unpackhi_pd(__f[9], __f[10]);      //  f10(3) f 9(3) f10(1) f 9(1)
+        __m256d unpack10 = _mm256_unpacklo_pd(__f[11], __f[12]);    //  f12(2) f11(2) f12(0) f11(0)
+        __m256d unpack11 = _mm256_unpackhi_pd(__f[11], __f[12]);    //  f12(3) f11(3) f12(1) f11(1)
+        __m256d unpack12 = _mm256_unpacklo_pd(__f[13], __f[14]);    //  f14(2) f13(2) f14(0) f13(0)
+        __m256d unpack13 = _mm256_unpackhi_pd(__f[13], __f[14]);    //  f14(3) f13(3) f14(1) f13(1)
 
-        const int mm0 = 2*16 + 0*1, mm1 = 3*16 + 1*1;
-        _mm256_store_pd(&_f_aos[ 0], _mm256_permute2f128_pd(unpack0, unpack2, mm0));    //  f 4(0) f 3(0) f 2(0) f 1(0)
-        _mm256_store_pd(&_f_aos[ 4], _mm256_permute2f128_pd(unpack4, unpack6, mm0));    //  f 8(0) f 7(0) f 6(0) f 5(0)
-        _mm256_store_pd(&_f_aos[ 8], _mm256_permute2f128_pd(unpack8, unpack10, mm0));   //  f12(0) f11(0) f10(0) f 9(0)
-        _mm256_store_pd(&_f_aos[12], _mm256_permute2f128_pd(unpack12, unpack1, mm0));   //  f 2(1) f 1(1) f14(0) f13(0)
-        _mm256_store_pd(&_f_aos[16], _mm256_permute2f128_pd(unpack3, unpack5, mm0));    //  f 6(1) f 5(1) f 4(1) f 3(1)
-        _mm256_store_pd(&_f_aos[20], _mm256_permute2f128_pd(unpack7, unpack9, mm0));    //  f10(1) f 9(1) f 8(1) f 7(1)
-        _mm256_store_pd(&_f_aos[24], _mm256_permute2f128_pd(unpack11, unpack13, mm0));  //  f14(1) f13(1) f12(1) f11(1)
-        _mm256_store_pd(&_f_aos[28], _mm256_permute2f128_pd(unpack0, unpack2, mm1));    //  f 4(2) f 3(2) f 2(2) f 1(2)
-        _mm256_store_pd(&_f_aos[32], _mm256_permute2f128_pd(unpack4, unpack6, mm1));    //  f 8(2) f 7(2) f 6(2) f 5(2)
-        _mm256_store_pd(&_f_aos[36], _mm256_permute2f128_pd(unpack8, unpack10, mm1));   //  f12(2) f11(2) f10(2) f 9(2)
-        _mm256_store_pd(&_f_aos[40], _mm256_permute2f128_pd(unpack12, unpack1, mm1));   //  f 2(3) f 1(3) f14(2) f13(2)
-        _mm256_store_pd(&_f_aos[44], _mm256_permute2f128_pd(unpack3, unpack5, mm1));    //  f 6(3) f 5(3) f 4(3) f 3(3)
-        _mm256_store_pd(&_f_aos[48], _mm256_permute2f128_pd(unpack7, unpack9, mm1));    //  f10(3) f 9(3) f 8(3) f 7(3)
-        _mm256_store_pd(&_f_aos[52], _mm256_permute2f128_pd(unpack11, unpack13, mm1));  //  f14(3) f13(3) f12(3) f11(3)
+        const int mm0 = 2*16 + 0*1, mm1 = 3*16 + 1*1, offsetf = D3Q15<double>::IndexF(_idx, 1);
+        _mm256_store_pd(&this->f0[_idx], __f[0]);                                                   //  f 0(3) f 0(2) f 0(1) f 0(0)
+        _mm256_store_pd(&this->f[offsetf +  0], _mm256_permute2f128_pd(unpack0, unpack2, mm0));     //  f 4(0) f 3(0) f 2(0) f 1(0)
+        _mm256_store_pd(&this->f[offsetf +  4], _mm256_permute2f128_pd(unpack4, unpack6, mm0));     //  f 8(0) f 7(0) f 6(0) f 5(0)
+        _mm256_store_pd(&this->f[offsetf +  8], _mm256_permute2f128_pd(unpack8, unpack10, mm0));    //  f12(0) f11(0) f10(0) f 9(0)
+        _mm256_store_pd(&this->f[offsetf + 12], _mm256_permute2f128_pd(unpack12, unpack1, mm0));    //  f 2(1) f 1(1) f14(0) f13(0)
+        _mm256_store_pd(&this->f[offsetf + 16], _mm256_permute2f128_pd(unpack3, unpack5, mm0));     //  f 6(1) f 5(1) f 4(1) f 3(1)
+        _mm256_store_pd(&this->f[offsetf + 20], _mm256_permute2f128_pd(unpack7, unpack9, mm0));     //  f10(1) f 9(1) f 8(1) f 7(1)
+        _mm256_store_pd(&this->f[offsetf + 24], _mm256_permute2f128_pd(unpack11, unpack13, mm0));   //  f14(1) f13(1) f12(1) f11(1)
+        _mm256_store_pd(&this->f[offsetf + 28], _mm256_permute2f128_pd(unpack0, unpack2, mm1));     //  f 4(2) f 3(2) f 2(2) f 1(2)
+        _mm256_store_pd(&this->f[offsetf + 32], _mm256_permute2f128_pd(unpack4, unpack6, mm1));     //  f 8(2) f 7(2) f 6(2) f 5(2)
+        _mm256_store_pd(&this->f[offsetf + 36], _mm256_permute2f128_pd(unpack8, unpack10, mm1));    //  f12(2) f11(2) f10(2) f 9(2)
+        _mm256_store_pd(&this->f[offsetf + 40], _mm256_permute2f128_pd(unpack12, unpack1, mm1));    //  f 2(3) f 1(3) f14(2) f13(2)
+        _mm256_store_pd(&this->f[offsetf + 44], _mm256_permute2f128_pd(unpack3, unpack5, mm1));     //  f 6(3) f 5(3) f 4(3) f 3(3)
+        _mm256_store_pd(&this->f[offsetf + 48], _mm256_permute2f128_pd(unpack7, unpack9, mm1));     //  f10(3) f 9(3) f 8(3) f 7(3)
+        _mm256_store_pd(&this->f[offsetf + 52], _mm256_permute2f128_pd(unpack11, unpack13, mm1));   //  f14(3) f13(3) f12(3) f11(3)
     }
 #endif
 }

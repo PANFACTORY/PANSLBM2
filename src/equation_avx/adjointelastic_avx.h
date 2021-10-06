@@ -60,8 +60,7 @@ namespace PANSLBM2 {
 
                 //  Pack f0, f and rho
                 __m256d __f[P<double>::nc];
-                __f[0] = _mm256_load_pd(&_p.f0[idx]);
-                P<double>::ShuffleToSoA(&_p.f[P<double>::IndexF(idx, 1)], &__f[1]);
+                _p.LoadF(idx, __f);
                 __m256d __gamma = _mm256_loadu_pd(&_gamma[idx]); 
 
                 //  Update macro
@@ -81,11 +80,10 @@ namespace PANSLBM2 {
 
                 //  Collide
                 Equilibrium<P<double> >(__feq, __irho, __imx, __imy, __isxx, __isxy, __isyx, __isyy, __gamma);
-                _mm256_store_pd(&_p.f0[idx], _mm256_add_pd(_mm256_mul_pd(__iomega, __f[0]), _mm256_mul_pd(__omega, __feq[0])));
-                for (int c = 1; c < P<double>::nc; ++c) {
+                for (int c = 0; c < P<double>::nc; ++c) {
                     __f[c] = _mm256_add_pd(_mm256_mul_pd(__iomega, __f[c]), _mm256_mul_pd(__omega, __feq[c]));
                 }
-                P<double>::ShuffleToAoS(&_p.f[P<double>::IndexF(idx, 1)], &__f[1]);
+                _p.StoreF(idx, __f);
             }
             for (int idx = ne*P<double>::packsize; idx < _p.nxyz; ++idx) {
                 //  Update macro

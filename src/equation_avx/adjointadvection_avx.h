@@ -146,10 +146,8 @@ namespace PANSLBM2 {
 
                 //  Pack f0, f, g0 and g
                 __m256d __f[P<double>::nc], __g[Q<double>::nc];
-                __f[0] = _mm256_load_pd(&_p.f0[idx]);
-                P<double>::ShuffleToSoA(&_p.f[P<double>::IndexF(idx, 1)], &__f[1]);
-                __g[0] = _mm256_load_pd(&_q.f0[idx]);
-                Q<double>::ShuffleToSoA(&_q.f[Q<double>::IndexF(idx, 1)], &__g[1]);
+                _p.LoadF(idx, __f);
+                _q.LoadF(idx, __g);
 
                 //  Update macro
                 __m256d __ip, __iux, __iuy, __imx, __imy;
@@ -180,17 +178,15 @@ namespace PANSLBM2 {
 
                 //  Collide
                 ANS::Equilibrium<P<double> >(__feq, __ux, __uy, __ip, __iux, __iuy);
-                _mm256_store_pd(&_p.f0[idx], _mm256_add_pd(_mm256_mul_pd(__iomegaf, __f[0]), _mm256_mul_pd(__omegaf, __feq[0])));
-                for (int c = 1; c < P<double>::nc; ++c) {
+                for (int c = 0; c < P<double>::nc; ++c) {
                     __f[c] = _mm256_add_pd(_mm256_mul_pd(__iomegaf, __f[c]), _mm256_mul_pd(__omegaf, __feq[c]));
                 }
-                P<double>::ShuffleToAoS(&_p.f[P<double>::IndexF(idx, 1)], &__f[1]);
+                _p.StoreF(idx, __f);
                 Equilibrium<Q<double> >(__geq, __item, __iqx, __iqy, __ux, __uy);
-                _mm256_store_pd(&_q.f0[idx], _mm256_add_pd(_mm256_mul_pd(__iomegag, __g[0]), _mm256_mul_pd(__omegag, __geq[0])));
-                for (int c = 1; c < Q<double>::nc; ++c) {
+                for (int c = 0; c < Q<double>::nc; ++c) {
                     __g[c] = _mm256_add_pd(_mm256_mul_pd(__iomegag, __g[c]), _mm256_mul_pd(__omegag, __geq[c]));
                 }
-                Q<double>::ShuffleToAoS(&_q.f[Q<double>::IndexF(idx, 1)], &__g[1]);
+                _q.StoreF(idx, __g);
             }
             for (int idx = ne*P<double>::packsize; idx < _p.nxyz; ++idx) {
                 //  Update macro
@@ -250,10 +246,8 @@ namespace PANSLBM2 {
 
                 //  Pack f0, f, g0 and g
                 __m256d __f[P<double>::nc], __g[Q<double>::nc];
-                __f[0] = _mm256_load_pd(&_p.f0[idx]);
-                P<double>::ShuffleToSoA(&_p.f[P<double>::IndexF(idx, 1)], &__f[1]);
-                __g[0] = _mm256_load_pd(&_q.f0[idx]);
-                Q<double>::ShuffleToSoA(&_q.f[Q<double>::IndexF(idx, 1)], &__g[1]);
+                _p.LoadF(idx, __f);
+                _q.LoadF(idx, __g);
 
                 //  Update macro
                 __m256d __ip, __iux, __iuy, __iuz, __imx, __imy, __imz;
@@ -287,17 +281,15 @@ namespace PANSLBM2 {
 
                 //  Collide
                 ANS::Equilibrium<P<double> >(__feq, __ux, __uy, __uz, __ip, __iux, __iuy, __iuz);
-                _mm256_store_pd(&_p.f0[idx], _mm256_add_pd(_mm256_mul_pd(__iomegaf, __f[0]), _mm256_mul_pd(__omegaf, __feq[0])));
-                for (int c = 1; c < P<double>::nc; ++c) {
+                for (int c = 0; c < P<double>::nc; ++c) {
                     __f[c] = _mm256_add_pd(_mm256_mul_pd(__iomegaf, __f[c]), _mm256_mul_pd(__omegaf, __feq[c]));
                 }
-                P<double>::ShuffleToAoS(&_p.f[P<double>::IndexF(idx, 1)], &__f[1]);
+                _p.StoreF(idx, __f);
                 Equilibrium<Q<double> >(__geq, __item, __iqx, __iqy, __iqz, __ux, __uy, __uz);
-                _mm256_store_pd(&_q.f0[idx], _mm256_add_pd(_mm256_mul_pd(__iomegag, __g[0]), _mm256_mul_pd(__omegag, __geq[0])));
-                for (int c = 1; c < Q<double>::nc; ++c) {
+                for (int c = 0; c < Q<double>::nc; ++c) {
                     __g[c] = _mm256_add_pd(_mm256_mul_pd(__iomegag, __g[c]), _mm256_mul_pd(__omegag, __geq[c]));
                 }
-                Q<double>::ShuffleToAoS(&_q.f[Q<double>::IndexF(idx, 1)], &__g[1]);
+                _q.StoreF(idx, __g);
             }
             for (int idx = ne*P<double>::packsize; idx < _p.nxyz; ++idx) {
                 //  Update macro
@@ -362,10 +354,8 @@ namespace PANSLBM2 {
 
                 //  Pack f0, f, g0 and g
                 __m256d __f[P<double>::nc], __g[Q<double>::nc];
-                __f[0] = _mm256_load_pd(&_p.f0[idx]);
-                P<double>::ShuffleToSoA(&_p.f[P<double>::IndexF(idx, 1)], &__f[1]);
-                __g[0] = _mm256_load_pd(&_q.f0[idx]);
-                Q<double>::ShuffleToSoA(&_q.f[Q<double>::IndexF(idx, 1)], &__g[1]);
+                _p.LoadF(idx, __f);
+                _q.LoadF(idx, __g);
 
                 //  Update macro
                 __m256d __ip, __iux, __iuy, __imx, __imy;
@@ -393,17 +383,15 @@ namespace PANSLBM2 {
 
                 //  Collide
                 ANS::Equilibrium<P<double> >(__feq, __ux, __uy, __ip, __iux, __iuy);
-                _mm256_store_pd(&_p.f0[idx], _mm256_add_pd(_mm256_mul_pd(__iomegaf, __f[0]), _mm256_mul_pd(__omegaf, __feq[0])));
-                for (int c = 1; c < P<double>::nc; ++c) {
+                for (int c = 0; c < P<double>::nc; ++c) {
                     __f[c] = _mm256_add_pd(_mm256_mul_pd(__iomegaf, __f[c]), _mm256_mul_pd(__omegaf, __feq[c]));
                 }
-                P<double>::ShuffleToAoS(&_p.f[P<double>::IndexF(idx, 1)], &__f[1]);
+                _p.StoreF(idx, __f);
                 Equilibrium<Q<double> >(__geq, __item, __iqx, __iqy, __ux, __uy);
-                _mm256_store_pd(&_q.f0[idx], _mm256_add_pd(_mm256_mul_pd(__iomegag, __g[0]), _mm256_mul_pd(__omegag, __geq[0])));
-                for (int c = 1; c < Q<double>::nc; ++c) {
+                for (int c = 0; c < Q<double>::nc; ++c) {
                     __g[c] = _mm256_add_pd(_mm256_mul_pd(__iomegag, __g[c]), _mm256_mul_pd(__omegag, __geq[c]));
                 }
-                Q<double>::ShuffleToAoS(&_q.f[Q<double>::IndexF(idx, 1)], &__g[1]);
+                _q.StoreF(idx, __g);
             }
             for (int idx = ne*P<double>::packsize; idx < _p.nxyz; ++idx) {
                 double omegag = 1.0/(3.0*_diffusivity[idx] + 0.5), iomegag = 1.0 - omegag;
@@ -465,10 +453,8 @@ namespace PANSLBM2 {
 
                 //  Pack f0, f, g0 and g
                 __m256d __f[P<double>::nc], __g[Q<double>::nc];
-                __f[0] = _mm256_load_pd(&_p.f0[idx]);
-                P<double>::ShuffleToSoA(&_p.f[P<double>::IndexF(idx, 1)], &__f[1]);
-                __g[0] = _mm256_load_pd(&_q.f0[idx]);
-                Q<double>::ShuffleToSoA(&_q.f[Q<double>::IndexF(idx, 1)], &__g[1]);
+                _p.LoadF(idx, __f);
+                _q.LoadF(idx, __g);
 
                 //  Update macro
                 __m256d __ip, __iux, __iuy, __iuz, __imx, __imy, __imz;
@@ -499,17 +485,15 @@ namespace PANSLBM2 {
 
                 //  Collide
                 ANS::Equilibrium<P<double> >(__feq, __ux, __uy, __uz, __ip, __iux, __iuy, __iuz);
-                _mm256_store_pd(&_p.f0[idx], _mm256_add_pd(_mm256_mul_pd(__iomegaf, __f[0]), _mm256_mul_pd(__omegaf, __feq[0])));
-                for (int c = 1; c < P<double>::nc; ++c) {
+                for (int c = 0; c < P<double>::nc; ++c) {
                     __f[c] = _mm256_add_pd(_mm256_mul_pd(__iomegaf, __f[c]), _mm256_mul_pd(__omegaf, __feq[c]));
                 }
-                P<double>::ShuffleToAoS(&_p.f[P<double>::IndexF(idx, 1)], &__f[1]);
+                _p.StoreF(idx, __f);
                 Equilibrium<Q<double> >(__geq, __item, __iqx, __iqy, __iqz, __ux, __uy, __uz);
-                _mm256_store_pd(&_q.f0[idx], _mm256_add_pd(_mm256_mul_pd(__iomegag, __g[0]), _mm256_mul_pd(__omegag, __geq[0])));
-                for (int c = 1; c < Q<double>::nc; ++c) {
+                for (int c = 0; c < Q<double>::nc; ++c) {
                     __g[c] = _mm256_add_pd(_mm256_mul_pd(__iomegag, __g[c]), _mm256_mul_pd(__omegag, __geq[c]));
                 }
-                Q<double>::ShuffleToAoS(&_q.f[Q<double>::IndexF(idx, 1)], &__g[1]);
+                _q.StoreF(idx, __g);
             }
             for (int idx = ne*P<double>::packsize; idx < _p.nxyz; ++idx) {
                 double omegag = 1.0/(3.0*_diffusivity[idx] + 0.5), iomegag = 1.0 - omegag;
@@ -574,10 +558,8 @@ namespace PANSLBM2 {
 
                 //  Pack f0, f, g0 and g
                 __m256d __f[P<double>::nc], __g[Q<double>::nc];
-                __f[0] = _mm256_load_pd(&_p.f0[idx]);
-                P<double>::ShuffleToSoA(&_p.f[P<double>::IndexF(idx, 1)], &__f[1]);
-                __g[0] = _mm256_load_pd(&_q.f0[idx]);
-                Q<double>::ShuffleToSoA(&_q.f[Q<double>::IndexF(idx, 1)], &__g[1]);
+                _p.LoadF(idx, __f);
+                _q.LoadF(idx, __g);
 
                 //  Update macro
                 __m256d __ip, __iux, __iuy, __imx, __imy;
@@ -607,17 +589,15 @@ namespace PANSLBM2 {
 
                 //  Collide
                 ANS::Equilibrium<P<double> >(__feq, __ux, __uy, __ip, __iux, __iuy);
-                _mm256_store_pd(&_p.f0[idx], _mm256_add_pd(_mm256_mul_pd(__iomegaf, __f[0]), _mm256_mul_pd(__omegaf, __feq[0])));
-                for (int c = 1; c < P<double>::nc; ++c) {
+                for (int c = 0; c < P<double>::nc; ++c) {
                     __f[c] = _mm256_add_pd(_mm256_mul_pd(__iomegaf, __f[c]), _mm256_mul_pd(__omegaf, __feq[c]));
                 }
-                P<double>::ShuffleToAoS(&_p.f[P<double>::IndexF(idx, 1)], &__f[1]);
+                _p.StoreF(idx, __f);
                 Equilibrium<Q<double> >(__geq, __item, __iqx, __iqy, __ux, __uy);
-                _mm256_store_pd(&_q.f0[idx], _mm256_add_pd(_mm256_mul_pd(__iomegag, __g[0]), _mm256_mul_pd(__omegag, __geq[0])));
-                for (int c = 1; c < Q<double>::nc; ++c) {
+                for (int c = 0; c < Q<double>::nc; ++c) {
                     __g[c] = _mm256_add_pd(_mm256_mul_pd(__iomegag, __g[c]), _mm256_mul_pd(__omegag, __geq[c]));
                 }
-                Q<double>::ShuffleToAoS(&_q.f[Q<double>::IndexF(idx, 1)], &__g[1]);
+                _q.StoreF(idx, __g);
             }
             for (int idx = ne*P<double>::packsize; idx < _p.nxyz; ++idx) {
                 double omegag = 1.0/(3.0*_diffusivity[idx] + 0.5), iomegag = 1.0 - omegag;
@@ -682,10 +662,8 @@ namespace PANSLBM2 {
 
                 //  Pack f0, f, g0 and g
                 __m256d __f[P<double>::nc], __g[Q<double>::nc];
-                __f[0] = _mm256_load_pd(&_p.f0[idx]);
-                P<double>::ShuffleToSoA(&_p.f[P<double>::IndexF(idx, 1)], &__f[1]);
-                __g[0] = _mm256_load_pd(&_q.f0[idx]);
-                Q<double>::ShuffleToSoA(&_q.f[Q<double>::IndexF(idx, 1)], &__g[1]);
+                _p.LoadF(idx, __f);
+                _q.LoadF(idx, __g);
 
                 //  Update macro
                 __m256d __ip, __iux, __iuy, __iuz, __imx, __imy, __imz;
@@ -718,17 +696,15 @@ namespace PANSLBM2 {
 
                 //  Collide
                 ANS::Equilibrium<P<double> >(__feq, __ux, __uy, __uz, __ip, __iux, __iuy, __iuz);
-                _mm256_store_pd(&_p.f0[idx], _mm256_add_pd(_mm256_mul_pd(__iomegaf, __f[0]), _mm256_mul_pd(__omegaf, __feq[0])));
-                for (int c = 1; c < P<double>::nc; ++c) {
+                for (int c = 0; c < P<double>::nc; ++c) {
                     __f[c] = _mm256_add_pd(_mm256_mul_pd(__iomegaf, __f[c]), _mm256_mul_pd(__omegaf, __feq[c]));
                 }
-                P<double>::ShuffleToAoS(&_p.f[P<double>::IndexF(idx, 1)], &__f[1]);
+                _p.StoreF(idx, __f);
                 Equilibrium<Q<double> >(__geq, __item, __iqx, __iqy, __iqz, __ux, __uy, __uz);
-                _mm256_store_pd(&_q.f0[idx], _mm256_add_pd(_mm256_mul_pd(__iomegag, __g[0]), _mm256_mul_pd(__omegag, __geq[0])));
-                for (int c = 1; c < Q<double>::nc; ++c) {
+                for (int c = 0; c < Q<double>::nc; ++c) {
                     __g[c] = _mm256_add_pd(_mm256_mul_pd(__iomegag, __g[c]), _mm256_mul_pd(__omegag, __geq[c]));
                 }
-                Q<double>::ShuffleToAoS(&_q.f[Q<double>::IndexF(idx, 1)], &__g[1]);
+                _q.StoreF(idx, __g);
             }
             for (int idx = ne*P<double>::packsize; idx < _p.nxyz; ++idx) {
                 double omegag = 1.0/(3.0*_diffusivity[idx] + 0.5), iomegag = 1.0 - omegag;

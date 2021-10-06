@@ -104,9 +104,9 @@ public:
         static __m256d __cx[nc], __cy[nc], __cz[nc], __ei[nc];  //  If you use any type except double, cast these values.
         static void LoadCxCyCzEi(); 
         template<class mmT>
-        static void ShuffleToSoA(const T *_f_aos, mmT *_f_soa);
+        void LoadF(int _idx, mmT *__f);
         template<class mmT>
-        static void ShuffleToAoS(T *_f_aos, const mmT *_f_soa);
+        void StoreF(int _idx, const mmT *__f);
 #endif
 
 private:
@@ -601,60 +601,64 @@ private:
 
     template<>
     template<>
-    void D2Q9<double>::ShuffleToSoA<__m256d>(const double *_f_aos, __m256d *_f_soa) {
+    void D2Q9<double>::LoadF<__m256d>(int _idx, __m256d *__f) {
         //  fijkl_m ijkl : c, m : idx
-        __m256d f4321_0 = _mm256_load_pd(&_f_aos[ 0]);  //  f4(0) f3(0) f2(0) f1(0)
-        __m256d f8765_0 = _mm256_load_pd(&_f_aos[ 4]);  //  f8(0) f7(0) f6(0) f5(0)  
-        __m256d f4321_1 = _mm256_load_pd(&_f_aos[ 8]);  //  f4(1) f3(1) f2(1) f1(1)
-        __m256d f8765_1 = _mm256_load_pd(&_f_aos[12]);  //  f8(1) f7(1) f6(1) f5(1)
-        __m256d f4321_2 = _mm256_load_pd(&_f_aos[16]);  //  f4(2) f3(2) f2(2) f1(2)
-        __m256d f8765_2 = _mm256_load_pd(&_f_aos[20]);  //  f8(2) f7(2) f6(2) f5(2)
-        __m256d f4321_3 = _mm256_load_pd(&_f_aos[24]);  //  f4(3) f3(3) f2(3) f1(3)
-        __m256d f8765_3 = _mm256_load_pd(&_f_aos[28]);  //  f8(3) f7(3) f6(3) f5(3)
+        const int offsetf = D2Q9<double>::IndexF(_idx, 1);
+        __m256d f4321_0 = _mm256_load_pd(&this->f[offsetf +  0]);   //  f4(0) f3(0) f2(0) f1(0)
+        __m256d f8765_0 = _mm256_load_pd(&this->f[offsetf +  4]);   //  f8(0) f7(0) f6(0) f5(0)  
+        __m256d f4321_1 = _mm256_load_pd(&this->f[offsetf +  8]);   //  f4(1) f3(1) f2(1) f1(1)
+        __m256d f8765_1 = _mm256_load_pd(&this->f[offsetf + 12]);   //  f8(1) f7(1) f6(1) f5(1)
+        __m256d f4321_2 = _mm256_load_pd(&this->f[offsetf + 16]);   //  f4(2) f3(2) f2(2) f1(2)
+        __m256d f8765_2 = _mm256_load_pd(&this->f[offsetf + 20]);   //  f8(2) f7(2) f6(2) f5(2)
+        __m256d f4321_3 = _mm256_load_pd(&this->f[offsetf + 24]);   //  f4(3) f3(3) f2(3) f1(3)
+        __m256d f8765_3 = _mm256_load_pd(&this->f[offsetf + 28]);   //  f8(3) f7(3) f6(3) f5(3)
 
         //  fij_kl ij : c, kl : idx
-        __m256d f31_10 = _mm256_unpacklo_pd(f4321_0, f4321_1);  //  f3(1) f3(0) f1(1) f1(0)
-        __m256d f42_10 = _mm256_unpackhi_pd(f4321_0, f4321_1);  //  f4(1) f4(0) f2(1) f2(0)
-        __m256d f75_10 = _mm256_unpacklo_pd(f8765_0, f8765_1);  //  f7(1) f7(0) f5(1) f5(0)
-        __m256d f86_10 = _mm256_unpackhi_pd(f8765_0, f8765_1);  //  f8(1) f8(0) f6(1) f6(0)
-        __m256d f31_32 = _mm256_unpacklo_pd(f4321_2, f4321_3);  //  f3(3) f3(2) f1(3) f1(2)
-        __m256d f42_32 = _mm256_unpackhi_pd(f4321_2, f4321_3);  //  f4(3) f4(2) f2(3) f2(2)
-        __m256d f75_32 = _mm256_unpacklo_pd(f8765_2, f8765_3);  //  f7(3) f7(2) f5(3) f5(2)
-        __m256d f86_32 = _mm256_unpackhi_pd(f8765_2, f8765_3);  //  f8(3) f6(2) f8(3) f6(2)
+        __m256d f31_10 = _mm256_unpacklo_pd(f4321_0, f4321_1);      //  f3(1) f3(0) f1(1) f1(0)
+        __m256d f42_10 = _mm256_unpackhi_pd(f4321_0, f4321_1);      //  f4(1) f4(0) f2(1) f2(0)
+        __m256d f75_10 = _mm256_unpacklo_pd(f8765_0, f8765_1);      //  f7(1) f7(0) f5(1) f5(0)
+        __m256d f86_10 = _mm256_unpackhi_pd(f8765_0, f8765_1);      //  f8(1) f8(0) f6(1) f6(0)
+        __m256d f31_32 = _mm256_unpacklo_pd(f4321_2, f4321_3);      //  f3(3) f3(2) f1(3) f1(2)
+        __m256d f42_32 = _mm256_unpackhi_pd(f4321_2, f4321_3);      //  f4(3) f4(2) f2(3) f2(2)
+        __m256d f75_32 = _mm256_unpacklo_pd(f8765_2, f8765_3);      //  f7(3) f7(2) f5(3) f5(2)
+        __m256d f86_32 = _mm256_unpackhi_pd(f8765_2, f8765_3);      //  f8(3) f6(2) f8(3) f6(2)
 
         //  fi i : c
         const int mm0 = 2*16 + 0*1, mm1 = 3*16 + 1*1;
-        _f_soa[0] = _mm256_permute2f128_pd(f31_10, f31_32, mm0);   //  f1(3) f1(2) f1(1) f1(0)
-        _f_soa[1] = _mm256_permute2f128_pd(f42_10, f42_32, mm0);   //  f2(3) f2(2) f2(1) f2(0)
-        _f_soa[2] = _mm256_permute2f128_pd(f31_10, f31_32, mm1);   //  f3(3) f3(2) f3(1) f3(0)
-        _f_soa[3] = _mm256_permute2f128_pd(f42_10, f42_32, mm1);   //  f4(3) f4(2) f4(1) f4(0)
-        _f_soa[4] = _mm256_permute2f128_pd(f75_10, f75_32, mm0);   //  f5(3) f5(2) f5(1) f5(0)
-        _f_soa[5] = _mm256_permute2f128_pd(f86_10, f86_32, mm0);   //  f6(3) f6(2) f6(1) f6(0)
-        _f_soa[6] = _mm256_permute2f128_pd(f75_10, f75_32, mm1);   //  f7(3) f7(2) f7(1) f7(0)
-        _f_soa[7] = _mm256_permute2f128_pd(f86_10, f86_32, mm1);   //  f8(3) f8(2) f8(1) f8(0)
+        __f[0] = _mm256_load_pd(&this->f0[_idx]);                   //  f0(3) f0(2) f0(1) f0(0)
+        __f[1] = _mm256_permute2f128_pd(f31_10, f31_32, mm0);       //  f1(3) f1(2) f1(1) f1(0)
+        __f[2] = _mm256_permute2f128_pd(f42_10, f42_32, mm0);       //  f2(3) f2(2) f2(1) f2(0)
+        __f[3] = _mm256_permute2f128_pd(f31_10, f31_32, mm1);       //  f3(3) f3(2) f3(1) f3(0)
+        __f[4] = _mm256_permute2f128_pd(f42_10, f42_32, mm1);       //  f4(3) f4(2) f4(1) f4(0)
+        __f[5] = _mm256_permute2f128_pd(f75_10, f75_32, mm0);       //  f5(3) f5(2) f5(1) f5(0)
+        __f[6] = _mm256_permute2f128_pd(f86_10, f86_32, mm0);       //  f6(3) f6(2) f6(1) f6(0)
+        __f[7] = _mm256_permute2f128_pd(f75_10, f75_32, mm1);       //  f7(3) f7(2) f7(1) f7(0)
+        __f[8] = _mm256_permute2f128_pd(f86_10, f86_32, mm1);       //  f8(3) f8(2) f8(1) f8(0)
     }
 
     template<>
     template<>
-    void D2Q9<double>::ShuffleToAoS<__m256d>(double *_f_aos, const __m256d *_f_soa) {
+    void D2Q9<double>::StoreF<__m256d>(int _idx, const __m256d *__f) {
         const int mm0 = 2*16 + 0*1, mm1 = 3*16 + 1*1;
-        __m256d f31_10 = _mm256_permute2f128_pd(_f_soa[0], _f_soa[2], mm0);  //  f3(1) f3(0) f1(1) f1(0)
-        __m256d f42_10 = _mm256_permute2f128_pd(_f_soa[1], _f_soa[3], mm0);  //  f4(1) f4(0) f2(1) f2(0)
-        __m256d f75_10 = _mm256_permute2f128_pd(_f_soa[4], _f_soa[6], mm0);  //  f7(1) f7(0) f5(1) f5(0)
-        __m256d f86_10 = _mm256_permute2f128_pd(_f_soa[5], _f_soa[7], mm0);  //  f8(1) f6(0) f8(1) f6(0)
-        __m256d f31_32 = _mm256_permute2f128_pd(_f_soa[0], _f_soa[2], mm1);  //  f3(3) f3(2) f1(3) f1(2)
-        __m256d f42_32 = _mm256_permute2f128_pd(_f_soa[1], _f_soa[3], mm1);  //  f4(3) f4(2) f2(3) f2(2)
-        __m256d f75_32 = _mm256_permute2f128_pd(_f_soa[4], _f_soa[6], mm1);  //  f7(3) f7(2) f5(3) f5(2)
-        __m256d f86_32 = _mm256_permute2f128_pd(_f_soa[5], _f_soa[7], mm1);  //  f8(3) f6(2) f8(3) f6(2)
+        __m256d f31_10 = _mm256_permute2f128_pd(__f[1], __f[3], mm0);                   //  f3(1) f3(0) f1(1) f1(0)
+        __m256d f42_10 = _mm256_permute2f128_pd(__f[2], __f[4], mm0);                   //  f4(1) f4(0) f2(1) f2(0)
+        __m256d f75_10 = _mm256_permute2f128_pd(__f[5], __f[7], mm0);                   //  f7(1) f7(0) f5(1) f5(0)
+        __m256d f86_10 = _mm256_permute2f128_pd(__f[6], __f[8], mm0);                   //  f8(1) f6(0) f8(1) f6(0)
+        __m256d f31_32 = _mm256_permute2f128_pd(__f[1], __f[3], mm1);                   //  f3(3) f3(2) f1(3) f1(2)
+        __m256d f42_32 = _mm256_permute2f128_pd(__f[2], __f[4], mm1);                   //  f4(3) f4(2) f2(3) f2(2)
+        __m256d f75_32 = _mm256_permute2f128_pd(__f[5], __f[7], mm1);                   //  f7(3) f7(2) f5(3) f5(2)
+        __m256d f86_32 = _mm256_permute2f128_pd(__f[6], __f[8], mm1);                   //  f8(3) f6(2) f8(3) f6(2)
 
-        _mm256_store_pd(&_f_aos[ 0], _mm256_unpacklo_pd(f31_10, f42_10));  //  f4(0) f3(0) f2(0) f1(0)
-        _mm256_store_pd(&_f_aos[ 4], _mm256_unpacklo_pd(f75_10, f86_10));  //  f8(0) f7(0) f6(0) f5(0)  
-        _mm256_store_pd(&_f_aos[ 8], _mm256_unpackhi_pd(f31_10, f42_10));  //  f4(1) f3(1) f2(1) f1(1)
-        _mm256_store_pd(&_f_aos[12], _mm256_unpackhi_pd(f75_10, f86_10));  //  f8(1) f7(1) f6(1) f5(1)
-        _mm256_store_pd(&_f_aos[16], _mm256_unpacklo_pd(f31_32, f42_32));  //  f4(2) f3(2) f2(2) f1(2)
-        _mm256_store_pd(&_f_aos[20], _mm256_unpacklo_pd(f75_32, f86_32));  //  f8(2) f7(2) f6(2) f5(2)
-        _mm256_store_pd(&_f_aos[24], _mm256_unpackhi_pd(f31_32, f42_32));  //  f4(3) f3(3) f2(3) f1(3)
-        _mm256_store_pd(&_f_aos[28], _mm256_unpackhi_pd(f75_32, f86_32));  //  f8(3) f7(3) f6(3) f5(3)
+        const int offsetf = D2Q9<double>::IndexF(_idx, 1);
+        _mm256_store_pd(&this->f0[_idx], __f[0]);                                       //  f0(3) f0(2) f0(1) f0(0)
+        _mm256_store_pd(&this->f[offsetf +  0], _mm256_unpacklo_pd(f31_10, f42_10));    //  f4(0) f3(0) f2(0) f1(0)
+        _mm256_store_pd(&this->f[offsetf +  4], _mm256_unpacklo_pd(f75_10, f86_10));    //  f8(0) f7(0) f6(0) f5(0)  
+        _mm256_store_pd(&this->f[offsetf +  8], _mm256_unpackhi_pd(f31_10, f42_10));    //  f4(1) f3(1) f2(1) f1(1)
+        _mm256_store_pd(&this->f[offsetf + 12], _mm256_unpackhi_pd(f75_10, f86_10));    //  f8(1) f7(1) f6(1) f5(1)
+        _mm256_store_pd(&this->f[offsetf + 16], _mm256_unpacklo_pd(f31_32, f42_32));    //  f4(2) f3(2) f2(2) f1(2)
+        _mm256_store_pd(&this->f[offsetf + 20], _mm256_unpacklo_pd(f75_32, f86_32));    //  f8(2) f7(2) f6(2) f5(2)
+        _mm256_store_pd(&this->f[offsetf + 24], _mm256_unpackhi_pd(f31_32, f42_32));    //  f4(3) f3(3) f2(3) f1(3)
+        _mm256_store_pd(&this->f[offsetf + 28], _mm256_unpackhi_pd(f75_32, f86_32));    //  f8(3) f7(3) f6(3) f5(3)
     }
 #endif
 }

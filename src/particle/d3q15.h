@@ -34,10 +34,15 @@ public:
             offsetz(this->mz - this->PEz > this->lz%this->mz ? this->PEz*this->nz : this->lz - (this->mz - this->PEz)*this->nz)
         {
             assert(0 < _lx && 0 < _ly && 0 < _lz && 0 <= _PEid && 0 < _mx && 0 < _my && 0 < _mz);
-
-            this->f0 = new (std::align_val_t{32}) T[this->nxyz];
-            this->f = new (std::align_val_t{32}) T[this->nxyz*(D3Q15<T>::nc - 1)];
-            this->fnext = new (std::align_val_t{32}) T[this->nxyz*(D3Q15<T>::nc - 1)];
+#ifdef _USE_AVX_DEFINES
+            this->f0 = (T*)_mm_malloc(sizeof(T)*this->nxyz, 32);
+            this->f = (T*)_mm_malloc(sizeof(T)*this->nxyz*(D3Q15<T>::nc - 1), 32);
+            this->fnext = (T*)_mm_malloc(sizeof(T)*this->nxyz*(D3Q15<T>::nc - 1), 32);
+#else
+            this->f0 = new T[this->nxyz];
+            this->f = new T[this->nxyz*(D3Q15<T>::nc - 1)];
+            this->fnext = new T[this->nxyz*(D3Q15<T>::nc - 1)];
+#endif
             this->fsend_xmin = new T[this->ny*this->nz*5];
             this->fsend_xmax = new T[this->ny*this->nz*5];
             this->fsend_ymin = new T[this->nz*this->nx*5];
@@ -80,9 +85,15 @@ public:
         }
         D3Q15(const D3Q15<T>& _p) = delete;
         ~D3Q15() {
+#ifdef _USE_AVX_DEFINES
+            _mm_free(this->f0);
+            _mm_free(this->f);
+            _mm_free(this->fnext);
+#else
             delete[] this->f0;
             delete[] this->f;
             delete[] this->fnext;
+#endif
             delete[] this->fsend_xmin;
             delete[] this->fsend_xmax;
             delete[] this->fsend_ymin;

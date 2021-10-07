@@ -12,7 +12,7 @@ using namespace PANSLBM2;
 int main() {
     //--------------------Set parameters--------------------
     int nx = 101, ny = 101, nt = 10000, dt = 100;
-    double nu = 0.02, alpha = 0.02, radius = 0.3, v0 = 0.0, Th = 2.0, Tl = 1.0;
+    double nu = 0.02, alpha = 0.02, radius = 0.3, v0 = 0.01, Th = 2.0, Tl = 1.0;
     double L = 2.0*radius*nx, surface = L*M_PI;
     D2Q9<double> pf(nx, ny), pg(nx, ny);
     double rho[pf.nxyz], ux[pf.nxyz], uy[pf.nxyz], tem[pg.nxyz], qx[pg.nxyz], qy[pg.nxyz];
@@ -40,10 +40,10 @@ int main() {
     NS::InitialCondition(pf, rho, ux, uy);
     AD::InitialCondition(pg, tem, ux, uy);
     for (int t = 1; t <= nt; ++t) {
-        AD::MacroCollideNaturalConvectionIB(
+        AD::MacroCollideForceConvectionIB(
             pf, rho, ux, uy, nu, 
             pg, tem, qx, qy, alpha,
-            0.0, 1.6e-5, 0.5*(Th + Tl), bodyns, bodyad, true
+            bodyns, bodyad, true
         );
         if (t%dt == 0) {
             std::cout << "t = " << t/dt << std::endl;

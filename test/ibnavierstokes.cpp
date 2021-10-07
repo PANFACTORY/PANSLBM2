@@ -5,7 +5,7 @@
 
 #include "../src/particle/d2q9.h"
 #include "../src/equation/navierstokes.h"
-#include "../src/ibm/ibns.h"
+#include "../src/ibm/navierstokes_ibm.h"
 #include "../src/utility/vtkexport.h"
 
 using namespace PANSLBM2;
@@ -35,7 +35,7 @@ int main() {
     //--------------------Direct analyze loop--------------------
     NS::InitialCondition(pf, rho, ux, uy);
     for (int t = 1; t <= nt; ++t) {
-        NS::MacroCollideIBM(pf, rho, ux, uy, nu, body, true);
+        NS::MacroCollide(pf, rho, ux, uy, nu, true);
         if (t%dt == 0) {
             std::cout << "t = " << t/dt << std::endl;
             VTKExport file("result/ibm_" + std::to_string(t/dt) + ".vtk", nx, ny);
@@ -50,7 +50,7 @@ int main() {
         pf.BoundaryCondition([](int _i, int _j) { return 1; });
         pf.SmoothCorner();
 
-        body.Update(pf, ux, uy);
+        body.Update(pf, rho, ux, uy);
     }
 
     std::chrono::system_clock::time_point end = std::chrono::system_clock::now();

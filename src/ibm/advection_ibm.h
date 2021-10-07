@@ -37,7 +37,7 @@ public:
         void ExternalForceIB(T *_g0, T *_g, int _idx) const;
 
         void SetBP(int _n, T _bpx, T _bpy) {    this->bpx[_n] = _bpx;   this->bpy[_n] = _bpy;   }
-        void SetBT(int _n, T _btem) {  this->btem[_n] = _btem;   }
+        void SetBT(int _n, T _btemd) {  this->btemd[_n] = _btemd;   }
         void GetBG(int _n, T& _bg) {  _bg = -this->bg[_n];   }
 
 private:

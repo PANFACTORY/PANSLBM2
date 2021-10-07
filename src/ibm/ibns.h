@@ -2,13 +2,13 @@
 #include "src/equation/navierstokes.h"
 
 namespace PANSLBM2{
-    template<class T, class P>
+    template<class T, template<class>class P>
     class IBNS {
 public:
         IBNS() = delete;
-        IBNS(const P& _p, int _nb, T _dv, int _lmax = 5, T _eps = T(1e-5)) : nx(_p.nx), ny(_p.ny), nxy(_p.nxy), nb(_nb) {
-            this->uxl = new T[this->nxy];   this->uyl = new T[this->nxy];
-            this->gxl = new T[this->nxy];   this->gyl = new T[this->nxy];
+        IBNS(const P<T>& _p, int _nb, T _dv, int _lmax = 5, T _eps = T(1e-5)) : nx(_p.nx), ny(_p.ny), nxyz(_p.nxyz), nb(_nb) {
+            this->uxl = new T[this->nxyz];  this->uyl = new T[this->nxyz];
+            this->gxl = new T[this->nxyz];  this->gyl = new T[this->nxyz];
 
             this->bpx = new T[this->nb];    this->bpy = new T[this->nb];
             this->bvx = new T[this->nb];    this->bvy = new T[this->nb];
@@ -32,7 +32,7 @@ public:
             delete[] this->bpx, this->bpy, this->bvx, this->bvy, this->bux, this->buy, this->bgx, this->bgy;
         }
 
-        void Update(const P& _p, const T *_ux, const T *_uy);
+        void Update(const P<T>& _p, const T *_ux, const T *_uy);
         void ExternalForceIB(T *_f, int _idx) const;
 
         void SetBP(int _n, T _bpx, T _bpy) {    this->bpx[_n] = _bpx;   this->bpy[_n] = _bpy;   }
@@ -41,7 +41,7 @@ public:
         void GetBG(int _n, T& _bgx, T& _bgy) {  _bgx = -this->bgx[_n];  _bgy = -this->bgy[_n];   }
 
 private:
-        const int nx, ny, nxy, nb;
+        const int nx, ny, nxyz, nb;
         T dv, eps;
         int lmax, width;
         T *uxl, *uyl, *gxl, *gyl;
@@ -59,8 +59,8 @@ private:
         }
     };
 
-    template<class T, class P>
-    void IBNS<T, P>::Update(const P& _p, const T *_ux, const T *_uy) {
+    template<class T, template<class>class P>
+    void IBNS<T, P>::Update(const P<T>& _p, const T *_ux, const T *_uy) {
         //**********STEP0**********
         for (int n = 0; n < this->nb; ++n) {
             this->bux[n] = T();
@@ -85,7 +85,7 @@ private:
 
         for (int l = 0; l < this->lmax; l++) {
             //**********STEP1**********
-            for (int idx = 0; idx < this->nxy; ++idx) {
+            for (int idx = 0; idx < this->nxyz; ++idx) {
                 this->gxl[idx] = T();
                 this->gyl[idx] = T();
             } 
@@ -106,7 +106,7 @@ private:
             }
 
             //**********STEP2**********
-            for (int idx = 0; idx < this->nxy; ++idx) {
+            for (int idx = 0; idx < this->nxyz; ++idx) {
                 this->uxl[idx] = _ux[idx] + this->gxl[idx];
                 this->uyl[idx] = _uy[idx] + this->gyl[idx];
             } 
@@ -146,30 +146,31 @@ private:
         }
     }
 
-    template<class T, class P>
+    template<class T, template<class>class P>
     void IBNS<T, P>::ExternalForceIB(T *_f, int _idx) const {
         //**********STEP5**********
-        for (int c = 0; c < P::nc; ++c) {
-            _f[P::IndexF(_idx, c)] += 3.0*P::ei[c]*(P::cx[c]*this->gxl[_idx] + P::cy[c]*this->gyl[_idx]);
+        for (int c = 1; c < P<T>::nc; ++c) {
+            _f[P<T>::IndexF(_idx, c)] += 3.0*P<T>::ei[c]*(P<T>::cx[c]*this->gxl[_idx] + P<T>::cy[c]*this->gyl[_idx]);
         } 
     }
 
     namespace NS {
         //  Function of Update macro, External force(Immersed Boundary Method), Collide and Stream of NS for 2D
-        template<class T, class P, class B>
-        void Macro_Collide_Stream_IBM(P& _p, T *_rho, T *_ux, T *_uy, T _viscosity, B& _b, bool _issave = false) {
-            T omega = 1.0/(3.0*_viscosity + 0.5);
+        template<class T, template<class>class P, class B>
+        void MacroCollideIBM(P<T>& _p, T *_rho, T *_ux, T *_uy, T _viscosity, B& _b, bool _issave = false) {
+            T omega = 1.0/(3.0*_viscosity + 0.5), iomega = 1.0 - omega, feq[P<T>::nc];
+            #pragma omp parallel for private(feq)
             for (int i = 0; i < _p.nx; ++i) {
                 for (int j = 0; j < _p.ny; ++j) {
                     int idx = _p.Index(i, j);
 
                     //  Update macro
                     T rho, ux, uy;
-                    Macro<T, P>(rho, ux, uy, _p.f, idx);
+                    Macro<T, P>(rho, ux, uy, _p.f0, _p.f, idx);
 
                     //  External force with Brinkman model
                     _b.ExternalForceIB(_p.f, idx);
-                    Macro<T, P>(rho, ux, uy, _p.f, idx);
+                    Macro<T, P>(rho, ux, uy, _p.f0, _p.f, idx);
 
                     //  Save macro if need
                     if (_issave) {
@@ -179,9 +180,11 @@ private:
                     }
 
                     //  Collide and stream
-                    for (int c = 0; c < P::nc; ++c) {
-                        int idxstream = _p.IndexStream(i, j, c);
-                        _p.fnext[P::IndexF(idxstream, c)] = (1.0 - omega)*_p.f[P::IndexF(idx, c)] + omega*Equilibrium<T, P>(rho, ux, uy, c);
+                    Equilibrium<T, P>(feq, rho, ux, uy);
+                    _p.f0[idx] = iomega*_p.f0[idx] + omega*feq[0];
+                    for (int c = 1; c < P<T>::nc; ++c) {
+                        int idxf = P<T>::IndexF(idx, c);
+                        _p.f[idxf] = iomega*_p.f[idxf] + omega*feq[c];
                     }
                 }
             }

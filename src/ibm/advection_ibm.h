@@ -3,10 +3,10 @@
 
 namespace PANSLBM2{
     template<class T, template<class>class Q>
-    class IBNS {
+    class IBAD {
 public:
-        IBNS() = delete;
-        IBNS(const Q<T>& _q, int _nb, T _dv, int _lmax = 5, T _eps = T(1e-5)) : nx(_q.nx), ny(_q.ny), nxyz(_q.nxyz), nb(_nb) {
+        IBAD() = delete;
+        IBAD(const Q<T>& _q, int _nb, T _dv, int _lmax = 5, T _eps = T(1e-5)) : nx(_q.nx), ny(_q.ny), nxyz(_q.nxyz), nb(_nb) {
             this->teml = new T[this->nxyz];
             this->gl = new T[this->nxyz];
 
@@ -27,8 +27,8 @@ public:
             (int)bpx
             */
         }
-        IBNS(const IBNS<T, Q>&) = delete;
-        ~IBNS() {
+        IBAD(const IBAD<T, Q>&) = delete;
+        ~IBAD() {
             delete[] this->teml, this->gl;
             delete[] this->bpx, this->bpy, this->btem, this->bg, this->btemd;
         }
@@ -37,7 +37,7 @@ public:
         void ExternalForceIB(T *_g0, T *_g, int _idx) const;
 
         void SetBP(int _n, T _bpx, T _bpy) {    this->bpx[_n] = _bpx;   this->bpy[_n] = _bpy;   }
-        void GetBT(int _n, T& _btem) {  _btem = this->btem[_n];   }
+        void SetBT(int _n, T _btem) {  this->btem[_n] = _btem;   }
         void GetBG(int _n, T& _bg) {  _bg = -this->bg[_n];   }
 
 private:
@@ -60,7 +60,7 @@ private:
     };
 
     template<class T, template<class>class Q>
-    void IBNS<T, Q>::Update(const Q<T>& _q, const T *_tem) {
+    void IBAD<T, Q>::Update(const Q<T>& _q, const T *_tem) {
         //**********STEP0**********
         for (int n = 0; n < this->nb; ++n) {
             this->btem[n] = T();
@@ -71,7 +71,7 @@ private:
                     for (int jj = -this->width + 1; jj <= this->width; ++jj) {
                         int j = (int)this->bpy[n] + jj;
                         if (0 <= j && j < this->ny) {
-                            this->btem[n] += _tem[_q.Index(i, j)]*IBNS<T, Q>::W(i - this->bpx[n])*IBNS<T, Q>::W(j - this->bpy[n]);
+                            this->btem[n] += _tem[_q.Index(i, j)]*IBAD<T, Q>::W(i - this->bpx[n])*IBAD<T, Q>::W(j - this->bpy[n]);
                         }
                     }
                 }
@@ -93,7 +93,7 @@ private:
                         for (int jj = -this->width + 1; jj <= this->width; ++jj) {
                             int j = (int)this->bpy[n] + jj;
                             if (0 <= j && j < this->ny) {
-                                this->gl[_q.Index(i, j)] += this->bg[n]*IBNS<T, Q>::W(i - this->bpx[n])*IBNS<T, Q>::W(j - this->bpy[n])*this->dv;
+                                this->gl[_q.Index(i, j)] += this->bg[n]*IBAD<T, Q>::W(i - this->bpx[n])*IBAD<T, Q>::W(j - this->bpy[n])*this->dv;
                             }
                         }
                     }
@@ -116,7 +116,7 @@ private:
                         for (int jj = -this->width + 1; jj <= this->width; ++jj) {
                             int j = (int)this->bpy[n] + jj;
                             if (0 <= j && j < this->ny) {
-                                this->btem[n] += this->teml[_q.Index(i, j)]*IBNS<T, Q>::W(i - this->bpx[n])*IBNS<T, Q>::W(j - this->bpy[n]);
+                                this->btem[n] += this->teml[_q.Index(i, j)]*IBAD<T, Q>::W(i - this->bpx[n])*IBAD<T, Q>::W(j - this->bpy[n]);
                             }
                         }
                     }
@@ -138,7 +138,7 @@ private:
     }
 
     template<class T, template<class>class Q>
-    void IBNS<T, Q>::ExternalForceIB(T *_g0, T *_g, int _idx) const {
+    void IBAD<T, Q>::ExternalForceIB(T *_g0, T *_g, int _idx) const {
         //**********STEP5**********
         _g0[_idx] += Q<T>::ei[0]*this->gl[_idx];
         for (int c = 1; c < Q<T>::nc; ++c) {
@@ -148,7 +148,7 @@ private:
 
     namespace AD {
         //  Function of Update macro and Collide of force convection for 2D
-        template<class T, template<class>class P, template<class>class Q, template<class>class B>
+        template<class T, template<class>class P, template<class>class Q, template<class, template<class>class>class B>
         void MacroCollideForceConvectionIB(
             P<T>& _p, T *_rho, T *_ux, T *_uy, T _viscosity,
             Q<T>& _q, T *_tem, T *_qx, T *_qy, T _diffusivity, 
@@ -195,8 +195,8 @@ private:
         }
     
         //  Function of Update macro and Collide of natural convection for 2D
-        template<class T, template<class>class P, template<class>class Q, template<class>class B>
-        void MacroCollideNaturalConvection(
+        template<class T, template<class>class P, template<class>class Q, template<class, template<class>class>class B>
+        void MacroCollideNaturalConvectionIB(
             P<T>& _p, T *_rho, T *_ux, T *_uy, T _viscosity,
             Q<T>& _q, T *_tem, T *_qx, T *_qy, T _diffusivity, 
             T _gx, T _gy, T _tem0, const B<T, Q>& _b, bool _issave = false

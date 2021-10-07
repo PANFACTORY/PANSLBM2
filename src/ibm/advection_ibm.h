@@ -1,5 +1,6 @@
 #pragma once
 #include "src/equation/advection.h"
+#include "src/ibm/navierstokes_ibm.h"
 
 namespace PANSLBM2{
     template<class T, template<class>class Q>
@@ -148,11 +149,11 @@ private:
 
     namespace AD {
         //  Function of Update macro and Collide of force convection for 2D
-        template<class T, template<class>class P, template<class>class Q, template<class, template<class>class>class B>
+        template<class T, template<class>class P, template<class>class Q, template<class, template<class>class>class B, template<class, template<class>class>class C>
         void MacroCollideForceConvectionIB(
             P<T>& _p, T *_rho, T *_ux, T *_uy, T _viscosity,
             Q<T>& _q, T *_tem, T *_qx, T *_qy, T _diffusivity, 
-            const B<T, Q>& _b, bool _issave = false
+            const B<T, P>& _b, const C<T, Q>& _c, bool _issave = false
         ) {
             T omegaf = 1.0/(3.0*_viscosity + 0.5), iomegaf = 1.0 - omegaf, feq[P<T>::nc];
             T omegag = 1.0/(3.0*_diffusivity + 0.5), iomegag = 1.0 - omegag, geq[Q<T>::nc];
@@ -165,7 +166,9 @@ private:
                 Macro<T, Q>(tem, qx, qy, ux, uy, _q.f0, _q.f, omegag, idx);
 
                 //  External force with Brinkman model
-                _b.ExternalForceIB(_q.f0, _q.f, idx);
+                _b.ExternalForceIB(_p.f, idx);
+                NS::Macro<T, P>(rho, ux, uy, _p.f0, _p.f, idx);
+                _c.ExternalForceIB(_q.f0, _q.f, idx);
                 Macro<T, Q>(tem, qx, qy, ux, uy, _q.f0, _q.f, omegag, idx);
 
                 //  Save macro if need
@@ -195,11 +198,11 @@ private:
         }
     
         //  Function of Update macro and Collide of natural convection for 2D
-        template<class T, template<class>class P, template<class>class Q, template<class, template<class>class>class B>
+        template<class T, template<class>class P, template<class>class Q, template<class, template<class>class>class B, template<class, template<class>class>class C>
         void MacroCollideNaturalConvectionIB(
             P<T>& _p, T *_rho, T *_ux, T *_uy, T _viscosity,
             Q<T>& _q, T *_tem, T *_qx, T *_qy, T _diffusivity, 
-            T _gx, T _gy, T _tem0, const B<T, Q>& _b, bool _issave = false
+            T _gx, T _gy, T _tem0, const B<T, P>& _b, const C<T, Q>& _c, bool _issave = false
         ) {
             T omegaf = 1.0/(3.0*_viscosity + 0.5), iomegaf = 1.0 - omegaf, feq[P<T>::nc]; 
             T omegag = 1.0/(3.0*_diffusivity + 0.5), iomegag = 1.0 - omegag, geq[Q<T>::nc];
@@ -212,7 +215,9 @@ private:
                 Macro<T, Q>(tem, qx, qy, ux, uy, _q.f0, _q.f, omegag, idx);
 
                 //  External force with natural convection
-                _b.ExternalForceIB(_q.f0, _q.f, idx);
+                _b.ExternalForceIB(_p.f, idx);
+                NS::Macro<T, P>(rho, ux, uy, _p.f0, _p.f, idx);
+                _c.ExternalForceIB(_q.f0, _q.f, idx);
                 Macro<T, Q>(tem, qx, qy, ux, uy, _q.f0, _q.f, omegag, idx);
                 ExternalForceNaturalConvection<T, P>(tem, _gx, _gy, _tem0, _p.f, idx);
                 NS::Macro<T, P>(rho, ux, uy, _p.f0, _p.f, idx);

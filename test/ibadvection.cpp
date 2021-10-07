@@ -4,7 +4,7 @@
 #include <chrono>
 
 #include "../src/particle/d2q9.h"
-#include "../src/ibm/ibadvection.h"
+#include "../src/ibm/advection_ibm.h"
 #include "../src/utility/vtkexport.h"
 
 using namespace PANSLBM2;
@@ -35,7 +35,7 @@ int main() {
     NS::InitialCondition(pf, rho, ux, uy);
     AD::InitialCondition(pg, tem, ux, uy);
     for (int t = 1; t <= nt; ++t) {
-        AD::MacroCollideIBM(
+        AD::MacroCollideNaturalConvectionIB(
             pf, rho, ux, uy, nu, 
             pg, tem, qx, qy, alpha,
             0.0, 1.6e-5, 0.5*(Th + Tl), body, true

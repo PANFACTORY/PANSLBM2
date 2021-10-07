@@ -1,4 +1,5 @@
-#define _USE_MPI_DEFINES
+//#define _USE_MPI_DEFINES
+#define _USE_AVX_DEFINES
 #include <iostream>
 #include <chrono>
 #include <vector>

@@ -609,7 +609,7 @@ namespace PANSLBM2 {
                 Macro<double, Q>(item, iqx, iqy, _q.f0, _q.f, idx);
 
                 //  External force with Brinkman model
-                ExternalForceBrinkman<double, P>(_rho[idx], _ux[idx], _uy[idx], imx, imy, _tem, iqx, iqy, omegag, _p.f0, _p.f, _alpha[idx], idx);
+                ExternalForceBrinkman<double, P>(_rho[idx], _ux[idx], _uy[idx], imx, imy, _tem[idx], iqx, iqy, omegag, _p.f0, _p.f, _alpha[idx], idx);
                 ANS::Macro<double, P>(ip, iux, iuy, imx, imy, _rho[idx], _ux[idx], _uy[idx], _p.f0, _p.f, idx);
                 ExternalForceNaturalConvection<double, Q>(imx, imy, _gx, _gy, _q.f0, _q.f, idx);
                 Macro<double, Q>(item, iqx, iqy, _q.f0, _q.f, idx);

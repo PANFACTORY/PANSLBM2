@@ -35,21 +35,21 @@ namespace PANSLBM2 {
         //  Function of updating macroscopic values of ANS for 3D
         template<class T, template<class>class P>
         void Macro(T &_ip, T &_iux, T &_iuy, T &_iuz, T &_imx, T &_imy, T &_imz, T _rho, T _ux, T _uy, T _uz, const T *_f0, const T *_f, int _idx) {
-            T uu = _ux[_idx]*_ux[_idx] + _uy[_idx]*_uy[_idx] + _uz[_idx]*_uz[_idx];
+            T uu = _ux*_ux + _uy*_uy + _uz*_uz;
             _ip = _f0[_idx]*P<T>::ei[0]*(1.0 - 1.5*uu);
-            _iux = -_f0[_idx]*P<T>::ei[0]*_ux[_idx];
-            _iuy = -_f0[_idx]*P<T>::ei[0]*_uy[_idx];
-            _iuz = -_f0[_idx]*P<T>::ei[0]*_uz[_idx];
+            _iux = -_f0[_idx]*P<T>::ei[0]*_ux;
+            _iuy = -_f0[_idx]*P<T>::ei[0]*_uy;
+            _iuz = -_f0[_idx]*P<T>::ei[0]*_uz;
             _imx = T();
             _imy = T();
             _imz = T();
             for (int c = 1; c < P<T>::nc; ++c) {
-                T ciu = P<T>::cx[c]*_ux[_idx] + P<T>::cy[c]*_uy[_idx] + P<T>::cz[c]*_uz[_idx];
+                T ciu = P<T>::cx[c]*_ux + P<T>::cy[c]*_uy + P<T>::cz[c]*_uz;
                 T fei = _f[P<T>::IndexF(_idx, c)]*P<T>::ei[c];
                 _ip += fei*(1.0 + 3.0*ciu + 4.5*ciu*ciu - 1.5*uu);
-                _iux += fei*(P<T>::cx[c] + 3.0*ciu*P<T>::cx[c] - _ux[_idx]);
-                _iuy += fei*(P<T>::cy[c] + 3.0*ciu*P<T>::cy[c] - _uy[_idx]);
-                _iuz += fei*(P<T>::cz[c] + 3.0*ciu*P<T>::cz[c] - _uz[_idx]);
+                _iux += fei*(P<T>::cx[c] + 3.0*ciu*P<T>::cx[c] - _ux);
+                _iuy += fei*(P<T>::cy[c] + 3.0*ciu*P<T>::cy[c] - _uy);
+                _iuz += fei*(P<T>::cz[c] + 3.0*ciu*P<T>::cz[c] - _uz);
                 _imx += fei*P<T>::cx[c];
                 _imy += fei*P<T>::cy[c];
                 _imz += fei*P<T>::cz[c];

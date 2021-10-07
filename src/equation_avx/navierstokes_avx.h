@@ -86,7 +86,7 @@ namespace PANSLBM2 {
         void ExternalForceBrinkman(const __m256d &__rho, const __m256d &__ux, const __m256d &__uy, const __m256d &__uz, const __m256d &__alpha, __m256d *__f) {
             __m256d __coef = _mm256_div_pd(_mm256_mul_pd(_mm256_mul_pd(_mm256_set1_pd(3.0), __alpha), __rho), _mm256_add_pd(__rho, __alpha));
             for (int c = 1; c < P::nc; ++c) {
-                __f[c] = _mm256_sub_pd(__f[c], __mm256_mul_pd(__mm256_mul_pd(__coef, P::__ei[c]), __mm256_add_pd(__mm256_add_pd(__mm256_mul_pd(P::__cx[c], __ux), __mm256_mul_pd(P::__cy[c], __uy)), __mm256_mul_pd(P::__cz[c], __uz))));
+                __f[c] = _mm256_sub_pd(__f[c], _mm256_mul_pd(_mm256_mul_pd(__coef, P::__ei[c]), _mm256_add_pd(_mm256_add_pd(_mm256_mul_pd(P::__cx[c], __ux), _mm256_mul_pd(P::__cy[c], __uy)), _mm256_mul_pd(P::__cz[c], __uz))));
             }
         }
 

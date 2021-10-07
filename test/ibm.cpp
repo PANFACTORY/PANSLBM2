@@ -24,7 +24,7 @@ int main() {
 
     const int nb = (int)surface;
     double dv = surface/(double)nb;
-    IBNS<double, D2Q9<double> > body(pf, nb, dv);
+    IBNS<double, D2Q9> body(pf, nb, dv);
     for (int k = 0; k < nb; k++) {
         body.SetBP(k, 0.5*L*cos(2.0*M_PI*k/(double)nb) + (double)nx/2.0, 0.5*L*sin(2.0*M_PI*k/(double)nb) + (double)ny/2.0);
         body.SetBV(k, -v0*sin(2.0*M_PI*k/(double)nb), v0*cos(2.0*M_PI*k/(double)nb));
@@ -35,7 +35,7 @@ int main() {
     //--------------------Direct analyze loop--------------------
     NS::InitialCondition(pf, rho, ux, uy);
     for (int t = 1; t <= nt; ++t) {
-        NS::Macro_Collide_Stream_IBM(pf, rho, ux, uy, nu, body, true);
+        NS::MacroCollideIBM(pf, rho, ux, uy, nu, body, true);
         if (t%dt == 0) {
             std::cout << "t = " << t/dt << std::endl;
             VTKExport file("result/ibm_" + std::to_string(t/dt) + ".vtk", nx, ny);

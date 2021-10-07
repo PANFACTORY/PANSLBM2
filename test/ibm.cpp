@@ -21,7 +21,6 @@ int main() {
         rho[idx] = 1.0;
         ux[idx] = 0.0;  uy[idx] = 0.0;
     }
-    pf.SetBoundary([](int _i, int _j) { return 1;   });
 
     const int nb = (int)surface;
     double dv = surface/(double)nb;
@@ -47,9 +46,8 @@ int main() {
                 [](int _i, int _j, int _k) { return 0.0; }
             );
         }
-
-        pf.Swap();
-        pf.BoundaryCondition();
+        pf.Stream();
+        pf.BoundaryCondition([](int _i, int _j) { return 1; });
         pf.SmoothCorner();
 
         body.Update(pf, ux, uy);

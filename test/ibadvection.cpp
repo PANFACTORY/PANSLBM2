@@ -12,7 +12,7 @@ using namespace PANSLBM2;
 int main() {
     //--------------------Set parameters--------------------
     int nx = 101, ny = 101, nt = 10000, dt = 100;
-    double nu = 0.02, alpha = 0.02, radius = 0.3, Th = 2.0, Tl = 1.0;
+    double nu = 0.02, alpha = 0.02, radius = 0.3, v0 = 0.0, Th = 2.0, Tl = 1.0;
     double L = 2.0*radius*nx, surface = L*M_PI;
     D2Q9<double> pf(nx, ny), pg(nx, ny);
     double rho[pf.nxyz], ux[pf.nxyz], uy[pf.nxyz], tem[pg.nxyz], qx[pg.nxyz], qy[pg.nxyz];
@@ -23,10 +23,15 @@ int main() {
 
     const int nb = (int)surface;
     double dv = surface/(double)nb;
-    IBAD<double, D2Q9> body(pg, nb, dv);
+    IBNS<double, D2Q9> bodyns(pf, nb, dv);
     for (int k = 0; k < nb; k++) {
-        body.SetBP(k, 0.5*L*cos(2.0*M_PI*k/(double)nb) + (double)nx/2.0, 0.5*L*sin(2.0*M_PI*k/(double)nb) + (double)ny/2.0);
-        body.SetBT(k, Th);
+        bodyns.SetBP(k, 0.5*L*cos(2.0*M_PI*k/(double)nb) + (double)nx/2.0, 0.5*L*sin(2.0*M_PI*k/(double)nb) + (double)ny/2.0);
+        bodyns.SetBV(k, -v0*sin(2.0*M_PI*k/(double)nb), v0*cos(2.0*M_PI*k/(double)nb));
+    }
+    IBAD<double, D2Q9> bodyad(pg, nb, dv);
+    for (int k = 0; k < nb; k++) {
+        bodyad.SetBP(k, 0.5*L*cos(2.0*M_PI*k/(double)nb) + (double)nx/2.0, 0.5*L*sin(2.0*M_PI*k/(double)nb) + (double)ny/2.0);
+        bodyad.SetBT(k, Th);
     }
     
     std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
@@ -38,7 +43,7 @@ int main() {
         AD::MacroCollideNaturalConvectionIB(
             pf, rho, ux, uy, nu, 
             pg, tem, qx, qy, alpha,
-            0.0, 1.6e-5, 0.5*(Th + Tl), body, true
+            0.0, 1.6e-5, 0.5*(Th + Tl), bodyns, bodyad, true
         );
         if (t%dt == 0) {
             std::cout << "t = " << t/dt << std::endl;
@@ -63,7 +68,8 @@ int main() {
         pf.SmoothCorner();
         pg.SmoothCorner();
 
-        body.Update(pg, tem);
+        bodyns.Update(pf, ux, uy);
+        bodyad.Update(pg, tem);
     }
 
     std::chrono::system_clock::time_point end = std::chrono::system_clock::now();

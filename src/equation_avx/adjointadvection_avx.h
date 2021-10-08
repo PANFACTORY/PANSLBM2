@@ -339,7 +339,7 @@ namespace PANSLBM2 {
         template<template<class>class P, template<class>class Q>
         void MacroBrinkmanCollideForceConvection(
             P<double>& _p, const double *_rho, const double *_ux, const double *_uy, double *_ip, double *_iux, double *_iuy, double *_imx, double *_imy, const double *_alpha, double _viscosity,
-            Q<double>& _q, const double *_tem, double *_item, double *_iqx, double *_iqy, const double *_diffusivity, bool _issave = false
+            Q<double>& _q, const double *_tem, double *_item, double *_iqx, double *_iqy, const double *_diffusivity, bool _issave = false, double *_g = nullptr
         ) {
             const int ne = _p.nxyz/P<double>::packsize;
             double omegaf = 1.0/(3.0*_viscosity + 0.5), iomegaf = 1.0 - omegaf, feq[P<double>::nc], geq[Q<double>::nc];
@@ -379,6 +379,13 @@ namespace PANSLBM2 {
                     _mm256_storeu_pd(&_item[idx], __item);
                     _mm256_storeu_pd(&_iqx[idx], __iqx);
                     _mm256_storeu_pd(&_iqy[idx], __iqy);
+
+                    if (_g) {
+                        int offsetf = Q<double>::nc*idx;
+                        for (int c = 0; c < Q<double>::nc; ++c) {
+                            _mm256_storeu_pd(&_g[offsetf + Q<double>::packsize*c], __g[c]);
+                        }
+                    }
                 }
 
                 //  Collide
@@ -416,6 +423,14 @@ namespace PANSLBM2 {
                     _item[idx] = item;
                     _iqx[idx] = iqx;
                     _iqy[idx] = iqy;
+
+                    if (_g) {
+                        int offsetf = Q<double>::nc*idx;
+                        _g[offsetf] = _q.f0[idx];
+                        for (int c = 1; c < Q<double>::nc; ++c) {
+                            _g[offsetf + c] = _q.f[Q<double>::IndexF(idx, c)];
+                        }
+                    }
                 }
 
                 //  Collide
@@ -438,7 +453,7 @@ namespace PANSLBM2 {
         template<template<class>class P, template<class>class Q>
         void MacroBrinkmanCollideForceConvection(
             P<double>& _p, const double *_rho, const double *_ux, const double *_uy, const double *_uz, double *_ip, double *_iux, double *_iuy, double *_iuz, double *_imx, double *_imy, double *_imz, const double *_alpha, double _viscosity,
-            Q<double>& _q, const double *_tem, double *_item, double *_iqx, double *_iqy, double *_iqz, const double *_diffusivity, bool _issave = false
+            Q<double>& _q, const double *_tem, double *_item, double *_iqx, double *_iqy, double *_iqz, const double *_diffusivity, bool _issave = false, double *_g = nullptr
         ) {
             const int ne = _p.nxyz/P<double>::packsize;
             double omegaf = 1.0/(3.0*_viscosity + 0.5), iomegaf = 1.0 - omegaf, feq[P<double>::nc], geq[Q<double>::nc];
@@ -481,6 +496,13 @@ namespace PANSLBM2 {
                     _mm256_storeu_pd(&_iqx[idx], __iqx);
                     _mm256_storeu_pd(&_iqy[idx], __iqy);
                     _mm256_storeu_pd(&_iqz[idx], __iqz);
+
+                    if (_g) {
+                        int offsetf = Q<double>::nc*idx;
+                        for (int c = 0; c < Q<double>::nc; ++c) {
+                            _mm256_storeu_pd(&_g[offsetf + Q<double>::packsize*c], __g[c]);
+                        }
+                    }
                 }
 
                 //  Collide
@@ -520,6 +542,14 @@ namespace PANSLBM2 {
                     _iqx[idx] = iqx;
                     _iqy[idx] = iqy;
                     _iqz[idx] = iqz;
+
+                    if (_g) {
+                        int offsetf = Q<double>::nc*idx;
+                        _g[offsetf] = _q.f0[idx];
+                        for (int c = 1; c < Q<double>::nc; ++c) {
+                            _g[offsetf + c] = _q.f[Q<double>::IndexF(idx, c)];
+                        }
+                    }
                 }
 
                 //  Collide
@@ -542,7 +572,7 @@ namespace PANSLBM2 {
         template<template<class>class P, template<class>class Q>
         void MacroBrinkmanCollideNaturalConvection(
             P<double>& _p, const double *_rho, const double *_ux, const double *_uy, double *_ip, double *_iux, double *_iuy, double *_imx, double *_imy, const double *_alpha, double _viscosity,
-            Q<double>& _q, const double *_tem, double *_item, double *_iqx, double *_iqy, const double *_diffusivity, double _gx, double _gy, bool _issave = false
+            Q<double>& _q, const double *_tem, double *_item, double *_iqx, double *_iqy, const double *_diffusivity, double _gx, double _gy, bool _issave = false, double *_g = nullptr
         ) {
             const int ne = _p.nxyz/P<double>::packsize;
             double omegaf = 1.0/(3.0*_viscosity + 0.5), iomegaf = 1.0 - omegaf, feq[P<double>::nc], geq[Q<double>::nc];
@@ -585,6 +615,13 @@ namespace PANSLBM2 {
                     _mm256_storeu_pd(&_item[idx], __item);
                     _mm256_storeu_pd(&_iqx[idx], __iqx);
                     _mm256_storeu_pd(&_iqy[idx], __iqy);
+
+                    if (_g) {
+                        int offsetf = Q<double>::nc*idx;
+                        for (int c = 0; c < Q<double>::nc; ++c) {
+                            _mm256_storeu_pd(&_g[offsetf + Q<double>::packsize*c], __g[c]);
+                        }
+                    }
                 }
 
                 //  Collide
@@ -624,6 +661,14 @@ namespace PANSLBM2 {
                     _item[idx] = item;
                     _iqx[idx] = iqx;
                     _iqy[idx] = iqy;
+
+                    if (_g) {
+                        int offsetf = Q<double>::nc*idx;
+                        _g[offsetf] = _q.f0[idx];
+                        for (int c = 1; c < Q<double>::nc; ++c) {
+                            _g[offsetf + c] = _q.f[Q<double>::IndexF(idx, c)];
+                        }
+                    }
                 }
 
                 //  Collide
@@ -646,7 +691,7 @@ namespace PANSLBM2 {
         template<template<class>class P, template<class>class Q>
         void MacroBrinkmanCollideNaturalConvection(
             P<double>& _p, const double *_rho, const double *_ux, const double *_uy, const double *_uz, double *_ip, double *_iux, double *_iuy, double *_iuz, double *_imx, double *_imy, double *_imz, const double *_alpha, double _viscosity,
-            Q<double>& _q, const double *_tem, double *_item, double *_iqx, double *_iqy, double *_iqz, const double *_diffusivity, double _gx, double _gy, double _gz, bool _issave = false
+            Q<double>& _q, const double *_tem, double *_item, double *_iqx, double *_iqy, double *_iqz, const double *_diffusivity, double _gx, double _gy, double _gz, bool _issave = false, double *_g = nullptr
         ) {
             const int ne = _p.nxyz/P<double>::packsize;
             double omegaf = 1.0/(3.0*_viscosity + 0.5), iomegaf = 1.0 - omegaf, feq[P<double>::nc], geq[Q<double>::nc];
@@ -692,6 +737,13 @@ namespace PANSLBM2 {
                     _mm256_storeu_pd(&_iqx[idx], __iqx);
                     _mm256_storeu_pd(&_iqy[idx], __iqy);
                     _mm256_storeu_pd(&_iqz[idx], __iqz);
+
+                    if (_g) {
+                        int offsetf = Q<double>::nc*idx;
+                        for (int c = 0; c < Q<double>::nc; ++c) {
+                            _mm256_storeu_pd(&_g[offsetf + Q<double>::packsize*c], __g[c]);
+                        }
+                    }
                 }
 
                 //  Collide
@@ -734,6 +786,14 @@ namespace PANSLBM2 {
                     _iqx[idx] = iqx;
                     _iqy[idx] = iqy;
                     _iqz[idx] = iqz;
+
+                    if (_g) {
+                        int offsetf = Q<double>::nc*idx;
+                        _g[offsetf] = _q.f0[idx];
+                        for (int c = 1; c < Q<double>::nc; ++c) {
+                            _g[offsetf + c] = _q.f[Q<double>::IndexF(idx, c)];
+                        }
+                    }
                 }
 
                 //  Collide
@@ -748,6 +808,249 @@ namespace PANSLBM2 {
                 for (int c = 1; c < Q<double>::nc; ++c) {
                     int idxf = Q<double>::IndexF(idx, c); 
                     _q.f[idxf] = iomegag*_q.f[idxf] + omegag*geq[c];
+                }
+            }
+        }
+
+        //  Function of getting sensitivity of temperature at heat source for D2Q9
+        template<template<class>class Q, class Fv, class Ff>
+        void SensitivityTemperatureAtHeatSource(
+            const double *_ux, const double *_uy, const double *_imx, const double *_imy,
+            Q<double>& _q, const double *_tem, const double *_item, const double *_iqx, const double *_iqy, const double *_g, const double *_ig,
+            double *_dfds, const double *_diffusivity, const double *_dads, const double *_dkds, Fv _qnbc, Ff _bctype
+        ) {
+            const int ps = Q<double>::packsize, ne = _q.nxyz/ps, nc = Q<double>::nc;
+            auto IndexG = [=](int _idx, int _c) {
+                return _idx < ne*ps ? (_idx/ps)*ps*nc + ps*_c + _idx%ps : nc*_idx + _c; 
+            };
+
+            //  Brinkman term and diffusivity term
+            #pragma omp parallel for
+            for (int pidx = 0; pidx < ne; ++pidx) {
+                int idx = pidx*ps;
+
+                __m256d __dfds = _mm256_loadu_pd(&_dfds[idx]), __dads = _mm256_loadu_pd(&_dads[idx]), __dkds = _mm256_loadu_pd(&_dkds[idx]), __3 = _mm256_set1_pd(3.0);
+                __m256d __ux = _mm256_loadu_pd(&_ux[idx]), __uy = _mm256_loadu_pd(&_uy[idx]), __imx = _mm256_loadu_pd(&_imx[idx]), __imy = _mm256_loadu_pd(&_imy[idx]);
+                __m256d __tem = _mm256_loadu_pd(&_tem[idx]), __item = _mm256_loadu_pd(&_item[idx]), __iqx = _mm256_loadu_pd(&_iqx[idx]), __iqy = _mm256_loadu_pd(&_iqy[idx]);
+
+                __dfds = _mm256_add_pd(__dfds, _mm256_mul_pd(__3, _mm256_mul_pd(__dads, _mm256_add_pd(_mm256_mul_pd(__ux, __imx), _mm256_mul_pd(__uy, __imy)))));
+
+                int offsetf = nc*idx;
+                __m256d __sumg = _mm256_setzero_pd(), __taug = _mm256_add_pd(_mm256_mul_pd(__3, _mm256_loadu_pd(&_diffusivity[idx])), _mm256_set1_pd(0.5));
+                for (int c = 0; c < nc; ++c) {
+                    int idxf = offsetf + ps*c;
+                    __m256d __g = _mm256_loadu_pd(&_g[idxf]), __ig = _mm256_loadu_pd(&_ig[idxf]);
+                    __sumg = _mm256_add_pd(__sumg, _mm256_mul_pd(__g, __ig));
+                }
+                __dfds = _mm256_sub_pd(__dfds, _mm256_div_pd(
+                    _mm256_mul_pd(__3, _mm256_mul_pd(__dkds, _mm256_sub_pd(
+                        __sumg, _mm256_mul_pd(__tem, _mm256_add_pd(__item, _mm256_mul_pd(__3, _mm256_add_pd(_mm256_mmul_pd(__ux, __iqx), _mm256_mul_pd(__uy, __iqy)))))
+                    ))), _mm256_mul_pd(__taug, __taug)
+                ));
+                _mm256_storeu_pd(&_dfds[idx], __dfds);
+            }
+            for (int idx = ne*ps; idx < _q.nxyz; ++idx) {
+                
+                _dfds[idx] += 3.0*_dads[idx]*(_ux[idx]*_imx[idx] + _uy[idx]*_imy[idx]);
+                
+                int offsetf = nc*idx;
+                T sumg = T();
+                for (int c = 0; c < nc; ++c) {
+                    sumg += _g[offsetf + c]*_ig[offsetf + c];
+                }
+                _dfds[idx] += -3.0/pow(3.0*_diffusivity[idx] + 0.5, 2.0)*_dkds[idx]*(sumg - _tem[idx]*(_item[idx] + 3.0*(_ux[idx]*_iqx[idx] + _uy[idx]*_iqy[idx])));
+            }
+
+            //  Boundary term along xmin
+            if (_q.PEx == 0) {
+                for (int j = 0; j < _q.ny; ++j) {
+                    if (_bctype(0 + _q.offsetx, j + _q.offsety)) {
+                        int idx = _q.Index(0, j);
+                        _dfds[idx] += _qnbc(0 + _q.offsetx, j + _q.offsety)*_dkds[idx]*(
+                            (1.0 + 3.0*_ux[idx])*(-6.0 + 4.0*_ig[IndexG(idx, 1)] + _ig[IndexG(idx, 5)] + _ig[IndexG(idx, 8)])
+                            + 3.0*_uy[idx]*(_ig[IndexG(idx, 5)] - _ig[IndexG(idx, 8)])
+                        )/(36.0*(1.0 - 3.0*_ux[idx])*pow(_diffusivity[idx], 2.0));
+                    }
+                }
+            }
+            //  Boundary term along xmax
+            if (_q.PEx == _q.mx - 1) {
+                for (int j = 0; j < _q.ny; ++j) {
+                    if (_bctype((_q.nx - 1) + _q.offsetx, j + _q.offsety)) {
+                        int idx = _q.Index(_q.nx - 1, j);
+                        _dfds[idx] += _qnbc((_q.nx - 1) + _q.offsetx, j + _q.offsety)*_dkds[idx]*(
+                            (1.0 - 3.0*_ux[idx])*(-6.0 + 4.0*_ig[IndexG(idx, 3)] + _ig[IndexG(idx, 6)] + _ig[IndexG(idx, 7)])
+                            + 3.0*_uy[idx]*(_ig[IndexG(idx, 6)] - _ig[IndexG(idx, 7)])
+                        )/(36.0*(1.0 + 3.0*_ux[idx])*pow(_diffusivity[idx], 2.0));
+                    }
+                }
+            }
+            //  Boundary term along ymin
+            if (_q.PEy == 0) {
+                for (int i = 0; i < _q.nx; ++i) {
+                    if (_bctype(i + _q.offsetx, 0 + _q.offsety)) {
+                        int idx = _q.Index(i, 0);
+                        _dfds[idx] += _qnbc(i + _q.offsetx, 0 + _q.offsety)*_dkds[idx]*(
+                            (1.0 + 3.0*_uy[idx])*(-6.0 + 4.0*_ig[IndexG(idx, 2)] + _ig[IndexG(idx, 5)] + _ig[IndexG(idx, 6)])
+                            + 3.0*_ux[idx]*(_ig[IndexG(idx, 5)] - _ig[IndexG(idx, 6)])
+                        )/(36.0*(1.0 - 3.0*_uy[idx])*pow(_diffusivity[idx], 2.0));
+                    }
+                }
+            }
+            //  Boundary term along ymax
+            if (_q.PEy == _q.my - 1) {
+                for (int i = 0; i < _q.nx; ++i) {
+                    if (_bctype(i + _q.offsetx, (_q.ny - 1) + _q.offsety)) {
+                        int idx = _q.Index(i, _q.ny - 1);
+                        _dfds[idx] += _qnbc(i + _q.offsetx, (_q.ny - 1) + _q.offsety)*_dkds[idx]*(
+                            (1.0 - 3.0*_uy[idx])*(-6.0 + 4.0*_ig[IndexG(idx, 4)] + _ig[IndexG(idx, 7)] + _ig[IndexG(idx, 8)])
+                            + 3.0*_ux[idx]*(_ig[IndexG(idx, 8)] - _ig[IndexG(idx, 7)])
+                        )/(36.0*(1.0 + 3.0*_uy[idx])*pow(_diffusivity[idx], 2.0));
+                    }
+                }
+            }
+        }
+
+        //  Function of getting sensitivity of temperature at heat source for D3Q15
+        template<class T, template<class>class Q, class Fv, class Ff>
+        void SensitivityTemperatureAtHeatSource(
+            const T *_ux, const T *_uy, const T *_uz, const T *_imx, const T *_imy, const T *_imz,
+            Q<T>& _q, const T *_tem, const T *_item, const T *_iqx, const T *_iqy, const T *_iqz, const T *_g0, const T *_g, const T *_ig0, const T *_ig,
+            T *_dfds, const T *_diffusivity, const T *_dads, const T *_dkds, Fv _qnbc, Ff _bctype
+        ) {
+            const int ps = Q<double>::packsize, ne = _q.nxyz/ps, nc = Q<double>::nc;
+            auto IndexG = [=](int _idx, int _c) {
+                return _idx < ne*ps ? (_idx/ps)*ps*nc + ps*_c + _idx%ps : nc*_idx + _c; 
+            };
+
+            //  Brinkman term and diffusivity term
+            #pragma omp parallel for
+            for (int pidx = 0; pidx < ne; ++pidx) {
+                int idx = pidx*ps;
+
+                __m256d __dfds = _mm256_loadu_pd(&_dfds[idx]), __dads = _mm256_loadu_pd(&_dads[idx]), __dkds = _mm256_loadu_pd(&_dkds[idx]), __3 = _mm256_set1_pd(3.0);
+                __m256d __ux = _mm256_loadu_pd(&_ux[idx]), __uy = _mm256_loadu_pd(&_uy[idx]), __uz = _mm256_loadu_pd(&_uz[idx]);
+                __m256d __imx = _mm256_loadu_pd(&_imx[idx]), __imy = _mm256_loadu_pd(&_imy[idx]), __imz = _mm256_loadu_pd(&_imz[idx]);
+                __m256d __tem = _mm256_loadu_pd(&_tem[idx]), __item = _mm256_loadu_pd(&_item[idx]), __iqx = _mm256_loadu_pd(&_iqx[idx]), __iqy = _mm256_loadu_pd(&_iqy[idx]), __iqz = _mm256_loadu_pd(&_iqz[idx]);
+
+                __dfds = _mm256_add_pd(__dfds, _mm256_mul_pd(__3, _mm256_mul_pd(__dads, _mm256_add_pd(_mm256_mul_pd(__ux, __imx), _mm256_add_pd(_mm256_mul_pd(__uy, __imy), _mm256_mul_pd(__uz, __imz))))));
+
+                int offsetf = nc*idx;
+                __m256d __sumg = _mm256_setzero_pd(), __taug = _mm256_add_pd(_mm256_mul_pd(__3, _mm256_loadu_pd(&_diffusivity[idx])), _mm256_set1_pd(0.5));
+                for (int c = 0; c < nc; ++c) {
+                    int idxf = offsetf + ps*c;
+                    __m256d __g = _mm256_loadu_pd(&_g[idxf]), __ig = _mm256_loadu_pd(&_ig[idxf]);
+                    __sumg = _mm256_add_pd(__sumg, _mm256_mul_pd(__g, __ig));
+                }
+                _dfds[idx] += -3.0/pow(3.0*_diffusivity[idx] + 0.5, 2.0)*_dkds[idx]*(sumg - _tem[idx]*(_item[idx] + 3.0*(_ux[idx]*_iqx[idx] + _uy[idx]*_iqy[idx] + _uz[idx]*_iqz[idx])));
+                
+                __dfds = _mm256_sub_pd(__dfds, _mm256_div_pd(
+                    _mm256_mul_pd(__3, _mm256_mul_pd(__dkds, _mm256_sub_pd(
+                        __sumg, _mm256_mul_pd(__tem, _mm256_add_pd(__item, _mm256_mul_pd(
+                            __3, _mm256_add_pd(_mm256_mul_pd(__ux, __iqx), _mm256_add_pd(_mm256_mul_pd(__uy, __iqy), _mm256_mul_pd(__uz, __iqz)))
+                        )))
+                    ))), _mm256_mul_pd(__taug, __taug)
+                ));
+                _mm256_storeu_pd(&_dfds[idx], __dfds);
+            }
+            for (int idx = ne*ps; idx < _q.nxyz; ++idx) {
+                _dfds[idx] += 3.0*_dads[idx]*(_ux[idx]*_imx[idx] + _uy[idx]*_imy[idx] + _uz[idx]*_imz[idx]);
+                int offsetf = nc*idx;
+                T sumg = T();
+                for (int c = 0; c < nc; ++c) {
+                    sumg += _g[offsetf + c]*_ig[offsetf + c];
+                }
+                _dfds[idx] += -3.0/pow(3.0*_diffusivity[idx] + 0.5, 2.0)*_dkds[idx]*(sumg - _tem[idx]*(_item[idx] + 3.0*(_ux[idx]*_iqx[idx] + _uy[idx]*_iqy[idx] + _uz[idx]*_iqz[idx])));
+            }
+
+            //  Boundary term along xmin
+            if (_q.PEx == 0) {
+                for (int j = 0; j < _q.ny; ++j) {
+                    for (int k = 0; k < _q.nz; ++k) {
+                        if (_bctype(0 + _q.offsetx, j + _q.offsety, k + _q.offsetz)) {
+                            int idx = _q.Index(0, j, k);
+                            _dfds[idx] += _qnbc(0 + _q.offsetx, j + _q.offsety, k + _q.offsetz)*_dkds[idx]*(
+                                (1.0 + 3.0*_ux[idx])*(-12.0 + 8.0*_ig[IndexG(idx, 1)] + _ig[IndexG(idx, 7)] + _ig[IndexG(idx, 9)] + _ig[IndexG(idx, 10)] + _ig[IndexG(idx, 12)])
+                                + 3.0*_uy[idx]*(_ig[IndexG(idx, 7)] - _ig[IndexG(idx, 9)] + _ig[IndexG(idx, 10)] - _ig[IndexG(idx, 12)])
+                                + 3.0*_uz[idx]*(_ig[IndexG(idx, 7)] + _ig[IndexG(idx, 9)] - _ig[IndexG(idx, 10)] - _ig[IndexG(idx, 12)])
+                            )/(72.0*(1.0 - 3.0*_ux[idx])*pow(_diffusivity[idx], 2.0));
+                        }
+                    }
+                }
+            }
+            //  Boundary term along xmax
+            if (_q.PEx == _q.mx - 1) {
+                for (int j = 0; j < _q.ny; ++j) {
+                    for (int k = 0; k < _q.nz; ++k) {
+                        if (_bctype((_q.nx - 1) + _q.offsetx, j + _q.offsety, k + _q.offsetz)) {
+                            int idx = _q.Index(_q.nx - 1, j, k);
+                            _dfds[idx] += _qnbc((_q.nx - 1) + _q.offsetx, j + _q.offsety, k + _q.offsetz)*_dkds[idx]*(
+                                (1.0 - 3.0*_ux[idx])*(-12.0 + 8.0*_ig[IndexG(idx, 4)] + _ig[IndexG(idx, 8)] + _ig[IndexG(idx, 11)] + _ig[IndexG(idx, 13)] + _ig[IndexG(idx, 14)])
+                                + 3.0*_uy[idx]*(_ig[IndexG(idx, 8)] - _ig[IndexG(idx, 11)] + _ig[IndexG(idx, 13)] - _ig[IndexG(idx, 14)])
+                                + 3.0*_uz[idx]*(_ig[IndexG(idx, 8)] - _ig[IndexG(idx, 11)] - _ig[IndexG(idx, 13)] + _ig[IndexG(idx, 14)])
+                            )/(72.0*(1.0 + 3.0*_ux[idx])*pow(_diffusivity[idx], 2.0));
+                        }
+                    }
+                }
+            }
+            //  Boundary term along ymin
+            if (_q.PEy == 0) {
+                for (int k = 0; k < _q.nz; ++k) {
+                    for (int i = 0; i < _q.nx; ++i) {
+                        if (_bctype(i + _q.offsetx, 0 + _q.offsety, k + _q.offsetz)) {
+                            int idx = _q.Index(i, 0, k);
+                            _dfds[idx] += _qnbc(i + _q.offsetx, 0 + _q.offsety, k + _q.offsetz)*_dkds[idx]*(
+                                (1.0 + 3.0*_uy[idx])*(-12.0 + 8.0*_ig[IndexG(idx, 2)] + _ig[IndexG(idx, 7)] + _ig[IndexG(idx, 8)] + _ig[IndexG(idx, 10)] + _ig[IndexG(idx, 13)])
+                                + 3.0*_uz[idx]*(_ig[IndexG(idx, 7)] + _ig[IndexG(idx, 8)] - _ig[IndexG(idx, 10)] - _ig[IndexG(idx, 13)])
+                                + 3.0*_ux[idx]*(_ig[IndexG(idx, 7)] - _ig[IndexG(idx, 8)] + _ig[IndexG(idx, 10)] - _ig[IndexG(idx, 13)])
+                            )/(72.0*(1.0 - 3.0*_uy[idx])*pow(_diffusivity[idx], 2.0));
+                        }
+                    }
+                }
+            }
+            //  Boundary term along ymax
+            if (_q.PEy == _q.my - 1) {
+                for (int k = 0; k < _q.nz; ++k) {
+                    for (int i = 0; i < _q.nx; ++i) {
+                        if (_bctype(i + _q.offsetx, (_q.ny - 1) + _q.offsety, k + _q.offsetz)) {
+                            int idx = _q.Index(i, _q.ny - 1, k);
+                            _dfds[idx] += _qnbc(i + _q.offsetx, (_q.ny - 1) + _q.offsety, k + _q.offsetz)*_dkds[idx]*(
+                                (1.0 - 3.0*_uy[idx])*(-12.0 + 8.0*_ig[IndexG(idx, 5)] + _ig[IndexG(idx, 9)] + _ig[IndexG(idx, 11)] + _ig[IndexG(idx, 12)] + _ig[IndexG(idx, 14)])
+                                + _uz[idx]*(_ig[IndexG(idx, 9)] - _ig[IndexG(idx, 11)] - _ig[IndexG(idx, 12)] + _ig[IndexG(idx, 14)])
+                                + _ux[idx]*(_ig[IndexG(idx, 9)] - _ig[IndexG(idx, 11)] + _ig[IndexG(idx, 12)] - _ig[IndexG(idx, 14)])
+                            )/(72.0*(1.0 + 3.0*_uy[idx])*pow(_diffusivity[idx], 2.0));
+                        }
+                    }
+                }
+            }
+            //  Boundary term along zmin
+            if (_q.PEz == 0) {
+                for (int i = 0; i < _q.nx; ++i) {
+                    for (int j = 0; j < _q.ny; ++j) {
+                        if (_bctype(i + _q.offsetx, j + _q.offsety, 0 + _q.offsetz)) {
+                            int idx = _q.Index(i, j, 0);
+                            _dfds[idx] += _qnbc(i + _q.offsetx, j + _q.offsety, 0 + _q.offsetz)*_dkds[idx]*(
+                                (1.0 + 3.0*_uz[idx])*(-12.0 + 8.0*_ig[IndexG(idx, 3)] + _ig[IndexG(idx, 7)] + _ig[IndexG(idx, 8)] + _ig[IndexG(idx, 9)] + _ig[IndexG(idx, 14)])
+                                + _ux[idx]*(_ig[IndexG(idx, 7)] - _ig[IndexG(idx, 8)] + _ig[IndexG(idx, 9)] - _ig[IndexG(idx, 14)])
+                                + _uy[idx]*(_ig[IndexG(idx, 7)] + _ig[IndexG(idx, 8)] - _ig[IndexG(idx, 9)] - _ig[IndexG(idx, 14)])
+                            )/(72.0*(1.0 - 3.0*_uz[idx])*pow(_diffusivity[idx], 2.0));
+                        }
+                    }
+                }
+            }
+            //  Boundary term along zmax
+            if (_q.PEz == _q.mz - 1) {
+                for (int i = 0; i < _q.nx; ++i) {
+                    for (int j = 0; j < _q.ny; ++j) {
+                        if (_bctype(i + _q.offsetx, j + _q.offsety, (_q.nz - 1) + _q.offsetz)) {
+                            int idx = _q.Index(i, j, _q.nz - 1);
+                            _dfds[idx] += _qnbc(i + _q.offsetx, j + _q.offsety, (_q.nz - 1) + _q.offsetz)*_dkds[idx]*(
+                                (1.0 - 3.0*_uz[idx])*(-12.0 + 8.0*_ig[IndexG(idx, 6)] + _ig[IndexG(idx, 10)] + _ig[IndexG(idx, 11)] + _ig[IndexG(idx, 12)] + _ig[IndexG(idx, 13)])
+                                + _ux[idx]*(_ig[IndexG(idx, 10)] - _ig[IndexG(idx, 11)] + _ig[IndexG(idx, 12)] - _ig[IndexG(idx, 13)])
+                                + _uy[idx]*(_ig[IndexG(idx, 10)] - _ig[IndexG(idx, 11)] - _ig[IndexG(idx, 12)] + _ig[IndexG(idx, 13)])
+                            )/(72.0*(1.0 + 3.0*_uz[idx])*pow(_diffusivity[idx], 2.0));
+                        }
+                    }
                 }
             }
         }

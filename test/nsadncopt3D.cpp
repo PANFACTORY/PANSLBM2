@@ -367,7 +367,12 @@ int main(int argc, char** argv) {
         }
     }
     
-    delete[] rho, ux, uy, uz, uxp, uyp, uzp, tem, qx, qy, qz, qxp, qyp, qzp, diffusivity, alpha, dkds, dads, irho, iux, iuy, iuz, iuxp, iuyp, iuzp, imx, imy, imz, item, iqx, iqy, iqz, iqxp, iqyp, iqzp, gi, igi;
+    delete[] rho;   delete[] ux;    delete[] uy;    delete[] uz;    delete[] uxp;   delete[] uyp;   delete[] uzp;
+    delete[] tem;   delete[] qx;    delete[] qy;    delete[] qz;    delete[] qxp;   delete[] qyp;   delete[] qzp;
+    delete[] diffusivity;   delete[] alpha; delete[] dkds;  delete[] dads;
+    delete[] irho;  delete[] iux;   delete[] iuy;   delete[] iuz;   delete[] iuxp;  delete[] iuyp;  delete[] iuzp;  delete[] imx;   delete[] imy;   delete[] imz;
+    delete[] item;  delete[] iqx;   delete[] iqy;   delete[] iqz;   delete[] iqxp;  delete[] iqyp;  delete[] iqzp;
+    delete[] gi;    delete[] igi;
     std::chrono::system_clock::time_point end = std::chrono::system_clock::now();
     if (MyRank == 0) {
         std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count() << std::endl;

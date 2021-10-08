@@ -658,7 +658,7 @@ namespace PANSLBM2 {
         void MacroBrinkmanCollideForceConvection(
             P<double>& _p, double *_rho, double *_ux, double *_uy, const double *_alpha, double _viscosity,
             Q<double>& _q, double *_tem, double *_qx, double *_qy, const double *_diffusivity, 
-            bool _issave = false, T *_g = nullptr
+            bool _issave = false, double *_g = nullptr
         ) {
             const int ne = _p.nxyz/P<double>::packsize;
             double omegaf = 1.0/(3.0*_viscosity + 0.5), iomegaf = 1.0 - omegaf, feq[P<double>::nc], geq[Q<double>::nc];
@@ -770,7 +770,7 @@ namespace PANSLBM2 {
         void MacroBrinkmanCollideForceConvection(
             P<double>& _p, double *_rho, double *_ux, double *_uy, double *_uz, const double *_alpha, double _viscosity,
             Q<double>& _q, double *_tem, double *_qx, double *_qy, double *_qz, const double *_diffusivity, 
-            bool _issave = false, T *_g = nullptr
+            bool _issave = false, double *_g = nullptr
         ) {
             const int ne = _p.nxyz/P<double>::packsize;
             double omegaf = 1.0/(3.0*_viscosity + 0.5), iomegaf = 1.0 - omegaf, feq[P<double>::nc], geq[Q<double>::nc];
@@ -886,7 +886,7 @@ namespace PANSLBM2 {
         void MacroBrinkmanCollideNaturalConvection(
             P<double>& _p, double *_rho, double *_ux, double *_uy, const double *_alpha, double _viscosity,
             Q<double>& _q, double *_tem, double *_qx, double *_qy, const double *_diffusivity, 
-            double _gx, double _gy, double _tem0, bool _issave = false, T *_g = nullptr
+            double _gx, double _gy, double _tem0, bool _issave = false, double *_g = nullptr
         ) {
             const int ne = _p.nxyz/P<double>::packsize;
             double omegaf = 1.0/(3.0*_viscosity + 0.5), iomegaf = 1.0 - omegaf, feq[P<double>::nc], geq[Q<double>::nc];
@@ -1001,7 +1001,7 @@ namespace PANSLBM2 {
         void MacroBrinkmanCollideNaturalConvection(
             P<double>& _p, double *_rho, double *_ux, double *_uy, double *_uz, const double *_alpha, double _viscosity,
             Q<double>& _q, double *_tem, double *_qx, double *_qy, double *_qz, const double *_diffusivity, 
-            double _gx, double _gy, double _gz, double _tem0, bool _issave = false, T *_g = nullptr
+            double _gx, double _gy, double _gz, double _tem0, bool _issave = false, double *_g = nullptr
         ) {
             const int ne = _p.nxyz/P<double>::packsize;
             double omegaf = 1.0/(3.0*_viscosity + 0.5), iomegaf = 1.0 - omegaf, feq[P<double>::nc], geq[Q<double>::nc];

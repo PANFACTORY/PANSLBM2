@@ -49,7 +49,7 @@ int main(int argc, char** argv) {
         irho[idx] = 0.0; iux[idx] = 0.0; iuy[idx] = 0.0; iuz[idx] = 0.0; iuxp[idx] = 0.0; iuyp[idx] = 0.0; iuzp[idx] = 0.0; imx[idx] = 0.0; imy[idx] = 0.0; imz[idx] = 0.0; item[idx] = 0.0; iqx[idx] = 0.0; iqy[idx] = 0.0; iqz[idx] = 0.0; iqxp[idx] = 0.0; iqyp[idx] = 0.0; iqzp[idx] = 0.0;
     }
     double *alpha = new double[pf.nxyz], *diffusivity = new double[pf.nxyz], *dads = new double[pf.nxyz], *dkds = new double[pf.nxyz];
-    double *gi0 = new double[pg.nxyz], *gi = new double[pg.nxyz*(pg.nc - 1)], *igi0 = new double[pg.nxyz], *igi = new double[pg.nxyz*(pg.nc - 1)];
+    double *gi = new double[pg.nxyz*pg.nc], *igi = new double[pg.nxyz*pg.nc];
     
     if (MyRank == 0) {
         std::cout << "U:" << U << std::endl;
@@ -133,7 +133,7 @@ int main(int argc, char** argv) {
         NS::InitialCondition(pf, rho, ux, uy, uz);
         AD::InitialCondition(pg, tem, ux, uy, uz);
         for (int t = 1; t <= nt; t++) {
-            AD::MacroBrinkmanCollideNaturalConvection(pf, rho, ux, uy, uz, alpha, nu, pg, tem, qx, qy, qz, diffusivity, gx, gy, gz, tem0, true, gi0, gi);
+            AD::MacroBrinkmanCollideNaturalConvection(pf, rho, ux, uy, uz, alpha, nu, pg, tem, qx, qy, qz, diffusivity, gx, gy, gz, tem0, true, gi);
             if (t%dt == 0) {
                 if (MyRank == 0) {
                     std::cout << "\rDirect analyse t = " << t << std::string(10, ' ');
@@ -179,7 +179,7 @@ int main(int argc, char** argv) {
             AAD::MacroBrinkmanCollideNaturalConvection(
                 pf, rho, ux, uy, uz, irho, iux, iuy, iuz, imx, imy, imz, alpha, nu, 
                 pg, tem, item, iqx, iqy, iqz, diffusivity,
-                gx, gy, gz, true, igi0, igi
+                gx, gy, gz, true, igi
             );
             if (t%dt == 0) {
                 if (MyRank == 0) {
@@ -225,7 +225,7 @@ int main(int argc, char** argv) {
         f /= L*L;
         std::vector<double> dfdss(s.size(), 0.0);
         AAD::SensitivityTemperatureAtHeatSource(
-            ux, uy, uz, imx, imy, imz, pg, tem, item, iqx, iqy, iqz, gi0, gi, igi0, igi, dfdss.data(), diffusivity, dads, dkds,
+            ux, uy, uz, imx, imy, imz, pg, tem, item, iqx, iqy, iqz, gi, igi, dfdss.data(), diffusivity, dads, dkds,
             [=](int _i, int _j, int _k) { return (_j == 0 && _i < L && _k < L) ? qn0 : 0.0; }, 
             [=](int _i, int _j, int _k) { return _j == 0 && _i < L && _k < L; }
         );

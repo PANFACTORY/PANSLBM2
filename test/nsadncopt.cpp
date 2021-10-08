@@ -343,7 +343,12 @@ int main(int argc, char** argv) {
         }
     }
     
-    delete[] rho, ux, uy, uxp, uyp, tem, qx, qy, qxp, qyp, diffusivity, alpha, dkds, dads, irho, iux, iuy, iuxp, iuyp, imx, imy, item, iqx, iqy, iqxp, iqyp, gi0, gi, igi0, igi;
+    delete[] rho;   delete[] ux;    delete[] uy;    delete[] uxp;   delete[] uyp;
+    delete[] tem;   delete[] qx;    delete[] qy;    delete[] qxp;   delete[] qyp;
+    delete[] diffusivity;   delete[] alpha; delete[] dkds;  delete[] dads;
+    delete[] irho;  delete[] iux;   delete[] iuy;   delete[] iuxp;  delete[] iuyp;  delete[] imx;   delete[] imy;
+    delete[] item;  delete[] iqx;   delete[] iqy;   delete[] iqxp;  delete[] iqyp;
+    delete[] gi;    delete[] igi;
 #ifdef _USE_MPI_DEFINES
     MPI_Finalize();
 #endif

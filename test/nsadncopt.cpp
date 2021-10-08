@@ -34,7 +34,7 @@ int main(int argc, char** argv) {
 
     //********************Parameters********************
     int lx = 141, ly = 161, mx = 81, my = 101, nt = 100000, dt = 100, nk = 2000, nb = 100;
-    double Pr = 6.0, Ra = 2.5e4, nu = 0.1, L = 4.0, tem0 = 0.0, qn = 1.0e-2, alphamax = 1.0e4;
+    double Pr = 6.0, Ra = 2.5e5, nu = 0.1, L = 4.0, tem0 = 0.0, qn = 1.0e-2, alphamax = 1.0e4;
     double qf = 1e-2, qg = 1e0, movelimit = 0.2, weightlimit = 0.5, R = 1.5, eps = 1.0e-5, s0 = 0.5;
 
     double U = nu*sqrt(Ra/Pr)/(double)(ly - 1), diff_fluid = nu/Pr, diff_solid = diff_fluid*10.0, gx = 0.0, gy = U*U/(double)(ly - 1);
@@ -48,7 +48,7 @@ int main(int argc, char** argv) {
         irho[idx] = 0.0;  iux[idx] = 0.0;   iuy[idx] = 0.0;   iuxp[idx] = 0.0;  iuyp[idx] = 0.0;  imx[idx] = 0.0;   imy[idx] = 0.0;   item[idx] = 0.0;  iqx[idx] = 0.0;   iqy[idx] = 0.0;  iqxp[idx] = 0.0;   iqyp[idx] = 0.0;
     }
     double *alpha = new double[pf.nxyz], *diffusivity = new double[pf.nxyz], *dads = new double[pf.nxyz], *dkds = new double[pf.nxyz];
-    double *gi0 = new double[pg.nxyz], *gi = new double[pg.nxyz*(pg.nc - 1)], *igi0 = new double[pg.nxyz], *igi = new double[pg.nxyz*(pg.nc - 1)];
+    double *gi = new double[pg.nxyz*pg.nc], *igi = new double[pg.nxyz*pg.nc];
     
     if (MyRank == 0) {
         std::cout << "U:" << U << std::endl;
@@ -126,7 +126,7 @@ int main(int argc, char** argv) {
         NS::InitialCondition(pf, rho, ux, uy);
         AD::InitialCondition(pg, tem, ux, uy);
         for (int t = 1; t <= nt; t++) {
-            AD::MacroBrinkmanCollideNaturalConvection(pf, rho, ux, uy, alpha, nu, pg, tem, qx, qy, diffusivity, gx, gy, tem0, true, gi0, gi);
+            AD::MacroBrinkmanCollideNaturalConvection(pf, rho, ux, uy, alpha, nu, pg, tem, qx, qy, diffusivity, gx, gy, tem0, true, gi);
             if (t%dt == 0) {
                 if (MyRank == 0) {
                     std::cout << "\rDirect analyse t = " << t << std::string(10, ' ');
@@ -170,7 +170,7 @@ int main(int argc, char** argv) {
             AAD::MacroBrinkmanCollideNaturalConvection(
                 pf, rho, ux, uy, irho, iux, iuy, imx, imy, alpha, nu, 
                 pg, tem, item, iqx, iqy, diffusivity,
-                gx, gy, true, igi0, igi
+                gx, gy, true, igi
             );
             if (t%dt == 0) {
                 if (MyRank == 0) {
@@ -212,7 +212,7 @@ int main(int argc, char** argv) {
         f /= L;
         std::vector<double> dfdss(s.size(), 0.0);
         AAD::SensitivityTemperatureAtHeatSource(
-            ux, uy, imx, imy, pg, tem, item, iqx, iqy, gi0, gi, igi0, igi, dfdss.data(), diffusivity, dads, dkds,
+            ux, uy, imx, imy, pg, tem, item, iqx, iqy, gi, igi, dfdss.data(), diffusivity, dads, dkds,
             [=](int _i, int _j) { return (_j == 0 && _i < L) ? qn : 0.0; }, 
             [=](int _i, int _j) { return _j == 0 && _i < L; }
         );

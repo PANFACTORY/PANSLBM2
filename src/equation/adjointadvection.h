@@ -238,7 +238,7 @@ namespace PANSLBM2 {
         template<class T, template<class>class P, template<class>class Q>
         void MacroBrinkmanCollideForceConvection(
             P<T>& _p, const T *_rho, const T *_ux, const T *_uy, T *_ip, T *_iux, T *_iuy, T *_imx, T *_imy, const T *_alpha, T _viscosity,
-            Q<T>& _q, const T *_tem, T *_item, T *_iqx, T *_iqy, const T *_diffusivity, bool _issave = false
+            Q<T>& _q, const T *_tem, T *_item, T *_iqx, T *_iqy, const T *_diffusivity, bool _issave = false, T *_ig0 = nullptr, T *_ig = nullptr
         ) {
             T omegaf = 1.0/(3.0*_viscosity + 0.5), iomegaf = 1.0 - omegaf, feq[P<T>::nc], geq[Q<T>::nc];
             #pragma omp parallel for private(feq, geq)
@@ -265,6 +265,13 @@ namespace PANSLBM2 {
                     _item[idx] = item;
                     _iqx[idx] = iqx;
                     _iqy[idx] = iqy;
+
+                    if (_ig0 && _ig) {
+                        _ig0[idx] = _q.f0[idx];
+                        for (int c = 1; c < Q<T>::nc; ++c) {
+                            _ig[Q<T>::IndexF(idx, c)] = _q.f[Q<T>::IndexF(idx, c)];
+                        }
+                    }
                 }
 
                 //  Collide
@@ -287,7 +294,7 @@ namespace PANSLBM2 {
         template<class T, template<class>class P, template<class>class Q>
         void MacroBrinkmanCollideForceConvection(
             P<T>& _p, const T *_rho, const T *_ux, const T *_uy, const T *_uz, T *_ip, T *_iux, T *_iuy, T *_iuz, T *_imx, T *_imy, T *_imz, const T *_alpha, T _viscosity,
-            Q<T>& _q, const T *_tem, T *_item, T *_iqx, T *_iqy, T *_iqz, const T *_diffusivity, bool _issave = false
+            Q<T>& _q, const T *_tem, T *_item, T *_iqx, T *_iqy, T *_iqz, const T *_diffusivity, bool _issave = false, T *_ig0 = nullptr, T *_ig = nullptr
         ) {
             T omegaf = 1.0/(3.0*_viscosity + 0.5), iomegaf = 1.0 - omegaf, feq[P<T>::nc], geq[Q<T>::nc];
             #pragma omp parallel for private(feq, geq)
@@ -316,6 +323,13 @@ namespace PANSLBM2 {
                     _iqx[idx] = iqx;
                     _iqy[idx] = iqy;
                     _iqz[idx] = iqz;
+
+                    if (_ig0 && _ig) {
+                        _ig0[idx] = _q.f0[idx];
+                        for (int c = 1; c < Q<T>::nc; ++c) {
+                            _ig[Q<T>::IndexF(idx, c)] = _q.f[Q<T>::IndexF(idx, c)];
+                        }
+                    }
                 }
 
                 //  Collide
@@ -396,7 +410,7 @@ namespace PANSLBM2 {
         template<class T, template<class>class P, template<class>class Q>
         void MacroBrinkmanCollideNaturalConvection(
             P<T>& _p, const T *_rho, const T *_ux, const T *_uy, const T *_uz, T *_ip, T *_iux, T *_iuy, T *_iuz, T *_imx, T *_imy, T *_imz, const T *_alpha, T _viscosity,
-            Q<T>& _q, const T *_tem, T *_item, T *_iqx, T *_iqy, T *_iqz, const T *_diffusivity, T _gx, T _gy, T _gz, bool _issave = false
+            Q<T>& _q, const T *_tem, T *_item, T *_iqx, T *_iqy, T *_iqz, const T *_diffusivity, T _gx, T _gy, T _gz, bool _issave = false, T *_ig0 = nullptr, T *_ig = nullptr
         ) {
             T omegaf = 1.0/(3.0*_viscosity + 0.5), iomegaf = 1.0 - omegaf, feq[P<T>::nc], geq[Q<T>::nc];
             #pragma omp parallel for private(feq, geq)
@@ -428,6 +442,13 @@ namespace PANSLBM2 {
                     _iqx[idx] = iqx;
                     _iqy[idx] = iqy;
                     _iqz[idx] = iqz;
+
+                    if (_ig0 && _ig) {
+                        _ig0[idx] = _q.f0[idx];
+                        for (int c = 1; c < Q<T>::nc; ++c) {
+                            _ig[Q<T>::IndexF(idx, c)] = _q.f[Q<T>::IndexF(idx, c)];
+                        }
+                    }
                 }
 
                 //  Collide

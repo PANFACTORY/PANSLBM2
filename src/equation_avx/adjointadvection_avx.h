@@ -844,7 +844,7 @@ namespace PANSLBM2 {
                 }
                 __dfds = _mm256_sub_pd(__dfds, _mm256_div_pd(
                     _mm256_mul_pd(__3, _mm256_mul_pd(__dkds, _mm256_sub_pd(
-                        __sumg, _mm256_mul_pd(__tem, _mm256_add_pd(__item, _mm256_mul_pd(__3, _mm256_add_pd(_mm256_mmul_pd(__ux, __iqx), _mm256_mul_pd(__uy, __iqy)))))
+                        __sumg, _mm256_mul_pd(__tem, _mm256_add_pd(__item, _mm256_mul_pd(__3, _mm256_add_pd(_mm256_mul_pd(__ux, __iqx), _mm256_mul_pd(__uy, __iqy)))))
                     ))), _mm256_mul_pd(__taug, __taug)
                 ));
                 _mm256_storeu_pd(&_dfds[idx], __dfds);
@@ -854,7 +854,7 @@ namespace PANSLBM2 {
                 _dfds[idx] += 3.0*_dads[idx]*(_ux[idx]*_imx[idx] + _uy[idx]*_imy[idx]);
                 
                 int offsetf = nc*idx;
-                T sumg = T();
+                double sumg = 0.0;
                 for (int c = 0; c < nc; ++c) {
                     sumg += _g[offsetf + c]*_ig[offsetf + c];
                 }
@@ -912,11 +912,11 @@ namespace PANSLBM2 {
         }
 
         //  Function of getting sensitivity of temperature at heat source for D3Q15
-        template<class T, template<class>class Q, class Fv, class Ff>
+        template<template<class>class Q, class Fv, class Ff>
         void SensitivityTemperatureAtHeatSource(
-            const T *_ux, const T *_uy, const T *_uz, const T *_imx, const T *_imy, const T *_imz,
-            Q<T>& _q, const T *_tem, const T *_item, const T *_iqx, const T *_iqy, const T *_iqz, const T *_g0, const T *_g, const T *_ig0, const T *_ig,
-            T *_dfds, const T *_diffusivity, const T *_dads, const T *_dkds, Fv _qnbc, Ff _bctype
+            const double *_ux, const double *_uy, const double *_uz, const double *_imx, const double *_imy, const double *_imz,
+            Q<double>& _q, const double *_tem, const double *_item, const double *_iqx, const double *_iqy, const double *_iqz, const double *_g, const double *_ig,
+            double *_dfds, const double *_diffusivity, const double *_dads, const double *_dkds, Fv _qnbc, Ff _bctype
         ) {
             const int ps = Q<double>::packsize, ne = _q.nxyz/ps, nc = Q<double>::nc;
             auto IndexG = [=](int _idx, int _c) {
@@ -942,8 +942,6 @@ namespace PANSLBM2 {
                     __m256d __g = _mm256_loadu_pd(&_g[idxf]), __ig = _mm256_loadu_pd(&_ig[idxf]);
                     __sumg = _mm256_add_pd(__sumg, _mm256_mul_pd(__g, __ig));
                 }
-                _dfds[idx] += -3.0/pow(3.0*_diffusivity[idx] + 0.5, 2.0)*_dkds[idx]*(sumg - _tem[idx]*(_item[idx] + 3.0*(_ux[idx]*_iqx[idx] + _uy[idx]*_iqy[idx] + _uz[idx]*_iqz[idx])));
-                
                 __dfds = _mm256_sub_pd(__dfds, _mm256_div_pd(
                     _mm256_mul_pd(__3, _mm256_mul_pd(__dkds, _mm256_sub_pd(
                         __sumg, _mm256_mul_pd(__tem, _mm256_add_pd(__item, _mm256_mul_pd(
@@ -956,7 +954,7 @@ namespace PANSLBM2 {
             for (int idx = ne*ps; idx < _q.nxyz; ++idx) {
                 _dfds[idx] += 3.0*_dads[idx]*(_ux[idx]*_imx[idx] + _uy[idx]*_imy[idx] + _uz[idx]*_imz[idx]);
                 int offsetf = nc*idx;
-                T sumg = T();
+                double sumg = 0.0;
                 for (int c = 0; c < nc; ++c) {
                     sumg += _g[offsetf + c]*_ig[offsetf + c];
                 }

@@ -126,7 +126,7 @@ int main(int argc, char** argv) {
         NS::InitialCondition(pf, rho, ux, uy);
         AD::InitialCondition(pg, tem, ux, uy);
         for (int t = 1; t <= nt; t++) {
-            AD::MacroBrinkmanCollideNaturalConvection(pf, rho, ux, uy, alpha, nu, pg, tem, qx, qy, diffusivity, gx, gy, tem0, true);
+            AD::MacroBrinkmanCollideNaturalConvection(pf, rho, ux, uy, alpha, nu, pg, tem, qx, qy, diffusivity, gx, gy, tem0, true, gi0, gi);
             if (t%dt == 0) {
                 if (MyRank == 0) {
                     std::cout << "\rDirect analyse t = " << t << std::string(10, ' ');
@@ -158,12 +158,6 @@ int main(int argc, char** argv) {
             std::swap(qx, qxp);
             std::swap(qy, qyp);
         }
-        for (int idx0 = 0; idx0 < pg.nxyz; ++idx0) {
-            gi0[idx0] = pg.f0[idx0];
-        }
-        for (int idxc = 0; idxc < pg.nxyz*(pg.nc - 1); ++idxc) {
-            gi[idxc] = pg.f[idxc];
-        }
                 
         //  Inverse analyse
         int ti = nt;
@@ -176,7 +170,7 @@ int main(int argc, char** argv) {
             AAD::MacroBrinkmanCollideNaturalConvection(
                 pf, rho, ux, uy, irho, iux, iuy, imx, imy, alpha, nu, 
                 pg, tem, item, iqx, iqy, diffusivity,
-                gx, gy, true
+                gx, gy, true, igi0, igi
             );
             if (t%dt == 0) {
                 if (MyRank == 0) {
@@ -201,12 +195,6 @@ int main(int argc, char** argv) {
             std::swap(iuy, iuyp);
             std::swap(iqx, iqxp);
             std::swap(iqy, iqyp);
-        }
-        for (int idx0 = 0; idx0 < pg.nxyz; ++idx0) {
-            igi0[idx0] = pg.f0[idx0];
-        }
-        for (int idxc = 0; idxc < pg.nxyz*(pg.nc - 1); ++idxc) {
-            igi[idxc] = pg.f[idxc];
         }
                
         //  Get sensitivity

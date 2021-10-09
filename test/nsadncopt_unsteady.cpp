@@ -33,7 +33,7 @@ int main(int argc, char** argv) {
 #endif
 
     //********************Parameters********************
-    int lx = 141, ly = 161, mx = 81, my = 101, nt = 100000, dt = 100, nk = 2000, nb = 100;
+    int lx = 141, ly = 161, mx = 81, my = 101, nt = 90000, dt = 100, nk = 2000, nb = 100;
     double Pr = 6.0, Ra = 2.5e5, nu = 0.1, L = 4.0, tem0 = 0.0, qn = 1.0e-2, alphamax = 1.0e4;
     double qf = 1e-2, qg = 1e0, movelimit = 0.2, weightlimit = 0.5, R = 1.5, eps = 1.0e-5, s0 = 0.5;
 
@@ -205,7 +205,7 @@ int main(int argc, char** argv) {
 #else
         f = f_buffer;
 #endif
-        f /= L;
+        f /= L*nt;
         double dfdssmax_buffer = 0.0, dfdssmax;
         for (int idx = 0; idx < pf.nxyz; ++idx) {
             if (dfdssmax_buffer < fabs(dfdss[idx])) {

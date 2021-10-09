@@ -49,10 +49,6 @@ int main(int argc, char** argv) {
     }
     double *irho = new double[pf.nxyz], *iux = new double[pf.nxyz], *iuy = new double[pf.nxyz], *imx = new double[pf.nxyz], *imy = new double[pf.nxyz];
     double *item = new double[pg.nxyz], *iqx = new double[pg.nxyz], *iqy = new double[pg.nxyz];
-    for (int idx = 0; idx < pf.nxyz; idx++) {
-        rho[0][idx] = 1.0; ux[0][idx] = 0.0; uy[0][idx] = 0.0; tem[0][idx] = 0.0; qx[0][idx] = 0.0; qy[0][idx] = 0.0;
-        irho[idx] = 0.0;   iux[idx] = 0.0;   iuy[idx] = 0.0;   imx[idx] = 0.0;    imy[idx] = 0.0;   item[idx] = 0.0;  iqx[idx] = 0.0;   iqy[idx] = 0.0;
-    }
     double *alpha = new double[pf.nxyz], *diffusivity = new double[pf.nxyz], *dads = new double[pf.nxyz], *dkds = new double[pf.nxyz];
     double *igi = new double[pg.nxyz*pg.nc];
     

@@ -98,12 +98,31 @@ public:
 
         void Stream();
         void iStream();
+
+        void SmoothCornerAt(int _i, int _j, int _nx, int _ny);
         
         template<class Ff>
         void BoundaryCondition(Ff _bctype);
         template<class Ff>
         void iBoundaryCondition(Ff _bctype);
-        void SmoothCorner();
+        void SmoothCorner() {
+            //  Corner at xmin, ymin
+            if (this->PEx == 0 && this->PEy == 0) {
+                this->SmoothCornerAt(0, 0, -1, -1);
+            }
+            //  Corner at xmin, ymax
+            if (this->PEx == 0 && this->PEy == this->my - 1) {
+                this->SmoothCornerAt(0, this->ny - 1, -1, 1);
+            }
+            //  Corner at xmax, ymin
+            if (this->PEx == this->mx - 1 && this->PEy == 0) {
+                this->SmoothCornerAt(this->nx - 1, 0, 1, -1);
+            }
+            //  Corner at xmax, ymax
+            if (this->PEx == this->mx - 1 && this->PEy == this->my - 1) {
+                this->SmoothCornerAt(this->nx - 1, this->ny - 1, 1, 1);
+            }
+        }
 
         const int lx, ly, lz, PEid, mx, my, mz, PEx, PEy, PEz, nx, ny, nz, nxyz, offsetx, offsety, offsetz;
         static const int nc = 9, nd = 2, cx[nc], cy[nc], cz[nc];
@@ -418,6 +437,15 @@ private:
     }
 
     template<class T>
+    void D2Q9<T>::SmoothCornerAt(int _i, int _j, int _nx, int _ny) {
+        int idx = this->Index(_i, _j), idxx = this->Index(_i - _nx, _j), idxy = this->Index(_i, _j - _ny);
+        this->f0[idx] = 0.5*(this->f0[idxx] + this->f0[idxy]);
+        for (int c = 1; c < D2Q9<T>::nc; ++c) {
+            this->f[D2Q9<T>::IndexF(idx, c)] = 0.5*(this->f[D2Q9<T>::IndexF(idxx, c)] + this->f[D2Q9<T>::IndexF(idxy, c)]);
+        }
+    }
+
+    template<class T>
     template<class Ff>
     void D2Q9<T>::BoundaryCondition(Ff _bctype) {
         //  On xmin
@@ -551,45 +579,6 @@ private:
                     this->f[D2Q9<T>::IndexF(idx, 6)] = this->f[D2Q9<T>::IndexF(idx, 7)];
                     this->f[D2Q9<T>::IndexF(idx, 5)] = this->f[D2Q9<T>::IndexF(idx, 8)];
                 }
-            }
-        }
-    }
-
-    template<class T>
-    void D2Q9<T>::SmoothCorner() {
-        //  Corner at xmin, ymin
-        if (this->PEx == 0 && this->PEy == 0) {
-            int idx = this->Index(0, 0), idxx = this->Index(1, 0), idxy = this->Index(0, 1);
-            this->f0[idx] = 0.5*(this->f0[idxx] + this->f0[idxy]);
-            for (int c = 1; c < D2Q9<T>::nc; ++c) {
-                this->f[D2Q9<T>::IndexF(idx, c)] = 0.5*(this->f[D2Q9<T>::IndexF(idxx, c)] + this->f[D2Q9<T>::IndexF(idxy, c)]);
-            }
-        }
-        
-        //  Corner at xmin, ymax
-        if (this->PEx == 0 && this->PEy == this->my - 1) {
-            int idx = this->Index(0, this->ny - 1), idxx = this->Index(1, this->ny - 1), idxy = this->Index(0,this->ny - 2);
-            this->f0[idx] = 0.5*(this->f0[idxx] + this->f0[idxy]);    
-            for (int c = 1; c < D2Q9<T>::nc; ++c) {
-                this->f[D2Q9<T>::IndexF(idx, c)] = 0.5*(this->f[D2Q9<T>::IndexF(idxx, c)] + this->f[D2Q9<T>::IndexF(idxy, c)]);    
-            }
-        }
-        
-        //  Corner at xmax, ymin
-        if (this->PEx == this->mx - 1 && this->PEy == 0) {
-            int idx = this->Index(this->nx - 1, 0), idxx = this->Index(this->nx - 2, 0), idxy = this->Index(this->nx - 1, 1);
-            this->f0[idx] = 0.5*(this->f0[idxx] + this->f0[idxy]);  
-            for (int c = 1; c < D2Q9<T>::nc; ++c) {
-                this->f[D2Q9<T>::IndexF(idx, c)] = 0.5*(this->f[D2Q9<T>::IndexF(idxx, c)] + this->f[D2Q9<T>::IndexF(idxy, c)]);  
-            }
-        }
-        
-        //  Corner at xmax, ymax
-        if (this->PEx == this->mx - 1 && this->PEy == this->my - 1) {
-            int idx = this->Index(this->nx - 1, this->ny - 1), idxx = this->Index(this->nx - 2, this->ny - 1), idxy = this->Index(this->nx - 1, this->ny - 2);
-            this->f0[idx] = 0.5*(this->f0[idxx] + this->f0[idxy]);  
-            for (int c = 1; c < D2Q9<T>::nc; ++c) {
-                this->f[D2Q9<T>::IndexF(idx, c)] = 0.5*(this->f[D2Q9<T>::IndexF(idxx, c)] + this->f[D2Q9<T>::IndexF(idxy, c)]);  
             }
         }
     }

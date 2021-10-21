@@ -593,7 +593,7 @@ private:
     template<class T>
     void D2Q9<T>::SmoothCornerAt(int _i, int _j, int _directionx, int _directiony) {
         int i = _i - this->offsetx, j = _j - this->offsety;
-        if (0 <= i && i < this->nx && 0 <= j && < this->ny) {
+        if (0 <= i && i < this->nx && 0 <= j && j < this->ny) {
             int idx = this->Index(i, j), idxx = this->Index(i - _directionx, j), idxy = this->Index(i, j - _directiony);
             this->f0[idx] = 0.5*(this->f0[idxx] + this->f0[idxy]);
             for (int c = 1; c < D2Q9<T>::nc; ++c) {

@@ -239,7 +239,7 @@ namespace PANSLBM2 {
                                 _p.f[P<T>::IndexF(idx, 8)] = _p.f[P<T>::IndexF(idx, 12)] + mx - my + mz;
                                 _p.f[P<T>::IndexF(idx, 9)] = _p.f[P<T>::IndexF(idx, 13)] - mx + my + mz;
                                 _p.f[P<T>::IndexF(idx, 14)] = _p.f[P<T>::IndexF(idx, 10)] + mx + my + mz;
-                            } else if (_directionx == 1) {
+                            } else if (_directionz == 1) {
                                 T rho0 = (_p.f0[idx] + _p.f[P<T>::IndexF(idx, 1)] + _p.f[P<T>::IndexF(idx, 2)] + _p.f[P<T>::IndexF(idx, 4)] + _p.f[P<T>::IndexF(idx, 5)] + 2.0*(_p.f[P<T>::IndexF(idx, 3)] + _p.f[P<T>::IndexF(idx, 7)] + _p.f[P<T>::IndexF(idx, 8)] + _p.f[P<T>::IndexF(idx, 9)] + _p.f[P<T>::IndexF(idx, 14)]))/(1.0 + uz);
                                 T mx = 0.25*(_p.f[P<T>::IndexF(idx, 1)] - _p.f[P<T>::IndexF(idx, 4)] - rho0*ux);
                                 T my = 0.25*(_p.f[P<T>::IndexF(idx, 2)] - _p.f[P<T>::IndexF(idx, 5)] - rho0*uy);
@@ -264,7 +264,7 @@ namespace PANSLBM2 {
                 for (int j = 0; j < _p.ny; ++j) {
                     if (_bctype(i + _p.offsetx, j + _p.offsety)) {
                         int idx = _p.Index(i, j);
-                        T rho = _rhobc(i + _p.offsetx, j + _p.offsety), T uy = _usbc(i + _p.offsetx, j + _p.offsety);
+                        T rho = _rhobc(i + _p.offsetx, j + _p.offsety), uy = _usbc(i + _p.offsetx, j + _p.offsety);
                         if (_directionx == -1) {
                             T ux = 1.0 - (_p.f0[idx] + _p.f[P<T>::IndexF(idx, 2)] + _p.f[P<T>::IndexF(idx, 4)] + 2.0*(_p.f[P<T>::IndexF(idx, 3)] + _p.f[P<T>::IndexF(idx, 6)] + _p.f[P<T>::IndexF(idx, 7)]))/rho;
                             T mx = rho*ux/6.0;
@@ -293,7 +293,7 @@ namespace PANSLBM2 {
                 for (int i = 0; i < _p.nx; ++i) {
                     if (_bctype(i + _p.offsetx, j + _p.offsety)) {
                         int idx = _p.Index(i, j);
-                        T rho = _rhobc(i + _p.offsetx, j + _p.offsety), T ux = _usbc(i + _p.offsetx, j + _p.offsety);
+                        T rho = _rhobc(i + _p.offsetx, j + _p.offsety), ux = _usbc(i + _p.offsetx, j + _p.offsety);
                         if (_directiony == -1) {
                             T uy = 1.0 - (_p.f0[idx] + _p.f[P<T>::IndexF(idx, 1)] + _p.f[P<T>::IndexF(idx, 3)] + 2.0*(_p.f[P<T>::IndexF(idx, 4)] + _p.f[P<T>::IndexF(idx, 7)] + _p.f[P<T>::IndexF(idx, 8)]))/rho;
                             T mx = 0.5*(_p.f[P<T>::IndexF(idx, 1)] - _p.f[P<T>::IndexF(idx, 3)] - rho*ux);

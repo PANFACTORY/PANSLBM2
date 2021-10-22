@@ -42,6 +42,104 @@ namespace PANSLBM2 {
             }
         }
 
+        //  Function of setting boundary condition of NS set U for D2Q9 along x edge
+        template<class T, template<class>class P, class Fv0, class Fv1, class Ff>
+        void BoundaryConditionSetUAlongXEdge(P<T>& _p, int _i, int _directionx, Fv0 _uxbc, Fv1 _uybc, Ff _bctype) {
+            int i = _i - _p.offsetx;
+            if (0 <= i && i < _p.nx) {
+                for (int j = 0; j < _p.ny; ++j) {
+                    if (_bctype(i + _p.offsetx, j + _p.offsety)) {
+                        int idx = _p.Index(i, j);
+                        T ux = _uxbc(i + _p.offsetx, j + _p.offsety), uy = _uybc(i + _p.offsetx, j + _p.offsety);
+                        if (_directionx == -1) {
+                            _p.f[P<T>::IndexF(idx, 1)] = _p.f[P<T>::IndexF(idx, 3)] + 2.0*ux/3.0;
+                            _p.f[P<T>::IndexF(idx, 5)] = _p.f[P<T>::IndexF(idx, 7)] + ux/6.0 - 0.5*(_p.f[P<T>::IndexF(idx, 2)] - _p.f[P<T>::IndexF(idx, 4)] - uy);
+                            _p.f[P<T>::IndexF(idx, 8)] = _p.f[P<T>::IndexF(idx, 6)] + ux/6.0 + 0.5*(_p.f[P<T>::IndexF(idx, 2)] - _p.f[P<T>::IndexF(idx, 4)] - uy);
+                        } else if (_directionx == 1) {
+                            _p.f[P<T>::IndexF(idx, 3)] = _p.f[P<T>::IndexF(idx, 1)] - 2.0*ux/3.0;
+                            _p.f[P<T>::IndexF(idx, 7)] = _p.f[P<T>::IndexF(idx, 5)] - ux/6.0 + 0.5*(_p.f[P<T>::IndexF(idx, 2)] - _p.f[P<T>::IndexF(idx, 4)] - uy);
+                            _p.f[P<T>::IndexF(idx, 6)] = _p.f[P<T>::IndexF(idx, 8)] - ux/6.0 - 0.5*(_p.f[P<T>::IndexF(idx, 2)] - _p.f[P<T>::IndexF(idx, 4)] - uy);
+                        }
+                    }
+                }
+            }
+        }
+
+        //  Function of setting boundary condition of NS set U for D2Q9 along y edge
+        template<class T, template<class>class P, class Fv0, class Fv1, class Ff>
+        void BoundaryConditionSetUAlongYEdge(P<T>& _p, int _j, int _directiony, Fv0 _uxbc, Fv1 _uybc, Ff _bctype) {
+            int j = _j - _p.offsety;
+            if (0 <= j && j < _p.ny) {
+                for (int i = 0; i < _p.nx; ++i) {
+                    if (_bctype(i + _p.offsetx, j + _p.offsety)) {
+                        int idx = _p.Index(i, j);
+                        T ux = _uxbc(i + _p.offsetx, j + _p.offsety), uy = _uybc(i + _p.offsetx, j + _p.offsety);
+                        if (_directiony == -1) {
+                            _p.f[P<T>::IndexF(idx, 2)] = _p.f[P<T>::IndexF(idx, 4)] + 2.0*uy/3.0;
+                            _p.f[P<T>::IndexF(idx, 5)] = _p.f[P<T>::IndexF(idx, 7)] + uy/6.0 - 0.5*(_p.f[P<T>::IndexF(idx, 1)] - _p.f[P<T>::IndexF(idx, 3)] - ux);
+                            _p.f[P<T>::IndexF(idx, 6)] = _p.f[P<T>::IndexF(idx, 8)] + uy/6.0 + 0.5*(_p.f[P<T>::IndexF(idx, 1)] - _p.f[P<T>::IndexF(idx, 3)] - ux);
+                        } else if (_directiony == 1) {
+                            _p.f[P<T>::IndexF(idx, 4)] = _p.f[P<T>::IndexF(idx, 2)] - 2.0*uy/3.0;
+                            _p.f[P<T>::IndexF(idx, 7)] = _p.f[P<T>::IndexF(idx, 5)] - uy/6.0 + 0.5*(_p.f[P<T>::IndexF(idx, 1)] - _p.f[P<T>::IndexF(idx, 3)] - ux);
+                            _p.f[P<T>::IndexF(idx, 8)] = _p.f[P<T>::IndexF(idx, 6)] - uy/6.0 - 0.5*(_p.f[P<T>::IndexF(idx, 1)] - _p.f[P<T>::IndexF(idx, 3)] - ux);
+                        }
+                    }
+                }
+            }
+        }
+
+        //  Function of setting boundary condition of NS set rho for D2Q9 along x edge
+        template<class T, template<class>class P, class Fv0, class Fv1, class Ff>
+        void BoundaryConditionSetRhoAlongXEdge(P<T>& _p, int _i, int _directionx, Fv0 _rhobc, Fv1 _usbc, Ff _bctype) {
+            int i = _i - _p.offsetx;
+            if (0 <= i && i < _p.nx) {
+                for (int j = 0; j < _p.ny; ++j) {
+                    if (_bctype(i + _p.offsetx, j + _p.offsety)) {
+                        int idx = _p.Index(i, j);
+                        T rho = _rhobc(i + _p.offsetx, j + _p.offsety), uy = _usbc(i + _p.offsetx, j + _p.offsety);
+                        if (_directionx == -1) {
+                            T ux = rho - (_p.f0[idx] + _p.f[P<T>::IndexF(idx, 2)] + _p.f[P<T>::IndexF(idx, 4)] + 2.0*(_p.f[P<T>::IndexF(idx, 3)] + _p.f[P<T>::IndexF(idx, 6)] + _p.f[P<T>::IndexF(idx, 7)]));
+                            _p.f[P<T>::IndexF(idx, 1)] = _p.f[P<T>::IndexF(idx, 3)] + 2.0*ux/3.0;
+                            _p.f[P<T>::IndexF(idx, 5)] = _p.f[P<T>::IndexF(idx, 7)] + ux/6.0 - 0.5*(_p.f[P<T>::IndexF(idx, 2)] - _p.f[P<T>::IndexF(idx, 4)] - uy);
+                            _p.f[P<T>::IndexF(idx, 8)] = _p.f[P<T>::IndexF(idx, 6)] + ux/6.0 + 0.5*(_p.f[P<T>::IndexF(idx, 2)] - _p.f[P<T>::IndexF(idx, 4)] - uy);
+                        } else if (_directionx == 1) {
+                            T ux = -rho + (_p.f0[idx] + _p.f[P<T>::IndexF(idx, 2)] + _p.f[P<T>::IndexF(idx, 4)] + 2.0*(_p.f[P<T>::IndexF(idx, 1)] + _p.f[P<T>::IndexF(idx, 5)] + _p.f[P<T>::IndexF(idx, 8)]));
+                            _p.f[P<T>::IndexF(idx, 3)] = _p.f[P<T>::IndexF(idx, 1)] - 2.0*ux/3.0;
+                            _p.f[P<T>::IndexF(idx, 6)] = _p.f[P<T>::IndexF(idx, 8)] - ux/6.0 - 0.5*(_p.f[P<T>::IndexF(idx, 2)] - _p.f[P<T>::IndexF(idx, 4)] - uy);
+                            _p.f[P<T>::IndexF(idx, 7)] = _p.f[P<T>::IndexF(idx, 5)] - ux/6.0 + 0.5*(_p.f[P<T>::IndexF(idx, 2)] - _p.f[P<T>::IndexF(idx, 4)] - uy);
+                        }
+                    }
+                }
+            }
+        }
+
+        //  Function of setting boundary condition of NS set rho for D2Q9 along y edge
+        template<class T, template<class>class P, class Fv0, class Fv1, class Ff>
+        void BoundaryConditionSetRhoAlongYEdge(P<T>& _p, int _j, int _directiony, Fv0 _rhobc, Fv1 _usbc, Ff _bctype) {
+            int j = _j - _p.offsety;
+            if (0 <= j && j < _p.ny) {
+                for (int i = 0; i < _p.nx; ++i) {
+                    if (_bctype(i + _p.offsetx, j + _p.offsety)) {
+                        int idx = _p.Index(i, j);
+                        T rho = _rhobc(i + _p.offsetx, j + _p.offsety), ux = _usbc(i + _p.offsetx, j + _p.offsety);
+                        if (_directiony == -1) {
+                            T uy = rho - (_p.f0[idx] + _p.f[P<T>::IndexF(idx, 1)] + _p.f[P<T>::IndexF(idx, 3)] + 2.0*(_p.f[P<T>::IndexF(idx, 4)] + _p.f[P<T>::IndexF(idx, 7)] + _p.f[P<T>::IndexF(idx, 8)]));
+                            _p.f[P<T>::IndexF(idx, 2)] = _p.f[P<T>::IndexF(idx, 4)] + 2.0*uy/3.0;
+                            _p.f[P<T>::IndexF(idx, 5)] = _p.f[P<T>::IndexF(idx, 7)] + uy/6.0 - 0.5*(_p.f[P<T>::IndexF(idx, 1)] - _p.f[P<T>::IndexF(idx, 3)] - ux);
+                            _p.f[P<T>::IndexF(idx, 6)] = _p.f[P<T>::IndexF(idx, 8)] + uy/6.0 + 0.5*(_p.f[P<T>::IndexF(idx, 1)] - _p.f[P<T>::IndexF(idx, 3)] - ux);
+                        } else if (_directiony == 1) {
+                            T uy = -rho + (_p.f0[idx] + _p.f[P<T>::IndexF(idx, 1)] + _p.f[P<T>::IndexF(idx, 3)] + 2.0*(_p.f[P<T>::IndexF(idx, 2)] + _p.f[P<T>::IndexF(idx, 5)] + _p.f[P<T>::IndexF(idx, 6)]));
+                            _p.f[P<T>::IndexF(idx, 4)] = _p.f[P<T>::IndexF(idx, 2)] - 2.0*uy/3.0;
+                            _p.f[P<T>::IndexF(idx, 7)] = _p.f[P<T>::IndexF(idx, 5)] - uy/6.0 + 0.5*(_p.f[P<T>::IndexF(idx, 1)] - _p.f[P<T>::IndexF(idx, 3)] - ux);
+                            _p.f[P<T>::IndexF(idx, 8)] = _p.f[P<T>::IndexF(idx, 6)] - uy/6.0 - 0.5*(_p.f[P<T>::IndexF(idx, 1)] - _p.f[P<T>::IndexF(idx, 3)] - ux);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    namespace NSin {
         //  Function of Update macro and Collide of NS for 2D
         template<class T, template<class>class P>
         void MacroCollide(P<T>& _p, T *_rho, T *_ux, T *_uy, T _viscosity, bool _issave = false) {
@@ -113,119 +211,22 @@ namespace PANSLBM2 {
             }
         }
 
-        //  Function of setting boundary condition of NS set U for 2D
+        //  Function of setting boundary condition of NS set U for D2Q9
         template<class T, template<class>class P, class Fv0, class Fv1, class Ff>
         void BoundaryConditionSetU(P<T>& _p, Fv0 _uxbc, Fv1 _uybc, Ff _bctype) {
-            //  On xmin
-            if (_p.PEx == 0) {
-                for (int j = 0; j < _p.ny; ++j) {
-                    if (_bctype(0 + _p.offsetx, j + _p.offsety)) {
-                        int idx = _p.Index(0, j);
-                        T ux = _uxbc(0 + _p.offsetx, j + _p.offsety), uy = _uybc(0 + _p.offsetx, j + _p.offsety);
-                        _p.f[P<T>::IndexF(idx, 1)] = _p.f[P<T>::IndexF(idx, 3)] + 2.0*ux/3.0;
-                        _p.f[P<T>::IndexF(idx, 5)] = _p.f[P<T>::IndexF(idx, 7)] + ux/6.0 - 0.5*(_p.f[P<T>::IndexF(idx, 2)] - _p.f[P<T>::IndexF(idx, 4)] - uy);
-                        _p.f[P<T>::IndexF(idx, 8)] = _p.f[P<T>::IndexF(idx, 6)] + ux/6.0 + 0.5*(_p.f[P<T>::IndexF(idx, 2)] - _p.f[P<T>::IndexF(idx, 4)] - uy);
-                    }
-                }
-            }
-            //  On xmax
-            if (_p.PEx == _p.mx - 1) {
-                for (int j = 0; j < _p.ny; ++j) {
-                    if (_bctype((_p.nx - 1) + _p.offsetx, j + _p.offsety)) {
-                        int idx = _p.Index(_p.nx - 1, j);
-                        T ux = _uxbc((_p.nx - 1) + _p.offsetx, j + _p.offsety), uy = _uybc((_p.nx - 1) + _p.offsetx, j + _p.offsety);
-                        _p.f[P<T>::IndexF(idx, 3)] = _p.f[P<T>::IndexF(idx, 1)] - 2.0*ux/3.0;
-                        _p.f[P<T>::IndexF(idx, 7)] = _p.f[P<T>::IndexF(idx, 5)] - ux/6.0 + 0.5*(_p.f[P<T>::IndexF(idx, 2)] - _p.f[P<T>::IndexF(idx, 4)] - uy);
-                        _p.f[P<T>::IndexF(idx, 6)] = _p.f[P<T>::IndexF(idx, 8)] - ux/6.0 - 0.5*(_p.f[P<T>::IndexF(idx, 2)] - _p.f[P<T>::IndexF(idx, 4)] - uy);
-                    }
-                }
-            }
-            //  On ymin
-            if (_p.PEy == 0) {
-                for (int i = 0; i < _p.nx; ++i) {
-                    if (_bctype(i + _p.offsetx, 0 + _p.offsety)) {
-                        int idx = _p.Index(i, 0);
-                        T ux = _uxbc(i + _p.offsetx, 0 + _p.offsety), uy = _uybc(i + _p.offsetx, 0 + _p.offsety);
-                        _p.f[P<T>::IndexF(idx, 2)] = _p.f[P<T>::IndexF(idx, 4)] + 2.0*uy/3.0;
-                        _p.f[P<T>::IndexF(idx, 5)] = _p.f[P<T>::IndexF(idx, 7)] + uy/6.0 - 0.5*(_p.f[P<T>::IndexF(idx, 1)] - _p.f[P<T>::IndexF(idx, 3)] - ux);
-                        _p.f[P<T>::IndexF(idx, 6)] = _p.f[P<T>::IndexF(idx, 8)] + uy/6.0 + 0.5*(_p.f[P<T>::IndexF(idx, 1)] - _p.f[P<T>::IndexF(idx, 3)] - ux);
-                    }
-                }
-            }
-            //  On ymax
-            if (_p.PEy == _p.my - 1) {
-                for (int i = 0; i < _p.nx; ++i) {
-                    if (_bctype(i + _p.offsetx, (_p.ny - 1) + _p.offsety)) {
-                        int idx = _p.Index(i, _p.ny - 1);
-                        T rho0 = (_p.f0[idx] + _p.f[P<T>::IndexF(idx, 1)] + _p.f[P<T>::IndexF(idx, 3)] + 2.0*(_p.f[P<T>::IndexF(idx, 2)] + _p.f[P<T>::IndexF(idx, 5)] + _p.f[P<T>::IndexF(idx, 6)]))/(1.0 + _uybc(i + _p.offsetx, (_p.ny - 1) + _p.offsety));
-                        T mx = 0.5*(_p.f[P<T>::IndexF(idx, 1)] - _p.f[P<T>::IndexF(idx, 3)] - rho0*_uxbc(i + _p.offsetx, (_p.ny - 1) + _p.offsety));
-                        T my = rho0*_uybc(i + _p.offsetx, (_p.ny - 1) + _p.offsety)/6.0;
-
-                        T ux = _uxbc(i + _p.offsetx, (_p.ny - 1) + _p.offsety), uy = _uybc(i + _p.offsetx, (_p.ny - 1) + _p.offsety);
-                        _p.f[P<T>::IndexF(idx, 4)] = _p.f[P<T>::IndexF(idx, 2)] - 2.0*uy/3.0;
-                        _p.f[P<T>::IndexF(idx, 7)] = _p.f[P<T>::IndexF(idx, 5)] - uy/6.0 + 0.5*(_p.f[P<T>::IndexF(idx, 1)] - _p.f[P<T>::IndexF(idx, 3)] - ux);
-                        _p.f[P<T>::IndexF(idx, 8)] = _p.f[P<T>::IndexF(idx, 6)] - uy/6.0 - 0.5*(_p.f[P<T>::IndexF(idx, 1)] - _p.f[P<T>::IndexF(idx, 3)] - ux);
-                    }
-                }
-            }
+            BoundaryConditionSetUAlongXEdge(_p, 0, -1, _uxbc, _uybc, _bctype);          //  On xmin
+            BoundaryConditionSetUAlongXEdge(_p, _p.lx - 1, 1, _uxbc, _uybc, _bctype);   //  On xmax
+            BoundaryConditionSetUAlongYEdge(_p, 0, -1, _uxbc, _uybc, _bctype);          //  On ymin
+            BoundaryConditionSetUAlongYEdge(_p, _p.ly - 1, 1, _uxbc, _uybc, _bctype);   //  On ymax
         }
 
-        //  Function of setting boundary condition of NS set rho for 2D
+        //  Function of setting boundary condition of NS set rho for D2Q9
         template<class T, template<class>class P, class Fv0, class Fv1, class Ff>
         void BoundaryConditionSetRho(P<T>& _p, Fv0 _rhobc, Fv1 _usbc, Ff _bctype) {
-            //  On xmin
-            if (_p.PEx == 0) {
-                for (int j = 0; j < _p.ny; ++j) {
-                    if (_bctype(0 + _p.offsetx, j + _p.offsety)) {
-                        int idx = _p.Index(0, j);
-                        T ux = _rhobc(0 + _p.offsetx, j + _p.offsety) - (_p.f0[idx] + _p.f[P<T>::IndexF(idx, 2)] + _p.f[P<T>::IndexF(idx, 4)] + 2.0*(_p.f[P<T>::IndexF(idx, 3)] + _p.f[P<T>::IndexF(idx, 6)] + _p.f[P<T>::IndexF(idx, 7)]));
-                        T uy = _usbc(0 + _p.offsetx, j + _p.offsety);
-                        _p.f[P<T>::IndexF(idx, 1)] = _p.f[P<T>::IndexF(idx, 3)] + 2.0*ux/3.0;
-                        _p.f[P<T>::IndexF(idx, 5)] = _p.f[P<T>::IndexF(idx, 7)] + ux/6.0 - 0.5*(_p.f[P<T>::IndexF(idx, 2)] - _p.f[P<T>::IndexF(idx, 4)] - uy);
-                        _p.f[P<T>::IndexF(idx, 8)] = _p.f[P<T>::IndexF(idx, 6)] + ux/6.0 + 0.5*(_p.f[P<T>::IndexF(idx, 2)] - _p.f[P<T>::IndexF(idx, 4)] - uy);
-                    }
-                }
-            }
-            //  On xmax
-            if (_p.PEx == _p.mx - 1) {
-                for (int j = 0; j < _p.ny; ++j) {
-                    if (_bctype((_p.nx - 1) + _p.offsetx, j + _p.offsety)) {
-                        int idx = _p.Index(_p.nx - 1, j);
-                        T ux = -_rhobc((_p.nx - 1) + _p.offsetx, j + _p.offsety) + (_p.f0[idx] + _p.f[P<T>::IndexF(idx, 2)] + _p.f[P<T>::IndexF(idx, 4)] + 2.0*(_p.f[P<T>::IndexF(idx, 1)] + _p.f[P<T>::IndexF(idx, 5)] + _p.f[P<T>::IndexF(idx, 8)]));
-                        T uy = _usbc((_p.nx - 1) + _p.offsetx, j + _p.offsety);
-                        _p.f[P<T>::IndexF(idx, 3)] = _p.f[P<T>::IndexF(idx, 1)] - 2.0*ux/3.0;
-                        _p.f[P<T>::IndexF(idx, 6)] = _p.f[P<T>::IndexF(idx, 8)] - ux/6.0 - 0.5*(_p.f[P<T>::IndexF(idx, 2)] - _p.f[P<T>::IndexF(idx, 4)] - uy);
-                        _p.f[P<T>::IndexF(idx, 7)] = _p.f[P<T>::IndexF(idx, 5)] - ux/6.0 + 0.5*(_p.f[P<T>::IndexF(idx, 2)] - _p.f[P<T>::IndexF(idx, 4)] - uy);
-                    }
-                }
-            }
-            //  On ymin
-            if (_p.PEy == 0) {
-                for (int i = 0; i < _p.nx; ++i) {
-                    if (_bctype(i + _p.offsetx, 0 + _p.offsety)) {
-                        int idx = _p.Index(i, 0);
-                        T ux = _usbc(i + _p.offsetx, 0 + _p.offsety);
-                        T uy = _rhobc(i + _p.offsetx, 0 + _p.offsety) - (_p.f0[idx] + _p.f[P<T>::IndexF(idx, 1)] + _p.f[P<T>::IndexF(idx, 3)] + 2.0*(_p.f[P<T>::IndexF(idx, 4)] + _p.f[P<T>::IndexF(idx, 7)] + _p.f[P<T>::IndexF(idx, 8)]));
-                        _p.f[P<T>::IndexF(idx, 2)] = _p.f[P<T>::IndexF(idx, 4)] + 2.0*uy/3.0;
-                        _p.f[P<T>::IndexF(idx, 5)] = _p.f[P<T>::IndexF(idx, 7)] + uy/6.0 - 0.5*(_p.f[P<T>::IndexF(idx, 1)] - _p.f[P<T>::IndexF(idx, 3)] - ux);
-                        _p.f[P<T>::IndexF(idx, 6)] = _p.f[P<T>::IndexF(idx, 8)] + uy/6.0 + 0.5*(_p.f[P<T>::IndexF(idx, 1)] - _p.f[P<T>::IndexF(idx, 3)] - ux);
-                    }
-                }
-            }
-            //  On ymax
-            if (_p.PEy == _p.my - 1) {
-                for (int i = 0; i < _p.nx; ++i) {
-                    if (_bctype(i + _p.offsetx, (_p.ny - 1) + _p.offsety)) {
-                        int idx = _p.Index(i, _p.ny - 1);
-                        T ux = _usbc(i + _p.offsetx, (_p.ny - 1) + _p.offsety);
-                        T uy = -_rhobc(i + _p.offsetx, (_p.ny - 1) + _p.offsety) + (_p.f0[idx] + _p.f[P<T>::IndexF(idx, 1)] + _p.f[P<T>::IndexF(idx, 3)] + 2.0*(_p.f[P<T>::IndexF(idx, 2)] + _p.f[P<T>::IndexF(idx, 5)] + _p.f[P<T>::IndexF(idx, 6)]));
-                        _p.f[P<T>::IndexF(idx, 4)] = _p.f[P<T>::IndexF(idx, 2)] - 2.0*uy/3.0;
-                        _p.f[P<T>::IndexF(idx, 7)] = _p.f[P<T>::IndexF(idx, 5)] - uy/6.0 + 0.5*(_p.f[P<T>::IndexF(idx, 1)] - _p.f[P<T>::IndexF(idx, 3)] - ux);
-                        _p.f[P<T>::IndexF(idx, 8)] = _p.f[P<T>::IndexF(idx, 6)] - uy/6.0 - 0.5*(_p.f[P<T>::IndexF(idx, 1)] - _p.f[P<T>::IndexF(idx, 3)] - ux);
-                    }
-                }
-            }
-            
+            BoundaryConditionSetRhoAlongXEdge(_p, 0, -1, _rhobc, _usbc, _bctype);          //  On xmin
+            BoundaryConditionSetRhoAlongXEdge(_p, _p.lx - 1, 1, _rhobc, _usbc, _bctype);   //  On xmax
+            BoundaryConditionSetRHoAlongYEdge(_p, 0, -1, _rhobc, _usbc, _bctype);          //  On ymin
+            BoundaryConditionSetRhoAlongYEdge(_p, _p.ly - 1, 1, _rhobc, _usbc, _bctype);   //  On ymax
         }
     }
 }

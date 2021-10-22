@@ -29,8 +29,8 @@ int main(int argc, char** argv) {
 #endif
 
     //--------------------Set parameters--------------------
-    int lx = 51, ly = 101, nt0 = 50000, dt = 500, nt = 50000, period = 50000;
-    double nu = 0.02, alpha = 0.02, Th = 1.0, Tl = 0.0;
+    int lx = 51, ly = 101, nt0 = 200000, dt = 500, nt = 50000, period = 5000;
+    double nu = 0.1, alpha = nu/6.0, Th = 1.0, Tl = 0.0;
     D2Q9<double> pf(lx, ly, MyRank, mx, my), pg(lx, ly, MyRank, mx, my);
     double rho[pf.nxyz], ux[pf.nxyz], uy[pf.nxyz], tem[pg.nxyz], qx[pg.nxyz], qy[pg.nxyz];
     for (int idx = 0; idx < pf.nxyz; ++ idx) {

@@ -117,7 +117,6 @@ namespace PANSLBM2 {
             const double *_sxx, const double *_sxy, const double *_syx, const double *_syy, const double *_irho, const double *_isxx, const double *_isxy, const double *_isyx, const double *_isyy
         ) {
             const int ne = _p.nxyz/P<double>::packsize;
-            __m256d __omega = _mm256_set1_pd(omega), __iomega = _mm256_set1_pd(iomega), __feq[P<double>::nc];
             #pragma omp parallel for
             for (int pidx = 0; pidx < ne; ++pidx) {
                 int idx = pidx*P<double>::packsize;

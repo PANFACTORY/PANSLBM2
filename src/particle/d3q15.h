@@ -161,10 +161,62 @@ public:
         void iStream();
 
         template<class Ff>
-        void BoundaryCondition(Ff _bctype);
+        void BoundaryConditionAlongXFace(int _i, int _directionx, Ff _bctype);
         template<class Ff>
-        void iBoundaryCondition(Ff _bctype);
-        void SmoothCorner();
+        void BoundaryConditionAlongYFace(int _j, int _directiony, Ff _bctype);
+        template<class Ff>
+        void BoundaryConditionAlongZFace(int _k, int _directionz, Ff _bctype);
+        template<class Ff>
+        void iBoundaryConditionAlongXFace(int _i, int _directionx, Ff _bctype);
+        template<class Ff>
+        void iBoundaryConditionAlongYFace(int _j, int _directiony, Ff _bctype);
+        template<class Ff>
+        void iBoundaryConditionAlongZFace(int _k, int _directionz, Ff _bctype);
+        void SmoothCornerAlongYZ(int _j, int _k, int _directiony, int _directionz);
+        void SmoothCornerAlongZX(int _k, int _i, int _directionz, int _directionx);
+        void SmoothCornerAlongXY(int _i, int _j, int _directionx, int _directiony);
+        void SmoothCornerAt(int _i, int _j, int _k, int _directionx, int _directiony, int _directionz);
+
+        template<class Ff>
+        void BoundaryCondition(Ff _bctype) {
+            this->BoundaryConditionAlongXFace(0, -1, _bctype);              //  On xmin
+            this->BoundaryConditionAlongXFace(this->lx - 1, 1, _bctype);    //  On xmax
+            this->BoundaryConditionAlongYFace(0, -1, _bctype);              //  On ymin
+            this->BoundaryConditionAlongYFace(this->ly - 1, 1, _bctype);    //  On ymax
+            this->BoundaryConditionAlongZFace(0, -1, _bctype);              //  On zmin
+            this->BoundaryConditionAlongZFace(this->lz - 1, 1, _bctype);    //  On zmax
+        }
+        template<class Ff>
+        void iBoundaryCondition(Ff _bctype) {
+            this->iBoundaryConditionAlongXFace(0, -1, _bctype);             //  On xmin
+            this->iBoundaryConditionAlongXFace(this->lx - 1, 1, _bctype);   //  On xmax
+            this->iBoundaryConditionAlongYFace(0, -1, _bctype);             //  On ymin
+            this->iBoundaryConditionAlongYFace(this->ly - 1, 1, _bctype);   //  On ymax
+            this->iBoundaryConditionAlongZFace(0, -1, _bctype);             //  On zmin
+            this->iBoundaryConditionAlongZFace(this->lz - 1, 1, _bctype);   //  On zmax
+        }
+        void SmoothCorner() {
+            this->SmoothCornerAlongYZ(0, 0, -1, -1);                        //  Along line ymin and zmin
+            this->SmoothCornerAlongYZ(this->ly - 1, 0, 1, -1);              //  Along line ymax and zmin
+            this->SmoothCornerAlongYZ(this->ly - 1, this->lz - 1, 1, 1);    //  Along line ymax and zmax
+            this->SmoothCornerAlongYZ(0, this->lz - 1, -1, 1);              //  Along line ymin and zmax
+            this->SmoothCornerAlongZX(0, 0, -1, -1);                        //  Along line zmin and xmin
+            this->SmoothCornerAlongZX(this->lz - 1, 0, 1, -1);              //  Along line zmax and xmin
+            this->SmoothCornerAlongZX(this->lz - 1, this->lx - 1, 1, 1);    //  Along line zmax and xmax
+            this->SmoothCornerAlongZX(0, this->lx - 1, -1, 1);              //  Along line zmin and xmax
+            this->SmoothCornerAlongXY(0, 0, -1, -1);                        //  Along line xmin and ymin
+            this->SmoothCornerAlongXY(this->lx - 1, 0, 1, -1);              //  Along line xmax and ymin
+            this->SmoothCornerAlongXY(this->lx - 1, this->ly - 1, 1, 1);    //  Along line xmax and ymax
+            this->SmoothCornerAlongXY(0, this->ly - 1, -1, 1);              //  Along line xmin and ymax
+            this->SmoothCornerAt(0, 0, 0, -1, -1, -1);                                  //  Corner at xmin, ymin and zmin
+            this->SmoothCornerAt(this->lx - 1, 0, 0, 1, -1, -1);                        //  Corner at xmax, ymin and zmin
+            this->SmoothCornerAt(this->lx - 1, this->ly - 1, 0, 1, 1, -1);              //  Corner at xmax, ymax and zmin
+            this->SmoothCornerAt(0, this->ly - 1, 0, -1, 1, -1);                        //  Corner at xmin, ymax and zmin
+            this->SmoothCornerAt(0, 0, this->lz - 1, -1, -1, 1);                        //  Corner at xmin, ymin and zmax
+            this->SmoothCornerAt(this->lx - 1, 0, this->lz - 1, 1, -1, 1);              //  Corner at xmax, ymin and zmax
+            this->SmoothCornerAt(this->lx - 1, this->ly - 1, this->lz - 1, 1, 1, 1);    //  Corner at xmax, ymax and zmax
+            this->SmoothCornerAt(0, this->ly - 1, this->lz - 1, -1, 1, 1);              //  Corner at xmin, ymax and zmax
+        }
 
         const int lx, ly, lz, PEid, mx, my, mz, PEx, PEy, PEz, nx, ny, nz, nxyz, offsetx, offsety, offsetz;
         static const int nc = 15, nd = 3, cx[nc], cy[nc], cz[nc];
@@ -1057,135 +1109,42 @@ private:
 
     template<class T>
     template<class Ff>
-    void D3Q15<T>::BoundaryCondition(Ff _bctype) {
-        //  On xmin
-        if (this->PEx == 0) {
+    void D3Q15<T>::BoundaryConditionAlongXFace(int _i, int _directionx, Ff _bctype) {
+        int i = _i - this->offsetx;
+        if (0 <= i && i < this->nx) {
             for (int j = 0; j < this->ny; ++j) {
                 for (int k = 0; k < this->nz; ++k) {
-                    if (_bctype(0 + this->offsetx, j + this->offsety, k + this->offsetz) == BARRIER) {
-                        int idx = this->Index(0, j, k);
-                        this->f[D3Q15<T>::IndexF(idx, 1)] = this->f[D3Q15<T>::IndexF(idx, 4)];
-                        this->f[D3Q15<T>::IndexF(idx, 7)] = this->f[D3Q15<T>::IndexF(idx, 11)];
-                        this->f[D3Q15<T>::IndexF(idx, 9)] = this->f[D3Q15<T>::IndexF(idx, 13)];
-                        this->f[D3Q15<T>::IndexF(idx, 10)] = this->f[D3Q15<T>::IndexF(idx, 14)];
-                        this->f[D3Q15<T>::IndexF(idx, 12)] = this->f[D3Q15<T>::IndexF(idx, 8)];
-                    } else if (_bctype(0 + this->offsetx, j + this->offsety, k + this->offsetz) == MIRROR) {
-                        int idx = this->Index(0, j, k);
-                        this->f[D3Q15<T>::IndexF(idx, 1)] = this->f[D3Q15<T>::IndexF(idx, 4)];
-                        this->f[D3Q15<T>::IndexF(idx, 7)] = this->f[D3Q15<T>::IndexF(idx, 8)];
-                        this->f[D3Q15<T>::IndexF(idx, 9)] = this->f[D3Q15<T>::IndexF(idx, 14)];
-                        this->f[D3Q15<T>::IndexF(idx, 10)] = this->f[D3Q15<T>::IndexF(idx, 13)];
-                        this->f[D3Q15<T>::IndexF(idx, 12)] = this->f[D3Q15<T>::IndexF(idx, 11)];
-                    }
-                }
-            }
-        }
-        //  On xmax
-        if (this->PEx == this->mx - 1) {
-            for (int j = 0; j < this->ny; ++j) {
-                for (int k = 0; k < this->nz; ++k) {
-                    if (_bctype((this->nx - 1) + this->offsetx, j + this->offsety, k + this->offsetz) == BARRIER) {
-                        int idx = this->Index(this->nx - 1, j, k);
-                        this->f[D3Q15<T>::IndexF(idx, 4)] = this->f[D3Q15<T>::IndexF(idx, 1)];
-                        this->f[D3Q15<T>::IndexF(idx, 8)] = this->f[D3Q15<T>::IndexF(idx, 12)];
-                        this->f[D3Q15<T>::IndexF(idx, 11)] = this->f[D3Q15<T>::IndexF(idx, 7)];
-                        this->f[D3Q15<T>::IndexF(idx, 13)] = this->f[D3Q15<T>::IndexF(idx, 9)];
-                        this->f[D3Q15<T>::IndexF(idx, 14)] = this->f[D3Q15<T>::IndexF(idx, 10)];
-                    } else if (_bctype((this->nx - 1) + this->offsetx, j + this->offsety, k + this->offsetz) == MIRROR) {
-                        int idx = this->Index(this->nx - 1, j, k);
-                        this->f[D3Q15<T>::IndexF(idx, 4)] = this->f[D3Q15<T>::IndexF(idx, 1)];
-                        this->f[D3Q15<T>::IndexF(idx, 8)] = this->f[D3Q15<T>::IndexF(idx, 7)];
-                        this->f[D3Q15<T>::IndexF(idx, 11)] = this->f[D3Q15<T>::IndexF(idx, 12)];
-                        this->f[D3Q15<T>::IndexF(idx, 13)] = this->f[D3Q15<T>::IndexF(idx, 10)];
-                        this->f[D3Q15<T>::IndexF(idx, 14)] = this->f[D3Q15<T>::IndexF(idx, 9)];
-                    }
-                }
-            }
-        }
-        //  On ymin
-        if (this->PEy == 0) {
-            for (int k = 0; k < this->nz; ++k) {
-                for (int i = 0; i < this->nx; ++i) {
-                    if (_bctype(i + this->offsetx, 0 + this->offsety, k + this->offsetz) == BARRIER) {
-                        int idx = this->Index(i, 0, k);
-                        this->f[D3Q15<T>::IndexF(idx, 2)] = this->f[D3Q15<T>::IndexF(idx, 5)];
-                        this->f[D3Q15<T>::IndexF(idx, 7)] = this->f[D3Q15<T>::IndexF(idx, 11)];
-                        this->f[D3Q15<T>::IndexF(idx, 8)] = this->f[D3Q15<T>::IndexF(idx, 12)];
-                        this->f[D3Q15<T>::IndexF(idx, 10)] = this->f[D3Q15<T>::IndexF(idx, 14)];
-                        this->f[D3Q15<T>::IndexF(idx, 13)] = this->f[D3Q15<T>::IndexF(idx, 9)];
-                    } else if (_bctype(i + this->offsetx, 0 + this->offsety, k + this->offsetz) == MIRROR) {
-                        int idx = this->Index(i, 0, k);
-                        this->f[D3Q15<T>::IndexF(idx, 2)] = this->f[D3Q15<T>::IndexF(idx, 5)];
-                        this->f[D3Q15<T>::IndexF(idx, 7)] = this->f[D3Q15<T>::IndexF(idx, 9)];
-                        this->f[D3Q15<T>::IndexF(idx, 8)] = this->f[D3Q15<T>::IndexF(idx, 14)];
-                        this->f[D3Q15<T>::IndexF(idx, 10)] = this->f[D3Q15<T>::IndexF(idx, 12)];
-                        this->f[D3Q15<T>::IndexF(idx, 13)] = this->f[D3Q15<T>::IndexF(idx, 11)];
-                    }
-                }
-            }
-        }
-        //  On ymax
-        if (this->PEy == this->my - 1) {
-            for (int k = 0; k < this->nz; ++k) {
-                for (int i = 0; i < this->nx; ++i) {
-                    if (_bctype(i + this->offsetx, (this->ny - 1) + this->offsety, k + this->offsetz) == BARRIER) {
-                        int idx = this->Index(i, this->ny - 1, k);
-                        this->f[D3Q15<T>::IndexF(idx, 5)] = this->f[D3Q15<T>::IndexF(idx, 2)];
-                        this->f[D3Q15<T>::IndexF(idx, 9)] = this->f[D3Q15<T>::IndexF(idx, 13)];
-                        this->f[D3Q15<T>::IndexF(idx, 11)] = this->f[D3Q15<T>::IndexF(idx, 7)];
-                        this->f[D3Q15<T>::IndexF(idx, 12)] = this->f[D3Q15<T>::IndexF(idx, 8)];
-                        this->f[D3Q15<T>::IndexF(idx, 14)] = this->f[D3Q15<T>::IndexF(idx, 10)];
-                    } else if (_bctype(i + this->offsetx, (this->ny - 1) + this->offsety, k + this->offsetz) == MIRROR) {
-                        int idx = this->Index(i, this->ny - 1, k);
-                        this->f[D3Q15<T>::IndexF(idx, 5)] = this->f[D3Q15<T>::IndexF(idx, 2)];
-                        this->f[D3Q15<T>::IndexF(idx, 9)] = this->f[D3Q15<T>::IndexF(idx, 7)];
-                        this->f[D3Q15<T>::IndexF(idx, 11)] = this->f[D3Q15<T>::IndexF(idx, 13)];
-                        this->f[D3Q15<T>::IndexF(idx, 12)] = this->f[D3Q15<T>::IndexF(idx, 10)];
-                        this->f[D3Q15<T>::IndexF(idx, 14)] = this->f[D3Q15<T>::IndexF(idx, 8)];
-                    }
-                }
-            }
-        }
-        //  On zmin
-        if (this->PEz == 0) {
-            for (int i = 0; i < this->nx; ++i) {
-                for (int j = 0; j < this->ny; ++j) {
-                    if (_bctype(i + this->offsetx, j + this->offsety, 0 + this->offsetz) == BARRIER) {
-                        int idx = this->Index(i, j, 0);
-                        this->f[D3Q15<T>::IndexF(idx, 3)] = this->f[D3Q15<T>::IndexF(idx, 6)];
-                        this->f[D3Q15<T>::IndexF(idx, 7)] = this->f[D3Q15<T>::IndexF(idx, 11)];
-                        this->f[D3Q15<T>::IndexF(idx, 8)] = this->f[D3Q15<T>::IndexF(idx, 12)];
-                        this->f[D3Q15<T>::IndexF(idx, 9)] = this->f[D3Q15<T>::IndexF(idx, 13)];
-                        this->f[D3Q15<T>::IndexF(idx, 14)] = this->f[D3Q15<T>::IndexF(idx, 10)];
-                    } else if (_bctype(i + this->offsetx, j + this->offsety, 0 + this->offsetz) == MIRROR) {
-                        int idx = this->Index(i, j, 0);
-                        this->f[D3Q15<T>::IndexF(idx, 3)] = this->f[D3Q15<T>::IndexF(idx, 6)];
-                        this->f[D3Q15<T>::IndexF(idx, 7)] = this->f[D3Q15<T>::IndexF(idx, 10)];
-                        this->f[D3Q15<T>::IndexF(idx, 8)] = this->f[D3Q15<T>::IndexF(idx, 13)];
-                        this->f[D3Q15<T>::IndexF(idx, 9)] = this->f[D3Q15<T>::IndexF(idx, 12)];
-                        this->f[D3Q15<T>::IndexF(idx, 14)] = this->f[D3Q15<T>::IndexF(idx, 11)];
-                    }
-                }
-            }
-        }
-        //  On zmax
-        if (this->PEz == this->mz - 1) {
-            for (int i = 0; i < this->nx; ++i) {
-                for (int j = 0; j < this->ny; ++j) {                    
-                    if (_bctype(i + this->offsetx, j + this->offsety, (this->nz - 1) + this->offsetz) == BARRIER) {
-                        int idx = this->Index(i, j, this->nz - 1);
-                        this->f[D3Q15<T>::IndexF(idx, 6)] = this->f[D3Q15<T>::IndexF(idx, 3)];
-                        this->f[D3Q15<T>::IndexF(idx, 10)] = this->f[D3Q15<T>::IndexF(idx, 14)];
-                        this->f[D3Q15<T>::IndexF(idx, 11)] = this->f[D3Q15<T>::IndexF(idx, 7)];
-                        this->f[D3Q15<T>::IndexF(idx, 12)] = this->f[D3Q15<T>::IndexF(idx, 8)];
-                        this->f[D3Q15<T>::IndexF(idx, 13)] = this->f[D3Q15<T>::IndexF(idx, 9)];
-                    } else if (_bctype(i + this->offsetx, j + this->offsety, (this->nz - 1) + this->offsetz) == MIRROR) {
-                        int idx = this->Index(i, j, this->nz - 1);
-                        this->f[D3Q15<T>::IndexF(idx, 6)] = this->f[D3Q15<T>::IndexF(idx, 3)];
-                        this->f[D3Q15<T>::IndexF(idx, 10)] = this->f[D3Q15<T>::IndexF(idx, 7)];
-                        this->f[D3Q15<T>::IndexF(idx, 11)] = this->f[D3Q15<T>::IndexF(idx, 14)];
-                        this->f[D3Q15<T>::IndexF(idx, 12)] = this->f[D3Q15<T>::IndexF(idx, 9)];
-                        this->f[D3Q15<T>::IndexF(idx, 13)] = this->f[D3Q15<T>::IndexF(idx, 8)];
+                    int idx = this->Index(i, j, k);
+                    int bctype = _bctype(i + this->offsetx, j + this->offsety, k + this->offsetz);
+                    if (_directionx == -1) {
+                        if (bctype == BARRIER) {
+                            this->f[D3Q15<T>::IndexF(idx, 1)] = this->f[D3Q15<T>::IndexF(idx, 4)];
+                            this->f[D3Q15<T>::IndexF(idx, 7)] = this->f[D3Q15<T>::IndexF(idx, 11)];
+                            this->f[D3Q15<T>::IndexF(idx, 9)] = this->f[D3Q15<T>::IndexF(idx, 13)];
+                            this->f[D3Q15<T>::IndexF(idx, 10)] = this->f[D3Q15<T>::IndexF(idx, 14)];
+                            this->f[D3Q15<T>::IndexF(idx, 12)] = this->f[D3Q15<T>::IndexF(idx, 8)];
+                        } else if (bctype == MIRROR) {
+                            this->f[D3Q15<T>::IndexF(idx, 1)] = this->f[D3Q15<T>::IndexF(idx, 4)];
+                            this->f[D3Q15<T>::IndexF(idx, 7)] = this->f[D3Q15<T>::IndexF(idx, 8)];
+                            this->f[D3Q15<T>::IndexF(idx, 9)] = this->f[D3Q15<T>::IndexF(idx, 14)];
+                            this->f[D3Q15<T>::IndexF(idx, 10)] = this->f[D3Q15<T>::IndexF(idx, 13)];
+                            this->f[D3Q15<T>::IndexF(idx, 12)] = this->f[D3Q15<T>::IndexF(idx, 11)];
+                        }
+                    } else if (_directionx == 1) {
+                        if (bctype == BARRIER) {
+                            this->f[D3Q15<T>::IndexF(idx, 4)] = this->f[D3Q15<T>::IndexF(idx, 1)];
+                            this->f[D3Q15<T>::IndexF(idx, 8)] = this->f[D3Q15<T>::IndexF(idx, 12)];
+                            this->f[D3Q15<T>::IndexF(idx, 11)] = this->f[D3Q15<T>::IndexF(idx, 7)];
+                            this->f[D3Q15<T>::IndexF(idx, 13)] = this->f[D3Q15<T>::IndexF(idx, 9)];
+                            this->f[D3Q15<T>::IndexF(idx, 14)] = this->f[D3Q15<T>::IndexF(idx, 10)];
+                        } else if (bctype == MIRROR) {
+                            int idx = this->Index(this->nx - 1, j, k);
+                            this->f[D3Q15<T>::IndexF(idx, 4)] = this->f[D3Q15<T>::IndexF(idx, 1)];
+                            this->f[D3Q15<T>::IndexF(idx, 8)] = this->f[D3Q15<T>::IndexF(idx, 7)];
+                            this->f[D3Q15<T>::IndexF(idx, 11)] = this->f[D3Q15<T>::IndexF(idx, 12)];
+                            this->f[D3Q15<T>::IndexF(idx, 13)] = this->f[D3Q15<T>::IndexF(idx, 10)];
+                            this->f[D3Q15<T>::IndexF(idx, 14)] = this->f[D3Q15<T>::IndexF(idx, 9)];
+                        }
                     }
                 }
             }
@@ -1194,135 +1153,277 @@ private:
 
     template<class T>
     template<class Ff>
-    void D3Q15<T>::iBoundaryCondition(Ff _bctype) {
-        //  On xmin
-        if (this->PEx == 0) {
-            for (int j = 0; j < this->ny; ++j) {
-                for (int k = 0; k < this->nz; ++k) {
-                    if (_bctype(0 + this->offsetx, j + this->offsety, k + this->offsetz) == BARRIER) {
-                        int idx = this->Index(0, j, k);
-                        this->f[D3Q15<T>::IndexF(idx, 4)] = this->f[D3Q15<T>::IndexF(idx, 1)];
-                        this->f[D3Q15<T>::IndexF(idx, 8)] = this->f[D3Q15<T>::IndexF(idx, 12)];
-                        this->f[D3Q15<T>::IndexF(idx, 11)] = this->f[D3Q15<T>::IndexF(idx, 7)];
-                        this->f[D3Q15<T>::IndexF(idx, 13)] = this->f[D3Q15<T>::IndexF(idx, 9)];
-                        this->f[D3Q15<T>::IndexF(idx, 14)] = this->f[D3Q15<T>::IndexF(idx, 10)];
-                    } else if (_bctype(0 + this->offsetx, j + this->offsety, k + this->offsetz) == MIRROR) {
-                        int idx = this->Index(0, j, k);
-                        this->f[D3Q15<T>::IndexF(idx, 4)] = this->f[D3Q15<T>::IndexF(idx, 1)];
-                        this->f[D3Q15<T>::IndexF(idx, 8)] = this->f[D3Q15<T>::IndexF(idx, 7)];
-                        this->f[D3Q15<T>::IndexF(idx, 11)] = this->f[D3Q15<T>::IndexF(idx, 12)];
-                        this->f[D3Q15<T>::IndexF(idx, 13)] = this->f[D3Q15<T>::IndexF(idx, 10)];
-                        this->f[D3Q15<T>::IndexF(idx, 14)] = this->f[D3Q15<T>::IndexF(idx, 9)];
-                    }
-                }
-            }
-        }
-        //  On xmax
-        if (this->PEx == this->mx - 1) {
-            for (int j = 0; j < this->ny; ++j) {
-                for (int k = 0; k < this->nz; ++k) {
-                    if (_bctype((this->nx - 1) + this->offsetx, j + this->offsety, k + this->offsetz) == BARRIER) {
-                        int idx = this->Index(this->nx - 1, j, k);
-                        this->f[D3Q15<T>::IndexF(idx, 1)] = this->f[D3Q15<T>::IndexF(idx, 4)];
-                        this->f[D3Q15<T>::IndexF(idx, 7)] = this->f[D3Q15<T>::IndexF(idx, 11)];
-                        this->f[D3Q15<T>::IndexF(idx, 9)] = this->f[D3Q15<T>::IndexF(idx, 13)];
-                        this->f[D3Q15<T>::IndexF(idx, 10)] = this->f[D3Q15<T>::IndexF(idx, 14)];
-                        this->f[D3Q15<T>::IndexF(idx, 12)] = this->f[D3Q15<T>::IndexF(idx, 8)];
-                    } else if (_bctype((this->nx - 1) + this->offsetx, j + this->offsety, k + this->offsetz) == MIRROR) {
-                        int idx = this->Index(this->nx - 1, j, k);
-                        this->f[D3Q15<T>::IndexF(idx, 1)] = this->f[D3Q15<T>::IndexF(idx, 4)];
-                        this->f[D3Q15<T>::IndexF(idx, 7)] = this->f[D3Q15<T>::IndexF(idx, 8)];
-                        this->f[D3Q15<T>::IndexF(idx, 9)] = this->f[D3Q15<T>::IndexF(idx, 14)];
-                        this->f[D3Q15<T>::IndexF(idx, 10)] = this->f[D3Q15<T>::IndexF(idx, 13)];
-                        this->f[D3Q15<T>::IndexF(idx, 12)] = this->f[D3Q15<T>::IndexF(idx, 11)];
-                    }
-                }
-            }
-        }
-        //  On ymin
-        if (this->PEy == 0) {
+    void D3Q15<T>::BoundaryConditionAlongYFace(int _j, int _directiony, Ff _bctype) {
+        int j = _j - this->offsety;
+        if (0 <= j && j < this->ny) {
             for (int k = 0; k < this->nz; ++k) {
                 for (int i = 0; i < this->nx; ++i) {
-                    if (_bctype(i + this->offsetx, 0 + this->offsety, k + this->offsetz) == BARRIER) {
-                        int idx = this->Index(i, 0, k);
-                        this->f[D3Q15<T>::IndexF(idx, 5)] = this->f[D3Q15<T>::IndexF(idx, 2)];
-                        this->f[D3Q15<T>::IndexF(idx, 9)] = this->f[D3Q15<T>::IndexF(idx, 13)];
-                        this->f[D3Q15<T>::IndexF(idx, 11)] = this->f[D3Q15<T>::IndexF(idx, 7)];
-                        this->f[D3Q15<T>::IndexF(idx, 12)] = this->f[D3Q15<T>::IndexF(idx, 8)];
-                        this->f[D3Q15<T>::IndexF(idx, 14)] = this->f[D3Q15<T>::IndexF(idx, 10)];
-                    } else if (_bctype(i + this->offsetx, 0 + this->offsety, k + this->offsetz) == MIRROR) {
-                        int idx = this->Index(i, 0, k);
-                        this->f[D3Q15<T>::IndexF(idx, 5)] = this->f[D3Q15<T>::IndexF(idx, 2)];
-                        this->f[D3Q15<T>::IndexF(idx, 9)] = this->f[D3Q15<T>::IndexF(idx, 7)];
-                        this->f[D3Q15<T>::IndexF(idx, 11)] = this->f[D3Q15<T>::IndexF(idx, 13)];
-                        this->f[D3Q15<T>::IndexF(idx, 12)] = this->f[D3Q15<T>::IndexF(idx, 10)];
-                        this->f[D3Q15<T>::IndexF(idx, 14)] = this->f[D3Q15<T>::IndexF(idx, 8)];
+                    int idx = this->Index(i, j, k);
+                    int bctype = _bctype(i + this->offsetx, j + this->offsety, k + this->offsetz);
+                    if (_directiony == -1) {
+                        if (bctype == BARRIER) {
+                            this->f[D3Q15<T>::IndexF(idx, 2)] = this->f[D3Q15<T>::IndexF(idx, 5)];
+                            this->f[D3Q15<T>::IndexF(idx, 7)] = this->f[D3Q15<T>::IndexF(idx, 11)];
+                            this->f[D3Q15<T>::IndexF(idx, 8)] = this->f[D3Q15<T>::IndexF(idx, 12)];
+                            this->f[D3Q15<T>::IndexF(idx, 10)] = this->f[D3Q15<T>::IndexF(idx, 14)];
+                            this->f[D3Q15<T>::IndexF(idx, 13)] = this->f[D3Q15<T>::IndexF(idx, 9)];
+                        } else if (bctype == MIRROR) {
+                            this->f[D3Q15<T>::IndexF(idx, 2)] = this->f[D3Q15<T>::IndexF(idx, 5)];
+                            this->f[D3Q15<T>::IndexF(idx, 7)] = this->f[D3Q15<T>::IndexF(idx, 9)];
+                            this->f[D3Q15<T>::IndexF(idx, 8)] = this->f[D3Q15<T>::IndexF(idx, 14)];
+                            this->f[D3Q15<T>::IndexF(idx, 10)] = this->f[D3Q15<T>::IndexF(idx, 12)];
+                            this->f[D3Q15<T>::IndexF(idx, 13)] = this->f[D3Q15<T>::IndexF(idx, 11)];
+                        }
+                    } else if (_directiony == 1) {
+                        if (bctype == BARRIER) {
+                            this->f[D3Q15<T>::IndexF(idx, 5)] = this->f[D3Q15<T>::IndexF(idx, 2)];
+                            this->f[D3Q15<T>::IndexF(idx, 9)] = this->f[D3Q15<T>::IndexF(idx, 13)];
+                            this->f[D3Q15<T>::IndexF(idx, 11)] = this->f[D3Q15<T>::IndexF(idx, 7)];
+                            this->f[D3Q15<T>::IndexF(idx, 12)] = this->f[D3Q15<T>::IndexF(idx, 8)];
+                            this->f[D3Q15<T>::IndexF(idx, 14)] = this->f[D3Q15<T>::IndexF(idx, 10)];
+                        } else if (bctype == MIRROR) {
+                            this->f[D3Q15<T>::IndexF(idx, 5)] = this->f[D3Q15<T>::IndexF(idx, 2)];
+                            this->f[D3Q15<T>::IndexF(idx, 9)] = this->f[D3Q15<T>::IndexF(idx, 7)];
+                            this->f[D3Q15<T>::IndexF(idx, 11)] = this->f[D3Q15<T>::IndexF(idx, 13)];
+                            this->f[D3Q15<T>::IndexF(idx, 12)] = this->f[D3Q15<T>::IndexF(idx, 10)];
+                            this->f[D3Q15<T>::IndexF(idx, 14)] = this->f[D3Q15<T>::IndexF(idx, 8)];
+                        }
                     }
                 }
             }
         }
-        //  On ymax
-        if (this->PEy == this->my - 1) {
+    }
+
+    template<class T>
+    template<class Ff>
+    void D3Q15<T>::BoundaryConditionAlongZFace(int _k, int _directionz, Ff _bctype) {
+        int k = _k - this->offsetz;
+        if (0 <= k && k < this->nz) {
+            for (int i = 0; i < this->nx; ++i) {
+                for (int j = 0; j < this->ny; ++j) {
+                    int idx = this->Index(i, j, k);
+                    int bctype = _bctype(i + this->offsetx, j + this->offsety, k + this->offsetz);
+                    if (_directionz == -1) {
+                        if (bctype == BARRIER) {
+                            this->f[D3Q15<T>::IndexF(idx, 3)] = this->f[D3Q15<T>::IndexF(idx, 6)];
+                            this->f[D3Q15<T>::IndexF(idx, 7)] = this->f[D3Q15<T>::IndexF(idx, 11)];
+                            this->f[D3Q15<T>::IndexF(idx, 8)] = this->f[D3Q15<T>::IndexF(idx, 12)];
+                            this->f[D3Q15<T>::IndexF(idx, 9)] = this->f[D3Q15<T>::IndexF(idx, 13)];
+                            this->f[D3Q15<T>::IndexF(idx, 14)] = this->f[D3Q15<T>::IndexF(idx, 10)];
+                        } else if (bctype == MIRROR) {
+                            this->f[D3Q15<T>::IndexF(idx, 3)] = this->f[D3Q15<T>::IndexF(idx, 6)];
+                            this->f[D3Q15<T>::IndexF(idx, 7)] = this->f[D3Q15<T>::IndexF(idx, 10)];
+                            this->f[D3Q15<T>::IndexF(idx, 8)] = this->f[D3Q15<T>::IndexF(idx, 13)];
+                            this->f[D3Q15<T>::IndexF(idx, 9)] = this->f[D3Q15<T>::IndexF(idx, 12)];
+                            this->f[D3Q15<T>::IndexF(idx, 14)] = this->f[D3Q15<T>::IndexF(idx, 11)];
+                        }
+                    } else if (_directionz == 1) {
+                        if (bctype == BARRIER) {
+                            this->f[D3Q15<T>::IndexF(idx, 6)] = this->f[D3Q15<T>::IndexF(idx, 3)];
+                            this->f[D3Q15<T>::IndexF(idx, 10)] = this->f[D3Q15<T>::IndexF(idx, 14)];
+                            this->f[D3Q15<T>::IndexF(idx, 11)] = this->f[D3Q15<T>::IndexF(idx, 7)];
+                            this->f[D3Q15<T>::IndexF(idx, 12)] = this->f[D3Q15<T>::IndexF(idx, 8)];
+                            this->f[D3Q15<T>::IndexF(idx, 13)] = this->f[D3Q15<T>::IndexF(idx, 9)];
+                        } else if (bctype == MIRROR) {
+                            this->f[D3Q15<T>::IndexF(idx, 6)] = this->f[D3Q15<T>::IndexF(idx, 3)];
+                            this->f[D3Q15<T>::IndexF(idx, 10)] = this->f[D3Q15<T>::IndexF(idx, 7)];
+                            this->f[D3Q15<T>::IndexF(idx, 11)] = this->f[D3Q15<T>::IndexF(idx, 14)];
+                            this->f[D3Q15<T>::IndexF(idx, 12)] = this->f[D3Q15<T>::IndexF(idx, 9)];
+                            this->f[D3Q15<T>::IndexF(idx, 13)] = this->f[D3Q15<T>::IndexF(idx, 8)];
+                        }
+                    }
+                }
+            }
+        }
+    }
+        
+    template<class T>
+    template<class Ff>
+    void D3Q15<T>::iBoundaryConditionAlongXFace(int _i, int _directionx, Ff _bctype) {
+        int i = _i - this->offsetx;
+        if (0 <= i && i < this->nx) {
+            for (int j = 0; j < this->ny; ++j) {
+                for (int k = 0; k < this->nz; ++k) {
+                    int idx = this->Index(i, j, k);
+                    int bctype = _bctype(i + this->offsetx, j + this->offsety, k + this->offsetz);
+                    if (_directionx == -1) {
+                        if (bctype == BARRIER) {
+                            this->f[D3Q15<T>::IndexF(idx, 4)] = this->f[D3Q15<T>::IndexF(idx, 1)];
+                            this->f[D3Q15<T>::IndexF(idx, 8)] = this->f[D3Q15<T>::IndexF(idx, 12)];
+                            this->f[D3Q15<T>::IndexF(idx, 11)] = this->f[D3Q15<T>::IndexF(idx, 7)];
+                            this->f[D3Q15<T>::IndexF(idx, 13)] = this->f[D3Q15<T>::IndexF(idx, 9)];
+                            this->f[D3Q15<T>::IndexF(idx, 14)] = this->f[D3Q15<T>::IndexF(idx, 10)];
+                        } else if (bctype == MIRROR) {
+                            this->f[D3Q15<T>::IndexF(idx, 4)] = this->f[D3Q15<T>::IndexF(idx, 1)];
+                            this->f[D3Q15<T>::IndexF(idx, 8)] = this->f[D3Q15<T>::IndexF(idx, 7)];
+                            this->f[D3Q15<T>::IndexF(idx, 11)] = this->f[D3Q15<T>::IndexF(idx, 12)];
+                            this->f[D3Q15<T>::IndexF(idx, 13)] = this->f[D3Q15<T>::IndexF(idx, 10)];
+                            this->f[D3Q15<T>::IndexF(idx, 14)] = this->f[D3Q15<T>::IndexF(idx, 9)];
+                        }
+                    } else if (_directionx == 1) {
+                        if (bctype == BARRIER) {
+                            this->f[D3Q15<T>::IndexF(idx, 1)] = this->f[D3Q15<T>::IndexF(idx, 4)];
+                            this->f[D3Q15<T>::IndexF(idx, 7)] = this->f[D3Q15<T>::IndexF(idx, 11)];
+                            this->f[D3Q15<T>::IndexF(idx, 9)] = this->f[D3Q15<T>::IndexF(idx, 13)];
+                            this->f[D3Q15<T>::IndexF(idx, 10)] = this->f[D3Q15<T>::IndexF(idx, 14)];
+                            this->f[D3Q15<T>::IndexF(idx, 12)] = this->f[D3Q15<T>::IndexF(idx, 8)];
+                        } else if (bctype == MIRROR) {
+                            this->f[D3Q15<T>::IndexF(idx, 1)] = this->f[D3Q15<T>::IndexF(idx, 4)];
+                            this->f[D3Q15<T>::IndexF(idx, 7)] = this->f[D3Q15<T>::IndexF(idx, 8)];
+                            this->f[D3Q15<T>::IndexF(idx, 9)] = this->f[D3Q15<T>::IndexF(idx, 14)];
+                            this->f[D3Q15<T>::IndexF(idx, 10)] = this->f[D3Q15<T>::IndexF(idx, 13)];
+                            this->f[D3Q15<T>::IndexF(idx, 12)] = this->f[D3Q15<T>::IndexF(idx, 11)];
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    template<class T>
+    template<class Ff>
+    void D3Q15<T>::iBoundaryConditionAlongYFace(int _j, int _directiony, Ff _bctype) {
+        int j = _j - this->offsety;
+        if (0 <= j && j < this->ny) {
             for (int k = 0; k < this->nz; ++k) {
                 for (int i = 0; i < this->nx; ++i) {
-                    if (_bctype(i + this->offsetx, (this->ny - 1) + this->offsety, k + this->offsetz) == BARRIER) {
-                        int idx = this->Index(i, this->ny - 1, k);
-                        this->f[D3Q15<T>::IndexF(idx, 2)] = this->f[D3Q15<T>::IndexF(idx, 5)];
-                        this->f[D3Q15<T>::IndexF(idx, 7)] = this->f[D3Q15<T>::IndexF(idx, 11)];
-                        this->f[D3Q15<T>::IndexF(idx, 8)] = this->f[D3Q15<T>::IndexF(idx, 12)];
-                        this->f[D3Q15<T>::IndexF(idx, 10)] = this->f[D3Q15<T>::IndexF(idx, 14)];
-                        this->f[D3Q15<T>::IndexF(idx, 13)] = this->f[D3Q15<T>::IndexF(idx, 9)];
-                    } else if (_bctype(i + this->offsetx, (this->ny - 1) + this->offsety, k + this->offsetz) == MIRROR) {
-                        int idx = this->Index(i, this->ny - 1, k);
-                        this->f[D3Q15<T>::IndexF(idx, 2)] = this->f[D3Q15<T>::IndexF(idx, 5)];
-                        this->f[D3Q15<T>::IndexF(idx, 7)] = this->f[D3Q15<T>::IndexF(idx, 9)];
-                        this->f[D3Q15<T>::IndexF(idx, 8)] = this->f[D3Q15<T>::IndexF(idx, 14)];
-                        this->f[D3Q15<T>::IndexF(idx, 10)] = this->f[D3Q15<T>::IndexF(idx, 12)];
-                        this->f[D3Q15<T>::IndexF(idx, 13)] = this->f[D3Q15<T>::IndexF(idx, 11)];
+                    int idx = this->Index(i, j, k);
+                    int bctype = _bctype(i + this->offsetx, j + this->offsety, k + this->offsetz);
+                    if (_directiony == -1) {
+                        if (bctype == BARRIER) {
+                            this->f[D3Q15<T>::IndexF(idx, 5)] = this->f[D3Q15<T>::IndexF(idx, 2)];
+                            this->f[D3Q15<T>::IndexF(idx, 9)] = this->f[D3Q15<T>::IndexF(idx, 13)];
+                            this->f[D3Q15<T>::IndexF(idx, 11)] = this->f[D3Q15<T>::IndexF(idx, 7)];
+                            this->f[D3Q15<T>::IndexF(idx, 12)] = this->f[D3Q15<T>::IndexF(idx, 8)];
+                            this->f[D3Q15<T>::IndexF(idx, 14)] = this->f[D3Q15<T>::IndexF(idx, 10)];
+                        } else if (bctype == MIRROR) {
+                            this->f[D3Q15<T>::IndexF(idx, 5)] = this->f[D3Q15<T>::IndexF(idx, 2)];
+                            this->f[D3Q15<T>::IndexF(idx, 9)] = this->f[D3Q15<T>::IndexF(idx, 7)];
+                            this->f[D3Q15<T>::IndexF(idx, 11)] = this->f[D3Q15<T>::IndexF(idx, 13)];
+                            this->f[D3Q15<T>::IndexF(idx, 12)] = this->f[D3Q15<T>::IndexF(idx, 10)];
+                            this->f[D3Q15<T>::IndexF(idx, 14)] = this->f[D3Q15<T>::IndexF(idx, 8)];
+                        }
+                    } else if (_directiony == 1) {
+                        if (bctype == BARRIER) {
+                            this->f[D3Q15<T>::IndexF(idx, 2)] = this->f[D3Q15<T>::IndexF(idx, 5)];
+                            this->f[D3Q15<T>::IndexF(idx, 7)] = this->f[D3Q15<T>::IndexF(idx, 11)];
+                            this->f[D3Q15<T>::IndexF(idx, 8)] = this->f[D3Q15<T>::IndexF(idx, 12)];
+                            this->f[D3Q15<T>::IndexF(idx, 10)] = this->f[D3Q15<T>::IndexF(idx, 14)];
+                            this->f[D3Q15<T>::IndexF(idx, 13)] = this->f[D3Q15<T>::IndexF(idx, 9)];
+                        } else if (bctype == MIRROR) {
+                            this->f[D3Q15<T>::IndexF(idx, 2)] = this->f[D3Q15<T>::IndexF(idx, 5)];
+                            this->f[D3Q15<T>::IndexF(idx, 7)] = this->f[D3Q15<T>::IndexF(idx, 9)];
+                            this->f[D3Q15<T>::IndexF(idx, 8)] = this->f[D3Q15<T>::IndexF(idx, 14)];
+                            this->f[D3Q15<T>::IndexF(idx, 10)] = this->f[D3Q15<T>::IndexF(idx, 12)];
+                            this->f[D3Q15<T>::IndexF(idx, 13)] = this->f[D3Q15<T>::IndexF(idx, 11)];
+                        }
                     }
                 }
             }
         }
-        //  On zmin
-        if (this->PEz == 0) {
+    }
+
+    template<class T>
+    template<class Ff>
+    void D3Q15<T>::iBoundaryConditionAlongZFace(int _k, int _directionz, Ff _bctype) {
+        int k = _k - this->offsetz;
+        if (0 <= k && k < this->nz) {
             for (int i = 0; i < this->nx; ++i) {
                 for (int j = 0; j < this->ny; ++j) {
-                    if (_bctype(i + this->offsetx, j + this->offsety, 0 + this->offsetz) == BARRIER) {
-                        int idx = this->Index(i, j, 0);
-                        this->f[D3Q15<T>::IndexF(idx, 6)] = this->f[D3Q15<T>::IndexF(idx, 3)];
-                        this->f[D3Q15<T>::IndexF(idx, 10)] = this->f[D3Q15<T>::IndexF(idx, 14)];
-                        this->f[D3Q15<T>::IndexF(idx, 11)] = this->f[D3Q15<T>::IndexF(idx, 7)];
-                        this->f[D3Q15<T>::IndexF(idx, 12)] = this->f[D3Q15<T>::IndexF(idx, 8)];
-                        this->f[D3Q15<T>::IndexF(idx, 13)] = this->f[D3Q15<T>::IndexF(idx, 9)];
-                    } else if (_bctype(i + this->offsetx, j + this->offsety, 0 + this->offsetz) == MIRROR) {
-                        int idx = this->Index(i, j, 0);
-                        this->f[D3Q15<T>::IndexF(idx, 6)] = this->f[D3Q15<T>::IndexF(idx, 3)];
-                        this->f[D3Q15<T>::IndexF(idx, 10)] = this->f[D3Q15<T>::IndexF(idx, 7)];
-                        this->f[D3Q15<T>::IndexF(idx, 11)] = this->f[D3Q15<T>::IndexF(idx, 14)];
-                        this->f[D3Q15<T>::IndexF(idx, 12)] = this->f[D3Q15<T>::IndexF(idx, 9)];
-                        this->f[D3Q15<T>::IndexF(idx, 13)] = this->f[D3Q15<T>::IndexF(idx, 8)];
+                    int idx = this->Index(i, j, k);
+                    int bctype = _bctype(i + this->offsetx, j + this->offsety, k + this->offsetz);
+                    if (_directionz == -1) {
+                        if (bctype == BARRIER) {
+                            this->f[D3Q15<T>::IndexF(idx, 6)] = this->f[D3Q15<T>::IndexF(idx, 3)];
+                            this->f[D3Q15<T>::IndexF(idx, 10)] = this->f[D3Q15<T>::IndexF(idx, 14)];
+                            this->f[D3Q15<T>::IndexF(idx, 11)] = this->f[D3Q15<T>::IndexF(idx, 7)];
+                            this->f[D3Q15<T>::IndexF(idx, 12)] = this->f[D3Q15<T>::IndexF(idx, 8)];
+                            this->f[D3Q15<T>::IndexF(idx, 13)] = this->f[D3Q15<T>::IndexF(idx, 9)];
+                        } else if (bctype == MIRROR) {
+                            this->f[D3Q15<T>::IndexF(idx, 6)] = this->f[D3Q15<T>::IndexF(idx, 3)];
+                            this->f[D3Q15<T>::IndexF(idx, 10)] = this->f[D3Q15<T>::IndexF(idx, 7)];
+                            this->f[D3Q15<T>::IndexF(idx, 11)] = this->f[D3Q15<T>::IndexF(idx, 14)];
+                            this->f[D3Q15<T>::IndexF(idx, 12)] = this->f[D3Q15<T>::IndexF(idx, 9)];
+                            this->f[D3Q15<T>::IndexF(idx, 13)] = this->f[D3Q15<T>::IndexF(idx, 8)];
+                        }
+                    } else if (_directionz == 1) {
+                        if (bctype == BARRIER) {
+                            this->f[D3Q15<T>::IndexF(idx, 3)] = this->f[D3Q15<T>::IndexF(idx, 6)];
+                            this->f[D3Q15<T>::IndexF(idx, 7)] = this->f[D3Q15<T>::IndexF(idx, 11)];
+                            this->f[D3Q15<T>::IndexF(idx, 8)] = this->f[D3Q15<T>::IndexF(idx, 12)];
+                            this->f[D3Q15<T>::IndexF(idx, 9)] = this->f[D3Q15<T>::IndexF(idx, 13)];
+                            this->f[D3Q15<T>::IndexF(idx, 14)] = this->f[D3Q15<T>::IndexF(idx, 10)];
+                        } else if (bctype == MIRROR) {
+                            this->f[D3Q15<T>::IndexF(idx, 3)] = this->f[D3Q15<T>::IndexF(idx, 6)];
+                            this->f[D3Q15<T>::IndexF(idx, 7)] = this->f[D3Q15<T>::IndexF(idx, 10)];
+                            this->f[D3Q15<T>::IndexF(idx, 8)] = this->f[D3Q15<T>::IndexF(idx, 13)];
+                            this->f[D3Q15<T>::IndexF(idx, 9)] = this->f[D3Q15<T>::IndexF(idx, 12)];
+                            this->f[D3Q15<T>::IndexF(idx, 14)] = this->f[D3Q15<T>::IndexF(idx, 11)];
+                        }
                     }
                 }
             }
         }
-        //  On zmax
-        if (this->PEz == this->mz - 1) {
-            for (int i = 0; i < this->nx; ++i) {
+    }
+
+    template<class T>
+    void D3Q15<T>::SmoothCornerAlongYZ(int _j, int _k, int _directiony, int _directionz) {
+        int j = _j - this->offsety, k = _k - this->offsetz;
+        if (0 <= j && j < this->ny) {
+            if (0 <= k && k < this->nz) {
+                for (int i = 0; i < this->nx; ++i) {
+                    int idx = this->Index(i, j, k), idxy = this->Index(i, j - _directiony, k), idxz = this->Index(i, j, k - _directionz);
+                    this->f0[idx] = 0.5*(this->f0[idxy] + this->f0[idxz]);
+                    for (int c = 1; c < D3Q15<T>::nc; ++c) {
+                        this->f[D3Q15<T>::IndexF(idx, c)] = 0.5*(this->f[D3Q15<T>::IndexF(idxy, c)] + this->f[D3Q15<T>::IndexF(idxz, c)]);
+                    }
+                }
+            }    
+        }
+    }
+
+    template<class T>
+    void D3Q15<T>::SmoothCornerAlongZX(int _k, int _i, int _directionz, int _directionx) {
+        int k = _k - this->offsetz, i = _i - this->offsetx;
+        if (0 <= k && k < this->nz) {
+            if (0 <= i && i < this->nx) {
                 for (int j = 0; j < this->ny; ++j) {
-                    if (_bctype(i + this->offsetx, j + this->offsety, (this->nz - 1) + this->offsetz) == BARRIER) {
-                        int idx = this->Index(i, j, this->nz - 1);
-                        this->f[D3Q15<T>::IndexF(idx, 3)] = this->f[D3Q15<T>::IndexF(idx, 6)];
-                        this->f[D3Q15<T>::IndexF(idx, 7)] = this->f[D3Q15<T>::IndexF(idx, 11)];
-                        this->f[D3Q15<T>::IndexF(idx, 8)] = this->f[D3Q15<T>::IndexF(idx, 12)];
-                        this->f[D3Q15<T>::IndexF(idx, 9)] = this->f[D3Q15<T>::IndexF(idx, 13)];
-                        this->f[D3Q15<T>::IndexF(idx, 14)] = this->f[D3Q15<T>::IndexF(idx, 10)];
-                    } else if (_bctype(i + this->offsetx, j + this->offsety, (this->nz - 1) + this->offsetz) == MIRROR) {
-                        int idx = this->Index(i, j, this->nz - 1);
-                        this->f[D3Q15<T>::IndexF(idx, 3)] = this->f[D3Q15<T>::IndexF(idx, 6)];
-                        this->f[D3Q15<T>::IndexF(idx, 7)] = this->f[D3Q15<T>::IndexF(idx, 10)];
-                        this->f[D3Q15<T>::IndexF(idx, 8)] = this->f[D3Q15<T>::IndexF(idx, 13)];
-                        this->f[D3Q15<T>::IndexF(idx, 9)] = this->f[D3Q15<T>::IndexF(idx, 12)];
-                        this->f[D3Q15<T>::IndexF(idx, 14)] = this->f[D3Q15<T>::IndexF(idx, 11)];
+                    int idx = this->Index(i, j, k), idxz = this->Index(i, j, k - _directionz), idxx = this->Index(i - _directionx, j, k);
+                    this->f0[idx] = 0.5*(this->f0[idxz] + this->f0[idxx]);
+                    for (int c = 1; c < D3Q15<T>::nc; ++c) {
+                        this->f[D3Q15<T>::IndexF(idx, c)] = 0.5*(this->f[D3Q15<T>::IndexF(idxz, c)] + this->f[D3Q15<T>::IndexF(idxx, c)]);
+                    }
+                }
+            }
+        }
+    }
+
+    template<class T>
+    void D3Q15<T>::SmoothCornerAlongXY(int _i, int _j, int _directionx, int _directiony) {
+        int i = _i - this->offsetx, j = _j - this->offsety;
+        if (0 <= i && i < this->nx) {
+            if (0 <= j && j < this->ny) {
+                for (int k = 0; k < this->nz; ++k) {
+                    int idx = this->Index(i, j, k), idxx = this->Index(i - _directionx, j, k), idxy = this->Index(i, j - _directiony, k);
+                    this->f0[idx] = 0.5*(this->f0[idxx] + this->f0[idxy]);
+                    for (int c = 1; c < D3Q15<T>::nc; ++c) {
+                        this->f[D3Q15<T>::IndexF(idx, c)] = 0.5*(this->f[D3Q15<T>::IndexF(idxx, c)] + this->f[D3Q15<T>::IndexF(idxy, c)]);
+                    }
+                }
+            }
+        }
+    }
+
+    template<class T>
+    void D3Q15<T>::SmoothCornerAt(int _i, int _j, int _k, int _directionx, int _directiony, int _directionz) {
+        int i = _i - this->offsetx, j = _j - this->offsety, k = _k - this->offsetz;
+        if (0 <= i && i < this->nx) {
+            if (0 <= j && j < this->ny) {
+                if (0 <= k && k < this->nz) {
+                    int idx = this->Index(i, j, k), idxx = this->Index(i - _directionx, j, k), idxy = this->Index(i, j - _directiony, k), idxz = this->Index(i, j, k - _directionz);
+                    this->f0[idx] = (this->f0[idxx] + this->f0[idxy] + this->f0[idxz])/3.0;
+                    for (int c = 1; c < D3Q15<T>::nc; ++c) {
+                        this->f[D3Q15<T>::IndexF(idx, c)] = (this->f[D3Q15<T>::IndexF(idxx, c)] + this->f[D3Q15<T>::IndexF(idxy, c)] + this->f[D3Q15<T>::IndexF(idxz, c)])/3.0;
                     }
                 }
             }

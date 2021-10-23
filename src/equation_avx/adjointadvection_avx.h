@@ -12,6 +12,180 @@
 
 namespace PANSLBM2 {
     namespace AAD {
+        //  Function of getting sensitivity of temperature at heat source for D2Q9 along x edge
+        template<template<class>class Q, class Fv, class Ff>
+        void SensitivityTemperatureAtHeatSourceAlongXEdge(
+            Q<double>& _q, int _i, int _directionx, const double *_ux, const double *_uy, const double *_ig, double *_dfds, const double *_diffusivity, const double *_dkds, Fv _qnbc, Ff _bctype
+        ) {
+            const int ps = Q<double>::packsize, ne = _q.nxyz/ps, nc = Q<double>::nc;
+            auto IndexG = [=](int _idx, int _c) {
+                return _idx < ne*ps ? (_idx/ps)*ps*nc + ps*_c + _idx%ps : nc*_idx + _c; 
+            };
+
+            int i = _i - _q.offsetx;
+            if (0 <= i && i < _q.nx) {
+                for (int j = 0; j < _q.ny; ++j) {
+                    if (_bctype(i + _q.offsetx, j + _q.offsety)) {
+                        int idx = _q.Index(i, j);
+                        T qn = _qnbc(i + _q.offsetx, j + _q.offsety);
+                        if (_directionx == -1) {
+                            _dfds[idx] += qn*_dkds[idx]*(
+                                (1.0 + 3.0*_ux[idx])*(-6.0 + 4.0*_ig[IndexG(idx, 1)] + _ig[IndexG(idx, 5)] + _ig[IndexG(idx, 8)])
+                                + 3.0*_uy[idx]*(_ig[IndexG(idx, 5)] - _ig[IndexG(idx, 8)])
+                            )/(36.0*(1.0 - 3.0*_ux[idx])*pow(_diffusivity[idx], 2.0));
+                        } else if (_directionx == 1) {
+                            _dfds[idx] += qn*_dkds[idx]*(
+                                (1.0 - 3.0*_ux[idx])*(-6.0 + 4.0*_ig[IndexG(idx, 3)] + _ig[IndexG(idx, 6)] + _ig[IndexG(idx, 7)])
+                                + 3.0*_uy[idx]*(_ig[IndexG(idx, 6)] - _ig[IndexG(idx, 7)])
+                            )/(36.0*(1.0 + 3.0*_ux[idx])*pow(_diffusivity[idx], 2.0));
+                        }
+                    }
+                }
+            }
+        }
+
+        //  Function of getting sensitivity of temperature at heat source for D2Q9 along y edge
+        template<template<class>class Q, class Fv, class Ff>
+        void SensitivityTemperatureAtHeatSourceAlongYEdge(
+            Q<double>& _q, int _j, int _directiony, const double *_ux, const double *_uy, const double *_ig, double *_dfds, const double *_diffusivity, const double *_dkds, Fv _qnbc, Ff _bctype
+        ) {
+            const int ps = Q<double>::packsize, ne = _q.nxyz/ps, nc = Q<double>::nc;
+            auto IndexG = [=](int _idx, int _c) {
+                return _idx < ne*ps ? (_idx/ps)*ps*nc + ps*_c + _idx%ps : nc*_idx + _c; 
+            };
+
+            int j = _j - _q.offsety;
+            if (0 <= j && j < _q.ny) {
+                for (int i = 0; i < _q.nx; ++i) {
+                    if (_bctype(i + _q.offsetx, j + _q.offsety)) {
+                        int idx = _q.Index(i, j);
+                        T qn = _qnbc(i + _q.offsetx, j + _q.offsety);
+                        if (_directiony == -1) {
+                            _dfds[idx] += qn*_dkds[idx]*(
+                                (1.0 + 3.0*_uy[idx])*(-6.0 + 4.0*_ig[IndexG(idx, 2)] + _ig[IndexG(idx, 5)] + _ig[IndexG(idx, 6)])
+                                + 3.0*_ux[idx]*(_ig[IndexG(idx, 5)] - _ig[IndexG(idx, 6)])
+                            )/(36.0*(1.0 - 3.0*_uy[idx])*pow(_diffusivity[idx], 2.0));
+                        } else if (_directiony == 1) {
+                            _dfds[idx] += qn*_dkds[idx]*(
+                                (1.0 - 3.0*_uy[idx])*(-6.0 + 4.0*_ig[IndexG(idx, 4)] + _ig[IndexG(idx, 7)] + _ig[IndexG(idx, 8)])
+                                + 3.0*_ux[idx]*(_ig[IndexG(idx, 8)] - _ig[IndexG(idx, 7)])
+                            )/(36.0*(1.0 + 3.0*_uy[idx])*pow(_diffusivity[idx], 2.0));
+                        }
+                    }
+                }
+            }
+        }
+
+        //  Function of getting sensitivity of temperature at heat source for D3Q15 along x face
+        template<template<class>class Q, class Fv, class Ff>
+        void SensitivityTemperatureAtHeatSourceAlongXFace(
+            Q<double>& _q, int _i, int _directionx, const double *_ux, const double *_uy, const double *_uz, const double *_ig, double *_dfds, const double *_diffusivity, const double *_dkds, Fv _qnbc, Ff _bctype
+        ) {
+            const int ps = Q<double>::packsize, ne = _q.nxyz/ps, nc = Q<double>::nc;
+            auto IndexG = [=](int _idx, int _c) {
+                return _idx < ne*ps ? (_idx/ps)*ps*nc + ps*_c + _idx%ps : nc*_idx + _c; 
+            };
+
+            int i = _i - _q.offsetx;
+            if (0 <= i && i < _q.nx) {
+                for (int j = 0; j < _q.ny; ++j) {
+                    for (int k = 0; k < _q.nz; ++k) {
+                        if (_bctype(i + _q.offsetx, j + _q.offsety, k + _q.offsetz)) {
+                            int idx = _q.Index(i, j, k);
+                            T qn = _qnbc(i + _q.offsetx, j + _q.offsety, k + _q.offsetz);
+                            if (_directionx == -1) {
+                                _dfds[idx] += qn*_dkds[idx]*(
+                                    (1.0 + 3.0*_ux[idx])*(-12.0 + 8.0*_ig[IndexG(idx, 1)] + _ig[IndexG(idx, 7)] + _ig[IndexG(idx, 9)] + _ig[IndexG(idx, 10)] + _ig[IndexG(idx, 12)])
+                                    + 3.0*_uy[idx]*(_ig[IndexG(idx, 7)] - _ig[IndexG(idx, 9)] + _ig[IndexG(idx, 10)] - _ig[IndexG(idx, 12)])
+                                    + 3.0*_uz[idx]*(_ig[IndexG(idx, 7)] + _ig[IndexG(idx, 9)] - _ig[IndexG(idx, 10)] - _ig[IndexG(idx, 12)])
+                                )/(72.0*(1.0 - 3.0*_ux[idx])*pow(_diffusivity[idx], 2.0));
+                            } else if (_directionx == 1) {
+                                _dfds[idx] += qn*_dkds[idx]*(
+                                    (1.0 - 3.0*_ux[idx])*(-12.0 + 8.0*_ig[IndexG(idx, 4)] + _ig[IndexG(idx, 8)] + _ig[IndexG(idx, 11)] + _ig[IndexG(idx, 13)] + _ig[IndexG(idx, 14)])
+                                    + 3.0*_uy[idx]*(_ig[IndexG(idx, 8)] - _ig[IndexG(idx, 11)] + _ig[IndexG(idx, 13)] - _ig[IndexG(idx, 14)])
+                                    + 3.0*_uz[idx]*(_ig[IndexG(idx, 8)] - _ig[IndexG(idx, 11)] - _ig[IndexG(idx, 13)] + _ig[IndexG(idx, 14)])
+                                )/(72.0*(1.0 + 3.0*_ux[idx])*pow(_diffusivity[idx], 2.0));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        //  Function of getting sensitivity of temperature at heat source for D3Q15 along y face
+        template<template<class>class Q, class Fv, class Ff>
+        void SensitivityTemperatureAtHeatSourceAlongYFace(
+            Q<double>& _q, int _j, int _directiony, const double *_ux, const double *_uy, const double *_uz, const double *_ig, double *_dfds, const double *_diffusivity, const double *_dkds, Fv _qnbc, Ff _bctype
+        ) {
+            const int ps = Q<double>::packsize, ne = _q.nxyz/ps, nc = Q<double>::nc;
+            auto IndexG = [=](int _idx, int _c) {
+                return _idx < ne*ps ? (_idx/ps)*ps*nc + ps*_c + _idx%ps : nc*_idx + _c; 
+            };
+
+            int j = _j - _q.offsety;
+            if (0 <= j && j < _q.ny) {
+                for (int k = 0; k < _q.nz; ++k) {
+                    for (int i = 0; i < _q.nx; ++i) {
+                        if (_bctype(i + _q.offsetx, j + _q.offsety, k + _q.offsetz)) {
+                            int idx = _q.Index(i, j, k);
+                            T qn = _qnbc(i + _q.offsetx, j + _q.offsety, k + _q.offsetz);
+                            if (_directiony == -1) {
+                                _dfds[idx] += qn*_dkds[idx]*(
+                                    (1.0 + 3.0*_uy[idx])*(-12.0 + 8.0*_ig[IndexG(idx, 2)] + _ig[IndexG(idx, 7)] + _ig[IndexG(idx, 8)] + _ig[IndexG(idx, 10)] + _ig[IndexG(idx, 13)])
+                                    + 3.0*_uz[idx]*(_ig[IndexG(idx, 7)] + _ig[IndexG(idx, 8)] - _ig[IndexG(idx, 10)] - _ig[IndexG(idx, 13)])
+                                    + 3.0*_ux[idx]*(_ig[IndexG(idx, 7)] - _ig[IndexG(idx, 8)] + _ig[IndexG(idx, 10)] - _ig[IndexG(idx, 13)])
+                                )/(72.0*(1.0 - 3.0*_uy[idx])*pow(_diffusivity[idx], 2.0));
+                            } else if (_directiony == 1) {
+                                _dfds[idx] += qn*_dkds[idx]*(
+                                    (1.0 - 3.0*_uy[idx])*(-12.0 + 8.0*_ig[IndexG(idx, 5)] + _ig[IndexG(idx, 9)] + _ig[IndexG(idx, 11)] + _ig[IndexG(idx, 12)] + _ig[IndexG(idx, 14)])
+                                    + _uz[idx]*(_ig[IndexG(idx, 9)] - _ig[IndexG(idx, 11)] - _ig[IndexG(idx, 12)] + _ig[IndexG(idx, 14)])
+                                    + _ux[idx]*(_ig[IndexG(idx, 9)] - _ig[IndexG(idx, 11)] + _ig[IndexG(idx, 12)] - _ig[IndexG(idx, 14)])
+                                )/(72.0*(1.0 + 3.0*_uy[idx])*pow(_diffusivity[idx], 2.0));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+            
+        //  Function of getting sensitivity of temperature at heat source for D3Q15 along z face
+        template<template<class>class Q, class Fv, class Ff>
+        void SensitivityTemperatureAtHeatSourceAlongZFace(
+            Q<double>& _q, int _k, int _directionz, const double *_ux, const double *_uy, const double *_uz, const double *_ig, double *_dfds, const double *_diffusivity, const double *_dkds, Fv _qnbc, Ff _bctype
+        ) {
+            const int ps = Q<double>::packsize, ne = _q.nxyz/ps, nc = Q<double>::nc;
+            auto IndexG = [=](int _idx, int _c) {
+                return _idx < ne*ps ? (_idx/ps)*ps*nc + ps*_c + _idx%ps : nc*_idx + _c; 
+            };
+
+            int k = _k - _q.offsetz;
+            if (0 <= k && k < _q.nz) {
+                for (int i = 0; i < _q.nx; ++i) {
+                    for (int j = 0; j < _q.ny; ++j) {
+                        if (_bctype(i + _q.offsetx, j + _q.offsety, k + _q.offsetz)) {
+                            int idx = _q.Index(i, j, k);
+                            T qn = _qnbc(i + _q.offsetx, j + _q.offsety, k + _q.offsetz);
+                            if (_directionz == -1) {
+                                _dfds[idx] += qn*_dkds[idx]*(
+                                    (1.0 + 3.0*_uz[idx])*(-12.0 + 8.0*_ig[IndexG(idx, 3)] + _ig[IndexG(idx, 7)] + _ig[IndexG(idx, 8)] + _ig[IndexG(idx, 9)] + _ig[IndexG(idx, 14)])
+                                    + _ux[idx]*(_ig[IndexG(idx, 7)] - _ig[IndexG(idx, 8)] + _ig[IndexG(idx, 9)] - _ig[IndexG(idx, 14)])
+                                    + _uy[idx]*(_ig[IndexG(idx, 7)] + _ig[IndexG(idx, 8)] - _ig[IndexG(idx, 9)] - _ig[IndexG(idx, 14)])
+                                )/(72.0*(1.0 - 3.0*_uz[idx])*pow(_diffusivity[idx], 2.0));
+                            } else if (_directionz == 1) {
+                                _dfds[idx] += qn*_dkds[idx]*(
+                                    (1.0 - 3.0*_uz[idx])*(-12.0 + 8.0*_ig[IndexG(idx, 6)] + _ig[IndexG(idx, 10)] + _ig[IndexG(idx, 11)] + _ig[IndexG(idx, 12)] + _ig[IndexG(idx, 13)])
+                                    + _ux[idx]*(_ig[IndexG(idx, 10)] - _ig[IndexG(idx, 11)] + _ig[IndexG(idx, 12)] - _ig[IndexG(idx, 13)])
+                                    + _uy[idx]*(_ig[IndexG(idx, 10)] - _ig[IndexG(idx, 11)] - _ig[IndexG(idx, 12)] + _ig[IndexG(idx, 13)])
+                                )/(72.0*(1.0 + 3.0*_uz[idx])*pow(_diffusivity[idx], 2.0));
+                            }
+                        }
+                    }
+                }
+            }
+        }   
+    }
+
+    namespace AAD {
         template<class T, template<class>class Q>void Macro(T &, T &, T &, const T *, const T *, int);                              //  Function of updating macroscopic values of AAD for 2D
         template<class T, template<class>class Q>void Macro(T &, T &, T &, T &, const T *, const T *, int);                         //  Function of updating macroscopic values of AAD for 3D
         template<class T, template<class>class Q>void Equilibrium(T *, T, T, T, T, T);                                              //  Function of getting equilibrium of AAD for 2D
@@ -861,54 +1035,10 @@ namespace PANSLBM2 {
                 _dfds[idx] += -3.0/pow(3.0*_diffusivity[idx] + 0.5, 2.0)*_dkds[idx]*(sumg - _tem[idx]*(_item[idx] + 3.0*(_ux[idx]*_iqx[idx] + _uy[idx]*_iqy[idx])));
             }
 
-            //  Boundary term along xmin
-            if (_q.PEx == 0) {
-                for (int j = 0; j < _q.ny; ++j) {
-                    if (_bctype(0 + _q.offsetx, j + _q.offsety)) {
-                        int idx = _q.Index(0, j);
-                        _dfds[idx] += _qnbc(0 + _q.offsetx, j + _q.offsety)*_dkds[idx]*(
-                            (1.0 + 3.0*_ux[idx])*(-6.0 + 4.0*_ig[IndexG(idx, 1)] + _ig[IndexG(idx, 5)] + _ig[IndexG(idx, 8)])
-                            + 3.0*_uy[idx]*(_ig[IndexG(idx, 5)] - _ig[IndexG(idx, 8)])
-                        )/(36.0*(1.0 - 3.0*_ux[idx])*pow(_diffusivity[idx], 2.0));
-                    }
-                }
-            }
-            //  Boundary term along xmax
-            if (_q.PEx == _q.mx - 1) {
-                for (int j = 0; j < _q.ny; ++j) {
-                    if (_bctype((_q.nx - 1) + _q.offsetx, j + _q.offsety)) {
-                        int idx = _q.Index(_q.nx - 1, j);
-                        _dfds[idx] += _qnbc((_q.nx - 1) + _q.offsetx, j + _q.offsety)*_dkds[idx]*(
-                            (1.0 - 3.0*_ux[idx])*(-6.0 + 4.0*_ig[IndexG(idx, 3)] + _ig[IndexG(idx, 6)] + _ig[IndexG(idx, 7)])
-                            + 3.0*_uy[idx]*(_ig[IndexG(idx, 6)] - _ig[IndexG(idx, 7)])
-                        )/(36.0*(1.0 + 3.0*_ux[idx])*pow(_diffusivity[idx], 2.0));
-                    }
-                }
-            }
-            //  Boundary term along ymin
-            if (_q.PEy == 0) {
-                for (int i = 0; i < _q.nx; ++i) {
-                    if (_bctype(i + _q.offsetx, 0 + _q.offsety)) {
-                        int idx = _q.Index(i, 0);
-                        _dfds[idx] += _qnbc(i + _q.offsetx, 0 + _q.offsety)*_dkds[idx]*(
-                            (1.0 + 3.0*_uy[idx])*(-6.0 + 4.0*_ig[IndexG(idx, 2)] + _ig[IndexG(idx, 5)] + _ig[IndexG(idx, 6)])
-                            + 3.0*_ux[idx]*(_ig[IndexG(idx, 5)] - _ig[IndexG(idx, 6)])
-                        )/(36.0*(1.0 - 3.0*_uy[idx])*pow(_diffusivity[idx], 2.0));
-                    }
-                }
-            }
-            //  Boundary term along ymax
-            if (_q.PEy == _q.my - 1) {
-                for (int i = 0; i < _q.nx; ++i) {
-                    if (_bctype(i + _q.offsetx, (_q.ny - 1) + _q.offsety)) {
-                        int idx = _q.Index(i, _q.ny - 1);
-                        _dfds[idx] += _qnbc(i + _q.offsetx, (_q.ny - 1) + _q.offsety)*_dkds[idx]*(
-                            (1.0 - 3.0*_uy[idx])*(-6.0 + 4.0*_ig[IndexG(idx, 4)] + _ig[IndexG(idx, 7)] + _ig[IndexG(idx, 8)])
-                            + 3.0*_ux[idx]*(_ig[IndexG(idx, 8)] - _ig[IndexG(idx, 7)])
-                        )/(36.0*(1.0 + 3.0*_uy[idx])*pow(_diffusivity[idx], 2.0));
-                    }
-                }
-            }
+            SensitivityTemperatureAtHeatSourceAlongXEdge(_q, 0, -1, _ux, _uy, _ig, _dfds, _diffusivity, _dkds, _qnbc, _bctype);         //  Boundary term along xmin
+            SensitivityTemperatureAtHeatSourceAlongXEdge(_q, _q.lx - 1, 1, _ux, _uy, _ig, _dfds, _diffusivity, _dkds, _qnbc, _bctype);  //  Boundary term along xmax
+            SensitivityTemperatureAtHeatSourceAlongYEdge(_q, 0, -1, _ux, _uy, _ig, _dfds, _diffusivity, _dkds, _qnbc, _bctype);         //  Boundary term along ymin
+            SensitivityTemperatureAtHeatSourceAlongYEdge(_q, _q.ly - 1, 1, _ux, _uy, _ig, _dfds, _diffusivity, _dkds, _qnbc, _bctype);  //  Boundary term along ymax
         }
 
         //  Function of getting sensitivity of temperature at heat source for D3Q15
@@ -961,96 +1091,12 @@ namespace PANSLBM2 {
                 _dfds[idx] += -3.0/pow(3.0*_diffusivity[idx] + 0.5, 2.0)*_dkds[idx]*(sumg - _tem[idx]*(_item[idx] + 3.0*(_ux[idx]*_iqx[idx] + _uy[idx]*_iqy[idx] + _uz[idx]*_iqz[idx])));
             }
 
-            //  Boundary term along xmin
-            if (_q.PEx == 0) {
-                for (int j = 0; j < _q.ny; ++j) {
-                    for (int k = 0; k < _q.nz; ++k) {
-                        if (_bctype(0 + _q.offsetx, j + _q.offsety, k + _q.offsetz)) {
-                            int idx = _q.Index(0, j, k);
-                            _dfds[idx] += _qnbc(0 + _q.offsetx, j + _q.offsety, k + _q.offsetz)*_dkds[idx]*(
-                                (1.0 + 3.0*_ux[idx])*(-12.0 + 8.0*_ig[IndexG(idx, 1)] + _ig[IndexG(idx, 7)] + _ig[IndexG(idx, 9)] + _ig[IndexG(idx, 10)] + _ig[IndexG(idx, 12)])
-                                + 3.0*_uy[idx]*(_ig[IndexG(idx, 7)] - _ig[IndexG(idx, 9)] + _ig[IndexG(idx, 10)] - _ig[IndexG(idx, 12)])
-                                + 3.0*_uz[idx]*(_ig[IndexG(idx, 7)] + _ig[IndexG(idx, 9)] - _ig[IndexG(idx, 10)] - _ig[IndexG(idx, 12)])
-                            )/(72.0*(1.0 - 3.0*_ux[idx])*pow(_diffusivity[idx], 2.0));
-                        }
-                    }
-                }
-            }
-            //  Boundary term along xmax
-            if (_q.PEx == _q.mx - 1) {
-                for (int j = 0; j < _q.ny; ++j) {
-                    for (int k = 0; k < _q.nz; ++k) {
-                        if (_bctype((_q.nx - 1) + _q.offsetx, j + _q.offsety, k + _q.offsetz)) {
-                            int idx = _q.Index(_q.nx - 1, j, k);
-                            _dfds[idx] += _qnbc((_q.nx - 1) + _q.offsetx, j + _q.offsety, k + _q.offsetz)*_dkds[idx]*(
-                                (1.0 - 3.0*_ux[idx])*(-12.0 + 8.0*_ig[IndexG(idx, 4)] + _ig[IndexG(idx, 8)] + _ig[IndexG(idx, 11)] + _ig[IndexG(idx, 13)] + _ig[IndexG(idx, 14)])
-                                + 3.0*_uy[idx]*(_ig[IndexG(idx, 8)] - _ig[IndexG(idx, 11)] + _ig[IndexG(idx, 13)] - _ig[IndexG(idx, 14)])
-                                + 3.0*_uz[idx]*(_ig[IndexG(idx, 8)] - _ig[IndexG(idx, 11)] - _ig[IndexG(idx, 13)] + _ig[IndexG(idx, 14)])
-                            )/(72.0*(1.0 + 3.0*_ux[idx])*pow(_diffusivity[idx], 2.0));
-                        }
-                    }
-                }
-            }
-            //  Boundary term along ymin
-            if (_q.PEy == 0) {
-                for (int k = 0; k < _q.nz; ++k) {
-                    for (int i = 0; i < _q.nx; ++i) {
-                        if (_bctype(i + _q.offsetx, 0 + _q.offsety, k + _q.offsetz)) {
-                            int idx = _q.Index(i, 0, k);
-                            _dfds[idx] += _qnbc(i + _q.offsetx, 0 + _q.offsety, k + _q.offsetz)*_dkds[idx]*(
-                                (1.0 + 3.0*_uy[idx])*(-12.0 + 8.0*_ig[IndexG(idx, 2)] + _ig[IndexG(idx, 7)] + _ig[IndexG(idx, 8)] + _ig[IndexG(idx, 10)] + _ig[IndexG(idx, 13)])
-                                + 3.0*_uz[idx]*(_ig[IndexG(idx, 7)] + _ig[IndexG(idx, 8)] - _ig[IndexG(idx, 10)] - _ig[IndexG(idx, 13)])
-                                + 3.0*_ux[idx]*(_ig[IndexG(idx, 7)] - _ig[IndexG(idx, 8)] + _ig[IndexG(idx, 10)] - _ig[IndexG(idx, 13)])
-                            )/(72.0*(1.0 - 3.0*_uy[idx])*pow(_diffusivity[idx], 2.0));
-                        }
-                    }
-                }
-            }
-            //  Boundary term along ymax
-            if (_q.PEy == _q.my - 1) {
-                for (int k = 0; k < _q.nz; ++k) {
-                    for (int i = 0; i < _q.nx; ++i) {
-                        if (_bctype(i + _q.offsetx, (_q.ny - 1) + _q.offsety, k + _q.offsetz)) {
-                            int idx = _q.Index(i, _q.ny - 1, k);
-                            _dfds[idx] += _qnbc(i + _q.offsetx, (_q.ny - 1) + _q.offsety, k + _q.offsetz)*_dkds[idx]*(
-                                (1.0 - 3.0*_uy[idx])*(-12.0 + 8.0*_ig[IndexG(idx, 5)] + _ig[IndexG(idx, 9)] + _ig[IndexG(idx, 11)] + _ig[IndexG(idx, 12)] + _ig[IndexG(idx, 14)])
-                                + _uz[idx]*(_ig[IndexG(idx, 9)] - _ig[IndexG(idx, 11)] - _ig[IndexG(idx, 12)] + _ig[IndexG(idx, 14)])
-                                + _ux[idx]*(_ig[IndexG(idx, 9)] - _ig[IndexG(idx, 11)] + _ig[IndexG(idx, 12)] - _ig[IndexG(idx, 14)])
-                            )/(72.0*(1.0 + 3.0*_uy[idx])*pow(_diffusivity[idx], 2.0));
-                        }
-                    }
-                }
-            }
-            //  Boundary term along zmin
-            if (_q.PEz == 0) {
-                for (int i = 0; i < _q.nx; ++i) {
-                    for (int j = 0; j < _q.ny; ++j) {
-                        if (_bctype(i + _q.offsetx, j + _q.offsety, 0 + _q.offsetz)) {
-                            int idx = _q.Index(i, j, 0);
-                            _dfds[idx] += _qnbc(i + _q.offsetx, j + _q.offsety, 0 + _q.offsetz)*_dkds[idx]*(
-                                (1.0 + 3.0*_uz[idx])*(-12.0 + 8.0*_ig[IndexG(idx, 3)] + _ig[IndexG(idx, 7)] + _ig[IndexG(idx, 8)] + _ig[IndexG(idx, 9)] + _ig[IndexG(idx, 14)])
-                                + _ux[idx]*(_ig[IndexG(idx, 7)] - _ig[IndexG(idx, 8)] + _ig[IndexG(idx, 9)] - _ig[IndexG(idx, 14)])
-                                + _uy[idx]*(_ig[IndexG(idx, 7)] + _ig[IndexG(idx, 8)] - _ig[IndexG(idx, 9)] - _ig[IndexG(idx, 14)])
-                            )/(72.0*(1.0 - 3.0*_uz[idx])*pow(_diffusivity[idx], 2.0));
-                        }
-                    }
-                }
-            }
-            //  Boundary term along zmax
-            if (_q.PEz == _q.mz - 1) {
-                for (int i = 0; i < _q.nx; ++i) {
-                    for (int j = 0; j < _q.ny; ++j) {
-                        if (_bctype(i + _q.offsetx, j + _q.offsety, (_q.nz - 1) + _q.offsetz)) {
-                            int idx = _q.Index(i, j, _q.nz - 1);
-                            _dfds[idx] += _qnbc(i + _q.offsetx, j + _q.offsety, (_q.nz - 1) + _q.offsetz)*_dkds[idx]*(
-                                (1.0 - 3.0*_uz[idx])*(-12.0 + 8.0*_ig[IndexG(idx, 6)] + _ig[IndexG(idx, 10)] + _ig[IndexG(idx, 11)] + _ig[IndexG(idx, 12)] + _ig[IndexG(idx, 13)])
-                                + _ux[idx]*(_ig[IndexG(idx, 10)] - _ig[IndexG(idx, 11)] + _ig[IndexG(idx, 12)] - _ig[IndexG(idx, 13)])
-                                + _uy[idx]*(_ig[IndexG(idx, 10)] - _ig[IndexG(idx, 11)] - _ig[IndexG(idx, 12)] + _ig[IndexG(idx, 13)])
-                            )/(72.0*(1.0 + 3.0*_uz[idx])*pow(_diffusivity[idx], 2.0));
-                        }
-                    }
-                }
-            }
+            SensitivityTemperatureAtHeatSourceAlongXFace(_q, 0, -1, _ux, _uy, _uz, _ig, _dfds, _diffusivity, _dkds, _qnbc, _bctype);        //  Boundary term along xmin
+            SensitivityTemperatureAtHeatSourceAlongXFace(_q, _q.lx - 1, 1, _ux, _uy, _uz, _ig, _dfds, _diffusivity, _dkds, _qnbc, _bctype); //  Boundary term along xmax
+            SensitivityTemperatureAtHeatSourceAlongYFace(_q, 0, -1, _ux, _uy, _uz, _ig, _dfds, _diffusivity, _dkds, _qnbc, _bctype);        //  Boundary term along ymin
+            SensitivityTemperatureAtHeatSourceAlongYFace(_q, _q.ly - 1, 1, _ux, _uy, _uz, _ig, _dfds, _diffusivity, _dkds, _qnbc, _bctype); //  Boundary term along ymax
+            SensitivityTemperatureAtHeatSourceAlongZFace(_q, 0, -1, _ux, _uy, _uz, _ig, _dfds, _diffusivity, _dkds, _qnbc, _bctype);        //  Boundary term along zmin
+            SensitivityTemperatureAtHeatSourceAlongZFace(_q, _q.lz - 1, 1, _ux, _uy, _uz, _ig, _dfds, _diffusivity, _dkds, _qnbc, _bctype); //  Boundary term along zmax
         }
     }
 }

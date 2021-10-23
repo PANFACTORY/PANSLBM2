@@ -256,5 +256,40 @@ namespace PANSLBM2 {
                 }
             }
         } 
+    
+        //  Function of getting sensitivity of Brinkman model for 2D
+        template<template<class>class P>
+        void SensitivityBrinkman(P<double>& _p, double *_dfds, const double *_ux, const double *_uy, const double *_imx, const double *_imy, const double *_dads) {
+            const int ps = P<double>::packsize, ne = _p.nxyz/ps, nc = P<double>::nc;
+            #pragma omp parallel for
+            for (int pidx = 0; pidx < ne; ++pidx) {
+                int idx = pidx*ps;
+                __m256d __dfds = _mm256_loadu_pd(&_dfds[idx]), __dads = _mm256_loadu_pd(&_dads[idx]), __3 = _mm256_set1_pd(3.0);
+                __m256d __ux = _mm256_loadu_pd(&_ux[idx]), __uy = _mm256_loadu_pd(&_uy[idx]), __imx = _mm256_loadu_pd(&_imx[idx]), __imy = _mm256_loadu_pd(&_imy[idx]);
+                __dfds = _mm256_add_pd(__dfds, _mm256_mul_pd(__3, _mm256_mul_pd(__dads, _mm256_add_pd(_mm256_mul_pd(__ux, __imx), _mm256_mul_pd(__uy, __imy)))));
+                _mm256_storeu_pd(&_dfds[idx], __dfds);
+            }
+            for (int idx = ne*ps; idx < _p.nxyz; ++idx) {
+                _dfds[idx] += 3.0*_dads[idx]*(_ux[idx]*_imx[idx] + _uy[idx]*_imy[idx]);
+            }
+        }
+
+        //  Function of getting sensitivity of Brinkman model for 3D
+        template<template<class>class P>
+        void SensitivityBrinkman(P<double>& _p, double *_dfds, const double *_ux, const double *_uy, const double *_uz, const double *_imx, const double *_imy, const double *_imz, const double *_dads) {
+            const int ps = P<double>::packsize, ne = _p.nxyz/ps, nc = P<double>::nc;
+            #pragma omp parallel for
+            for (int pidx = 0; pidx < ne; ++pidx) {
+                int idx = pidx*ps;
+                __m256d __dfds = _mm256_loadu_pd(&_dfds[idx]), __dads = _mm256_loadu_pd(&_dads[idx]), __3 = _mm256_set1_pd(3.0);
+                __m256d __ux = _mm256_loadu_pd(&_ux[idx]), __uy = _mm256_loadu_pd(&_uy[idx]), __uz = _mm256_loadu_pd(&_uz[idx]);
+                __m256d __imx = _mm256_loadu_pd(&_imx[idx]), __imy = _mm256_loadu_pd(&_imy[idx]), __imz = _mm256_loadu_pd(&_imz[idx]);
+                __dfds = _mm256_add_pd(__dfds, _mm256_mul_pd(__3, _mm256_mul_pd(__dads, _mm256_add_pd(_mm256_mul_pd(__ux, __imx), _mm256_add_pd(_mm256_mul_pd(__uy, __imy), _mm256_mul_pd(__uz, __imz))))));
+                _mm256_storeu_pd(&_dfds[idx], __dfds);
+            }
+            for (int idx = ne*ps; idx < _p.nxyz; ++idx) {
+                _dfds[idx] += 3.0*_dads[idx]*(_ux[idx]*_imx[idx] + _uy[idx]*_imy[idx] + _uz[idx]*_imz[idx]);
+            }
+        }
     }  
 }

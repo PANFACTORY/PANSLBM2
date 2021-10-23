@@ -734,7 +734,7 @@ namespace PANSLBM2 {
     
         //  Function of getting sensitivity of temperature at heat source for D2Q9 along x edge
         template<class T, template<class>class Q, class Fv, class Ff>
-        void SensitivityTemperatureAtHeatSourceAlongXEdge(Q<T>& _q, int _i, int _directionx, const T *_ig, const T *_ux, const T *_uy, T *_dfds, const T *_diffusivity, const T *_dkds, Fv _qnbc, Ff _bctype) {
+        void SensitivityTemperatureAtHeatSourceAlongXEdge(Q<T>& _q, int _i, int _directionx, const T *_ux, const T *_uy, const T *_ig, T *_dfds, const T *_diffusivity, const T *_dkds, Fv _qnbc, Ff _bctype) {
             int i = _i - _q.offsetx;
             if (0 <= i && i < _q.nx) {
                 for (int j = 0; j < _q.ny; ++j) {
@@ -759,7 +759,7 @@ namespace PANSLBM2 {
 
         //  Function of getting sensitivity of temperature at heat source for D2Q9 along y edge
         template<class T, template<class>class Q, class Fv, class Ff>
-        void SensitivityTemperatureAtHeatSourceAlongYEdge(Q<T>& _q, int _j, int _directiony, const T *_ig, const T *_ux, const T *_uy, T *_dfds, const T *_diffusivity, const T *_dkds, Fv _qnbc, Ff _bctype) {
+        void SensitivityTemperatureAtHeatSourceAlongYEdge(Q<T>& _q, int _j, int _directiony, const T *_ux, const T *_uy, const T *_ig, T *_dfds, const T *_diffusivity, const T *_dkds, Fv _qnbc, Ff _bctype) {
             int j = _j - _q.offsety;
             if (0 <= j && j < _q.ny) {
                 for (int i = 0; i < _q.nx; ++i) {
@@ -784,7 +784,7 @@ namespace PANSLBM2 {
         
         //  Function of getting sensitivity of temperature at heat source for D3Q15 along x face
         template<class T, template<class>class Q, class Fv, class Ff>
-        void SensitivityTemperatureAtHeatSourceAlongXFace(Q<T>& _q, int _i, int _directionx, const T *_ig, const T *_ux, const T *_uy, const T *_uz, T *_dfds, const T *_diffusivity, const T *_dkds, Fv _qnbc, Ff _bctype) {
+        void SensitivityTemperatureAtHeatSourceAlongXFace(Q<T>& _q, int _i, int _directionx, const T *_ux, const T *_uy, const T *_ig, const T *_uz, T *_dfds, const T *_diffusivity, const T *_dkds, Fv _qnbc, Ff _bctype) {
             int i = _i - _q.offsetx;
             if (0 <= i && i < _q.nx) {
                 for (int j = 0; j < _q.ny; ++j) {
@@ -813,7 +813,7 @@ namespace PANSLBM2 {
 
         //  Function of getting sensitivity of temperature at heat source for D3Q15 along y face
         template<class T, template<class>class Q, class Fv, class Ff>
-        void SensitivityTemperatureAtHeatSourceAlongYFace(Q<T>& _q, int _j, int _directiony, const T *_ig, const T *_ux, const T *_uy, const T *_uz, T *_dfds, const T *_diffusivity, const T *_dkds, Fv _qnbc, Ff _bctype) {
+        void SensitivityTemperatureAtHeatSourceAlongYFace(Q<T>& _q, int _j, int _directiony, const T *_ux, const T *_uy, const T *_ig, const T *_uz, T *_dfds, const T *_diffusivity, const T *_dkds, Fv _qnbc, Ff _bctype) {
             int j = _j - _q.offsety;
             if (0 <= j && j < _q.ny) {
                 for (int k = 0; k < _q.nz; ++k) {
@@ -842,7 +842,7 @@ namespace PANSLBM2 {
             
         //  Function of getting sensitivity of temperature at heat source for D3Q15 along z face
         template<class T, template<class>class Q, class Fv, class Ff>
-        void SensitivityTemperatureAtHeatSourceAlongZFace(Q<T>& _q, int _k, int _directionz, const T *_ig, const T *_ux, const T *_uy, const T *_uz, T *_dfds, const T *_diffusivity, const T *_dkds, Fv _qnbc, Ff _bctype) {
+        void SensitivityTemperatureAtHeatSourceAlongZFace(Q<T>& _q, int _k, int _directionz, const T *_ux, const T *_uy, const T *_ig, const T *_uz, T *_dfds, const T *_diffusivity, const T *_dkds, Fv _qnbc, Ff _bctype) {
             int k = _k - _q.offsetz;
             if (0 <= k && k < _q.nz) {
                 for (int i = 0; i < _q.nx; ++i) {
@@ -1315,10 +1315,10 @@ namespace PANSLBM2 {
                 _dfds[idx] += -3.0/pow(3.0*_diffusivity[idx] + 0.5, 2.0)*_dkds[idx]*(sumg - _tem[idx]*(_item[idx] + 3.0*(_ux[idx]*_iqx[idx] + _uy[idx]*_iqy[idx])));
             }
 
-            SensitivityTemperatureAtHeatSourceAlongXEdge(_q, 0, -1, _ig, _ux, _uy, _dfds, _diffusivity, _dkds, _qnbc, _bctype);         //  Boundary term along xmin
-            SensitivityTemperatureAtHeatSourceAlongXEdge(_q, _q.lx - 1, 1, _ig, _ux, _uy, _dfds, _diffusivity, _dkds, _qnbc, _bctype);  //  Boundary term along xmax
-            SensitivityTemperatureAtHeatSourceAlongYEdge(_q, 0, -1, _ig, _ux, _uy, _dfds, _diffusivity, _dkds, _qnbc, _bctype);         //  Boundary term along ymin
-            SensitivityTemperatureAtHeatSourceAlongYEdge(_q, _q.ly - 1, 1, _ig, _ux, _uy, _dfds, _diffusivity, _dkds, _qnbc, _bctype);  //  Boundary term along ymax
+            SensitivityTemperatureAtHeatSourceAlongXEdge(_q, 0, -1, _ux, _uy, _ig, _dfds, _diffusivity, _dkds, _qnbc, _bctype);         //  Boundary term along xmin
+            SensitivityTemperatureAtHeatSourceAlongXEdge(_q, _q.lx - 1, 1, _ux, _uy, _ig, _dfds, _diffusivity, _dkds, _qnbc, _bctype);  //  Boundary term along xmax
+            SensitivityTemperatureAtHeatSourceAlongYEdge(_q, 0, -1, _ux, _uy, _ig, _dfds, _diffusivity, _dkds, _qnbc, _bctype);         //  Boundary term along ymin
+            SensitivityTemperatureAtHeatSourceAlongYEdge(_q, _q.ly - 1, 1, _ux, _uy, _ig, _dfds, _diffusivity, _dkds, _qnbc, _bctype);  //  Boundary term along ymax
         }
 
         //  Function of getting sensitivity of temperature at heat source for D3Q15
@@ -1339,12 +1339,12 @@ namespace PANSLBM2 {
                 _dfds[idx] += -3.0/pow(3.0*_diffusivity[idx] + 0.5, 2.0)*_dkds[idx]*(sumg - _tem[idx]*(_item[idx] + 3.0*(_ux[idx]*_iqx[idx] + _uy[idx]*_iqy[idx] + _uz[idx]*_iqz[idx])));
             }
 
-            SensitivityTemperatureAtHeatSourceAlongXFace(_q, 0, -1, _ig, _ux, _uy, _uz, _dfds, _diffusivity, _dkds, _qnbc, _bctype);        //  Boundary term along xmin
-            SensitivityTemperatureAtHeatSourceAlongXFace(_q, _q.lx - 1, 1, _ig, _ux, _uy, _uz, _dfds, _diffusivity, _dkds, _qnbc, _bctype); //  Boundary term along xmax
-            SensitivityTemperatureAtHeatSourceAlongYFace(_q, 0, -1, _ig, _ux, _uy, _uz, _dfds, _diffusivity, _dkds, _qnbc, _bctype);        //  Boundary term along ymin
-            SensitivityTemperatureAtHeatSourceAlongYFace(_q, _q.ly - 1, 1, _ig, _ux, _uy, _uz, _dfds, _diffusivity, _dkds, _qnbc, _bctype); //  Boundary term along ymax
-            SensitivityTemperatureAtHeatSourceAlongZFace(_q, 0, -1, _ig, _ux, _uy, _uz, _dfds, _diffusivity, _dkds, _qnbc, _bctype);        //  Boundary term along zmin
-            SensitivityTemperatureAtHeatSourceAlongZFace(_q, _q.lz - 1, 1, _ig, _ux, _uy, _uz, _dfds, _diffusivity, _dkds, _qnbc, _bctype); //  Boundary term along zmax
+            SensitivityTemperatureAtHeatSourceAlongXFace(_q, 0, -1, _ux, _uy, _uz, _ig, _dfds, _diffusivity, _dkds, _qnbc, _bctype);        //  Boundary term along xmin
+            SensitivityTemperatureAtHeatSourceAlongXFace(_q, _q.lx - 1, 1, _ux, _uy, _uz, _ig, _dfds, _diffusivity, _dkds, _qnbc, _bctype); //  Boundary term along xmax
+            SensitivityTemperatureAtHeatSourceAlongYFace(_q, 0, -1, _ux, _uy, _uz, _ig, _dfds, _diffusivity, _dkds, _qnbc, _bctype);        //  Boundary term along ymin
+            SensitivityTemperatureAtHeatSourceAlongYFace(_q, _q.ly - 1, 1, _ux, _uy, _uz, _ig, _dfds, _diffusivity, _dkds, _qnbc, _bctype); //  Boundary term along ymax
+            SensitivityTemperatureAtHeatSourceAlongZFace(_q, 0, -1, _ux, _uy, _uz, _ig, _dfds, _diffusivity, _dkds, _qnbc, _bctype);        //  Boundary term along zmin
+            SensitivityTemperatureAtHeatSourceAlongZFace(_q, _q.lz - 1, 1, _ux, _uy, _uz, _ig, _dfds, _diffusivity, _dkds, _qnbc, _bctype); //  Boundary term along zmax
         }
     }
 }

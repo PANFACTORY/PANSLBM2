@@ -534,5 +534,21 @@ namespace PANSLBM2 {
                 iBoundaryConditionSetRhoAlongZFace(_p, _p.lz - 1, 1, _bctype);  //  On zmax
             }
         }
+
+        //  Function of getting sensitivity of Brinkman model
+        template<class T, template<class>class P>
+        void SensitivityBrinkman(P<T>& _p, T *_dfds, const T *_ux, const T *_uy, const T *_imx, const T *_imy, const T *_dads) {
+            for (int idx = 0; idx < _p.nxyz; ++idx) {
+                _dfds[idx] += 3.0*_dads[idx]*(_ux[idx]*_imx[idx] + _uy[idx]*_imy[idx]);
+            }
+        }
+
+        //  Function of getting sensitivity of Brinkman model
+        template<class T, template<class>class P>
+        void SensitivityBrinkman(P<T>& _p, T *_dfds, const T *_ux, const T *_uy, const T *_uz, const T *_imx, const T *_imy, const T *_imz, const T *_dads) {
+            for (int idx = 0; idx < _p.nxyz; ++idx) {
+                _dfds[idx] += 3.0*_dads[idx]*(_ux[idx]*_imx[idx] + _uy[idx]*_imy[idx] + _uz[idx]*_imz[idx]);
+            }
+        }
     }
 }

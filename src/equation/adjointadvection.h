@@ -1333,7 +1333,7 @@ namespace PANSLBM2 {
 
         //  Function of getting sensitivity of Brinkman model and diffusivity term
         template<class T, template<class>class Q, class Fv, class Ff>
-        void SensitivityTemperatureAtHeatSource(
+        void SensitivityBrinkmanDiffusivity(
             Q<T>& _q, T *_dfds, const T *_ux, const T *_uy, const T *_uz, const T *_imx, const T *_imy, const T *_imz, const T *_dads,
             const T *_tem, const T *_item, const T *_iqx, const T *_iqy, const T *_iqz, const T *_g, const T *_ig,
             const T *_diffusivity, const T *_dkds

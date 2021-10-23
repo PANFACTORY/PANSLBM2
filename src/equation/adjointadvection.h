@@ -1297,12 +1297,64 @@ namespace PANSLBM2 {
             iBoundaryConditionSetRhoAlongZFace(_p, _q, _p.lz - 1, 1, _rho, _ux, _uy, _uz, _tem, _bctypeg, _eps);    //  On zmax
         }
     
+        //  Function of getting sensitivity of heat exchange
+        template<class T, template<class>class Q, class Fv, class Ff>
+        void SensitivityHeatExchange(Q<T>& _q, T *_dfds, const T *_ux, const T *_uy, const T *_imx, const T *_imy, const T *_dads, const T *_tem, const T *_item, const T *_dbds) {
+            for (int idx = 0; idx < _p.nxyz; ++idx) {
+                _dfds[idx] += 3.0*_dads[idx]*(_ux[idx]*_imx[idx] + _uy[idx]*_imy[idx]) - _dbds[idx]*(1.0 - _tem[idx])*(1.0 + _item[idx]);
+            }
+        }
+
+        //  Function of getting sensitivity of heat exchange
+        template<class T, template<class>class Q, class Fv, class Ff>
+        void SensitivityHeatExchange(Q<T>& _q, T *_dfds, const T *_ux, const T *_uy, const T *_uz, const T *_imx, const T *_imy, const T *_imz, const T *_dads, const T *_tem, const T *_item, const T *_dbds) {
+            for (int idx = 0; idx < _p.nxyz; ++idx) {
+                _dfds[idx] += 3.0*_dads[idx]*(_ux[idx]*_imx[idx] + _uy[idx]*_imy[idx] + _uyz[idx]*_imz[idx]) - _dbds[idx]*(1.0 - _tem[idx])*(1.0 + _item[idx]);
+            }
+        }
+
+        //  Function of getting sensitivity of Brinkman model and diffusivity term
+        template<class T, template<class>class Q, class Fv, class Ff>
+        void SensitivityBrinkmanDiffusivity(
+            Q<T>& _q, T *_dfds, const T *_ux, const T *_uy, const T *_imx, const T *_imy, const T *_dads,
+            const T *_tem, const T *_item, const T *_iqx, const T *_iqy, const T *_g, const T *_ig,
+            const T *_diffusivity, const T *_dkds
+        ) {
+            for (int idx = 0; idx < _q.nxyz; ++idx) {
+                _dfds[idx] += 3.0*_dads[idx]*(_ux[idx]*_imx[idx] + _uy[idx]*_imy[idx]);
+                int offsetf = Q<T>::nc*idx;
+                T sumg = T();
+                for (int c = 0; c < Q<T>::nc; ++c) {
+                    sumg += _g[offsetf + c]*_ig[offsetf + c];
+                }
+                _dfds[idx] += -3.0/pow(3.0*_diffusivity[idx] + 0.5, 2.0)*_dkds[idx]*(sumg - _tem[idx]*(_item[idx] + 3.0*(_ux[idx]*_iqx[idx] + _uy[idx]*_iqy[idx])));
+            }
+        }
+
+        //  Function of getting sensitivity of Brinkman model and diffusivity term
+        template<class T, template<class>class Q, class Fv, class Ff>
+        void SensitivityTemperatureAtHeatSource(
+            Q<T>& _q, T *_dfds, const T *_ux, const T *_uy, const T *_uz, const T *_imx, const T *_imy, const T *_imz, const T *_dads,
+            const T *_tem, const T *_item, const T *_iqx, const T *_iqy, const T *_iqz, const T *_g, const T *_ig,
+            const T *_diffusivity, const T *_dkds
+        ) {
+            for (int idx = 0; idx < _q.nxyz; ++idx) {
+                _dfds[idx] += 3.0*_dads[idx]*(_ux[idx]*_imx[idx] + _uy[idx]*_imy[idx] + _uz[idx]*_imz[idx]);
+                int offsetf = Q<T>::nc*idx;
+                T sumg = T();
+                for (int c = 0; c < Q<T>::nc; ++c) {
+                    sumg += _g[offsetf + c]*_ig[offsetf + c];
+                }
+                _dfds[idx] += -3.0/pow(3.0*_diffusivity[idx] + 0.5, 2.0)*_dkds[idx]*(sumg - _tem[idx]*(_item[idx] + 3.0*(_ux[idx]*_iqx[idx] + _uy[idx]*_iqy[idx] + _uz[idx]*_iqz[idx])));
+            }
+        }
+
         //  Function of getting sensitivity of temperature at heat source for D2Q9
         template<class T, template<class>class Q, class Fv, class Ff>
         void SensitivityTemperatureAtHeatSource(
-            const T *_ux, const T *_uy, const T *_imx, const T *_imy,
-            Q<T>& _q, const T *_tem, const T *_item, const T *_iqx, const T *_iqy, const T *_g, const T *_ig,
-            T *_dfds, const T *_diffusivity, const T *_dads, const T *_dkds, Fv _qnbc, Ff _bctype
+            Q<T>& _q, T *_dfds, const T *_ux, const T *_uy, const T *_imx, const T *_imy, const T *_dads,
+            const T *_tem, const T *_item, const T *_iqx, const T *_iqy, const T *_g, const T *_ig,
+            const T *_diffusivity, const T *_dkds, Fv _qnbc, Ff _bctype
         ) {
             //  Brinkman term and diffusivity term
             for (int idx = 0; idx < _q.nxyz; ++idx) {
@@ -1324,9 +1376,9 @@ namespace PANSLBM2 {
         //  Function of getting sensitivity of temperature at heat source for D3Q15
         template<class T, template<class>class Q, class Fv, class Ff>
         void SensitivityTemperatureAtHeatSource(
-            const T *_ux, const T *_uy, const T *_uz, const T *_imx, const T *_imy, const T *_imz,
-            Q<T>& _q, const T *_tem, const T *_item, const T *_iqx, const T *_iqy, const T *_iqz, const T *_g0, const T *_g, const T *_ig0, const T *_ig,
-            T *_dfds, const T *_diffusivity, const T *_dads, const T *_dkds, Fv _qnbc, Ff _bctype
+            Q<T>& _q, T *_dfds, const T *_ux, const T *_uy, const T *_uz, const T *_imx, const T *_imy, const T *_imz, const T *_dads,
+            const T *_tem, const T *_item, const T *_iqx, const T *_iqy, const T *_iqz, const T *_g, const T *_ig,
+            const T *_diffusivity, const T *_dkds, Fv _qnbc, Ff _bctype
         ) {
             //  Brinkman term and diffusivity term
             for (int idx = 0; idx < _q.nxyz; ++idx) {

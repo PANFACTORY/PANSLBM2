@@ -144,6 +144,14 @@ namespace PANSLBM2 {
             iBoundaryConditionSetStressAlongXEdge(_p, _p.lx - 1, 1, _txbc, _tybc, _rho, _bctype);   //  On xmax
             iBoundaryConditionSetStressAlongYEdge(_p, 0, -1, _txbc, _tybc, _rho, _bctype);          //  On ymin
             iBoundaryConditionSetStressAlongYEdge(_p, _p.ly - 1, 1, _txbc, _tybc, _rho, _bctype);   //  On ymax
-        } 
+        }
+
+        //  Function of getting sensitivity of mean compliance
+        template<class T, template<class>class P>
+        void SensitivityCompliance(P<T>& _p, T *_dfds, const T *_sxx, const T *_sxy, const T *_syx, const T *_syy, const T *_irho, const T *_isxx, const T *_isxy, const T *_isyx, const T *_isyy) {
+            for (int idx = 0; idx < _p.nxyz; ++idx) {
+                _dfds[idx] = (4.5*(_sxx[idx]*_isxx[idx] + _sxy[idx]*_isxy[idx] + _syx[idx]*_isyx[idx] + _syy[idx]*_isyy[idx]) - 1.5*_irho[idx]*(_sxx[idx] + _syy[idx]));
+            }
+        }
     }
 }

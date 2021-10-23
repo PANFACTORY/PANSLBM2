@@ -110,5 +110,26 @@ namespace PANSLBM2 {
                 }
             }
         }
+
+        //  Function of getting sensitivity of mean compliance
+        template<template<class>class P>
+        void SensitivityCompliance(P<double>& _p, double *_dfds, 
+            const double *_sxx, const double *_sxy, const double *_syx, const double *_syy, const double *_irho, const double *_isxx, const double *_isxy, const double *_isyx, const double *_isyy
+        ) {
+            const int ne = _p.nxyz/P<double>::packsize;
+            __m256d __omega = _mm256_set1_pd(omega), __iomega = _mm256_set1_pd(iomega), __feq[P<double>::nc];
+            #pragma omp parallel for
+            for (int pidx = 0; pidx < ne; ++pidx) {
+                int idx = pidx*P<double>::packsize;
+                __m256d __dfds = _mm256_loadu_pd(&_dfds[idx]);
+                __m256d __sxx = _mm256_loadu_pd(&_sxx[idx]), __sxy = _mm256_loadu_pd(&_sxy[idx]), __syx = _mm256_loadu_pd(&_syx[idx]), __syy = _mm256_loadu_pd(&_syy[idx]);
+                __m256d __irho = _mm256_loadu_pd(&_irho[idx]), __isxx = _mm256_loadu_pd(&_isxx[idx]), __isxy = _mm256_loadu_pd(&_isxy[idx]), __isyx = _mm256_loadu_pd(&_isyx[idx]), __isyy = _mm256_loadu_pd(&_isyy[idx]);
+                _dfds[idx] = _mm256_add_pd(__dfds, _mm256_sub_pd(_mm256_mul_pd(_mm256_set1_pd(4.5), _mm256_add_pd(_mm256_add_pd(_mm256_add_pd(_mm256_mul_pd(__sxx, __isxx), _mm256_mul_pd(__sxy, __isxy)), _mm256_mul_pd(__syx, __isyx)), _mm256_mul_pd(__syy, __isyy))), _mm256_mul_pd(_mm256_mul_pd(_mm256_set1_pd(1.5), __irho), _mm256_add_pd(__sxx, __syy))));
+                _mm256_storeu_pd(&_dfds[idx], __dfds);
+            }
+            for (int idx = ne*P<double>::packsize; idx < _p.nxyz; ++idx) {
+                _dfds[idx] += (4.5*(_sxx[idx]*_isxx[idx] + _sxy[idx]*_isxy[idx] + _syx[idx]*_isyx[idx] + _syy[idx]*_isyy[idx]) - 1.5*_irho[idx]*(_sxx[idx] + _syy[idx]));
+            }
+        }
     }
 }

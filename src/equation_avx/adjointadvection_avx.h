@@ -195,6 +195,8 @@ namespace PANSLBM2 {
         template<class T, template<class>class Q>void ExternalForceHeatExchange(T, T *, T *, T, int);                               //  Function of applying external force with heat exchange of AAD for 2D/3D       
         template<class T, template<class>class Q>void ExternalForceNaturalConvection(T, T, T, T, T *, T *, int);                    //  Function of applying external force with natural convection of AAD for 2D
         template<class T, template<class>class Q>void ExternalForceNaturalConvection(T, T, T, T, T, T, T *, T *, int);              //  Function of applying external force with natural convection of AAD for 3D
+        template<class T, template<class>class P>void ExternalForceMassFlow(T, T, T, T, T, T *, T *, int);                          //  Function of applying external force with mass flow maximization of AAD for 2D
+        template<class T, template<class>class P>void ExternalForceMassFlow(T, T, T, T, T, T, T, T *, T *, int);                    //  Function of applying external force with mass flow maximization of AAD for 3D
 
         //  Function of updating macroscopic values of AAD for 2D
         template<class Q>
@@ -1052,10 +1054,10 @@ namespace PANSLBM2 {
                     _mm256_storeu_pd(&_iqx[idx], __iqx);
                     _mm256_storeu_pd(&_iqy[idx], __iqy);
 
-                    if (_g) {
+                    if (_ig) {
                         int offsetf = Q<double>::nc*idx;
                         for (int c = 0; c < Q<double>::nc; ++c) {
-                            _mm256_storeu_pd(&_g[offsetf + Q<double>::packsize*c], __g[c]);
+                            _mm256_storeu_pd(&_ig[offsetf + Q<double>::packsize*c], __g[c]);
                         }
                     }
                 }
@@ -1177,10 +1179,10 @@ namespace PANSLBM2 {
                     _mm256_storeu_pd(&_iqy[idx], __iqy);
                     _mm256_storeu_pd(&_iqz[idx], __iqz);
 
-                    if (_g) {
+                    if (_ig) {
                         int offsetf = Q<double>::nc*idx;
                         for (int c = 0; c < Q<double>::nc; ++c) {
-                            _mm256_storeu_pd(&_g[offsetf + Q<double>::packsize*c], __g[c]);
+                            _mm256_storeu_pd(&_ig[offsetf + Q<double>::packsize*c], __g[c]);
                         }
                     }
                 }

@@ -1230,7 +1230,7 @@ namespace PANSLBM2 {
         }
 
         //  Function of Update macro and Collide of AAD mass flow for 2D
-        template<class T, template<class>class P, template<class>class Q, class Ff>
+        template<class T, template<class>class P, template<class>class Q>
         void MacroBrinkmanCollideNaturalConvectionMassFlow(
             P<T>& _p, const T *_rho, const T *_ux, const T *_uy, T *_ip, T *_iux, T *_iuy, T *_imx, T *_imy, const T *_alpha, T _viscosity,
             Q<T>& _q, const T *_tem, T *_item, T *_iqx, T *_iqy, const T *_diffusivity, T _gx, T _gy, 
@@ -1248,7 +1248,7 @@ namespace PANSLBM2 {
                 Macro<T, Q>(item, iqx, iqy, _q.f0, _q.f, idx);
 
                 //  External force with Brinkman model and mass flow
-                ExternalForceMassFlow<T, P>(_rho[idx], _ux[idx], _uy[idx], _directionx[idx], _directiony[idx], _f0, _f, idx);
+                ExternalForceMassFlow<T, P>(_rho[idx], _ux[idx], _uy[idx], _directionx[idx], _directiony[idx], _p.f0, _p.f, idx);
                 ExternalForceBrinkman<T, P>(_rho[idx], _ux[idx], _uy[idx], imx, imy, _tem[idx], iqx, iqy, omegag, _p.f0, _p.f, _alpha[idx], idx);
                 ANS::Macro<T, P>(ip, iux, iuy, imx, imy, _rho[idx], _ux[idx], _uy[idx], _p.f0, _p.f, idx);
                 ExternalForceNaturalConvection<T, Q>(imx, imy, _gx, _gy, _q.f0, _q.f, idx);
@@ -1291,7 +1291,7 @@ namespace PANSLBM2 {
         }
 
         //  Function of Update macro and Collide of AAD mass flow for 3D
-        template<class T, template<class>class P, template<class>class Q, class Ff>
+        template<class T, template<class>class P, template<class>class Q>
         void MacroBrinkmanCollideNaturalConvectionMassFlow(
             P<T>& _p, const T *_rho, const T *_ux, const T *_uy, const T *_uz, T *_ip, T *_iux, T *_iuy, T *_iuz, T *_imx, T *_imy, T *_imz, const T *_alpha, T _viscosity,
             Q<T>& _q, const T *_tem, T *_item, T *_iqx, T *_iqy, T *_iqz, const T *_diffusivity, T _gx, T _gy, T _gz, 
@@ -1309,7 +1309,7 @@ namespace PANSLBM2 {
                 Macro<T, Q>(item, iqx, iqy, iqz, _q.f0, _q.f, idx);
 
                 //  External force with Brinkman model and mass flow
-                ExternalForceMassFlow<T, P>(_rho[idx], _ux[idx], _uy[idx], _uz[idx], _directionx[idx], _directiony[idx], _directionz[idx], _f0, _f, idx);
+                ExternalForceMassFlow<T, P>(_rho[idx], _ux[idx], _uy[idx], _uz[idx], _directionx[idx], _directiony[idx], _directionz[idx], _p.f0, _p.f, idx);
                 ExternalForceBrinkman<T, P>(_rho[idx], _ux[idx], _uy[idx], _uz[idx], imx, imy, imz, _tem[idx], iqx, iqy, iqz, omegag, _p.f0, _p.f, _alpha[idx], idx);
                 ANS::Macro<T, P>(ip, iux, iuy, iuz, imx, imy, imz, _rho[idx], _ux[idx], _uy[idx], _uz[idx], _p.f0, _p.f, idx);
                 ExternalForceNaturalConvection<T, Q>(imx, imy, imz, _gx, _gy, _gz, _q.f0, _q.f, idx);

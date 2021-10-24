@@ -986,6 +986,147 @@ namespace PANSLBM2 {
             }
         }
 
+        //  Function of getting sensitivity of heat exchange
+        template<template<class>class Q, class Fv, class Ff>
+        void SensitivityHeatExchange(
+            Q<double>& _q, double *_dfds, 
+            const double *_ux, const double *_uy, const double *_imx, const double *_imy, const double *_dads, 
+            const double *_tem, const double *_item, const double *_dbds
+        ) {
+            const int ne = _p.nxyz/P<double>::packsize;
+            #pragma omp parallel for
+            for (int pidx = 0; pidx < ne; ++pidx) {
+                int idx = pidx*P<double>::packsize;
+                __m256d __dfds = _mm256_loadu_pd(&_dfds[idx]), __dads = _mm256_loadu_pd(&_dads[idx]), __dbds = _mm256_loadu_pd(&_dbds[idx]);
+                __m256d __ux = _mm256_loadu_pd(&_ux[idx]), __uy = _mm256_loadu_pd(&_uy[idx]), __tem = _mm256_loadu_pd(&_tem[idx]);
+                __m256d __imx = _mm256_loadu_pd(&_imx[idx]), __imy = _mm256_loadu_pd(&_imy[idx]), __item = _mm256_loadu_pd(&_item[idx]);
+                __dfds=_mm256_add_pd(__dfds, _mm256_sub_pd(_mm256_mul_pd(_mm256_mul_pd(_mm256_set1_pd(3.0), __dads), _mm256_add_pd(_mm256_mul_pd(__ux, __imx), _mm256_mul_pd(__uy, __imy))), _mm256_mul_pd(_mm256_mul_pd(__dbds, _mm256_sub_pd(_mm256_set1_pd(1.0), __tem)), _mm256_add_pd(_mm256_set1_pd(1.0), __item))));
+                _mm256_storeu_pd(&_dfds[idx], __dfds);
+            }
+            for (int idx = ne*P<double>::packsize; idx < _p.nxyz; ++idx) {
+                _dfds[idx] += 3.0*_dads[idx]*(_ux[idx]*_imx[idx] + _uy[idx]*_imy[idx]) - _dbds[idx]*(1.0 - _tem[idx])*(1.0 + _item[idx]);
+            }
+        }
+
+        //  Function of getting sensitivity of heat exchange
+        template<class T, template<class>class Q, class Fv, class Ff>
+        void SensitivityHeatExchange(Q<T>& _q, T *_dfds, const T *_ux, const T *_uy, const T *_uz, const T *_imx, const T *_imy, const T *_imz, const T *_dads, const T *_tem, const T *_item, const T *_dbds) {
+            const int ne = _p.nxyz/P<double>::packsize;
+            #pragma omp parallel for
+            for (int pidx = 0; pidx < ne; ++pidx) {
+                int idx = pidx*P<double>::packsize;
+                __m256d __dfds = _mm256_loadu_pd(&_dfds[idx]), __dads = _mm256_loadu_pd(&_dads[idx]), __dbds = _mm256_loadu_pd(&_dbds[idx]);
+                __m256d __ux = _mm256_loadu_pd(&_ux[idx]), __uy = _mm256_loadu_pd(&_uy[idx]), __uz = _mm256_loadu_pd(&_uz[idx]), __tem = _mm256_loadu_pd(&_tem[idx]);
+                __m256d __imx = _mm256_loadu_pd(&_imx[idx]), __imy = _mm256_loadu_pd(&_imy[idx]), __imz = _mm256_loadu_pd(&_imz[idx]), __item = _mm256_loadu_pd(&_item[idx]);
+                __dfds=_mm256_add_pd(__dfds, _mm256_sub_pd(_mm256_mul_pd(_mm256_mul_pd(_mm256_set1_pd(3.0), __dads), _mm256_add_pd(_mm256_add_pd(_mm256_mul_pd(__ux, __imx), _mm256_mul_pd(__uy, __imy)), _mm256_mul_pd(__uz, __imz))), _mm256_mul_pd(_mm256_mul_pd(__dbds, _mm256_sub_pd(_mm256_set1_pd(1.0), __tem)), _mm256_add_pd(_mm256_set1_pd(1.0), __item))));
+                _mm256_storeu_pd(&_dfds[idx], __dfds);
+            }
+            for (int idx = ne*P<double>::packsize; idx < _p.nxyz; ++idx) {
+                _dfds[idx] += 3.0*_dads[idx]*(_ux[idx]*_imx[idx] + _uy[idx]*_imy[idx] + _uz[idx]*_imz[idx]) - _dbds[idx]*(1.0 - _tem[idx])*(1.0 + _item[idx]);
+            }
+        }
+
+        //  Function of getting sensitivity of Brinkman model and diffusivity term
+        template<class T, template<class>class Q, class Fv, class Ff>
+        void SensitivityBrinkmanDiffusivity(
+            Q<T>& _q, T *_dfds, const T *_ux, const T *_uy, const T *_imx, const T *_imy, const T *_dads,
+            const T *_tem, const T *_item, const T *_iqx, const T *_iqy, const T *_g, const T *_ig,
+            const T *_diffusivity, const T *_dkds
+        ) {
+            const int ps = Q<double>::packsize, ne = _q.nxyz/ps, nc = Q<double>::nc;
+            auto IndexG = [=](int _idx, int _c) {
+                return _idx < ne*ps ? (_idx/ps)*ps*nc + ps*_c + _idx%ps : nc*_idx + _c; 
+            };
+
+            //  Brinkman term and diffusivity term
+            #pragma omp parallel for
+            for (int pidx = 0; pidx < ne; ++pidx) {
+                int idx = pidx*ps;
+
+                __m256d __dfds = _mm256_loadu_pd(&_dfds[idx]), __dads = _mm256_loadu_pd(&_dads[idx]), __dkds = _mm256_loadu_pd(&_dkds[idx]), __3 = _mm256_set1_pd(3.0);
+                __m256d __ux = _mm256_loadu_pd(&_ux[idx]), __uy = _mm256_loadu_pd(&_uy[idx]), __imx = _mm256_loadu_pd(&_imx[idx]), __imy = _mm256_loadu_pd(&_imy[idx]);
+                __m256d __tem = _mm256_loadu_pd(&_tem[idx]), __item = _mm256_loadu_pd(&_item[idx]), __iqx = _mm256_loadu_pd(&_iqx[idx]), __iqy = _mm256_loadu_pd(&_iqy[idx]);
+
+                __dfds = _mm256_add_pd(__dfds, _mm256_mul_pd(__3, _mm256_mul_pd(__dads, _mm256_add_pd(_mm256_mul_pd(__ux, __imx), _mm256_mul_pd(__uy, __imy)))));
+
+                int offsetf = nc*idx;
+                __m256d __sumg = _mm256_setzero_pd(), __taug = _mm256_add_pd(_mm256_mul_pd(__3, _mm256_loadu_pd(&_diffusivity[idx])), _mm256_set1_pd(0.5));
+                for (int c = 0; c < nc; ++c) {
+                    int idxf = offsetf + ps*c;
+                    __m256d __g = _mm256_loadu_pd(&_g[idxf]), __ig = _mm256_loadu_pd(&_ig[idxf]);
+                    __sumg = _mm256_add_pd(__sumg, _mm256_mul_pd(__g, __ig));
+                }
+                __dfds = _mm256_sub_pd(__dfds, _mm256_div_pd(
+                    _mm256_mul_pd(__3, _mm256_mul_pd(__dkds, _mm256_sub_pd(
+                        __sumg, _mm256_mul_pd(__tem, _mm256_add_pd(__item, _mm256_mul_pd(__3, _mm256_add_pd(_mm256_mul_pd(__ux, __iqx), _mm256_mul_pd(__uy, __iqy)))))
+                    ))), _mm256_mul_pd(__taug, __taug)
+                ));
+                _mm256_storeu_pd(&_dfds[idx], __dfds);
+            }
+            for (int idx = ne*ps; idx < _q.nxyz; ++idx) {
+                
+                _dfds[idx] += 3.0*_dads[idx]*(_ux[idx]*_imx[idx] + _uy[idx]*_imy[idx]);
+                
+                int offsetf = nc*idx;
+                double sumg = 0.0;
+                for (int c = 0; c < nc; ++c) {
+                    sumg += _g[offsetf + c]*_ig[offsetf + c];
+                }
+                _dfds[idx] += -3.0/pow(3.0*_diffusivity[idx] + 0.5, 2.0)*_dkds[idx]*(sumg - _tem[idx]*(_item[idx] + 3.0*(_ux[idx]*_iqx[idx] + _uy[idx]*_iqy[idx])));
+            }
+        }
+
+        //  Function of getting sensitivity of Brinkman model and diffusivity term
+        template<class T, template<class>class Q, class Fv, class Ff>
+        void SensitivityBrinkmanDiffusivity(
+            Q<T>& _q, T *_dfds, const T *_ux, const T *_uy, const T *_uz, const T *_imx, const T *_imy, const T *_imz, const T *_dads,
+            const T *_tem, const T *_item, const T *_iqx, const T *_iqy, const T *_iqz, const T *_g, const T *_ig,
+            const T *_diffusivity, const T *_dkds
+        ) {
+            const int ps = Q<double>::packsize, ne = _q.nxyz/ps, nc = Q<double>::nc;
+            auto IndexG = [=](int _idx, int _c) {
+                return _idx < ne*ps ? (_idx/ps)*ps*nc + ps*_c + _idx%ps : nc*_idx + _c; 
+            };
+
+            //  Brinkman term and diffusivity term
+            #pragma omp parallel for
+            for (int pidx = 0; pidx < ne; ++pidx) {
+                int idx = pidx*ps;
+
+                __m256d __dfds = _mm256_loadu_pd(&_dfds[idx]), __dads = _mm256_loadu_pd(&_dads[idx]), __dkds = _mm256_loadu_pd(&_dkds[idx]), __3 = _mm256_set1_pd(3.0);
+                __m256d __ux = _mm256_loadu_pd(&_ux[idx]), __uy = _mm256_loadu_pd(&_uy[idx]), __uz = _mm256_loadu_pd(&_uz[idx]);
+                __m256d __imx = _mm256_loadu_pd(&_imx[idx]), __imy = _mm256_loadu_pd(&_imy[idx]), __imz = _mm256_loadu_pd(&_imz[idx]);
+                __m256d __tem = _mm256_loadu_pd(&_tem[idx]), __item = _mm256_loadu_pd(&_item[idx]), __iqx = _mm256_loadu_pd(&_iqx[idx]), __iqy = _mm256_loadu_pd(&_iqy[idx]), __iqz = _mm256_loadu_pd(&_iqz[idx]);
+
+                __dfds = _mm256_add_pd(__dfds, _mm256_mul_pd(__3, _mm256_mul_pd(__dads, _mm256_add_pd(_mm256_mul_pd(__ux, __imx), _mm256_add_pd(_mm256_mul_pd(__uy, __imy), _mm256_mul_pd(__uz, __imz))))));
+
+                int offsetf = nc*idx;
+                __m256d __sumg = _mm256_setzero_pd(), __taug = _mm256_add_pd(_mm256_mul_pd(__3, _mm256_loadu_pd(&_diffusivity[idx])), _mm256_set1_pd(0.5));
+                for (int c = 0; c < nc; ++c) {
+                    int idxf = offsetf + ps*c;
+                    __m256d __g = _mm256_loadu_pd(&_g[idxf]), __ig = _mm256_loadu_pd(&_ig[idxf]);
+                    __sumg = _mm256_add_pd(__sumg, _mm256_mul_pd(__g, __ig));
+                }
+                __dfds = _mm256_sub_pd(__dfds, _mm256_div_pd(
+                    _mm256_mul_pd(__3, _mm256_mul_pd(__dkds, _mm256_sub_pd(
+                        __sumg, _mm256_mul_pd(__tem, _mm256_add_pd(__item, _mm256_mul_pd(
+                            __3, _mm256_add_pd(_mm256_mul_pd(__ux, __iqx), _mm256_add_pd(_mm256_mul_pd(__uy, __iqy), _mm256_mul_pd(__uz, __iqz)))
+                        )))
+                    ))), _mm256_mul_pd(__taug, __taug)
+                ));
+                _mm256_storeu_pd(&_dfds[idx], __dfds);
+            }
+            for (int idx = ne*ps; idx < _q.nxyz; ++idx) {
+                _dfds[idx] += 3.0*_dads[idx]*(_ux[idx]*_imx[idx] + _uy[idx]*_imy[idx] + _uz[idx]*_imz[idx]);
+                int offsetf = nc*idx;
+                double sumg = 0.0;
+                for (int c = 0; c < nc; ++c) {
+                    sumg += _g[offsetf + c]*_ig[offsetf + c];
+                }
+                _dfds[idx] += -3.0/pow(3.0*_diffusivity[idx] + 0.5, 2.0)*_dkds[idx]*(sumg - _tem[idx]*(_item[idx] + 3.0*(_ux[idx]*_iqx[idx] + _uy[idx]*_iqy[idx] + _uz[idx]*_iqz[idx])));
+            }
+        }
+
         //  Function of getting sensitivity of temperature at heat source for D2Q9
         template<template<class>class Q, class Fv, class Ff>
         void SensitivityTemperatureAtHeatSource(

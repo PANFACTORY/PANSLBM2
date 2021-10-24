@@ -16,6 +16,7 @@
 #include "../src/utility/residual.h"
 #include "../src/utility/mma.h"
 #include "../src/utility/densityfilter.h"
+#include "../src/utility/normalize.h"
 
 using namespace PANSLBM2;
 
@@ -225,24 +226,11 @@ int main(int argc, char** argv) {
         f /= L*L;
         std::vector<double> dfdss(s.size(), 0.0);
         AAD::SensitivityTemperatureAtHeatSource(
-            ux, uy, uz, imx, imy, imz, pg, tem, item, iqx, iqy, iqz, gi, igi, dfdss.data(), diffusivity, dads, dkds,
+            pg, dfdss.data(), ux, uy, uz, imx, imy, imz, dads, tem, item, iqx, iqy, iqz, gi, igi, diffusivity, dkds,
             [=](int _i, int _j, int _k) { return (_j == 0 && _i < L && _k < L) ? qn0 : 0.0; }, 
             [=](int _i, int _j, int _k) { return _j == 0 && _i < L && _k < L; }
         );
-        double dfdssmax_buffer = 0.0, dfdssmax;
-        for (int idx = 0; idx < pf.nxyz; ++idx) {
-            if (dfdssmax_buffer < fabs(dfdss[idx])) {
-                dfdssmax_buffer = fabs(dfdss[idx]);
-            }
-        }
-#ifdef _USE_MPI_DEFINES
-        MPI_Allreduce(&dfdssmax_buffer, &dfdssmax, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-#else
-        dfdssmax = dfdssmax_buffer;
-#endif
-        for (int idx = 0; idx < pf.nxyz; ++idx) {
-            dfdss[idx] /= dfdssmax;
-        }
+        Normalize(dfdss.data(), pf.nxyz);
         
         //********************Filter sensitivities********************
         std::vector<double> dfds = DensityFilter::GetFilteredValue(pf, R, dfdss);

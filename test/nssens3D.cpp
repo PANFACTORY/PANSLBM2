@@ -25,7 +25,7 @@ int main(int argc, char** argv) {
     int mx = atoi(argv[1]), my = atoi(argv[2]), mz = atoi(argv[3]);
     assert(mx*my*mz == PeTot);
 #else
-    int MyRank = 0, mx = 1, my = 1, mz = 1.0;
+    int MyRank = 0, mx = 1, my = 1, mz = 1;
 #endif
 
     //--------------------Set parameters--------------------

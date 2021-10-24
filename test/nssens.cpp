@@ -11,6 +11,7 @@
 #include "../src/equation/navierstokes.h"
 #include "../src/equation/adjointnavierstokes.h"
 #include "../src/utility/vtkxmlexport.h"
+#include "../src/utility/normalize.h"
 
 using namespace PANSLBM2;
 
@@ -34,7 +35,7 @@ int main(int argc, char** argv) {
     D2Q9<double> pf(lx, ly, MyRank, mx, my);
     double *rho = new double[pf.nxyz], *ux = new double[pf.nxyz], *uy = new double[pf.nxyz];
     double *irho = new double[pf.nxyz], *iux = new double[pf.nxyz], *iuy = new double[pf.nxyz], *imx = new double[pf.nxyz], *imy = new double[pf.nxyz];
-    double *s = new double[pf.nxyz], *alpha = new double[pf.nxyz], *dfds = new double[pf.nxyz];
+    double *s = new double[pf.nxyz], *alpha = new double[pf.nxyz], *dfds = new double[pf.nxyz], *dads = new double[pf.nxyz];
     for (int i = 0; i < pf.nx; ++i) {
         for (int j = 0; j < pf.ny; ++j) {
             int idx = pf.Index(i, j);
@@ -45,6 +46,7 @@ int main(int argc, char** argv) {
         rho[idx] = 1.0; ux[idx] = 0.0;  uy[idx] = 0.0;
         irho[idx] = 0.0;    iux[idx] = 0.0; iuy[idx] = 0.0; imx[idx] = 0.0; imy[idx] = 0.0;
         alpha[idx] = amax/(double)(pf.lx - 1)*q*(1.0 - s[idx])/(s[idx] + q);
+        dads[idx] = -amax/(double)(pf.lx - 1)*q*(q + 1.0)/pow(q + s[idx], 2.0);
     }
 
     std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
@@ -53,7 +55,7 @@ int main(int argc, char** argv) {
     NS::InitialCondition(pf, rho, ux, uy);
     for (int t = 1; t <= nt; ++t) {
         if (MyRank == 0 && t%dt == 0) {
-            std::cout << "t = " << t/dt << std::endl;
+            std::cout << "\rt = " << t;
         }
         NS::MacroBrinkmanCollide(pf, rho, ux, uy, nu, alpha, true);
         pf.Stream();
@@ -75,7 +77,7 @@ int main(int argc, char** argv) {
     ANS::InitialCondition(pf, ux, uy, irho, iux, iuy);
     for (int t = 1; t <= nt; ++t) {
         if (MyRank == 0 && t%dt == 0) {
-            std::cout << "t = " << t/dt << std::endl;
+            std::cout << "\rt = " << t;
         }
         ANS::MacroBrinkmanCollide(pf, rho, ux, uy, irho, iux, iuy, imx, imy, nu, alpha, true);
         pf.iStream();
@@ -91,21 +93,8 @@ int main(int argc, char** argv) {
     }
 
     //--------------------Get sensitivity--------------------
-    double dfdsmax = 0.0, dfdsmaxall;
-    for (int idx = 0; idx < pf.nxyz; ++idx) {
-        dfds[idx] = 3.0*(imx[idx]*ux[idx] + imy[idx]*uy[idx])*(-amax/(double)(pf.lx - 1)*q*(q + 1.0)/pow(q + s[idx], 2.0));
-        if (dfdsmax < fabs(dfds[idx])) {
-            dfdsmax = fabs(dfds[idx]);
-        }
-    }
-#ifdef _USE_MPI_DEFINES
-    MPI_Allreduce(&dfdsmax, &dfdsmaxall, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-#else
-    dfdsmaxall = dfdsmax;
-#endif
-    for (int idx = 0; idx < pf.nxyz; ++idx) {  
-        dfds[idx] /= dfdsmaxall;
-    }
+    ANS::SensitivityBrinkman(pf, dfds, ux, uy, imx, imy, dads);
+    Normalize(dfds, pf.nxyz);
 
     std::chrono::system_clock::time_point end = std::chrono::system_clock::now();
     if (MyRank == 0) {
@@ -130,7 +119,7 @@ int main(int argc, char** argv) {
     file.AddPointData(pf, "alpha", [&](int _i, int _j, int _k) { return alpha[pf.Index(_i, _j)]; });
     file.AddPointData(pf, "s", [&](int _i, int _j, int _k) { return s[pf.Index(_i, _j)]; });
     
-    delete[] rho, ux, uy, irho, iux, iuy, imx, imy, s, alpha, dfds;
+    delete[] rho; delete[] ux; delete[] uy; delete[] irho; delete[] iux; delete[] iuy; delete[] imx; delete[] imy; delete[] s; delete[] alpha; delete[] dfds; delete[] dads;
 #ifdef _USE_MPI_DEFINES
     MPI_Finalize();
 #endif

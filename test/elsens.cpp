@@ -34,7 +34,7 @@ int main(int argc, char** argv) {
     D2Q9<double> pf(lx, ly, MyRank, mx, my);
     double rho[pf.nxyz], ux[pf.nxyz], uy[pf.nxyz], rx[pf.nxyz], ry[pf.nxyz], sxx[pf.nxyz], sxy[pf.nxyz], syx[pf.nxyz], syy[pf.nxyz];
     double irho[pf.nxyz], imx[pf.nxyz], imy[pf.nxyz], isxx[pf.nxyz], isxy[pf.nxyz], isyx[pf.nxyz], isyy[pf.nxyz];
-    double s[pf.nxyz], gamma[pf.nxyz], sensitivity[pf.nxyz];
+    double s[pf.nxyz], gamma[pf.nxyz], dfds[pf.nxyz];
     for (int i = 0; i < pf.nx; ++i) {
         for (int j = 0; j < pf.ny; ++j) {
             int idx = pf.Index(i, j);
@@ -88,15 +88,15 @@ int main(int argc, char** argv) {
     }
 
     //--------------------Get sensitivity--------------------
-    double sensitivitymax = 0.0;
+    AEL::SensitivityCompliance(pf, dfds, sxx, sxy, syx, syy, irho, isxx, isxy, isyx, isyy);
+    double dfdsmax = 0.0;
     for (int idx = 0; idx < pf.nxyz; ++idx) {
-        sensitivity[idx] = (4.5*(sxx[idx]*isxx[idx] + sxy[idx]*isxy[idx] + syx[idx]*isyx[idx] + syy[idx]*isyy[idx]) - 1.5*irho[idx]*(sxx[idx] + syy[idx]));
-        if (sensitivitymax < fabs(sensitivity[idx])) {
-            sensitivitymax = fabs(sensitivity[idx]);
+        if (dfdsmax < fabs(dfds[idx])) {
+            dfdsmax = fabs(dfds[idx]);
         }
     }
     for (int idx = 0; idx < pf.nxyz; ++idx) {  
-        sensitivity[idx] /= sensitivitymax;
+        dfds[idx] /= dfds;
     }
 
     //--------------------Export result--------------------
@@ -139,7 +139,7 @@ int main(int argc, char** argv) {
         [](int _i, int _j, int _k) { return 0.0; },
         [](int _i, int _j, int _k) { return 0.0; }
     );
-    file.AddPointData(pf, "sensitivity", [&](int _i, int _j, int _k) { return sensitivity[pf.Index(_i, _j)]; });
+    file.AddPointData(pf, "dfds", [&](int _i, int _j, int _k) { return dfds[pf.Index(_i, _j)]; });
     file.AddPointData(pf, "gamma", [&](int _i, int _j, int _k) { return gamma[pf.Index(_i, _j)]; });
     file.AddPointData(pf, "ss", [&](int _i, int _j, int _k) { return s[pf.Index(_i, _j)]; });
 

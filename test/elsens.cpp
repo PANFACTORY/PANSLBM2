@@ -96,7 +96,7 @@ int main(int argc, char** argv) {
         }
     }
     for (int idx = 0; idx < pf.nxyz; ++idx) {  
-        dfds[idx] /= dfds;
+        dfds[idx] /= dfdsmax;
     }
 
     //--------------------Export result--------------------

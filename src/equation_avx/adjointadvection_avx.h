@@ -27,7 +27,7 @@ namespace PANSLBM2 {
                 for (int j = 0; j < _q.ny; ++j) {
                     if (_bctype(i + _q.offsetx, j + _q.offsety)) {
                         int idx = _q.Index(i, j);
-                        T qn = _qnbc(i + _q.offsetx, j + _q.offsety);
+                        double qn = _qnbc(i + _q.offsetx, j + _q.offsety);
                         if (_directionx == -1) {
                             _dfds[idx] += qn*_dkds[idx]*(
                                 (1.0 + 3.0*_ux[idx])*(-6.0 + 4.0*_ig[IndexG(idx, 1)] + _ig[IndexG(idx, 5)] + _ig[IndexG(idx, 8)])
@@ -59,7 +59,7 @@ namespace PANSLBM2 {
                 for (int i = 0; i < _q.nx; ++i) {
                     if (_bctype(i + _q.offsetx, j + _q.offsety)) {
                         int idx = _q.Index(i, j);
-                        T qn = _qnbc(i + _q.offsetx, j + _q.offsety);
+                        double qn = _qnbc(i + _q.offsetx, j + _q.offsety);
                         if (_directiony == -1) {
                             _dfds[idx] += qn*_dkds[idx]*(
                                 (1.0 + 3.0*_uy[idx])*(-6.0 + 4.0*_ig[IndexG(idx, 2)] + _ig[IndexG(idx, 5)] + _ig[IndexG(idx, 6)])
@@ -92,7 +92,7 @@ namespace PANSLBM2 {
                     for (int k = 0; k < _q.nz; ++k) {
                         if (_bctype(i + _q.offsetx, j + _q.offsety, k + _q.offsetz)) {
                             int idx = _q.Index(i, j, k);
-                            T qn = _qnbc(i + _q.offsetx, j + _q.offsety, k + _q.offsetz);
+                            double qn = _qnbc(i + _q.offsetx, j + _q.offsety, k + _q.offsetz);
                             if (_directionx == -1) {
                                 _dfds[idx] += qn*_dkds[idx]*(
                                     (1.0 + 3.0*_ux[idx])*(-12.0 + 8.0*_ig[IndexG(idx, 1)] + _ig[IndexG(idx, 7)] + _ig[IndexG(idx, 9)] + _ig[IndexG(idx, 10)] + _ig[IndexG(idx, 12)])
@@ -128,7 +128,7 @@ namespace PANSLBM2 {
                     for (int i = 0; i < _q.nx; ++i) {
                         if (_bctype(i + _q.offsetx, j + _q.offsety, k + _q.offsetz)) {
                             int idx = _q.Index(i, j, k);
-                            T qn = _qnbc(i + _q.offsetx, j + _q.offsety, k + _q.offsetz);
+                            double qn = _qnbc(i + _q.offsetx, j + _q.offsety, k + _q.offsetz);
                             if (_directiony == -1) {
                                 _dfds[idx] += qn*_dkds[idx]*(
                                     (1.0 + 3.0*_uy[idx])*(-12.0 + 8.0*_ig[IndexG(idx, 2)] + _ig[IndexG(idx, 7)] + _ig[IndexG(idx, 8)] + _ig[IndexG(idx, 10)] + _ig[IndexG(idx, 13)])
@@ -164,7 +164,7 @@ namespace PANSLBM2 {
                     for (int j = 0; j < _q.ny; ++j) {
                         if (_bctype(i + _q.offsetx, j + _q.offsety, k + _q.offsetz)) {
                             int idx = _q.Index(i, j, k);
-                            T qn = _qnbc(i + _q.offsetx, j + _q.offsety, k + _q.offsetz);
+                            double qn = _qnbc(i + _q.offsetx, j + _q.offsety, k + _q.offsetz);
                             if (_directionz == -1) {
                                 _dfds[idx] += qn*_dkds[idx]*(
                                     (1.0 + 3.0*_uz[idx])*(-12.0 + 8.0*_ig[IndexG(idx, 3)] + _ig[IndexG(idx, 7)] + _ig[IndexG(idx, 8)] + _ig[IndexG(idx, 9)] + _ig[IndexG(idx, 14)])
@@ -993,45 +993,49 @@ namespace PANSLBM2 {
             const double *_ux, const double *_uy, const double *_imx, const double *_imy, const double *_dads, 
             const double *_tem, const double *_item, const double *_dbds
         ) {
-            const int ne = _p.nxyz/P<double>::packsize;
+            const int ne = _q.nxyz/Q<double>::packsize;
             #pragma omp parallel for
             for (int pidx = 0; pidx < ne; ++pidx) {
-                int idx = pidx*P<double>::packsize;
+                int idx = pidx*Q<double>::packsize;
                 __m256d __dfds = _mm256_loadu_pd(&_dfds[idx]), __dads = _mm256_loadu_pd(&_dads[idx]), __dbds = _mm256_loadu_pd(&_dbds[idx]);
                 __m256d __ux = _mm256_loadu_pd(&_ux[idx]), __uy = _mm256_loadu_pd(&_uy[idx]), __tem = _mm256_loadu_pd(&_tem[idx]);
                 __m256d __imx = _mm256_loadu_pd(&_imx[idx]), __imy = _mm256_loadu_pd(&_imy[idx]), __item = _mm256_loadu_pd(&_item[idx]);
                 __dfds=_mm256_add_pd(__dfds, _mm256_sub_pd(_mm256_mul_pd(_mm256_mul_pd(_mm256_set1_pd(3.0), __dads), _mm256_add_pd(_mm256_mul_pd(__ux, __imx), _mm256_mul_pd(__uy, __imy))), _mm256_mul_pd(_mm256_mul_pd(__dbds, _mm256_sub_pd(_mm256_set1_pd(1.0), __tem)), _mm256_add_pd(_mm256_set1_pd(1.0), __item))));
                 _mm256_storeu_pd(&_dfds[idx], __dfds);
             }
-            for (int idx = ne*P<double>::packsize; idx < _p.nxyz; ++idx) {
+            for (int idx = ne*Q<double>::packsize; idx < _q.nxyz; ++idx) {
                 _dfds[idx] += 3.0*_dads[idx]*(_ux[idx]*_imx[idx] + _uy[idx]*_imy[idx]) - _dbds[idx]*(1.0 - _tem[idx])*(1.0 + _item[idx]);
             }
         }
 
         //  Function of getting sensitivity of heat exchange
-        template<class T, template<class>class Q, class Fv, class Ff>
-        void SensitivityHeatExchange(Q<T>& _q, T *_dfds, const T *_ux, const T *_uy, const T *_uz, const T *_imx, const T *_imy, const T *_imz, const T *_dads, const T *_tem, const T *_item, const T *_dbds) {
-            const int ne = _p.nxyz/P<double>::packsize;
+        template<template<class>class Q, class Fv, class Ff>
+        void SensitivityHeatExchange(
+            Q<double>& _q, double *_dfds, 
+            const double *_ux, const double *_uy, const double *_uz, const double *_imx, const double *_imy, const double *_imz, const double *_dads, 
+            const double *_tem, const double *_item, const double *_dbds
+        ) {
+            const int ne = _q.nxyz/Q<double>::packsize;
             #pragma omp parallel for
             for (int pidx = 0; pidx < ne; ++pidx) {
-                int idx = pidx*P<double>::packsize;
+                int idx = pidx*Q<double>::packsize;
                 __m256d __dfds = _mm256_loadu_pd(&_dfds[idx]), __dads = _mm256_loadu_pd(&_dads[idx]), __dbds = _mm256_loadu_pd(&_dbds[idx]);
                 __m256d __ux = _mm256_loadu_pd(&_ux[idx]), __uy = _mm256_loadu_pd(&_uy[idx]), __uz = _mm256_loadu_pd(&_uz[idx]), __tem = _mm256_loadu_pd(&_tem[idx]);
                 __m256d __imx = _mm256_loadu_pd(&_imx[idx]), __imy = _mm256_loadu_pd(&_imy[idx]), __imz = _mm256_loadu_pd(&_imz[idx]), __item = _mm256_loadu_pd(&_item[idx]);
                 __dfds=_mm256_add_pd(__dfds, _mm256_sub_pd(_mm256_mul_pd(_mm256_mul_pd(_mm256_set1_pd(3.0), __dads), _mm256_add_pd(_mm256_add_pd(_mm256_mul_pd(__ux, __imx), _mm256_mul_pd(__uy, __imy)), _mm256_mul_pd(__uz, __imz))), _mm256_mul_pd(_mm256_mul_pd(__dbds, _mm256_sub_pd(_mm256_set1_pd(1.0), __tem)), _mm256_add_pd(_mm256_set1_pd(1.0), __item))));
                 _mm256_storeu_pd(&_dfds[idx], __dfds);
             }
-            for (int idx = ne*P<double>::packsize; idx < _p.nxyz; ++idx) {
+            for (int idx = ne*Q<double>::packsize; idx < _q.nxyz; ++idx) {
                 _dfds[idx] += 3.0*_dads[idx]*(_ux[idx]*_imx[idx] + _uy[idx]*_imy[idx] + _uz[idx]*_imz[idx]) - _dbds[idx]*(1.0 - _tem[idx])*(1.0 + _item[idx]);
             }
         }
 
         //  Function of getting sensitivity of Brinkman model and diffusivity term
-        template<class T, template<class>class Q, class Fv, class Ff>
+        template<template<class>class Q, class Fv, class Ff>
         void SensitivityBrinkmanDiffusivity(
-            Q<T>& _q, T *_dfds, const T *_ux, const T *_uy, const T *_imx, const T *_imy, const T *_dads,
-            const T *_tem, const T *_item, const T *_iqx, const T *_iqy, const T *_g, const T *_ig,
-            const T *_diffusivity, const T *_dkds
+            Q<double>& _q, double *_dfds, const double *_ux, const double *_uy, const double *_imx, const double *_imy, const double *_dads,
+            const double *_tem, const double *_item, const double *_iqx, const double *_iqy, const double *_g, const double *_ig,
+            const double *_diffusivity, const double *_dkds
         ) {
             const int ps = Q<double>::packsize, ne = _q.nxyz/ps, nc = Q<double>::nc;
             auto IndexG = [=](int _idx, int _c) {
@@ -1077,11 +1081,11 @@ namespace PANSLBM2 {
         }
 
         //  Function of getting sensitivity of Brinkman model and diffusivity term
-        template<class T, template<class>class Q, class Fv, class Ff>
+        template<template<class>class Q, class Fv, class Ff>
         void SensitivityBrinkmanDiffusivity(
-            Q<T>& _q, T *_dfds, const T *_ux, const T *_uy, const T *_uz, const T *_imx, const T *_imy, const T *_imz, const T *_dads,
-            const T *_tem, const T *_item, const T *_iqx, const T *_iqy, const T *_iqz, const T *_g, const T *_ig,
-            const T *_diffusivity, const T *_dkds
+            Q<double>& _q, double *_dfds, const double *_ux, const double *_uy, const double *_uz, const double *_imx, const double *_imy, const double *_imz, const double *_dads,
+            const double *_tem, const double *_item, const double *_iqx, const double *_iqy, const double *_iqz, const double *_g, const double *_ig,
+            const double *_diffusivity, const double *_dkds
         ) {
             const int ps = Q<double>::packsize, ne = _q.nxyz/ps, nc = Q<double>::nc;
             auto IndexG = [=](int _idx, int _c) {

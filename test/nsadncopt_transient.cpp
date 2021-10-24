@@ -15,6 +15,7 @@
 #include "../src/utility/residual.h"
 #include "../src/utility/mma.h"
 #include "../src/utility/densityfilter.h"
+#include "../src/utility/normalize.h"
 
 using namespace PANSLBM2;
 
@@ -206,20 +207,7 @@ int main(int argc, char** argv) {
         f = f_buffer;
 #endif
         f /= L*nt;
-        double dfdssmax_buffer = 0.0, dfdssmax;
-        for (int idx = 0; idx < pf.nxyz; ++idx) {
-            if (dfdssmax_buffer < fabs(dfdss[idx])) {
-                dfdssmax_buffer = fabs(dfdss[idx]);
-            }
-        }
-#ifdef _USE_MPI_DEFINES
-        MPI_Allreduce(&dfdssmax_buffer, &dfdssmax, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-#else
-        dfdssmax = dfdssmax_buffer;
-#endif
-        for (int idx = 0; idx < pf.nxyz; ++idx) {
-            dfdss[idx] /= dfdssmax;
-        }
+        Normalize(dfdss.data(), pf.nxyz);
         
         //********************Filter sensitivities********************
         std::vector<double> dfds = DensityFilter::GetFilteredValue(pf, R, dfdss);

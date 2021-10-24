@@ -303,6 +303,22 @@ namespace PANSLBM2 {
             }
         }
 
+        //  Function of applying external force with mass flow maximization of AAD for 2D
+        template<class P>
+        void ExternalForceMassFlow(const __m256d &__rho, const __m256d &__ux, const __m256d &__uy, const __m256d &__directionx, const __m256d &__directiony, __m256d *__f) {
+            for (int c = 0; c < P::nc; ++c) {
+                __f[c]=_mm256_sub_pd(__f[c], _mm256_div_pd(_mm256_add_pd(_mm256_mul_pd(_mm256_sub_pd(P::__cx[c], __ux), __directionx), _mm256_mul_pd(_mm256_sub_pd(P::__cy[c], __uy), __directiony)), __rho));
+            }
+        }
+
+        //  Function of applying external force with mass flow maximization of AAD for 3D
+        template<class P>
+        void ExternalForceMassFlow(const __m256d &__rho, const __m256d &__ux, const __m256d &__uy, const __m256d &__uz, const __m256d &__directionx, const __m256d &__directiony, const __m256d &__directionz, __m256d *__f) {
+            for (int c = 0; c < P::nc; ++c) {
+                __f[c]=_mm256_sub_pd(__f[c], _mm256_div_pd(_mm256_add_pd(_mm256_add_pd(_mm256_mul_pd(_mm256_sub_pd(P::__cx[c], __ux), __directionx), _mm256_mul_pd(_mm256_sub_pd(P::__cy[c], __uy), __directiony)), _mm256_mul_pd(_mm256_sub_pd(P::__cz[c], __uz), __directionz)), __rho));
+            }
+        }
+
         //  Function of Update macro, External force(Brinkman, Heat exchange) and Collide of AAD for 2D
         template<template<class>class P, template<class>class Q>
         void MacroBrinkmanCollideHeatExchange(
@@ -966,6 +982,256 @@ namespace PANSLBM2 {
                         _g[offsetf] = _q.f0[idx];
                         for (int c = 1; c < Q<double>::nc; ++c) {
                             _g[offsetf + c] = _q.f[Q<double>::IndexF(idx, c)];
+                        }
+                    }
+                }
+
+                //  Collide
+                ANS::Equilibrium<double, P>(feq, _ux[idx], _uy[idx], _uz[idx], ip, iux, iuy, iuz);
+                _p.f0[idx] = iomegaf*_p.f0[idx] + omegaf*feq[0];
+                for (int c = 1; c < P<double>::nc; ++c) {
+                    int idxf = P<double>::IndexF(idx, c);
+                    _p.f[idxf] = iomegaf*_p.f[idxf] + omegaf*feq[c];
+                }
+                Equilibrium<double, Q>(geq, item, iqx, iqy, iqz, _ux[idx], _uy[idx], _uz[idx]);
+                _q.f0[idx] = iomegag*_q.f0[idx] + omegag*geq[0];
+                for (int c = 1; c < Q<double>::nc; ++c) {
+                    int idxf = Q<double>::IndexF(idx, c); 
+                    _q.f[idxf] = iomegag*_q.f[idxf] + omegag*geq[c];
+                }
+            }
+        }
+
+        //  Function of Update macro and Collide of AAD mass flow for 2D
+        template<template<class>class P, template<class>class Q>
+        void MacroBrinkmanCollideNaturalConvectionMassFlow(
+            P<double>& _p, const double *_rho, const double *_ux, const double *_uy, double *_ip, double *_iux, double *_iuy, double *_imx, double *_imy, const double *_alpha, double _viscosity,
+            Q<double>& _q, const double *_tem, double *_item, double *_iqx, double *_iqy, const double *_diffusivity, double _gx, double _gy, const double *_directionx, const double *_directiony, bool _issave = false, double *_ig = nullptr
+        ) {
+            const int ne = _p.nxyz/P<double>::packsize;
+            double omegaf = 1.0/(3.0*_viscosity + 0.5), iomegaf = 1.0 - omegaf, feq[P<double>::nc], geq[Q<double>::nc];
+            __m256d __omegaf = _mm256_set1_pd(omegaf), __iomegaf = _mm256_set1_pd(iomegaf), __feq[P<double>::nc], __geq[Q<double>::nc];
+            __m256d __gx = _mm256_set1_pd(_gx), __gy = _mm256_set1_pd(_gy);
+            #pragma omp parallel for private(__feq, __geq)
+            for (int pidx = 0; pidx < ne; ++pidx) {
+                int idx = pidx*P<double>::packsize;
+
+                __m256d __diffusivity = _mm256_loadu_pd(&_diffusivity[idx]);                 
+                __m256d __omegag = _mm256_div_pd(_mm256_set1_pd(1.0), _mm256_add_pd(_mm256_mul_pd(_mm256_set1_pd(3.0), __diffusivity), _mm256_set1_pd(0.5)));
+                __m256d __iomegag = _mm256_sub_pd(_mm256_set1_pd(1.0), __omegag);
+
+                //  Pack f0, f, g0 and g
+                __m256d __f[P<double>::nc], __g[Q<double>::nc];
+                _p.LoadF(idx, __f);
+                _q.LoadF(idx, __g);
+
+                //  Update macro
+                __m256d __ip, __iux, __iuy, __imx, __imy;
+                __m256d __rho = _mm256_loadu_pd(&_rho[idx]), __ux = _mm256_loadu_pd(&_ux[idx]), __uy = _mm256_loadu_pd(&_uy[idx]), __tem = _mm256_loadu_pd(&_tem[idx]);
+                ANS::Macro<P<double> >(__ip, __iux, __iuy, __imx, __imy, __rho, __ux, __uy, __f);
+                __m256d __item, __iqx, __iqy;
+                Macro<Q<double> >(__item, __iqx, __iqy, __g);
+
+                //  External force with Brinkman model and mass flow
+                __m256d __directionx = _mm256_loadu_pd(&_directionx[idx]), __directiony = _mm256_loadu_pd(&_directiony[idx]);
+                ExternalForceMassFlow<P<double> >(__rho, __ux, __uy, __directionx, __directiony, __f);
+                __m256d __alpha = _mm256_loadu_pd(&_alpha[idx]);
+                ExternalForceBrinkman<P<double> >(__rho, __ux, __uy, __imx, __imy, __tem, __iqx, __iqy, __omegag, __f, __alpha);
+                ANS::Macro<P<double> >(__ip, __iux, __iuy, __imx, __imy, __rho, __ux, __uy, __f);
+                ExternalForceNaturalConvection<Q<double> >(__imx, __imy, __gx, __gy, __g);
+                Macro<Q<double> >(__item, __iqx, __iqy, __g);
+
+                //  Save macro if need
+                if (_issave) {
+                    _mm256_storeu_pd(&_ip[idx], __ip);
+                    _mm256_storeu_pd(&_iux[idx], __iux);
+                    _mm256_storeu_pd(&_iuy[idx], __iuy);
+                    _mm256_storeu_pd(&_imx[idx], __imx);
+                    _mm256_storeu_pd(&_imy[idx], __imy);
+                    _mm256_storeu_pd(&_item[idx], __item);
+                    _mm256_storeu_pd(&_iqx[idx], __iqx);
+                    _mm256_storeu_pd(&_iqy[idx], __iqy);
+
+                    if (_g) {
+                        int offsetf = Q<double>::nc*idx;
+                        for (int c = 0; c < Q<double>::nc; ++c) {
+                            _mm256_storeu_pd(&_g[offsetf + Q<double>::packsize*c], __g[c]);
+                        }
+                    }
+                }
+
+                //  Collide
+                ANS::Equilibrium<P<double> >(__feq, __ux, __uy, __ip, __iux, __iuy);
+                for (int c = 0; c < P<double>::nc; ++c) {
+                    __f[c] = _mm256_add_pd(_mm256_mul_pd(__iomegaf, __f[c]), _mm256_mul_pd(__omegaf, __feq[c]));
+                }
+                _p.StoreF(idx, __f);
+                Equilibrium<Q<double> >(__geq, __item, __iqx, __iqy, __ux, __uy);
+                for (int c = 0; c < Q<double>::nc; ++c) {
+                    __g[c] = _mm256_add_pd(_mm256_mul_pd(__iomegag, __g[c]), _mm256_mul_pd(__omegag, __geq[c]));
+                }
+                _q.StoreF(idx, __g);
+            }
+            for (int idx = ne*P<double>::packsize; idx < _p.nxyz; ++idx) {
+                double omegag = 1.0/(3.0*_diffusivity[idx] + 0.5), iomegag = 1.0 - omegag;
+
+                //  Update macro
+                double ip, iux, iuy, imx, imy;
+                ANS::Macro<double, P>(ip, iux, iuy, imx, imy, _rho[idx], _ux[idx], _uy[idx], _p.f0, _p.f, idx);
+                double item, iqx, iqy;
+                Macro<double, Q>(item, iqx, iqy, _q.f0, _q.f, idx);
+
+                //  External force with Brinkman model and mass flow
+                ExternalForceMassFlow<double, P>(_rho[idx], _ux[idx], _uy[idx], _directionx[idx], _directiony[idx], _p.f0, _p.f, idx);
+                ExternalForceBrinkman<double, P>(_rho[idx], _ux[idx], _uy[idx], imx, imy, _tem[idx], iqx, iqy, omegag, _p.f0, _p.f, _alpha[idx], idx);
+                ANS::Macro<double, P>(ip, iux, iuy, imx, imy, _rho[idx], _ux[idx], _uy[idx], _p.f0, _p.f, idx);
+                ExternalForceNaturalConvection<double, Q>(imx, imy, _gx, _gy, _q.f0, _q.f, idx);
+                Macro<double, Q>(item, iqx, iqy, _q.f0, _q.f, idx);
+
+                //  Save macro if need
+                if (_issave) {
+                    _ip[idx] = ip;
+                    _iux[idx] = iux;
+                    _iuy[idx] = iuy;
+                    _imx[idx] = imx;
+                    _imy[idx] = imy;
+                    _item[idx] = item;
+                    _iqx[idx] = iqx;
+                    _iqy[idx] = iqy;
+
+                    if (_ig) {
+                        int offsetf = Q<double>::nc*idx;
+                        _ig[offsetf] = _q.f0[idx];
+                        for (int c = 1; c < Q<double>::nc; ++c) {
+                            _ig[offsetf + c] = _q.f[Q<double>::IndexF(idx, c)];
+                        }
+                    }
+                }
+
+                //  Collide
+                ANS::Equilibrium<double, P>(feq, _ux[idx], _uy[idx], ip, iux, iuy);
+                _p.f0[idx] = iomegaf*_p.f0[idx] + omegaf*feq[0];
+                for (int c = 1; c < P<double>::nc; ++c) {
+                    int idxf = P<double>::IndexF(idx, c);
+                    _p.f[idxf] = iomegaf*_p.f[idxf] + omegaf*feq[c];
+                }
+                Equilibrium<double, Q>(geq, item, iqx, iqy, _ux[idx], _uy[idx]);
+                _q.f0[idx] = iomegag*_q.f0[idx] + omegag*geq[0];
+                for (int c = 1; c < Q<double>::nc; ++c) {
+                    int idxf = Q<double>::IndexF(idx, c); 
+                    _q.f[idxf] = iomegag*_q.f[idxf] + omegag*geq[c];
+                }
+            }
+        }
+
+        //  Function of Update macro and Collide of AAD mass flow for 3D
+        template<template<class>class P, template<class>class Q>
+        void MacroBrinkmanCollideNaturalConvectionMassFlow(
+            P<double>& _p, const double *_rho, const double *_ux, const double *_uy, const double *_uz, double *_ip, double *_iux, double *_iuy, double *_iuz, double *_imx, double *_imy, double *_imz, const double *_alpha, double _viscosity,
+            Q<double>& _q, const double *_tem, double *_item, double *_iqx, double *_iqy, double *_iqz, const double *_diffusivity, double _gx, double _gy, double _gz, const double *_directionx, const double *_directiony, const double *_directionz, bool _issave = false, double *_ig = nullptr
+        ) {
+            const int ne = _p.nxyz/P<double>::packsize;
+            double omegaf = 1.0/(3.0*_viscosity + 0.5), iomegaf = 1.0 - omegaf, feq[P<double>::nc], geq[Q<double>::nc];
+            __m256d __omegaf = _mm256_set1_pd(omegaf), __iomegaf = _mm256_set1_pd(iomegaf), __feq[P<double>::nc], __geq[Q<double>::nc];
+            __m256d __gx = _mm256_set1_pd(_gx), __gy = _mm256_set1_pd(_gy), __gz = _mm256_set1_pd(_gz);
+            #pragma omp parallel for private(__feq, __geq)
+            for (int pidx = 0; pidx < ne; ++pidx) {
+                int idx = pidx*P<double>::packsize;
+
+                __m256d __diffusivity = _mm256_loadu_pd(&_diffusivity[idx]);                 
+                __m256d __omegag = _mm256_div_pd(_mm256_set1_pd(1.0), _mm256_add_pd(_mm256_mul_pd(_mm256_set1_pd(3.0), __diffusivity), _mm256_set1_pd(0.5)));
+                __m256d __iomegag = _mm256_sub_pd(_mm256_set1_pd(1.0), __omegag);
+
+                //  Pack f0, f, g0 and g
+                __m256d __f[P<double>::nc], __g[Q<double>::nc];
+                _p.LoadF(idx, __f);
+                _q.LoadF(idx, __g);
+
+                //  Update macro
+                __m256d __ip, __iux, __iuy, __iuz, __imx, __imy, __imz;
+                __m256d __rho = _mm256_loadu_pd(&_rho[idx]), __ux = _mm256_loadu_pd(&_ux[idx]), __uy = _mm256_loadu_pd(&_uy[idx]), __uz = _mm256_loadu_pd(&_uz[idx]), __tem = _mm256_loadu_pd(&_tem[idx]);
+                ANS::Macro<P<double> >(__ip, __iux, __iuy, __iuz, __imx, __imy, __imz, __rho, __ux, __uy, __uz, __f);
+                __m256d __item, __iqx, __iqy, __iqz;
+                Macro<Q<double> >(__item, __iqx, __iqy, __iqz, __g);
+
+                //  External force with Brinkman model and mass flow
+                __m256d __directionx = _mm256_loadu_pd(&_directionx[idx]), __directiony = _mm256_loadu_pd(&_directiony[idx]), __directionz = _mm256_loadu_pd(&_directionz[idx]);
+                ExternalForceMassFlow<P<double> >(__rho, __ux, __uy, __directionx, __directiony, __directionz, __f);
+                __m256d __alpha = _mm256_loadu_pd(&_alpha[idx]);
+                ExternalForceBrinkman<P<double> >(__rho, __ux, __uy, __uz, __imx, __imy, __imz, __tem, __iqx, __iqy, __iqz, __omegag, __f, __alpha);
+                ANS::Macro<P<double> >(__ip, __iux, __iuy, __iuz, __imx, __imy, __imz, __rho, __ux, __uy, __uz, __f);
+                ExternalForceNaturalConvection<Q<double> >(__imx, __imy, __imz, __gx, __gy, __gz, __g);
+                Macro<Q<double> >(__item, __iqx, __iqy, __iqz, __g);
+
+                //  Save macro if need
+                if (_issave) {
+                    _mm256_storeu_pd(&_ip[idx], __ip);
+                    _mm256_storeu_pd(&_iux[idx], __iux);
+                    _mm256_storeu_pd(&_iuy[idx], __iuy);
+                    _mm256_storeu_pd(&_iuz[idx], __iuz);
+                    _mm256_storeu_pd(&_imx[idx], __imx);
+                    _mm256_storeu_pd(&_imy[idx], __imy);
+                    _mm256_storeu_pd(&_imz[idx], __imz);
+                    _mm256_storeu_pd(&_item[idx], __item);
+                    _mm256_storeu_pd(&_iqx[idx], __iqx);
+                    _mm256_storeu_pd(&_iqy[idx], __iqy);
+                    _mm256_storeu_pd(&_iqz[idx], __iqz);
+
+                    if (_g) {
+                        int offsetf = Q<double>::nc*idx;
+                        for (int c = 0; c < Q<double>::nc; ++c) {
+                            _mm256_storeu_pd(&_g[offsetf + Q<double>::packsize*c], __g[c]);
+                        }
+                    }
+                }
+
+                //  Collide
+                ANS::Equilibrium<P<double> >(__feq, __ux, __uy, __uz, __ip, __iux, __iuy, __iuz);
+                for (int c = 0; c < P<double>::nc; ++c) {
+                    __f[c] = _mm256_add_pd(_mm256_mul_pd(__iomegaf, __f[c]), _mm256_mul_pd(__omegaf, __feq[c]));
+                }
+                _p.StoreF(idx, __f);
+                Equilibrium<Q<double> >(__geq, __item, __iqx, __iqy, __iqz, __ux, __uy, __uz);
+                for (int c = 0; c < Q<double>::nc; ++c) {
+                    __g[c] = _mm256_add_pd(_mm256_mul_pd(__iomegag, __g[c]), _mm256_mul_pd(__omegag, __geq[c]));
+                }
+                _q.StoreF(idx, __g);
+            }
+            for (int idx = ne*P<double>::packsize; idx < _p.nxyz; ++idx) {
+                double omegag = 1.0/(3.0*_diffusivity[idx] + 0.5), iomegag = 1.0 - omegag;
+
+                //  Update macro
+                double ip, iux, iuy, iuz, imx, imy, imz;
+                ANS::Macro<double, P>(ip, iux, iuy, iuz, imx, imy, imz, _rho[idx], _ux[idx], _uy[idx], _uz[idx], _p.f0, _p.f, idx);
+                double item, iqx, iqy, iqz;
+                Macro<double, Q>(item, iqx, iqy, iqz, _q.f0, _q.f, idx);
+
+                //  External force with Brinkman model and mass flow
+                ExternalForceMassFlow<double, P>(_rho[idx], _ux[idx], _uy[idx], _uz[idx], _directionx[idx], _directiony[idx], _directionz[idx], _p.f0, _p.f, idx);
+                ExternalForceBrinkman<double, P>(_rho[idx], _ux[idx], _uy[idx], _uz[idx], imx, imy, imz, _tem[idx], iqx, iqy, iqz, omegag, _p.f0, _p.f, _alpha[idx], idx);
+                ANS::Macro<double, P>(ip, iux, iuy, iuz, imx, imy, imz, _rho[idx], _ux[idx], _uy[idx], _uz[idx], _p.f0, _p.f, idx);
+                ExternalForceNaturalConvection<double, Q>(imx, imy, imz, _gx, _gy, _gz, _q.f0, _q.f, idx);
+                Macro<double, Q>(item, iqx, iqy, iqz, _q.f0, _q.f, idx);
+
+                //  Save macro if need
+                if (_issave) {
+                    _ip[idx] = ip;
+                    _iux[idx] = iux;
+                    _iuy[idx] = iuy;
+                    _iuz[idx] = iuz;
+                    _imx[idx] = imx;
+                    _imy[idx] = imy;
+                    _imz[idx] = imz;
+                    _item[idx] = item;
+                    _iqx[idx] = iqx;
+                    _iqy[idx] = iqy;
+                    _iqz[idx] = iqz;
+
+                    if (_ig) {
+                        int offsetf = Q<double>::nc*idx;
+                        _ig[offsetf] = _q.f0[idx];
+                        for (int c = 1; c < Q<double>::nc; ++c) {
+                            _ig[offsetf + c] = _q.f[Q<double>::IndexF(idx, c)];
                         }
                     }
                 }

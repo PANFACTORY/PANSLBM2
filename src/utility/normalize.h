@@ -7,7 +7,7 @@
 namespace PANSLBM2 {
     template<class T>
     void Normalize(T *_v, int _size) {
-        T vmax_buffer = 0.0, vmax;
+        T vmax_buffer = T(), vmax;
         for (int idx = 0; idx < _size; ++idx) {
             if (vmax_buffer < fabs(_v[idx])) {
                 vmax_buffer = fabs(_v[idx]);

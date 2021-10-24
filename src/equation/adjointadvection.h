@@ -1298,7 +1298,7 @@ namespace PANSLBM2 {
         }
     
         //  Function of getting sensitivity of heat exchange
-        template<class T, template<class>class Q, class Fv, class Ff>
+        template<class T, template<class>class Q>
         void SensitivityHeatExchange(Q<T>& _q, T *_dfds, const T *_ux, const T *_uy, const T *_imx, const T *_imy, const T *_dads, const T *_tem, const T *_item, const T *_dbds) {
             for (int idx = 0; idx < _q.nxyz; ++idx) {
                 _dfds[idx] += 3.0*_dads[idx]*(_ux[idx]*_imx[idx] + _uy[idx]*_imy[idx]) - _dbds[idx]*(1.0 - _tem[idx])*(1.0 + _item[idx]);
@@ -1306,7 +1306,7 @@ namespace PANSLBM2 {
         }
 
         //  Function of getting sensitivity of heat exchange
-        template<class T, template<class>class Q, class Fv, class Ff>
+        template<class T, template<class>class Q>
         void SensitivityHeatExchange(Q<T>& _q, T *_dfds, const T *_ux, const T *_uy, const T *_uz, const T *_imx, const T *_imy, const T *_imz, const T *_dads, const T *_tem, const T *_item, const T *_dbds) {
             for (int idx = 0; idx < _q.nxyz; ++idx) {
                 _dfds[idx] += 3.0*_dads[idx]*(_ux[idx]*_imx[idx] + _uy[idx]*_imy[idx] + _uz[idx]*_imz[idx]) - _dbds[idx]*(1.0 - _tem[idx])*(1.0 + _item[idx]);
@@ -1314,7 +1314,7 @@ namespace PANSLBM2 {
         }
 
         //  Function of getting sensitivity of Brinkman model and diffusivity term
-        template<class T, template<class>class Q, class Fv, class Ff>
+        template<class T, template<class>class Q>
         void SensitivityBrinkmanDiffusivity(
             Q<T>& _q, T *_dfds, const T *_ux, const T *_uy, const T *_imx, const T *_imy, const T *_dads,
             const T *_tem, const T *_item, const T *_iqx, const T *_iqy, const T *_g, const T *_ig,
@@ -1332,7 +1332,7 @@ namespace PANSLBM2 {
         }
 
         //  Function of getting sensitivity of Brinkman model and diffusivity term
-        template<class T, template<class>class Q, class Fv, class Ff>
+        template<class T, template<class>class Q>
         void SensitivityBrinkmanDiffusivity(
             Q<T>& _q, T *_dfds, const T *_ux, const T *_uy, const T *_uz, const T *_imx, const T *_imy, const T *_imz, const T *_dads,
             const T *_tem, const T *_item, const T *_iqx, const T *_iqy, const T *_iqz, const T *_g, const T *_ig,

@@ -987,7 +987,7 @@ namespace PANSLBM2 {
         }
 
         //  Function of getting sensitivity of heat exchange
-        template<template<class>class Q, class Fv, class Ff>
+        template<template<class>class Q>
         void SensitivityHeatExchange(
             Q<double>& _q, double *_dfds, 
             const double *_ux, const double *_uy, const double *_imx, const double *_imy, const double *_dads, 
@@ -1009,7 +1009,7 @@ namespace PANSLBM2 {
         }
 
         //  Function of getting sensitivity of heat exchange
-        template<template<class>class Q, class Fv, class Ff>
+        template<template<class>class Q>
         void SensitivityHeatExchange(
             Q<double>& _q, double *_dfds, 
             const double *_ux, const double *_uy, const double *_uz, const double *_imx, const double *_imy, const double *_imz, const double *_dads, 
@@ -1031,7 +1031,7 @@ namespace PANSLBM2 {
         }
 
         //  Function of getting sensitivity of Brinkman model and diffusivity term
-        template<template<class>class Q, class Fv, class Ff>
+        template<template<class>class Q>
         void SensitivityBrinkmanDiffusivity(
             Q<double>& _q, double *_dfds, const double *_ux, const double *_uy, const double *_imx, const double *_imy, const double *_dads,
             const double *_tem, const double *_item, const double *_iqx, const double *_iqy, const double *_g, const double *_ig,
@@ -1081,7 +1081,7 @@ namespace PANSLBM2 {
         }
 
         //  Function of getting sensitivity of Brinkman model and diffusivity term
-        template<template<class>class Q, class Fv, class Ff>
+        template<template<class>class Q>
         void SensitivityBrinkmanDiffusivity(
             Q<double>& _q, double *_dfds, const double *_ux, const double *_uy, const double *_uz, const double *_imx, const double *_imy, const double *_imz, const double *_dads,
             const double *_tem, const double *_item, const double *_iqx, const double *_iqy, const double *_iqz, const double *_g, const double *_ig,

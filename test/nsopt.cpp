@@ -1,4 +1,5 @@
-#define _USE_MPI_DEFINES
+//#define _USE_MPI_DEFINES
+//#define _USE_AVX_DEFINES
 #include <iostream>
 #include <vector>
 #include <cmath>
@@ -13,6 +14,7 @@
 #include "../src/utility/mma.h"
 #include "../src/utility/residual.h"
 #include "../src/utility/vtkxmlexport.h"
+#include "../src/utility/normalize.h"
 
 using namespace PANSLBM2;
 
@@ -31,7 +33,7 @@ int main(int argc, char** argv) {
 #endif
 
     //********************Set parameters********************
-    int lx = 101, ly = 101, nt = 10000, dt = 100, nk = 100;
+    int lx = 201, ly = 201, nt = 10000, dt = 100, nk = 100;
     double nu = 0.1, u0 = 0.01, rho0 = 1.0, q = 0.01, amax = 2e2, scale0 = 1.0e0, weightlimit = 0.25, movelimit = 0.5, epsu = 1.0e-4;
     D2Q9<double> pf(lx, ly, MyRank, mx, my);
     double *rho = new double[pf.nxyz], *ux = new double[pf.nxyz], *uy = new double[pf.nxyz], *uxp = new double[pf.nxyz], *uyp = new double[pf.nxyz];
@@ -72,12 +74,18 @@ int main(int argc, char** argv) {
         g -= 1.0;
 
         //********************Direct Analyse********************
+        if (MyRank == 0) {
+            std::cout << "Direct analyse t = 0";
+        }
         NS::InitialCondition(pf, rho, ux, uy);
         int td;
         for (td = 1; td <= nt; ++td) {
             NS::MacroBrinkmanCollide(pf, rho, ux, uy, nu, alpha, true);
-            if (Residual(ux, uy, uxp, uyp, pf.nxyz) < epsu) {
-                break;
+            if (td%dt == 0 && MyRank == 0) {
+                std::cout << "\rDirect analyse t = " << td << std::string(10, ' ');
+                if (Residual(ux, uy, uxp, uyp, pf.nxyz) < epsu) {
+                    break;
+                }
             }
             pf.Stream();
             pf.BoundaryCondition([=](int _i, int _j) { return ((_i == 0 && 0.7*ly < _j && _j < 0.9*ly) || (_j == 0 && 0.7*lx < _i && _i < 0.9*lx)) ? 0 : 1; });
@@ -98,12 +106,18 @@ int main(int argc, char** argv) {
         }
 
         //********************Invert analyze********************
+        if (MyRank == 0) {
+            std::cout << "\rInverse analyse t = 0" << std::string(10, ' ');
+        }
         ANS::InitialCondition(pf, ux, uy, irho, iux, iuy);
         int ti;
         for (ti = 1; ti <= nt; ++ti) {
             ANS::MacroBrinkmanCollide(pf, rho, ux, uy, irho, iux, iuy, imx, imy, nu, alpha, true);
-            if (Residual(iux, iuy, iuxp, iuyp, pf.nxyz) < epsu) {
-                break;
+            if (ti%dt == 0 && MyRank == 0) {
+                std::cout << "\rInverse analyse t = " << ti << std::string(10, ' ');
+                if (Residual(iux, iuy, iuxp, iuyp, pf.nxyz) < epsu) {
+                    break;
+                }
             }
             pf.iStream();
             pf.iBoundaryCondition([=](int _i, int _j) { return ((_i == 0 && 0.7*ly < _j && _j < 0.9*ly) || (_j == 0 && 0.7*lx < _i && _i < 0.9*lx)) ? 0 : 1; });
@@ -137,24 +151,11 @@ int main(int argc, char** argv) {
 #else
         f = f_buffer;
 #endif
-        double dfdsmax_buffer = 0.0, dfdsmax;
         std::vector<double> dfds(s.size(), 0.0);
-        for (int idx = 0; idx < pf.nxyz; ++idx) {
-            dfds[idx] = 3.0*(imx[idx]*ux[idx] + imy[idx]*uy[idx])*dads[idx];
-            if (dfdsmax_buffer < fabs(dfds[idx])) {
-                dfdsmax_buffer = fabs(dfds[idx]);
-            }
-        }
-#ifdef _USE_MPI_DEFINES
-        MPI_Allreduce(&dfdsmax_buffer, &dfdsmax, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-#else
-        dfdsmax = dfdsmax_buffer;
-#endif
-        for (int idx = 0; idx < pf.nxyz; ++idx) {  
-            dfds[idx] /= dfdsmax;
-        }
+        ANS::SensitivityBrinkman(pf, dfds.data(), ux, uy, imx, imy, dads);
+        Normalize(dfds.data(), pf.nxyz);
         if (MyRank == 0) {
-            std::cout << "\r" << std::fixed << std::setprecision(6) << k << "\t" << f << "\t" << g << "\t" << td << "\t" << ti << std::endl;
+            std::cout << "\r" << std::fixed << std::setprecision(6) << k << " " << f << " " << g << " " << td << " " << ti << std::endl;
         }
 
         //********************Check convergence********************
@@ -187,7 +188,7 @@ int main(int argc, char** argv) {
     file.AddPointData(pf, "alpha", [&](int _i, int _j, int _k) { return alpha[pf.Index(_i, _j)]; });
     file.AddPointData(pf, "s", [&](int _i, int _j, int _k) { return s[pf.Index(_i, _j)]; });
 
-    delete[] rho, ux, uy, uxp, uyp, irho, iux, iuy, imx, imy, iuxp, iuyp, alpha, dads;
+    delete[] rho; delete[] ux; delete[] uy; delete[] uxp; delete[] uyp; delete[] irho; delete[] iux; delete[] iuy; delete[] imx; delete[] imy; delete[] iuxp; delete[] iuyp; delete[] alpha; delete[] dads;
 #ifdef _USE_MPI_DEFINES
     MPI_Finalize();
 #endif

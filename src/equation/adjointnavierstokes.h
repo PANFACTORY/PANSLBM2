@@ -517,22 +517,24 @@ namespace PANSLBM2 {
             iBoundaryConditionSetUAlongZFace(_p, _p.lz - 1, 1, _uxbc, _uybc, _uzbc, _bctype, _eps); //  On zmax
         }
 
-        //  Function of setting boundary condition of ANS set iRho for D2Q9 / D3Q15
+        //  Function of setting boundary condition of ANS set iRho for D2Q9
         template<class T, template<class>class P, class Ff>
-        void iBoundaryConditionSetRho(P<T>& _p, Ff _bctype) {
-            if (_p.nd == 2) {
-                iBoundaryConditionSetRhoAlongXEdge(_p, 0, -1, _bctype);         //  On xmin
-                iBoundaryConditionSetRhoAlongXEdge(_p, _p.lx - 1, 1, _bctype);  //  On xmax
-                iBoundaryConditionSetRhoAlongYEdge(_p, 0, -1, _bctype);         //  On ymin
-                iBoundaryConditionSetRhoAlongYEdge(_p, _p.ly - 1, 1, _bctype);  //  On ymax
-            } else if (_p.nd == 3) {
-                iBoundaryConditionSetRhoAlongXFace(_p, 0, -1, _bctype);         //  On xmin
-                iBoundaryConditionSetRhoAlongXFace(_p, _p.lx - 1, 1, _bctype);  //  On xmax
-                iBoundaryConditionSetRhoAlongYFace(_p, 0, -1, _bctype);         //  On ymin
-                iBoundaryConditionSetRhoAlongYFace(_p, _p.ly - 1, 1, _bctype);  //  On ymax
-                iBoundaryConditionSetRhoAlongZFace(_p, 0, -1, _bctype);         //  On zmin
-                iBoundaryConditionSetRhoAlongZFace(_p, _p.lz - 1, 1, _bctype);  //  On zmax
-            }
+        void iBoundaryConditionSetRho2D(P<T>& _p, Ff _bctype) {
+            iBoundaryConditionSetRhoAlongXEdge(_p, 0, -1, _bctype);         //  On xmin
+            iBoundaryConditionSetRhoAlongXEdge(_p, _p.lx - 1, 1, _bctype);  //  On xmax
+            iBoundaryConditionSetRhoAlongYEdge(_p, 0, -1, _bctype);         //  On ymin
+            iBoundaryConditionSetRhoAlongYEdge(_p, _p.ly - 1, 1, _bctype);  //  On ymax
+        }
+
+        //  Function of setting boundary condition of ANS set iRho for D3Q15
+        template<class T, template<class>class P, class Ff>
+        void iBoundaryConditionSetRho3D(P<T>& _p, Ff _bctype) {
+            iBoundaryConditionSetRhoAlongXFace(_p, 0, -1, _bctype);         //  On xmin
+            iBoundaryConditionSetRhoAlongXFace(_p, _p.lx - 1, 1, _bctype);  //  On xmax
+            iBoundaryConditionSetRhoAlongYFace(_p, 0, -1, _bctype);         //  On ymin
+            iBoundaryConditionSetRhoAlongYFace(_p, _p.ly - 1, 1, _bctype);  //  On ymax
+            iBoundaryConditionSetRhoAlongZFace(_p, 0, -1, _bctype);         //  On zmin
+            iBoundaryConditionSetRhoAlongZFace(_p, _p.lz - 1, 1, _bctype);  //  On zmax
         }
 
         //  Function of getting sensitivity of Brinkman model

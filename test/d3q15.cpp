@@ -6,7 +6,7 @@
 using namespace PANSLBM2;
 
 int main() {
-    D3Q15<double> p(2, 2);
+    D3Q15<double> p(2, 2, 1);
     for (int idx = 0; idx < p.nxyz; ++idx) {
         p.f0[idx] = pow(100, idx);
         for (int c = 1; c < p.nc; ++c) {

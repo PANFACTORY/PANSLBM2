@@ -1134,9 +1134,9 @@ namespace PANSLBM2 {
         //  Function of getting sensitivity of temperature at heat source for D2Q9
         template<template<class>class Q, class Fv, class Ff>
         void SensitivityTemperatureAtHeatSource(
-            const double *_ux, const double *_uy, const double *_imx, const double *_imy,
-            Q<double>& _q, const double *_tem, const double *_item, const double *_iqx, const double *_iqy, const double *_g, const double *_ig,
-            double *_dfds, const double *_diffusivity, const double *_dads, const double *_dkds, Fv _qnbc, Ff _bctype
+            Q<double>& _q, double *_dfds, const double *_ux, const double *_uy, const double *_imx, const double *_imy, const double *_dads,
+            const double *_tem, const double *_item, const double *_iqx, const double *_iqy, const double *_g, const double *_ig,
+            const double *_diffusivity, const double *_dkds, Fv _qnbc, Ff _bctype
         ) {
             const int ps = Q<double>::packsize, ne = _q.nxyz/ps, nc = Q<double>::nc;
             auto IndexG = [=](int _idx, int _c) {
@@ -1189,9 +1189,9 @@ namespace PANSLBM2 {
         //  Function of getting sensitivity of temperature at heat source for D3Q15
         template<template<class>class Q, class Fv, class Ff>
         void SensitivityTemperatureAtHeatSource(
-            const double *_ux, const double *_uy, const double *_uz, const double *_imx, const double *_imy, const double *_imz,
-            Q<double>& _q, const double *_tem, const double *_item, const double *_iqx, const double *_iqy, const double *_iqz, const double *_g, const double *_ig,
-            double *_dfds, const double *_diffusivity, const double *_dads, const double *_dkds, Fv _qnbc, Ff _bctype
+            Q<double>& _q, double *_dfds, const double *_ux, const double *_uy, const double *_uz, const double *_imx, const double *_imy, const double *_imz, const double *_dads,
+            const double *_tem, const double *_item, const double *_iqx, const double *_iqy, const double *_iqz, const double *_g, const double *_ig,
+            const double *_diffusivity, const double *_dkds, Fv _qnbc, Ff _bctype
         ) {
             const int ps = Q<double>::packsize, ne = _q.nxyz/ps, nc = Q<double>::nc;
             auto IndexG = [=](int _idx, int _c) {

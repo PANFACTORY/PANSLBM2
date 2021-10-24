@@ -11,6 +11,7 @@
 #include "../src/equation/elastic.h"
 #include "../src/equation/adjointelastic.h"
 #include "../src/utility/vtkxmlexport.h"
+#include "../src/utility/normalize.h"
 
 using namespace PANSLBM2;
 
@@ -89,15 +90,7 @@ int main(int argc, char** argv) {
 
     //--------------------Get sensitivity--------------------
     AEL::SensitivityCompliance(pf, dfds, sxx, sxy, syx, syy, irho, isxx, isxy, isyx, isyy);
-    double dfdsmax = 0.0;
-    for (int idx = 0; idx < pf.nxyz; ++idx) {
-        if (dfdsmax < fabs(dfds[idx])) {
-            dfdsmax = fabs(dfds[idx]);
-        }
-    }
-    for (int idx = 0; idx < pf.nxyz; ++idx) {  
-        dfds[idx] /= dfdsmax;
-    }
+    Normalize(dfds, pf.nxyz);
 
     //--------------------Export result--------------------
     VTKXMLExport file(pf, "result/adjointelastic");

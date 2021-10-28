@@ -38,7 +38,7 @@ int main(int argc, char** argv) {
 #endif
 
     //--------------------Set parameters--------------------
-    int lx = 101, ly = 201, dt = 1000, nt0 = 100000, nt = 50000, period = 5000, nk = 2000, nb = 100;
+    int lx = 101, ly = 201, dt = 1000, nt0 = 1000000, nt = 50000, period = 50000, nk = 2000, nb = 100;
     double viscosity = 0.1/6.0, diff_fluid = viscosity/1.0, Th = 1.0, Tl = 0.0, gx = 0.0, gy = 1/3.6e6;//1/4.5e5;
     double alphamax = 1e5, diff_solid = diff_fluid*10.0, qf = 1e-6, qg = 1e-4, weightlimit = 0.5, movelimit = 0.2, R = 1.5, eps = 1e-5;
     D2Q9<double> pf(lx, ly, MyRank, mx, my), pg(lx, ly, MyRank, mx, my);
@@ -339,7 +339,7 @@ int main(int argc, char** argv) {
 
         //********************Check convergence********************
         if (MyRank == 0) {
-            std::cout << "\r" << k << std::scientific << std::setprecision(6) << " " << f << std::fixed << std::setprecision(6) << " " << g << " " << td << " " << ti << " " << dsmax  << " (" << imax << "," << jmax << ") " << qf << " " << qg << " " << mnd << std::endl;
+            std::cout << "\r" << k << std::scientific << std::setprecision(6) << " " << f << std::fixed << std::setprecision(6) << " " << g << " " << dsmax  << " (" << imax << "," << jmax << ") " << qf << " " << qg << " " << mnd << std::endl;
         }
         if (dsmax < 0.01 || k == nk) {
             if (MyRank == 0) {

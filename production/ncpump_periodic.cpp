@@ -381,7 +381,7 @@ int main(int argc, char** argv) {
             file.AddPointData(pf, "ss", [&](int _i, int _j, int _k) { return ss[pf.Index(_i, _j)];    });
             file.AddPointData(pf, "dfdss", [&](int _i, int _j, int _k) { return dfdss[pf.Index(_i, _j)];    });
 #else
-            VTKExport file("result/ncpump_periodic", pf.nx, pf.ny);
+            VTKExport file("result/ncpump_periodic.vtk", lx, ly);
             file.AddPointScaler("rho", [&](int _i, int _j, int _k) { return rho[nt - 1][pf.Index(_i, _j)]; });
             file.AddPointVector("u", 
                 [&](int _i, int _j, int _k) { return ux[nt - 1][pf.Index(_i, _j)]; },

@@ -38,7 +38,7 @@ int main(int argc, char** argv) {
 #endif
 
     //--------------------Set parameters--------------------
-    int lx = 101, ly = 201, nt0 = 0, dt = 1000, nt = 100000, period = 5000, nk = 2000, nb = 100;
+    int lx = 101, ly = 201, nt0 = 0, dt = 1000, nt = 100000, period = 5000, nk = 1, nb = 100;
     double viscosity = 0.1/6.0, diff_fluid = viscosity/1.0, Th = 1.0, Tl = 0.0, gx = 0.0, gy = 1/3.6e6;//1/4.5e5;
     double alphamax = 1e5, diff_solid = diff_fluid*10.0, qf = 1e-6, qg = 1e-4, weightlimit = 0.5, movelimit = 0.2, R = 1.5, eps = 1e-5;
     D2Q9<double> pf(lx, ly, MyRank, mx, my), pg(lx, ly, MyRank, mx, my);
@@ -342,7 +342,7 @@ int main(int argc, char** argv) {
             file.AddPointData(pf, "ss", [&](int _i, int _j, int _k) { return ss[pf.Index(_i, _j)];    });
             file.AddPointData(pf, "dfdss", [&](int _i, int _j, int _k) { return dfdss[pf.Index(_i, _j)];    });
 #else
-            VTKExport file("result/ncpump", pf.nx, pf.ny);
+            VTKExport file("result/ncpump.vtk", lx, ly);
             file.AddPointScaler("rho", [&](int _i, int _j, int _k) { return rho[pf.Index(_i, _j)]; });
             file.AddPointVector("u", 
                 [&](int _i, int _j, int _k) { return ux[pf.Index(_i, _j)]; },

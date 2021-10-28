@@ -11,11 +11,15 @@
 #include "../src/particle/d2q9.h"
 #include "../src/equation/advection.h"
 #include "../src/equation/adjointadvection.h"
-#include "../src/utility/vtkxmlexport.h"
 #include "../src/utility/residual.h"
 #include "../src/utility/mma.h"
 #include "../src/utility/densityfilter.h"
 #include "../src/utility/normalize.h"
+#ifdef _USE_MPI_DEFINES
+    #include "../src/utility/vtkxmlexport.h"
+#else
+    #include "../src/utility/vtkexport.h"
+#endif
 
 using namespace PANSLBM2;
 
@@ -303,6 +307,7 @@ int main(int argc, char** argv) {
                 std::cout << "----------Convergence/Last step----------" << std::endl;
             }
 
+#ifdef _USE_MPI_DEFINES
             VTKXMLExport file(pf, "result/ncpump");
             file.AddPointData(pf, "rho", [&](int _i, int _j, int _k) { return rho[pf.Index(_i, _j)]; });
             file.AddPointData(pf, "u", 
@@ -336,6 +341,41 @@ int main(int argc, char** argv) {
             file.AddPointData(pf, "s", [&](int _i, int _j, int _k) { return s[pf.Index(_i, _j)];    });
             file.AddPointData(pf, "ss", [&](int _i, int _j, int _k) { return ss[pf.Index(_i, _j)];    });
             file.AddPointData(pf, "dfdss", [&](int _i, int _j, int _k) { return dfdss[pf.Index(_i, _j)];    });
+#else
+            VTKExport file("result/ncpump", pf.nx, pf.ny);
+            file.AddPointScaler("rho", [&](int _i, int _j, int _k) { return rho[pf.Index(_i, _j)]; });
+            file.AddPointVector("u", 
+                [&](int _i, int _j, int _k) { return ux[pf.Index(_i, _j)]; },
+                [&](int _i, int _j, int _k) { return uy[pf.Index(_i, _j)]; },
+                [](int _i, int _j, int _k) { return 0.0; }
+            );
+            file.AddPointScaler("T", [&](int _i, int _j, int _k) { return tem[pg.Index(_i, _j)]; });
+            file.AddPointVector("q", 
+                [&](int _i, int _j, int _k) { return qx[pg.Index(_i, _j)]; },
+                [&](int _i, int _j, int _k) { return qy[pg.Index(_i, _j)]; },
+                [](int _i, int _j, int _k) { return 0.0; }
+            );
+            file.AddPointScaler("irho", [&](int _i, int _j, int _k) {   return irho[pf.Index(_i, _j)];  });
+            file.AddPointVector("iu", 
+                [&](int _i, int _j, int _k) {   return iux[pf.Index(_i, _j)];   },
+                [&](int _i, int _j, int _k) {   return iuy[pf.Index(_i, _j)];   },
+                [](int _i, int _j, int _k) {   return 0.0;   }
+            );
+            file.AddPointVector("im", 
+                [&](int _i, int _j, int _k) {   return imx[pf.Index(_i, _j)];   },
+                [&](int _i, int _j, int _k) {   return imy[pf.Index(_i, _j)];   },
+                [](int _i, int _j, int _k) {   return 0.0;   }
+            );
+            file.AddPointScaler("iT", [&](int _i, int _j, int _k) { return item[pg.Index(_i, _j)];  });
+            file.AddPointVector("iq", 
+                [&](int _i, int _j, int _k) {   return iqx[pg.Index(_i, _j)];   },
+                [&](int _i, int _j, int _k) {   return iqy[pg.Index(_i, _j)];   },
+                [](int _i, int _j, int _k) {   return 0.0;   }
+            );
+            file.AddPointScaler("s", [&](int _i, int _j, int _k) { return s[pf.Index(_i, _j)];    });
+            file.AddPointScaler("ss", [&](int _i, int _j, int _k) { return ss[pf.Index(_i, _j)];    });
+            file.AddPointScaler("dfdss", [&](int _i, int _j, int _k) { return dfdss[pf.Index(_i, _j)];    });
+#endif
             break;
         }
     }

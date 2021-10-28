@@ -34,16 +34,16 @@ int main(int argc, char** argv) {
 #endif
 
     //--------------------Set parameters--------------------
-    int lx = 51, ly = 101, nt0 = 0, dt = 1000, nt = 50000, period = 5000, nk = 2000, nb = 100;
-    double viscosity = 0.1, diff_fluid = viscosity/6.0, Th = 1.0, Tl = 0.0, gx = 0.0, gy = 1e-4;
-    double alphamax = 1e4, diff_solid = diff_fluid*10.0, qf = 1e-2, qg = 1e0, weightlimit = 0.5, movelimit = 0.2, R = 1.5, eps = 1e-5;
+    int lx = 101, ly = 201, nt0 = 0, dt = 1000, nt = 100000, period = 5000, nk = 2000, nb = 100;
+    double viscosity = 0.1/6.0, diff_fluid = viscosity/1.0, Th = 1.0, Tl = 0.0, gx = 0.0, gy = 1/3.6e6;//1/4.5e5;
+    double alphamax = 1e5, diff_solid = diff_fluid*10.0, qf = 1e-6, qg = 1e-4, weightlimit = 0.5, movelimit = 0.2, R = 1.5, eps = 1e-5;
     D2Q9<double> pf(lx, ly, MyRank, mx, my), pg(lx, ly, MyRank, mx, my);
     double *rho = new double[pf.nxyz], *ux = new double[pf.nxyz], *uy = new double[pf.nxyz], *uxp = new double[pf.nxyz], *uyp = new double[pf.nxyz];
     double *tem = new double[pg.nxyz], *qx = new double[pf.nxyz], *qy = new double[pf.nxyz], *qxp = new double[pf.nxyz], *qyp = new double[pf.nxyz];
     double *irho = new double[pf.nxyz], *iux = new double[pf.nxyz], *iuy = new double[pf.nxyz], *imx = new double[pf.nxyz], *imy = new double[pf.nxyz], *iuxp = new double[pf.nxyz], *iuyp = new double[pf.nxyz];
     double *item = new double[pg.nxyz], *iqx = new double[pg.nxyz], *iqy = new double[pg.nxyz], *iqxp = new double[pg.nxyz], *iqyp = new double[pg.nxyz];
     for (int idx = 0; idx < pf.nxyz; idx++) {
-        rho[idx] = 1.0;  ux[idx] = 0.0;  uy[idx] = 0.0;  uxp[idx] = 0.0;  uyp[idx] = 0.0;  tem[idx] = Tl;  qx[idx] = 0.0;  qy[idx] = 0.0;   qxp[idx] = 0.0; qyp[idx] = 0.0;
+        rho[idx] = 1.0;  ux[idx] = 0.0;  uy[idx] = 0.0;  uxp[idx] = 0.0;  uyp[idx] = 0.0;  tem[idx] = 0.5*(Th + Tl);  qx[idx] = 0.0;  qy[idx] = 0.0;   qxp[idx] = 0.0; qyp[idx] = 0.0;
         irho[idx] = 0.0; iux[idx] = 0.0; iuy[idx] = 0.0; iuxp[idx] = 0.0; iuyp[idx] = 0.0; imx[idx] = 0.0; imy[idx] = 0.0; item[idx] = 0.0; iqx[idx] = 0.0; iqy[idx] = 0.0; iqxp[idx] = 0.0; iqyp[idx] = 0.0;
     }
     double *alpha = new double[pf.nxyz], *diffusivity = new double[pf.nxyz], *dads = new double[pf.nxyz], *dkds = new double[pf.nxyz];
@@ -125,7 +125,7 @@ int main(int argc, char** argv) {
             }
             AD::MacroBrinkmanCollideNaturalConvection(
                 pf, rho, ux, uy, alpha, viscosity, 
-                pg, tem, qx, qy, diffusivity, gx, gy, Tl, true, gi
+                pg, tem, qx, qy, diffusivity, gx, gy, 0.5*(Th + Tl), true, gi
             );
 
             pf.Stream();
@@ -296,9 +296,9 @@ int main(int argc, char** argv) {
 
         //********************Check convergence********************
         if (MyRank == 0) {
-            std::cout << "\r" << std::fixed << std::setprecision(6) << k << " " << f << " " << g << " " << td << " " << ti << " " << dsmax  << " (" << imax << "," << jmax << ") " << qf << " " << qg << " " << mnd << std::endl;
+            std::cout << "\r" << k << std::scientific << std::setprecision(6) << " " << f << std::fixed << std::setprecision(6) << " " << g << " " << td << " " << ti << " " << dsmax  << " (" << imax << "," << jmax << ") " << qf << " " << qg << " " << mnd << std::endl;
         }
-        if ((dsmax < 0.01 && g <= 0.0) || k == nk) {
+        if (dsmax < 0.01 || k == nk) {
             if (MyRank == 0) {
                 std::cout << "----------Convergence/Last step----------" << std::endl;
             }

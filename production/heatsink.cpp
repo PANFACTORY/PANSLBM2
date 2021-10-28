@@ -308,7 +308,7 @@ int main(int argc, char** argv) {
             }
 
 #ifdef _USE_MPI_DEFINES
-            VTKXMLExport file(pf, "result/ncpump");
+            VTKXMLExport file(pf, "result/heatsink");
             file.AddPointData(pf, "rho", [&](int _i, int _j, int _k) { return rho[pf.Index(_i, _j)]; });
             file.AddPointData(pf, "u", 
                 [&](int _i, int _j, int _k) { return ux[pf.Index(_i, _j)]; },
@@ -342,7 +342,7 @@ int main(int argc, char** argv) {
             file.AddPointData(pf, "ss", [&](int _i, int _j, int _k) { return ss[pf.Index(_i, _j)];    });
             file.AddPointData(pf, "dfdss", [&](int _i, int _j, int _k) { return dfdss[pf.Index(_i, _j)];    });
 #else
-            VTKExport file("result/ncpump", pf.nx, pf.ny);
+            VTKExport file("result/heatsink.vtk", pf.nx, pf.ny);
             file.AddPointScaler(pf, "rho", [&](int _i, int _j, int _k) { return rho[pf.Index(_i, _j)]; });
             file.AddPointVector(pf, "u", 
                 [&](int _i, int _j, int _k) { return ux[pf.Index(_i, _j)]; },

@@ -348,16 +348,16 @@ int main(int argc, char** argv) {
 
 #ifdef _USE_MPI_DEFINES
             VTKXMLExport file(pf, "result/ncpump_periodic");
-            file.AddPointData(pf, "rho", [&](int _i, int _j, int _k) { return rho[pf.Index(_i, _j)]; });
+            file.AddPointData(pf, "rho", [&](int _i, int _j, int _k) { return rho[nt - 1][pf.Index(_i, _j)]; });
             file.AddPointData(pf, "u", 
-                [&](int _i, int _j, int _k) { return ux[pf.Index(_i, _j)]; },
-                [&](int _i, int _j, int _k) { return uy[pf.Index(_i, _j)]; },
+                [&](int _i, int _j, int _k) { return ux[nt - 1][pf.Index(_i, _j)]; },
+                [&](int _i, int _j, int _k) { return uy[nt - 1][pf.Index(_i, _j)]; },
                 [](int _i, int _j, int _k) { return 0.0; }
             );
-            file.AddPointData(pf, "T", [&](int _i, int _j, int _k) { return tem[pg.Index(_i, _j)]; });
+            file.AddPointData(pf, "T", [&](int _i, int _j, int _k) { return tem[nt - 1][pg.Index(_i, _j)]; });
             file.AddPointData(pf, "q", 
-                [&](int _i, int _j, int _k) { return qx[pg.Index(_i, _j)]; },
-                [&](int _i, int _j, int _k) { return qy[pg.Index(_i, _j)]; },
+                [&](int _i, int _j, int _k) { return qx[nt - 1][pg.Index(_i, _j)]; },
+                [&](int _i, int _j, int _k) { return qy[nt - 1][pg.Index(_i, _j)]; },
                 [](int _i, int _j, int _k) { return 0.0; }
             );
             file.AddPointData(pf, "irho", [&](int _i, int _j, int _k) {   return irho[pf.Index(_i, _j)];  });

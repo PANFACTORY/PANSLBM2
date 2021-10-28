@@ -12,11 +12,15 @@
 #include "../src/particle/d3q15.h"
 #include "../src/equation/advection.h"
 #include "../src/equation/adjointadvection.h"
-#include "../src/utility/vtkxmlexport.h"
 #include "../src/utility/residual.h"
 #include "../src/utility/mma.h"
 #include "../src/utility/densityfilter.h"
 #include "../src/utility/normalize.h"
+#ifdef _USE_MPI_DEFINES
+    #include "../src/utility/vtkxmlexport.h"
+#else
+    #include "../src/utility/vtkexport.h"
+#endif
 
 using namespace PANSLBM2;
 
@@ -305,6 +309,7 @@ int main(int argc, char** argv) {
                 std::cout << "----------Convergence/Last step----------" << std::endl;
             }
 
+#ifdef _USE_MPI_DEFINES
             VTKXMLExport file(pf, "result/nsadncopt3D");
             file.AddPointData(pf, "k", [&](int _i, int _j, int _k) { return diffusivity[pg.Index(_i, _j, _k)]; });
             file.AddPointData(pf, "rho", [&](int _i, int _j, int _k) { return rho[pf.Index(_i, _j, _k)]; });
@@ -341,16 +346,45 @@ int main(int argc, char** argv) {
             file.AddPointData(pf, "dfds", [&](int _i, int _j, int _k) { return dfds[pf.Index(_i, _j, _k)];    });
             file.AddPointData(pf, "dkds", [&](int _i, int _j, int _k) { return dkds[pf.Index(_i, _j, _k)];    });
             file.AddPointData(pf, "dads", [&](int _i, int _j, int _k) { return dads[pf.Index(_i, _j, _k)];    });
+#else
+            VTKExport file("result/nsadncopt3D.vtk", lx, ly, lz);
+            file.AddPointScaler("k", [&](int _i, int _j, int _k) { return diffusivity[pg.Index(_i, _j, _k)]; });
+            file.AddPointScaler("rho", [&](int _i, int _j, int _k) { return rho[pf.Index(_i, _j, _k)]; });
+            file.AddPointVector("u", 
+                [&](int _i, int _j, int _k) { return ux[pf.Index(_i, _j, _k)]; },
+                [&](int _i, int _j, int _k) { return uy[pf.Index(_i, _j, _k)]; },
+                [&](int _i, int _j, int _k) { return uz[pf.Index(_i, _j, _k)]; }
+            );
+            file.AddPointScaler("T", [&](int _i, int _j, int _k) { return tem[pg.Index(_i, _j, _k)]; });
+            file.AddPointVector("q", 
+                [&](int _i, int _j, int _k) { return qx[pg.Index(_i, _j, _k)]; },
+                [&](int _i, int _j, int _k) { return qy[pg.Index(_i, _j, _k)]; },
+                [&](int _i, int _j, int _k) { return qz[pg.Index(_i, _j, _k)]; }
+            );
+            file.AddPointScaler("irho", [&](int _i, int _j, int _k) {   return irho[pf.Index(_i, _j, _k)];  });
+            file.AddPointVector("iu", 
+                [&](int _i, int _j, int _k) {   return iux[pf.Index(_i, _j, _k)];   },
+                [&](int _i, int _j, int _k) {   return iuy[pf.Index(_i, _j, _k)];   },
+                [&](int _i, int _j, int _k) {   return iuz[pf.Index(_i, _j, _k)];   }
+            );
+            file.AddPointVector("im", 
+                [&](int _i, int _j, int _k) {   return imx[pf.Index(_i, _j, _k)];   },
+                [&](int _i, int _j, int _k) {   return imy[pf.Index(_i, _j, _k)];   },
+                [&](int _i, int _j, int _k) {   return imz[pf.Index(_i, _j, _k)];   }
+            );
+            file.AddPointScaler("iT", [&](int _i, int _j, int _k) { return item[pg.Index(_i, _j, _k)];  });
+            file.AddPointVector("iq", 
+                [&](int _i, int _j, int _k) {   return iqx[pg.Index(_i, _j, _k)];   },
+                [&](int _i, int _j, int _k) {   return iqy[pg.Index(_i, _j, _k)];   },
+                [&](int _i, int _j, int _k) {   return iqz[pg.Index(_i, _j, _k)];   }
+            );
+            file.AddPointScaler("s", [&](int _i, int _j, int _k) { return s[pf.Index(_i, _j, _k)];    });
+            file.AddPointScaler("ss", [&](int _i, int _j, int _k) { return ss[pf.Index(_i, _j, _k)];    });
+            file.AddPointScaler("dfds", [&](int _i, int _j, int _k) { return dfds[pf.Index(_i, _j, _k)];    });
+            file.AddPointScaler("dkds", [&](int _i, int _j, int _k) { return dkds[pf.Index(_i, _j, _k)];    });
+            file.AddPointScaler("dads", [&](int _i, int _j, int _k) { return dads[pf.Index(_i, _j, _k)];    });
+#endif
             
-            for (int i = 0; i < pf.nx; ++i) {
-                for (int j = 0; j < pf.ny; ++j) {
-                    for (int k = 0; k < pf.nz; ++k) {
-                        int idx = pf.Index(i, j, k);
-                        ss[idx] = ((i + pf.offsetx) < mx && (j + pf.offsety) < my && (k + pf.offsetz) < mz && ss[idx] < 0.1) ? 0.0 : 1.0;
-                    }
-                }
-            }
-            file.AddPointData(pf, "ss2", [&](int _i, int _j, int _k) { return ss[pf.Index(_i, _j, _k)];    });
             break;
         }
     }

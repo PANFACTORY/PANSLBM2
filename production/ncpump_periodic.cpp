@@ -38,7 +38,7 @@ int main(int argc, char** argv) {
 #endif
 
     //--------------------Set parameters--------------------
-    int lx = 101, ly = 201, dt = 1000, nt0 = 1000000, nt = 50000, period = 50000, nk = 2000, nb = 100;
+    int lx = 101, ly = 201, dt = 1000, nt0 = 1000000, nt = 50000, period = 50000, nk = 2000, nb = 100, duty = 20;
     double viscosity = 0.1/6.0, diff_fluid = viscosity/1.0, Th = 1.0, Tl = 0.0, gx = 0.0, gy = 1/3.6e6;//1/4.5e5;
     double alphamax = 1e5, diff_solid = diff_fluid*10.0, qf = 1e-6, qg = 1e-4, weightlimit = 0.5, movelimit = 0.2, R = 1.5, eps = 1e-5;
     D2Q9<double> pf(lx, ly, MyRank, mx, my), pg(lx, ly, MyRank, mx, my);
@@ -66,6 +66,9 @@ int main(int argc, char** argv) {
             directiony[idx] = 0.0;
         }
     }
+
+    //auto tembc = [=](int _t) { return Th*(1 - cos(2*M_PI*_t/period)); };
+    auto tembc = [=](int _t) { return _t%period < period*duty/100.0 ? qn*100.0/(double)duty : 0.0; };
 
     std::vector<double> s(pf.nxyz, 1.0), snm1(pf.nxyz, 1.0);
     MMA<double> optimizer(s.size(), 1, 1.0,
@@ -139,7 +142,7 @@ int main(int argc, char** argv) {
                 pf.BoundaryCondition([=](int _i, int _j) { return 1; });
                 pg.BoundaryCondition([=](int _i, int _j) { return 0; });
                 AD::BoundaryConditionSetT(pg, 
-                    [=](int _i, int _j) { return _i == 0 ? Th*(1-cos(2*M_PI*t/(double)period)) : Tl; }, 
+                    [=](int _i, int _j) { return _i == 0 ? tembc(t) : Tl; }, 
                     ux[0], uy[0], 
                     [=](int _i, int _j) { return (_i == 0 && _j < ly/2) || (_i == lx - 1 && _j < ly/2); }
                 );
@@ -191,7 +194,7 @@ int main(int argc, char** argv) {
             pf.BoundaryCondition([=](int _i, int _j) { return 1; });
             pg.BoundaryCondition([=](int _i, int _j) { return 0; });
             AD::BoundaryConditionSetT(pg, 
-                [=](int _i, int _j) { return _i == 0 ? Th*(1-cos(2*M_PI*t/(double)period)) : Tl; }, 
+                [=](int _i, int _j) { return _i == 0 ? tembc(t) : Tl; }, 
                 ux[t], uy[t], 
                 [=](int _i, int _j) { return (_i == 0 && _j < ly/2) || (_i == lx - 1 && _j < ly/2); }
             );

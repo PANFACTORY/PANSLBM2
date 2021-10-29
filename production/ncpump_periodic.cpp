@@ -68,7 +68,7 @@ int main(int argc, char** argv) {
     }
 
     //auto tembc = [=](int _t) { return Th*(1 - cos(2*M_PI*_t/period)); };
-    auto tembc = [=](int _t) { return _t%period < period*duty/100.0 ? qn*100.0/(double)duty : 0.0; };
+    auto tembc = [=](int _t) { return _t%period < period*duty/100.0 ? (Th - Tl)*100.0/(double)duty + Tl : Tl; };
 
     std::vector<double> s(pf.nxyz, 1.0), snm1(pf.nxyz, 1.0);
     MMA<double> optimizer(s.size(), 1, 1.0,

@@ -121,7 +121,7 @@ int main(int argc, char** argv) {
         std::cout << "\t" << modelid;    
     }
     for (int conditionid = 0; conditionid < nc; ++conditionid) {
-        std::cout << std::endl << std::scientific << std::setprecision(2) << conditionid << std::fixed << std::setprecision(6);
+        std::cout << std::endl << std::scientific << std::setprecision(2) << conditionid << std::setprecision(6);
         for (int modelid = 0; modelid < nm; ++modelid) {
             std::cout << "\t" << fList[conditionid*nm + modelid];
         }    

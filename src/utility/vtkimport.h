@@ -4,6 +4,11 @@
 #include <fstream>
 
 namespace PANSLBM2 {
+    //*************************************************************************
+    //  This class imports datas from a file with VTK format.
+    //  The dataset format is Structured Grid.
+    //  This class is used to storage LBM datas.
+    //*************************************************************************
     class VTKImport {
 public:
         VTKImport() = delete;
@@ -22,6 +27,10 @@ public:
         }
         VTKImport(const VTKImport&) = delete;
         ~VTKImport() {}
+
+        int GetNx() {   return this->nx;    };
+        int GetNy() {   return this->ny;    };
+        int GetNz() {   return this->nz;    };
 
         template<class T>
         void GetPointScalar(std::string _label, T *_p);

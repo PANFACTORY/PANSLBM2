@@ -249,7 +249,7 @@ int main(int argc, char** argv) {
         fsquare = fsquare_buffer;
 #endif
         faverage /= (double)nt;
-        double variance = fsquare/(double)nt - pow(faverage, 2.0), coef = ratio + (1.0 - ratio)/sqrt(variance);
+        double variance = fsquare/(double)nt - pow(faverage, 2.0), coef = (1.0 - ratio)/sqrt(variance);
         double F = ratio*faverage + (1.0 - ratio)*sqrt(variance);
 
         //********************Inverse analyze********************
@@ -264,8 +264,8 @@ int main(int argc, char** argv) {
                 std::cout << "\rInverse analyse t = " << t << std::string(10, ' ');
             }
             for (int idx = 0; idx < pf.nxyz; ++idx) {
-                directionxt[idx] = coef*(f[t] - faverage)*directionx[idx];
-                directionyt[idx] = coef*(f[t] - faverage)*directiony[idx];
+                directionxt[idx] = (ratio + coef*(f[t] - faverage))*directionx[idx];
+                directionyt[idx] = (ratio + coef*(f[t] - faverage))*directiony[idx];
             }
 
             AAD::MacroBrinkmanCollideNaturalConvectionMassFlow(
@@ -360,7 +360,7 @@ int main(int argc, char** argv) {
 
         //********************Check convergence********************
         if (MyRank == 0) {
-            std::cout << "\r" << k << std::scientific << std::setprecision(6) << " " << faverage << std::fixed << std::setprecision(6) << " " << variance << " " << g << " " << dsmax  << " (" << imax << "," << jmax << ") " << qf << " " << qg << " " << mnd << std::endl;
+            std::cout << "\r" << k << std::scientific << std::setprecision(6) << " " << F << " " << faverage << " " << variance << std::fixed << std::setprecision(6) << " " << g << " " << dsmax  << " (" << imax << "," << jmax << ") " << qf << " " << qg << " " << mnd << std::endl;
         }
         if (dsmax < 0.01 || k == nk) {
             if (qf < 1e0 && k != nk) {

@@ -38,13 +38,15 @@ int main(int argc, char** argv) {
 #endif
 
     //--------------------Set parameters--------------------
-    int lx = 101, ly = 201, dt = 1000, nt0 = 1000000, nt = 50000, period = 50000, nk = 2000, nb = 100, duty = 20;
-    double viscosity = 0.1/6.0, diff_fluid = viscosity/1.0, Th = 1.0, Tl = 0.0, gx = 0.0, gy = 1/3.6e6;//1/4.5e5;
+    int lx = 51, ly = 101, dt = 1000, nt0 = 1000000, nt = 50000, period = 50000, nk = 2000, nb = 100, duty = 20;
+    double viscosity = 0.1/6.0, diff_fluid = viscosity/1.0, Th = 1.0, Tl = 0.0, gx = 0.0, gy = 1000*pow(viscosity, 2)/(double)pow(lx - 1, 3)
     double alphamax = 1e5, diff_solid = diff_fluid*10.0, qf = 1e-6, qg = 1e-4, weightlimit = 0.5, movelimit = 0.2, R = 1.5, eps = 1e-5;
     D2Q9<double> pf(lx, ly, MyRank, mx, my), pg(lx, ly, MyRank, mx, my);
     double **rho = new double*[nt], **ux = new double*[nt], **uy = new double*[nt];
     double **tem = new double*[nt], **qx = new double*[nt], **qy = new double*[nt];
     double **gi = new double*[nt];
+    double *f = new double[nt];
+    f[0] = 0.0;
     for (int t = 0; t < nt; ++t) {
         rho[t] = new double[pf.nxyz];   ux[t] = new double[pf.nxyz];    uy[t] = new double[pf.nxyz];
         tem[t] = new double[pg.nxyz];   qx[t] = new double[pg.nxyz];    qy[t] = new double[pg.nxyz];
@@ -58,7 +60,7 @@ int main(int argc, char** argv) {
     }
     double *alpha = new double[pf.nxyz], *diffusivity = new double[pf.nxyz], *dads = new double[pf.nxyz], *dkds = new double[pf.nxyz];
     double *igi = new double[pg.nxyz*pg.nc];
-    double *directionx = new double[pf.nxyz], *directiony = new double[pf.nxyz];
+    double *directionx = new double[pf.nxyz], *directiony = new double[pf.nxyz], *directionxt = new double[pf.nxyz], *directionyt = new double[pf.nxyz];
     for (int i = 0; i < pf.nx; ++i) {
         for (int j = 0; j < pf.ny; ++j) {
             int idx = pf.Index(i, j);
@@ -80,9 +82,12 @@ int main(int argc, char** argv) {
     );
     optimizer.move = movelimit;
 
-    for (int k = 1; k <= nk; k++) {
-        if (k%nb == 0) {
+    for (int k = 1, cnt = 1; k <= nk; k++) {
+        if (cnt%nb == 0) {
             qf = std::min(1e7, qf*10.0);
+            cnt = 1;
+        } else {
+            cnt++;
         }
 
         //********************Filter variables********************
@@ -177,7 +182,7 @@ int main(int argc, char** argv) {
                 tem[0][idx] = tem[nt - 1][idx]; qx[0][idx] = qx[nt - 1][idx]; qy[0][idx] = qy[nt - 1][idx];
             }
         }
-        double f_buffer = 0.0;
+        double faverage_buffer = 0.0, fsquare_buffer = 0.0;
         NS::InitialCondition(pf, rho[0], ux[0], uy[0]);
         AD::InitialCondition(pg, tem[0], ux[0], uy[0]);
         for (int t = 1; t < nt; ++t) {
@@ -223,21 +228,28 @@ int main(int argc, char** argv) {
             pg.SmoothCornerAt(4*lx/5, 9*ly/10, 1, 1);
             pg.SmoothCornerAt(lx/5, 9*ly/10, -1, 1);
 
+            f[t] = 0.0;
             for (int j = 0; j < pf.ny; ++j) {
                 int i = lx/2 - pf.offsetx;
                 if (0 <= i && i < pf.nx && (j + pf.offsety) > 9*ly/10) {
                     int idx = pf.Index(i, j);
-                    f_buffer += ux[t][idx]*directionx[idx] + uy[t][idx]*directiony[idx];
+                    f[t] += ux[t][idx]*directionx[idx] + uy[t][idx]*directiony[idx];
                 }
             }
+            f[t] /= (double)((ly - 1)/10);
+            faverage_buffer += f[t];
+            fsquare_buffer += pow(f[t], 2.0);
         }
-        double f;    
+        double faverage, fsquare;    
 #ifdef _USE_MPI_DEFINES
-        MPI_Allreduce(&f_buffer, &f, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+        MPI_Allreduce(&faverage_buffer, &faverage, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+        MPI_Allreduce(&fsquare_buffer, &fsquare, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 #else
-        f = f_buffer;
+        faverage = faverage_buffer;
+        fsquare = fsquare_buffer;
 #endif
-        f /= (double)(ly/10)*nt;
+        faverage /= (double)nt;
+        double variance = fsquare/(double)nt - pow(faverage, 2.0), coef = 0.5 + (1.0 - 0.5)/sqrt(variance);
 
         //********************Inverse analyze********************
         std::vector<double> dfdss(s.size(), 0.0);
@@ -250,10 +262,15 @@ int main(int argc, char** argv) {
             if (t%dt == 0 && MyRank == 0) {
                 std::cout << "\rInverse analyse t = " << t << std::string(10, ' ');
             }
+            for (int idx = 0; idx < pf.nxyz; ++idx) {
+                directionxt[idx] = coef*(f[t] - faverage)*directionx[idx];
+                directionyt[idx] = coef*(f[t] - faverage)*directiony[idx];
+            }
+
             AAD::MacroBrinkmanCollideNaturalConvectionMassFlow(
                 pf, rho[t], ux[t], uy[t], irho, iux, iuy, imx, imy, alpha, viscosity,
                 pg, tem[t], item, iqx, iqy, diffusivity, gx, gy, 
-                directionx, directiony, true, igi
+                directionxt, directionyt, true, igi
             );
 
             AAD::SensitivityBrinkmanDiffusivity(pg, dfdss.data(), ux[t], uy[t], imx, imy, dads, tem[t], item, iqx, iqy, gi[t], igi, diffusivity, dkds);
@@ -342,83 +359,86 @@ int main(int argc, char** argv) {
 
         //********************Check convergence********************
         if (MyRank == 0) {
-            std::cout << "\r" << k << std::scientific << std::setprecision(6) << " " << f << std::fixed << std::setprecision(6) << " " << g << " " << dsmax  << " (" << imax << "," << jmax << ") " << qf << " " << qg << " " << mnd << std::endl;
+            std::cout << "\r" << k << std::scientific << std::setprecision(6) << " " << faverage << std::fixed << std::setprecision(6) << " " << variance << " " << g << " " << dsmax  << " (" << imax << "," << jmax << ") " << qf << " " << qg << " " << mnd << std::endl;
         }
         if (dsmax < 0.01 || k == nk) {
-            if (MyRank == 0) {
-                std::cout << "----------Convergence/Last step----------" << std::endl;
-            }
-
+            if (qf < 1e0 && k != nk) {
+                cnt = 0;
+            } else {
+                if (MyRank == 0) {
+                    std::cout << "----------Convergence/Last step----------" << std::endl;
+                }
 #ifdef _USE_MPI_DEFINES
-            VTKXMLExport file(pf, "result/ncpump_periodic");
-            file.AddPointData(pf, "rho", [&](int _i, int _j, int _k) { return rho[nt - 1][pf.Index(_i, _j)]; });
-            file.AddPointData(pf, "u", 
-                [&](int _i, int _j, int _k) { return ux[nt - 1][pf.Index(_i, _j)]; },
-                [&](int _i, int _j, int _k) { return uy[nt - 1][pf.Index(_i, _j)]; },
-                [](int _i, int _j, int _k) { return 0.0; }
-            );
-            file.AddPointData(pf, "T", [&](int _i, int _j, int _k) { return tem[nt - 1][pg.Index(_i, _j)]; });
-            file.AddPointData(pf, "q", 
-                [&](int _i, int _j, int _k) { return qx[nt - 1][pg.Index(_i, _j)]; },
-                [&](int _i, int _j, int _k) { return qy[nt - 1][pg.Index(_i, _j)]; },
-                [](int _i, int _j, int _k) { return 0.0; }
-            );
-            file.AddPointData(pf, "irho", [&](int _i, int _j, int _k) {   return irho[pf.Index(_i, _j)];  });
-            file.AddPointData(pf, "iu", 
-                [&](int _i, int _j, int _k) {   return iux[pf.Index(_i, _j)];   },
-                [&](int _i, int _j, int _k) {   return iuy[pf.Index(_i, _j)];   },
-                [](int _i, int _j, int _k) {   return 0.0;   }
-            );
-            file.AddPointData(pf, "im", 
-                [&](int _i, int _j, int _k) {   return imx[pf.Index(_i, _j)];   },
-                [&](int _i, int _j, int _k) {   return imy[pf.Index(_i, _j)];   },
-                [](int _i, int _j, int _k) {   return 0.0;   }
-            );
-            file.AddPointData(pf, "iT", [&](int _i, int _j, int _k) { return item[pg.Index(_i, _j)];  });
-            file.AddPointData(pf, "iq", 
-                [&](int _i, int _j, int _k) {   return iqx[pg.Index(_i, _j)];   },
-                [&](int _i, int _j, int _k) {   return iqy[pg.Index(_i, _j)];   },
-                [](int _i, int _j, int _k) {   return 0.0;   }
-            );
-            file.AddPointData(pf, "s", [&](int _i, int _j, int _k) { return s[pf.Index(_i, _j)];    });
-            file.AddPointData(pf, "ss", [&](int _i, int _j, int _k) { return ss[pf.Index(_i, _j)];    });
-            file.AddPointData(pf, "dfdss", [&](int _i, int _j, int _k) { return dfdss[pf.Index(_i, _j)];    });
+                VTKXMLExport file(pf, "result/ncpump_periodic");
+                file.AddPointData(pf, "rho", [&](int _i, int _j, int _k) { return rho[nt - 1][pf.Index(_i, _j)]; });
+                file.AddPointData(pf, "u", 
+                    [&](int _i, int _j, int _k) { return ux[nt - 1][pf.Index(_i, _j)]; },
+                    [&](int _i, int _j, int _k) { return uy[nt - 1][pf.Index(_i, _j)]; },
+                    [](int _i, int _j, int _k) { return 0.0; }
+                );
+                file.AddPointData(pf, "T", [&](int _i, int _j, int _k) { return tem[nt - 1][pg.Index(_i, _j)]; });
+                file.AddPointData(pf, "q", 
+                    [&](int _i, int _j, int _k) { return qx[nt - 1][pg.Index(_i, _j)]; },
+                    [&](int _i, int _j, int _k) { return qy[nt - 1][pg.Index(_i, _j)]; },
+                    [](int _i, int _j, int _k) { return 0.0; }
+                );
+                file.AddPointData(pf, "irho", [&](int _i, int _j, int _k) {   return irho[pf.Index(_i, _j)];  });
+                file.AddPointData(pf, "iu", 
+                    [&](int _i, int _j, int _k) {   return iux[pf.Index(_i, _j)];   },
+                    [&](int _i, int _j, int _k) {   return iuy[pf.Index(_i, _j)];   },
+                    [](int _i, int _j, int _k) {   return 0.0;   }
+                );
+                file.AddPointData(pf, "im", 
+                    [&](int _i, int _j, int _k) {   return imx[pf.Index(_i, _j)];   },
+                    [&](int _i, int _j, int _k) {   return imy[pf.Index(_i, _j)];   },
+                    [](int _i, int _j, int _k) {   return 0.0;   }
+                );
+                file.AddPointData(pf, "iT", [&](int _i, int _j, int _k) { return item[pg.Index(_i, _j)];  });
+                file.AddPointData(pf, "iq", 
+                    [&](int _i, int _j, int _k) {   return iqx[pg.Index(_i, _j)];   },
+                    [&](int _i, int _j, int _k) {   return iqy[pg.Index(_i, _j)];   },
+                    [](int _i, int _j, int _k) {   return 0.0;   }
+                );
+                file.AddPointData(pf, "s", [&](int _i, int _j, int _k) { return s[pf.Index(_i, _j)];    });
+                file.AddPointData(pf, "ss", [&](int _i, int _j, int _k) { return ss[pf.Index(_i, _j)];    });
+                file.AddPointData(pf, "dfdss", [&](int _i, int _j, int _k) { return dfdss[pf.Index(_i, _j)];    });
 #else
-            VTKExport file("result/ncpump_periodic.vtk", lx, ly);
-            file.AddPointScaler("rho", [&](int _i, int _j, int _k) { return rho[nt - 1][pf.Index(_i, _j)]; });
-            file.AddPointVector("u", 
-                [&](int _i, int _j, int _k) { return ux[nt - 1][pf.Index(_i, _j)]; },
-                [&](int _i, int _j, int _k) { return uy[nt - 1][pf.Index(_i, _j)]; },
-                [](int _i, int _j, int _k) { return 0.0; }
-            );
-            file.AddPointScaler("T", [&](int _i, int _j, int _k) { return tem[nt - 1][pg.Index(_i, _j)]; });
-            file.AddPointVector("q", 
-                [&](int _i, int _j, int _k) { return qx[nt - 1][pg.Index(_i, _j)]; },
-                [&](int _i, int _j, int _k) { return qy[nt - 1][pg.Index(_i, _j)]; },
-                [](int _i, int _j, int _k) { return 0.0; }
-            );
-            file.AddPointScaler("irho", [&](int _i, int _j, int _k) {   return irho[pf.Index(_i, _j)];  });
-            file.AddPointVector("iu", 
-                [&](int _i, int _j, int _k) {   return iux[pf.Index(_i, _j)];   },
-                [&](int _i, int _j, int _k) {   return iuy[pf.Index(_i, _j)];   },
-                [](int _i, int _j, int _k) {   return 0.0;   }
-            );
-            file.AddPointVector("im", 
-                [&](int _i, int _j, int _k) {   return imx[pf.Index(_i, _j)];   },
-                [&](int _i, int _j, int _k) {   return imy[pf.Index(_i, _j)];   },
-                [](int _i, int _j, int _k) {   return 0.0;   }
-            );
-            file.AddPointScaler("iT", [&](int _i, int _j, int _k) { return item[pg.Index(_i, _j)];  });
-            file.AddPointVector("iq", 
-                [&](int _i, int _j, int _k) {   return iqx[pg.Index(_i, _j)];   },
-                [&](int _i, int _j, int _k) {   return iqy[pg.Index(_i, _j)];   },
-                [](int _i, int _j, int _k) {   return 0.0;   }
-            );
-            file.AddPointScaler("s", [&](int _i, int _j, int _k) { return s[pf.Index(_i, _j)];    });
-            file.AddPointScaler("ss", [&](int _i, int _j, int _k) { return ss[pf.Index(_i, _j)];    });
-            file.AddPointScaler("dfdss", [&](int _i, int _j, int _k) { return dfdss[pf.Index(_i, _j)];    });
+                VTKExport file("result/ncpump_periodic.vtk", lx, ly);
+                file.AddPointScaler("rho", [&](int _i, int _j, int _k) { return rho[nt - 1][pf.Index(_i, _j)]; });
+                file.AddPointVector("u", 
+                    [&](int _i, int _j, int _k) { return ux[nt - 1][pf.Index(_i, _j)]; },
+                    [&](int _i, int _j, int _k) { return uy[nt - 1][pf.Index(_i, _j)]; },
+                    [](int _i, int _j, int _k) { return 0.0; }
+                );
+                file.AddPointScaler("T", [&](int _i, int _j, int _k) { return tem[nt - 1][pg.Index(_i, _j)]; });
+                file.AddPointVector("q", 
+                    [&](int _i, int _j, int _k) { return qx[nt - 1][pg.Index(_i, _j)]; },
+                    [&](int _i, int _j, int _k) { return qy[nt - 1][pg.Index(_i, _j)]; },
+                    [](int _i, int _j, int _k) { return 0.0; }
+                );
+                file.AddPointScaler("irho", [&](int _i, int _j, int _k) {   return irho[pf.Index(_i, _j)];  });
+                file.AddPointVector("iu", 
+                    [&](int _i, int _j, int _k) {   return iux[pf.Index(_i, _j)];   },
+                    [&](int _i, int _j, int _k) {   return iuy[pf.Index(_i, _j)];   },
+                    [](int _i, int _j, int _k) {   return 0.0;   }
+                );
+                file.AddPointVector("im", 
+                    [&](int _i, int _j, int _k) {   return imx[pf.Index(_i, _j)];   },
+                    [&](int _i, int _j, int _k) {   return imy[pf.Index(_i, _j)];   },
+                    [](int _i, int _j, int _k) {   return 0.0;   }
+                );
+                file.AddPointScaler("iT", [&](int _i, int _j, int _k) { return item[pg.Index(_i, _j)];  });
+                file.AddPointVector("iq", 
+                    [&](int _i, int _j, int _k) {   return iqx[pg.Index(_i, _j)];   },
+                    [&](int _i, int _j, int _k) {   return iqy[pg.Index(_i, _j)];   },
+                    [](int _i, int _j, int _k) {   return 0.0;   }
+                );
+                file.AddPointScaler("s", [&](int _i, int _j, int _k) { return s[pf.Index(_i, _j)];    });
+                file.AddPointScaler("ss", [&](int _i, int _j, int _k) { return ss[pf.Index(_i, _j)];    });
+                file.AddPointScaler("dfdss", [&](int _i, int _j, int _k) { return dfdss[pf.Index(_i, _j)];    });
 #endif
-            break;
+                break;
+            }
         }
     }
 
@@ -428,7 +448,7 @@ int main(int argc, char** argv) {
     delete[] rho; delete[] ux; delete[] uy; delete[] tem; delete[] qx; delete[] qy; delete[] gi;
     delete[] diffusivity; delete[] alpha; delete[] dkds; delete[] dads;
     delete[] irho; delete[] iux; delete[] iuy; delete[] imx; delete[] imy; delete[] item; delete[] iqx; delete[] iqy;
-    delete[] igi; delete[] directionx; delete[] directiony;
+    delete[] igi; delete[] directionx; delete[] directiony; delete[] f; delete[] directionxt; delete[] directionyt;
 #ifdef _USE_MPI_DEFINES
     MPI_Finalize();
 #endif

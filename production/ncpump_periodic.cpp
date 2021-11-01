@@ -264,8 +264,8 @@ int main(int argc, char** argv) {
                 std::cout << "\rInverse analyse t = " << t << std::string(10, ' ');
             }
             for (int idx = 0; idx < pf.nxyz; ++idx) {
-                directionxt[idx] = (ratio - coef*(f[t] - faverage))*directionx[idx];
-                directionyt[idx] = (ratio - coef*(f[t] - faverage))*directiony[idx];
+                directionxt[idx] = (ratio + coef*(f[t] - faverage))*directionx[idx];
+                directionyt[idx] = (ratio + coef*(f[t] - faverage))*directiony[idx];
             }
 
             AAD::MacroBrinkmanCollideNaturalConvectionMassFlow(

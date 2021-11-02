@@ -14,7 +14,7 @@ int main(int argc, char** argv) {
     //--------------------Set parameters--------------------
     const int dt = 1000, nt0 = 1000000, nc = 2, nm = 2;
     int ntList[nc] = { 100000, 100000 }, periodList[nc] = { 100000, 1000 }, dutyList[nc] = { 10, 80 };
-    double viscosity = 0.1/6.0, diff_fluid = viscosity/1.0, Th = 1.0, Tl = 0.0;
+    double viscosity = 0.1/6.0, diff_fluid = viscosity/1.0, Th = 1.0, Tl = 0.0, ratio = 0.5;
     double alphamax = 1e5, diff_solid = diff_fluid*10.0;
     double qfList[nc] = { 1e7, 1e7 }, qgList[nc] = { 1e-4, 1e-4 }, fList[nc*nm] = { 0 };
 

@@ -23,8 +23,8 @@ int main(int argc, char** argv) {
         exit(1);
     }
         
-    //auto tembc = [=](int _t, int _period, int _duty) { return Th*(1 - cos(2*M_PI*_t/_period)); };
-    auto tembc = [=](int _t, int _period, int _duty) { return _t%_period < _period*_duty/100.0 ? (Th - Tl)*100.0/(double)_duty + Tl : Tl; };
+    auto tembc = [=](int _t, int _period, int _duty) { return Th*(1 - cos(2*M_PI*_t/_period)); };
+    //auto tembc = [=](int _t, int _period, int _duty) { return _t%_period < _period*_duty/100.0 ? (Th - Tl)*100.0/(double)_duty + Tl : Tl; };
 
     //  Loop of model
     for (int modelid = 0; modelid < nm; ++modelid) {
@@ -58,7 +58,7 @@ int main(int argc, char** argv) {
                 diffusivity[idx] = diff_solid + (diff_fluid - diff_solid)*s[idx]*(1.0 + qg)/(s[idx] + qg);
                 alpha[idx] = alphamax/(double)(ly - 1)*qf*(1.0 - s[idx])/(s[idx] + qf);
             }
-            double faverage = 0, fsquare = 0;
+            double faverage = 0.0, fsquare = 0.0;
             std::cout << "Direct analyse t = 0";
             NS::InitialCondition(pf, rho, ux, uy);
             AD::InitialCondition(pg, tem, ux, uy);
@@ -118,7 +118,7 @@ int main(int argc, char** argv) {
             }
             faverage /= (double)nt;
             double variance = fsquare/(double)nt - pow(faverage, 2.0), coef = (1.0 - ratio)/sqrt(variance);
-            fList[conditionid*nm + modelid] /= ratio*faverage + (1.0 - ratio)*sqrt(variance);
+            fList[conditionid*nm + modelid] = ratio*faverage + (1.0 - ratio)*sqrt(variance);
         }
 
         delete[] rho; delete[] ux; delete[] uy; delete[] tem; delete[] qx; delete[] qy; delete[] s; delete[] alpha; delete[] diffusivity; delete[] directionx; delete[] directiony;

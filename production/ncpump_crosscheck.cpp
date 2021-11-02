@@ -13,10 +13,10 @@ using namespace PANSLBM2;
 int main(int argc, char** argv) {
     //--------------------Set parameters--------------------
     const int dt = 1000, nt0 = 1000000, nc = 2, nm = 2;
-    int ntList[nc] = { 50000, 50000 }, periodList[nc] = { 50000, 50000 }, dutyList[nc] = { 10, 80 };
-    double viscosity = 0.1/6.0, diff_fluid = viscosity/1.0, Th = 1.0, Tl = 0.0, gx = 0.0, gy = 1/3.6e6;//1/4.5e5;
+    int ntList[nc] = { 100000, 100000 }, periodList[nc] = { 100000, 1000 }, dutyList[nc] = { 10, 80 };
+    double viscosity = 0.1/6.0, diff_fluid = viscosity/1.0, Th = 1.0, Tl = 0.0;
     double alphamax = 1e5, diff_solid = diff_fluid*10.0;
-    double qfList[nc] = { 1e-5, 1e-5 }, qgList[nc] = { 1e-4, 1e-4 }, fList[nc*nm] = { 0 };
+    double qfList[nc] = { 1e7, 1e7 }, qgList[nc] = { 1e-4, 1e-4 }, fList[nc*nm] = { 0 };
 
     if (argc != nm + 1) {
         std::cout << "Error:No vtk file selected." << std::endl;
@@ -33,6 +33,7 @@ int main(int argc, char** argv) {
         std::string fname(argv[modelid + 1]);
         VTKImport model(fname);
         int lx = model.GetNx(), ly = model.GetNy();
+        double gx = 0.0, gy = 1000*pow(viscosity, 2)/(double)pow(lx - 1, 3);
         D2Q9<double> pf(lx, ly), pg(lx, ly);
         double *rho = new double[pf.nxyz], *ux = new double[pf.nxyz], *uy = new double[pf.nxyz];
         double *tem = new double[pg.nxyz], *qx = new double[pg.nxyz], *qy = new double[pg.nxyz];
@@ -57,6 +58,7 @@ int main(int argc, char** argv) {
                 diffusivity[idx] = diff_solid + (diff_fluid - diff_solid)*s[idx]*(1.0 + qg)/(s[idx] + qg);
                 alpha[idx] = alphamax/(double)(ly - 1)*qf*(1.0 - s[idx])/(s[idx] + qf);
             }
+            double faverage = 0, fsquare = 0;
             std::cout << "Direct analyse t = 0";
             NS::InitialCondition(pf, rho, ux, uy);
             AD::InitialCondition(pg, tem, ux, uy);
@@ -100,17 +102,23 @@ int main(int argc, char** argv) {
                 pg.SmoothCornerAt(4*lx/5, 9*ly/10, 1, 1);
                 pg.SmoothCornerAt(lx/5, 9*ly/10, -1, 1);
 
+                double ftmp = 0.0;
                 if (t > nt0) {
                     for (int j = 0; j < pf.ny; ++j) {
                         int i = lx/2 - pf.offsetx;
                         if (0 <= i && i < pf.nx && (j + pf.offsety) > 9*ly/10) {
                             int idx = pf.Index(i, j);
-                            fList[conditionid*nm + modelid] += ux[idx]*directionx[idx] + uy[idx]*directiony[idx];
+                            ftmp += ux[idx]*directionx[idx] + uy[idx]*directiony[idx];
                         }
                     }
                 }
+                ftmp /= (double)((ly - 1)/10);
+                faverage += ftmp;
+                fsquare += pow(ftmp, 2.0);
             }
-            fList[conditionid*nm + modelid] /= (double)(ly/10)*nt;
+            faverage /= (double)nt;
+            double variance = fsquare/(double)nt - pow(faverage, 2.0), coef = (1.0 - ratio)/sqrt(variance);
+            fList[conditionid*nm + modelid] /= ratio*faverage + (1.0 - ratio)*sqrt(variance);
         }
 
         delete[] rho; delete[] ux; delete[] uy; delete[] tem; delete[] qx; delete[] qy; delete[] s; delete[] alpha; delete[] diffusivity; delete[] directionx; delete[] directiony;

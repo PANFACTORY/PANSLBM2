@@ -363,7 +363,7 @@ int main(int argc, char** argv) {
             std::cout << "\r" << k << std::scientific << std::setprecision(6) << " " << F << " " << faverage << " " << variance << std::fixed << std::setprecision(6) << " " << g << " " << dsmax  << " (" << imax << "," << jmax << ") " << qf << " " << qg << " " << mnd << std::endl;
         }
         if (dsmax < 0.01 || k == nk) {
-            if (qf < 1e0 && k != nk) {
+            if (qf < 1e7 && k != nk) {
                 cnt = 0;
             } else {
                 if (MyRank == 0) {

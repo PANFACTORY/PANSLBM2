@@ -16,7 +16,7 @@ int main(int argc, char** argv) {
     int ntList[nc] = { 100000, 100000 }, periodList[nc] = { 100000, 1000 }, dutyList[nc] = { 10, 80 };
     double viscosity = 0.1/6.0, diff_fluid = viscosity/1.0, Th = 1.0, Tl = 0.0, ratio = 0.5;
     double alphamax = 1e5, diff_solid = diff_fluid*10.0;
-    double qfList[nc] = { 1e7, 1e7 }, qgList[nc] = { 1e-4, 1e-4 }, fList[nc*nm] = { 0 };
+    double qfList[nc] = { 1e7, 1e7 }, qgList[nc] = { 1e-4, 1e-4 }, faveList[nc*nm] = { 0 }, fvarList[nc*nm] = { 0 };
 
     if (argc != nm + 1) {
         std::cout << "Error:No vtk file selected." << std::endl;
@@ -118,10 +118,33 @@ int main(int argc, char** argv) {
             }
             faverage /= (double)nt;
             double variance = fsquare/(double)nt - pow(faverage, 2.0), coef = (1.0 - ratio)/sqrt(variance);
-            fList[conditionid*nm + modelid] = ratio*faverage + (1.0 - ratio)*sqrt(variance);
+            faveList[conditionid*nm + modelid] = faverage;
+            fvarList[conditionid*nm + modelid] = variance;
         }
 
         delete[] rho; delete[] ux; delete[] uy; delete[] tem; delete[] qx; delete[] qy; delete[] s; delete[] alpha; delete[] diffusivity; delete[] directionx; delete[] directiony;
+    }
+
+    std::cout << std::endl << "**********average**********" << std::endl << "cnd/mod\t";
+    for (int modelid = 0; modelid < nm; ++modelid) {
+        std::cout << "\t" << modelid;    
+    }
+    for (int conditionid = 0; conditionid < nc; ++conditionid) {
+        std::cout << std::endl << std::scientific << std::setprecision(2) << conditionid << std::setprecision(6);
+        for (int modelid = 0; modelid < nm; ++modelid) {
+            std::cout << "\t" << faveList[conditionid*nm + modelid];
+        }    
+    }
+
+    std::cout << std::endl << "**********variance**********" << std::endl << "cnd/mod\t";
+    for (int modelid = 0; modelid < nm; ++modelid) {
+        std::cout << "\t" << modelid;    
+    }
+    for (int conditionid = 0; conditionid < nc; ++conditionid) {
+        std::cout << std::endl << std::scientific << std::setprecision(2) << conditionid << std::setprecision(6);
+        for (int modelid = 0; modelid < nm; ++modelid) {
+            std::cout << "\t" << fvalList[conditionid*nm + modelid];
+        }    
     }
 
     std::cout << std::endl << "**********objective**********" << std::endl << "cnd/mod\t";
@@ -131,7 +154,7 @@ int main(int argc, char** argv) {
     for (int conditionid = 0; conditionid < nc; ++conditionid) {
         std::cout << std::endl << std::scientific << std::setprecision(2) << conditionid << std::setprecision(6);
         for (int modelid = 0; modelid < nm; ++modelid) {
-            std::cout << "\t" << fList[conditionid*nm + modelid];
+            std::cout << "\t" << ratio*faveList[conditionid*nm + modelid] + (1.0 - ratio)*sqrt(fvalList[conditionid*nm + modelid]);
         }    
     }
 }

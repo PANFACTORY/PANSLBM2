@@ -143,7 +143,7 @@ int main(int argc, char** argv) {
     for (int conditionid = 0; conditionid < nc; ++conditionid) {
         std::cout << std::endl << std::scientific << std::setprecision(2) << conditionid << std::setprecision(6);
         for (int modelid = 0; modelid < nm; ++modelid) {
-            std::cout << "\t" << fvalList[conditionid*nm + modelid];
+            std::cout << "\t" << fvarList[conditionid*nm + modelid];
         }    
     }
 
@@ -154,7 +154,7 @@ int main(int argc, char** argv) {
     for (int conditionid = 0; conditionid < nc; ++conditionid) {
         std::cout << std::endl << std::scientific << std::setprecision(2) << conditionid << std::setprecision(6);
         for (int modelid = 0; modelid < nm; ++modelid) {
-            std::cout << "\t" << ratio*faveList[conditionid*nm + modelid] + (1.0 - ratio)*sqrt(fvalList[conditionid*nm + modelid]);
+            std::cout << "\t" << ratio*faveList[conditionid*nm + modelid] + (1.0 - ratio)*sqrt(fvarList[conditionid*nm + modelid]);
         }    
     }
 

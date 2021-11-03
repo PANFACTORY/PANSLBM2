@@ -12,11 +12,11 @@ using namespace PANSLBM2;
 
 int main(int argc, char** argv) {
     //--------------------Set parameters--------------------
-    const int dt = 1000, nt0 = 1000000, nc = 2, nm = 2;
-    int ntList[nc] = { 100000, 100000 }, periodList[nc] = { 100000, 1000 }, dutyList[nc] = { 10, 80 };
+    const int dt = 1000, nt0 = 1000000, nc = 3, nm = 3;
+    int ntList[nc] = { 50000, 50000, 50000 }, periodList[nc] = { 50000, 25000, 5000 }, dutyList[nc] = { 10, 80 };
     double viscosity = 0.1/6.0, diff_fluid = viscosity/1.0, Th = 1.0, Tl = 0.0, ratio = 0.5;
     double alphamax = 1e5, diff_solid = diff_fluid*10.0;
-    double qfList[nc] = { 1e7, 1e7 }, qgList[nc] = { 1e-4, 1e-4 }, faveList[nc*nm] = { 0 }, fvarList[nc*nm] = { 0 };
+    double qfList[nc] = { 1e-2, 1e-2, 1e-2 }, qgList[nc] = { 1e-4, 1e-4, 1e-4 }, faveList[nc*nm] = { 0 }, fvarList[nc*nm] = { 0 };
 
     if (argc != nm + 1) {
         std::cout << "Error:No vtk file selected." << std::endl;
@@ -157,4 +157,6 @@ int main(int argc, char** argv) {
             std::cout << "\t" << ratio*faveList[conditionid*nm + modelid] + (1.0 - ratio)*sqrt(fvalList[conditionid*nm + modelid]);
         }    
     }
+
+    std::cout << std::endl;
 }

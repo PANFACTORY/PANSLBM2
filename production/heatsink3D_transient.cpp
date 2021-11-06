@@ -252,7 +252,7 @@ int main(int argc, char** argv) {
 #else
         mnd = mnd_buffer;
 #endif
-        mnd *= 4.0/(double)(mx*my)*100.0;
+        mnd *= 4.0/(double)(mx*my*mz)*100.0;
 
         //********************Update design variable********************
         if (MyRank == 0) {

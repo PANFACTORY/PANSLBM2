@@ -178,7 +178,7 @@ int main(int argc, char** argv) {
                 gx, gy, true, igi
             );
             AAD::SensitivityTemperatureAtHeatSource(
-                ux[t], uy[t], imx, imy, pg, tem[t], item, iqx, iqy, gi[t], igi, dfdss.data(), diffusivity, dads, dkds,
+                pg, dfdss.data(), ux[t], uy[t], imx, imy, dads, tem[t], item, iqx, iqy, gi[t], igi, diffusivity, dkds,
                 [=](int _i, int _j) { return (_j == 0 && _i < L) ? qn : 0.0; }, 
                 [=](int _i, int _j) { return _j == 0 && _i < L; }
             );

@@ -162,10 +162,108 @@ private:
 
     template<class T>
     void D2Q9<T>::Stream() {
-        //  Stream
-#pragma omp parallel for
+        //  Stream on edge
         for (int j = 0; j < this->ny; ++j) {
+            int idxmin = this->Index(0, j), idxmax = this->Index(this->nx - 1, j);
+            for (int c = 1; c < D2Q9<T>::nc; ++c) {
+                int idxminstream = this->Index(0 - D2Q9<T>::cx[c], j - D2Q9<T>::cy[c]);
+                this->fnext[D2Q9<T>::IndexF(idxmin, c)] = this->f[D2Q9<T>::IndexF(idxminstream, c)];
+                int idxmaxstream = this->Index((this->nx - 1) - D2Q9<T>::cx[c], j - D2Q9<T>::cy[c]);
+                this->fnext[D2Q9<T>::IndexF(idxmax, c)] = this->f[D2Q9<T>::IndexF(idxmaxstream, c)];
+            }
+        }
+        for (int i = 0; i < this->nx; ++i) {
+            int idxmin = this->Index(i, 0), idxmax = this->Index(i, this->ny - 1);
+            for (int c = 1; c < D2Q9<T>::nc; ++c) {
+                int idxminstream = this->Index(i - D2Q9<T>::cx[c], 0 - D2Q9<T>::cy[c]);
+                this->fnext[D2Q9<T>::IndexF(idxmin, c)] = this->f[D2Q9<T>::IndexF(idxminstream, c)];
+                int idxmaxstream = this->Index(i - D2Q9<T>::cx[c], (this->ny - 1) - D2Q9<T>::cy[c]);
+                this->fnext[D2Q9<T>::IndexF(idxmax, c)] = this->f[D2Q9<T>::IndexF(idxmaxstream, c)];
+            }
+        }
+
+#ifdef _USE_MPI_DEFINES
+        //  Copy from f to fsend along edge or at corner
+        if (this->mx != 1) {
+            for (int j = 0; j < this->ny; ++j) {
+                //  Edge along xmin  
+                int idx = this->Index(this->nx - 1, j);
+                this->fsend_xmin[j*3 + 0] = this->fnext[D2Q9<T>::IndexF(idx, 3)];
+                this->fsend_xmin[j*3 + 1] = this->fnext[D2Q9<T>::IndexF(idx, 6)];
+                this->fsend_xmin[j*3 + 2] = this->fnext[D2Q9<T>::IndexF(idx, 7)];
+
+                //  Edge along xmax
+                idx = this->Index(0, j);
+                this->fsend_xmax[j*3 + 0] = this->fnext[D2Q9<T>::IndexF(idx, 1)];
+                this->fsend_xmax[j*3 + 1] = this->fnext[D2Q9<T>::IndexF(idx, 5)];
+                this->fsend_xmax[j*3 + 2] = this->fnext[D2Q9<T>::IndexF(idx, 8)]; 
+            }
+        }
+        if (this->my != 1) {
             for (int i = 0; i < this->nx; ++i) {
+                //  Edge along ymin
+                int idx = this->Index(i, this->ny - 1);
+                this->fsend_ymin[i*3 + 0] = this->fnext[D2Q9<T>::IndexF(idx, 4)];
+                this->fsend_ymin[i*3 + 1] = this->fnext[D2Q9<T>::IndexF(idx, 7)];
+                this->fsend_ymin[i*3 + 2] = this->fnext[D2Q9<T>::IndexF(idx, 8)]; 
+
+                //  Edge along ymax
+                idx = this->Index(i, 0);
+                this->fsend_ymax[i*3 + 0] = this->fnext[D2Q9<T>::IndexF(idx, 2)];
+                this->fsend_ymax[i*3 + 1] = this->fnext[D2Q9<T>::IndexF(idx, 5)];
+                this->fsend_ymax[i*3 + 2] = this->fnext[D2Q9<T>::IndexF(idx, 6)];
+            }
+        }
+        if (this->mx != 1 || this->my != 1) {
+            this->fsend_corner[0] = this->fnext[D2Q9<T>::IndexF(this->Index(this->nx - 1, this->ny - 1), 7)];   //  Corner at xmin and ymin
+            this->fsend_corner[1] = this->fnext[D2Q9<T>::IndexF(this->Index(this->nx - 1, 0), 6)];              //  Corner at xmin and ymax
+            this->fsend_corner[2] = this->fnext[D2Q9<T>::IndexF(this->Index(0, this->ny - 1), 8)];              //  Corner at xmax and ymin
+            this->fsend_corner[3] = this->fnext[D2Q9<T>::IndexF(this->Index(0, 0), 5)];                         //  Corner at xmax and ymax
+        }
+        
+        //  Communicate with other PE
+        int neib = 0;
+        if (this->mx != 1) {
+            //  Left
+            MPI_Isend(this->fsend_xmin, this->ny*3, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy), 0, MPI_COMM_WORLD, &this->request[neib++]);
+            MPI_Irecv(this->frecv_xmax, this->ny*3, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy), 0, MPI_COMM_WORLD, &this->request[neib++]);
+
+            //  Right
+            MPI_Isend(this->fsend_xmax, this->ny*3, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy), 1, MPI_COMM_WORLD, &this->request[neib++]);
+            MPI_Irecv(this->frecv_xmin, this->ny*3, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy), 1, MPI_COMM_WORLD, &this->request[neib++]);
+        }
+        if (this->my != 1) {
+            //  Bottom
+            MPI_Isend(this->fsend_ymin, this->nx*3, MPI_DOUBLE, this->IndexPE(this->PEx, this->PEy - 1), 2, MPI_COMM_WORLD, &this->request[neib++]);
+            MPI_Irecv(this->frecv_ymax, this->nx*3, MPI_DOUBLE, this->IndexPE(this->PEx, this->PEy + 1), 2, MPI_COMM_WORLD, &this->request[neib++]);
+
+            //  Top
+            MPI_Isend(this->fsend_ymax, this->nx*3, MPI_DOUBLE, this->IndexPE(this->PEx, this->PEy + 1), 3, MPI_COMM_WORLD, &this->request[neib++]);
+            MPI_Irecv(this->frecv_ymin, this->nx*3, MPI_DOUBLE, this->IndexPE(this->PEx, this->PEy - 1), 3, MPI_COMM_WORLD, &this->request[neib++]);
+        }
+        if (this->mx != 1 || this->my != 1) {
+            //  Left bottom
+            MPI_Isend(&this->fsend_corner[0], 1, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy - 1), 4, MPI_COMM_WORLD, &this->request[neib++]);
+            MPI_Irecv(&this->frecv_corner[3], 1, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy + 1), 4, MPI_COMM_WORLD, &this->request[neib++]);
+
+            //  Left top
+            MPI_Isend(&this->fsend_corner[1], 1, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy + 1), 5, MPI_COMM_WORLD, &this->request[neib++]);
+            MPI_Irecv(&this->frecv_corner[2], 1, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy - 1), 5, MPI_COMM_WORLD, &this->request[neib++]);
+
+            //  Right bottom
+            MPI_Irecv(&this->frecv_corner[1], 1, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy + 1), 6, MPI_COMM_WORLD, &this->request[neib++]);
+            MPI_Isend(&this->fsend_corner[2], 1, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy - 1), 6, MPI_COMM_WORLD, &this->request[neib++]);
+
+            //  Right top
+            MPI_Irecv(&this->frecv_corner[0], 1, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy - 1), 7, MPI_COMM_WORLD, &this->request[neib++]);
+            MPI_Isend(&this->fsend_corner[3], 1, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy + 1), 7, MPI_COMM_WORLD, &this->request[neib++]);      
+        }
+#endif
+
+        //  Stream
+        #pragma omp parallel for
+        for (int j = 1; j < this->ny - 1; ++j) {
+            for (int i = 1; i < this->nx - 1; ++i) {
                 int idx = this->Index(i, j);
                 for (int c = 1; c < D2Q9<T>::nc; ++c) {
                     int idxstream = this->Index(i - D2Q9<T>::cx[c], j - D2Q9<T>::cy[c]);
@@ -174,50 +272,115 @@ private:
             }
         }
 
-        //  Swap
-        T *tmp = this->f;
-        this->f = this->fnext;
-        this->fnext = tmp;
+#ifdef _USE_MPI_DEFINES        
+        if (neib > 0) {
+            MPI_Waitall(neib, this->request, this->status);
+        }
 
-#ifdef _USE_MPI_DEFINES
-        int idx;
-
-        //  Copy from f to fsend along edge or at corner
+        //  Copy to f from frecv along edge or at corner
         if (this->mx != 1) {
             for (int j = 0; j < this->ny; ++j) {
-                //  Edge along xmin  
-                idx = this->Index(this->nx - 1, j);
-                this->fsend_xmin[j*3 + 0] = this->f[D2Q9<T>::IndexF(idx, 3)];
-                this->fsend_xmin[j*3 + 1] = this->f[D2Q9<T>::IndexF(idx, 6)];
-                this->fsend_xmin[j*3 + 2] = this->f[D2Q9<T>::IndexF(idx, 7)];
-
+                //  Edge along xmin
+                int idx = this->Index(0, j);
+                this->fnext[D2Q9<T>::IndexF(idx, 1)] = this->frecv_xmin[j*3 + 0];
+                this->fnext[D2Q9<T>::IndexF(idx, 5)] = this->frecv_xmin[j*3 + 1];
+                this->fnext[D2Q9<T>::IndexF(idx, 8)] = this->frecv_xmin[j*3 + 2]; 
+            
                 //  Edge along xmax
-                idx = this->Index(0, j);
-                this->fsend_xmax[j*3 + 0] = this->f[D2Q9<T>::IndexF(idx, 1)];
-                this->fsend_xmax[j*3 + 1] = this->f[D2Q9<T>::IndexF(idx, 5)];
-                this->fsend_xmax[j*3 + 2] = this->f[D2Q9<T>::IndexF(idx, 8)]; 
+                idx = this->Index(this->nx - 1, j);
+                this->fnext[D2Q9<T>::IndexF(idx, 3)] = this->frecv_xmax[j*3 + 0];
+                this->fnext[D2Q9<T>::IndexF(idx, 6)] = this->frecv_xmax[j*3 + 1];
+                this->fnext[D2Q9<T>::IndexF(idx, 7)] = this->frecv_xmax[j*3 + 2];
             }
         }
         if (this->my != 1) {
             for (int i = 0; i < this->nx; ++i) {
                 //  Edge along ymin
-                idx = this->Index(i, this->ny - 1);
-                this->fsend_ymin[i*3 + 0] = this->f[D2Q9<T>::IndexF(idx, 4)];
-                this->fsend_ymin[i*3 + 1] = this->f[D2Q9<T>::IndexF(idx, 7)];
-                this->fsend_ymin[i*3 + 2] = this->f[D2Q9<T>::IndexF(idx, 8)]; 
-
+                int idx = this->Index(i, 0);
+                this->fnext[D2Q9<T>::IndexF(idx, 2)] = this->frecv_ymin[i*3 + 0];
+                this->fnext[D2Q9<T>::IndexF(idx, 5)] = this->frecv_ymin[i*3 + 1];
+                this->fnext[D2Q9<T>::IndexF(idx, 6)] = this->frecv_ymin[i*3 + 2];
+            
                 //  Edge along ymax
-                idx = this->Index(i, 0);
-                this->fsend_ymax[i*3 + 0] = this->f[D2Q9<T>::IndexF(idx, 2)];
-                this->fsend_ymax[i*3 + 1] = this->f[D2Q9<T>::IndexF(idx, 5)];
-                this->fsend_ymax[i*3 + 2] = this->f[D2Q9<T>::IndexF(idx, 6)];
+                idx = this->Index(i, this->ny - 1);
+                this->fnext[D2Q9<T>::IndexF(idx, 4)] = this->frecv_ymax[i*3 + 0];
+                this->fnext[D2Q9<T>::IndexF(idx, 7)] = this->frecv_ymax[i*3 + 1];
+                this->fnext[D2Q9<T>::IndexF(idx, 8)] = this->frecv_ymax[i*3 + 2];
             }
         }
         if (this->mx != 1 || this->my != 1) {
-            this->fsend_corner[0] = this->f[D2Q9<T>::IndexF(this->Index(this->nx - 1, this->ny - 1), 7)];   //  Corner at xmin and ymin
-            this->fsend_corner[1] = this->f[D2Q9<T>::IndexF(this->Index(this->nx - 1, 0), 6)];              //  Corner at xmin and ymax
-            this->fsend_corner[2] = this->f[D2Q9<T>::IndexF(this->Index(0, this->ny - 1), 8)];              //  Corner at xmax and ymin
-            this->fsend_corner[3] = this->f[D2Q9<T>::IndexF(this->Index(0, 0), 5)];                         //  Corner at xmax and ymax
+            this->fnext[D2Q9<T>::IndexF(this->Index(0, 0), 5)] = this->frecv_corner[0];                         //  Corner at xmin and ymin
+            this->fnext[D2Q9<T>::IndexF(this->Index(0, this->ny - 1), 8)] = this->frecv_corner[1];              //  Corner at xmin and ymax
+            this->fnext[D2Q9<T>::IndexF(this->Index(this->nx - 1, 0), 6)] = this->frecv_corner[2];              //  Corner at xmax and ymin
+            this->fnext[D2Q9<T>::IndexF(this->Index(this->nx - 1, this->ny - 1), 7)] = this->frecv_corner[3];   //  Corner at xmax and ymax
+        }
+#endif
+
+        //  Swap
+        T *tmp = this->f;
+        this->f = this->fnext;
+        this->fnext = tmp;
+    }
+
+    template<class T>
+    void D2Q9<T>::iStream() {
+        //  Stream on edge
+        for (int j = 0; j < this->ny; ++j) {
+            int idxmin = this->Index(0, j), idxmax = this->Index(this->nx - 1, j);
+            for (int c = 1; c < D2Q9<T>::nc; ++c) {
+                int idxminstream = this->Index(0 + D2Q9<T>::cx[c], j + D2Q9<T>::cy[c]);
+                this->fnext[D2Q9<T>::IndexF(idxmin, c)] = this->f[D2Q9<T>::IndexF(idxminstream, c)];
+                int idxmaxstream = this->Index((this->nx - 1) + D2Q9<T>::cx[c], j + D2Q9<T>::cy[c]);
+                this->fnext[D2Q9<T>::IndexF(idxmax, c)] = this->f[D2Q9<T>::IndexF(idxmaxstream, c)];
+            }
+        }
+        for (int i = 0; i < this->nx; ++i) {
+            int idxmin = this->Index(i, 0), idxmax = this->Index(i, this->ny - 1);
+            for (int c = 1; c < D2Q9<T>::nc; ++c) {
+                int idxminstream = this->Index(i + D2Q9<T>::cx[c], 0 + D2Q9<T>::cy[c]);
+                this->fnext[D2Q9<T>::IndexF(idxmin, c)] = this->f[D2Q9<T>::IndexF(idxminstream, c)];
+                int idxmaxstream = this->Index(i + D2Q9<T>::cx[c], (this->ny - 1) + D2Q9<T>::cy[c]);
+                this->fnext[D2Q9<T>::IndexF(idxmax, c)] = this->f[D2Q9<T>::IndexF(idxmaxstream, c)];
+            }
+        }
+
+#ifdef _USE_MPI_DEFINES
+        //  Copy from f to fsend along edge or at corner
+        if (this->mx != 1) {
+            for (int j = 0; j < this->ny; ++j) {
+                //  Edge along xmin  
+                int idx = this->Index(this->nx - 1, j);
+                this->fsend_xmin[j*3 + 0] = this->fnext[D2Q9<T>::IndexF(idx, 1)];
+                this->fsend_xmin[j*3 + 1] = this->fnext[D2Q9<T>::IndexF(idx, 5)];
+                this->fsend_xmin[j*3 + 2] = this->fnext[D2Q9<T>::IndexF(idx, 8)];
+
+                //  Edge along xmax
+                idx = this->Index(0, j);
+                this->fsend_xmax[j*3 + 0] = this->fnext[D2Q9<T>::IndexF(idx, 3)];
+                this->fsend_xmax[j*3 + 1] = this->fnext[D2Q9<T>::IndexF(idx, 6)];
+                this->fsend_xmax[j*3 + 2] = this->fnext[D2Q9<T>::IndexF(idx, 7)]; 
+            }
+        }
+        if (this->my != 1) {
+            for (int i = 0; i < this->nx; ++i) {
+                //  Edge along ymin
+                int idx = this->Index(i, this->ny - 1);
+                this->fsend_ymin[i*3 + 0] = this->fnext[D2Q9<T>::IndexF(idx, 2)];
+                this->fsend_ymin[i*3 + 1] = this->fnext[D2Q9<T>::IndexF(idx, 5)];
+                this->fsend_ymin[i*3 + 2] = this->fnext[D2Q9<T>::IndexF(idx, 6)]; 
+
+                //  Edge along ymax
+                idx = this->Index(i, 0);
+                this->fsend_ymax[i*3 + 0] = this->fnext[D2Q9<T>::IndexF(idx, 4)];
+                this->fsend_ymax[i*3 + 1] = this->fnext[D2Q9<T>::IndexF(idx, 7)];
+                this->fsend_ymax[i*3 + 2] = this->fnext[D2Q9<T>::IndexF(idx, 8)];
+            }
+        }
+        if (this->mx != 1 || this->my != 1) {
+            this->fsend_corner[0] = this->fnext[D2Q9<T>::IndexF(this->Index(this->nx - 1, this->ny - 1), 5)];   //  Corner at xmin and ymin
+            this->fsend_corner[1] = this->fnext[D2Q9<T>::IndexF(this->Index(this->nx - 1, 0), 8)];              //  Corner at xmin and ymax
+            this->fsend_corner[2] = this->fnext[D2Q9<T>::IndexF(this->Index(0, this->ny - 1), 6)];              //  Corner at xmax and ymin
+            this->fsend_corner[3] = this->fnext[D2Q9<T>::IndexF(this->Index(0, 0), 7)];                         //  Corner at xmax and ymax
         }
         
         //  Communicate with other PE
@@ -257,56 +420,12 @@ private:
             MPI_Irecv(&this->frecv_corner[0], 1, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy - 1), 7, MPI_COMM_WORLD, &this->request[neib++]);
             MPI_Isend(&this->fsend_corner[3], 1, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy + 1), 7, MPI_COMM_WORLD, &this->request[neib++]);      
         }
-        if (neib > 0) {
-            MPI_Waitall(neib, this->request, this->status);
-        }
-
-        //  Copy to f from frecv along edge or at corner
-        if (this->mx != 1) {
-            for (int j = 0; j < this->ny; ++j) {
-                //  Edge along xmin
-                idx = this->Index(0, j);
-                this->f[D2Q9<T>::IndexF(idx, 1)] = this->frecv_xmin[j*3 + 0];
-                this->f[D2Q9<T>::IndexF(idx, 5)] = this->frecv_xmin[j*3 + 1];
-                this->f[D2Q9<T>::IndexF(idx, 8)] = this->frecv_xmin[j*3 + 2]; 
-            
-                //  Edge along xmax
-                idx = this->Index(this->nx - 1, j);
-                this->f[D2Q9<T>::IndexF(idx, 3)] = this->frecv_xmax[j*3 + 0];
-                this->f[D2Q9<T>::IndexF(idx, 6)] = this->frecv_xmax[j*3 + 1];
-                this->f[D2Q9<T>::IndexF(idx, 7)] = this->frecv_xmax[j*3 + 2];
-            }
-        }
-        if (this->my != 1) {
-            for (int i = 0; i < this->nx; ++i) {
-                //  Edge along ymin
-                idx = this->Index(i, 0);
-                this->f[D2Q9<T>::IndexF(idx, 2)] = this->frecv_ymin[i*3 + 0];
-                this->f[D2Q9<T>::IndexF(idx, 5)] = this->frecv_ymin[i*3 + 1];
-                this->f[D2Q9<T>::IndexF(idx, 6)] = this->frecv_ymin[i*3 + 2];
-            
-                //  Edge along ymax
-                idx = this->Index(i, this->ny - 1);
-                this->f[D2Q9<T>::IndexF(idx, 4)] = this->frecv_ymax[i*3 + 0];
-                this->f[D2Q9<T>::IndexF(idx, 7)] = this->frecv_ymax[i*3 + 1];
-                this->f[D2Q9<T>::IndexF(idx, 8)] = this->frecv_ymax[i*3 + 2];
-            }
-        }
-        if (this->mx != 1 || this->my != 1) {
-            this->f[D2Q9<T>::IndexF(this->Index(0, 0), 5)] = this->frecv_corner[0];                         //  Corner at xmin and ymin
-            this->f[D2Q9<T>::IndexF(this->Index(0, this->ny - 1), 8)] = this->frecv_corner[1];              //  Corner at xmin and ymax
-            this->f[D2Q9<T>::IndexF(this->Index(this->nx - 1, 0), 6)] = this->frecv_corner[2];              //  Corner at xmax and ymin
-            this->f[D2Q9<T>::IndexF(this->Index(this->nx - 1, this->ny - 1), 7)] = this->frecv_corner[3];   //  Corner at xmax and ymax
-        }
 #endif
-    }
 
-    template<class T>
-    void D2Q9<T>::iStream() {
-        //  Stream
-#pragma omp parallel for
-        for (int j = 0; j < this->ny; ++j) {
-            for (int i = 0; i < this->nx; ++i) {
+        //  Stream on edge
+        #pragma omp parallel for
+        for (int j = 1; j < this->ny - 1; ++j) {
+            for (int i = 1; i < this->nx - 1; ++i) {
                 int idx = this->Index(i, j);
                 for (int c = 1; c < D2Q9<T>::nc; ++c) {
                     int idxstream = this->Index(i + D2Q9<T>::cx[c], j + D2Q9<T>::cy[c]);
@@ -315,89 +434,7 @@ private:
             }
         }
 
-        //  Swap
-        T *tmp = this->f;
-        this->f = this->fnext;
-        this->fnext = tmp;
-
 #ifdef _USE_MPI_DEFINES
-        int idx;
-
-        //  Copy from f to fsend along edge or at corner
-        if (this->mx != 1) {
-            for (int j = 0; j < this->ny; ++j) {
-                //  Edge along xmin  
-                idx = this->Index(this->nx - 1, j);
-                this->fsend_xmin[j*3 + 0] = this->f[D2Q9<T>::IndexF(idx, 1)];
-                this->fsend_xmin[j*3 + 1] = this->f[D2Q9<T>::IndexF(idx, 5)];
-                this->fsend_xmin[j*3 + 2] = this->f[D2Q9<T>::IndexF(idx, 8)];
-
-                //  Edge along xmax
-                idx = this->Index(0, j);
-                this->fsend_xmax[j*3 + 0] = this->f[D2Q9<T>::IndexF(idx, 3)];
-                this->fsend_xmax[j*3 + 1] = this->f[D2Q9<T>::IndexF(idx, 6)];
-                this->fsend_xmax[j*3 + 2] = this->f[D2Q9<T>::IndexF(idx, 7)]; 
-            }
-        }
-        if (this->my != 1) {
-            for (int i = 0; i < this->nx; ++i) {
-                //  Edge along ymin
-                idx = this->Index(i, this->ny - 1);
-                this->fsend_ymin[i*3 + 0] = this->f[D2Q9<T>::IndexF(idx, 2)];
-                this->fsend_ymin[i*3 + 1] = this->f[D2Q9<T>::IndexF(idx, 5)];
-                this->fsend_ymin[i*3 + 2] = this->f[D2Q9<T>::IndexF(idx, 6)]; 
-
-                //  Edge along ymax
-                idx = this->Index(i, 0);
-                this->fsend_ymax[i*3 + 0] = this->f[D2Q9<T>::IndexF(idx, 4)];
-                this->fsend_ymax[i*3 + 1] = this->f[D2Q9<T>::IndexF(idx, 7)];
-                this->fsend_ymax[i*3 + 2] = this->f[D2Q9<T>::IndexF(idx, 8)];
-            }
-        }
-        if (this->mx != 1 || this->my != 1) {
-            this->fsend_corner[0] = this->f[D2Q9<T>::IndexF(this->Index(this->nx - 1, this->ny - 1), 5)];   //  Corner at xmin and ymin
-            this->fsend_corner[1] = this->f[D2Q9<T>::IndexF(this->Index(this->nx - 1, 0), 8)];              //  Corner at xmin and ymax
-            this->fsend_corner[2] = this->f[D2Q9<T>::IndexF(this->Index(0, this->ny - 1), 6)];              //  Corner at xmax and ymin
-            this->fsend_corner[3] = this->f[D2Q9<T>::IndexF(this->Index(0, 0), 7)];                         //  Corner at xmax and ymax
-        }
-        
-        //  Communicate with other PE
-        int neib = 0;
-        if (this->mx != 1) {
-            //  Left
-            MPI_Isend(this->fsend_xmin, this->ny*3, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy), 0, MPI_COMM_WORLD, &this->request[neib++]);
-            MPI_Irecv(this->frecv_xmax, this->ny*3, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy), 0, MPI_COMM_WORLD, &this->request[neib++]);
-
-            //  Right
-            MPI_Isend(this->fsend_xmax, this->ny*3, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy), 1, MPI_COMM_WORLD, &this->request[neib++]);
-            MPI_Irecv(this->frecv_xmin, this->ny*3, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy), 1, MPI_COMM_WORLD, &this->request[neib++]);
-        }
-        if (this->my != 1) {
-            //  Bottom
-            MPI_Isend(this->fsend_ymin, this->nx*3, MPI_DOUBLE, this->IndexPE(this->PEx, this->PEy - 1), 2, MPI_COMM_WORLD, &this->request[neib++]);
-            MPI_Irecv(this->frecv_ymax, this->nx*3, MPI_DOUBLE, this->IndexPE(this->PEx, this->PEy + 1), 2, MPI_COMM_WORLD, &this->request[neib++]);
-
-            //  Top
-            MPI_Isend(this->fsend_ymax, this->nx*3, MPI_DOUBLE, this->IndexPE(this->PEx, this->PEy + 1), 3, MPI_COMM_WORLD, &this->request[neib++]);
-            MPI_Irecv(this->frecv_ymin, this->nx*3, MPI_DOUBLE, this->IndexPE(this->PEx, this->PEy - 1), 3, MPI_COMM_WORLD, &this->request[neib++]);
-        }
-        if (this->mx != 1 || this->my != 1) {
-            //  Left bottom
-            MPI_Isend(&this->fsend_corner[0], 1, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy - 1), 4, MPI_COMM_WORLD, &this->request[neib++]);
-            MPI_Irecv(&this->frecv_corner[3], 1, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy + 1), 4, MPI_COMM_WORLD, &this->request[neib++]);
-
-            //  Left top
-            MPI_Isend(&this->fsend_corner[1], 1, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy + 1), 5, MPI_COMM_WORLD, &this->request[neib++]);
-            MPI_Irecv(&this->frecv_corner[2], 1, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy - 1), 5, MPI_COMM_WORLD, &this->request[neib++]);
-
-            //  Right bottom
-            MPI_Irecv(&this->frecv_corner[1], 1, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy + 1), 6, MPI_COMM_WORLD, &this->request[neib++]);
-            MPI_Isend(&this->fsend_corner[2], 1, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy - 1), 6, MPI_COMM_WORLD, &this->request[neib++]);
-
-            //  Right top
-            MPI_Irecv(&this->frecv_corner[0], 1, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy - 1), 7, MPI_COMM_WORLD, &this->request[neib++]);
-            MPI_Isend(&this->fsend_corner[3], 1, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy + 1), 7, MPI_COMM_WORLD, &this->request[neib++]);      
-        }
         if (neib > 0) {
             MPI_Waitall(neib, this->request, this->status);
         }
@@ -406,40 +443,45 @@ private:
         if (this->mx != 1) {
             for (int j = 0; j < this->ny; ++j) {
                 //  Edge along xmin
-                idx = this->Index(0, j);
-                this->f[D2Q9<T>::IndexF(idx, 3)] = this->frecv_xmin[j*3 + 0];
-                this->f[D2Q9<T>::IndexF(idx, 6)] = this->frecv_xmin[j*3 + 1];
-                this->f[D2Q9<T>::IndexF(idx, 7)] = this->frecv_xmin[j*3 + 2]; 
+                int idx = this->Index(0, j);
+                this->fnext[D2Q9<T>::IndexF(idx, 3)] = this->frecv_xmin[j*3 + 0];
+                this->fnext[D2Q9<T>::IndexF(idx, 6)] = this->frecv_xmin[j*3 + 1];
+                this->fnext[D2Q9<T>::IndexF(idx, 7)] = this->frecv_xmin[j*3 + 2]; 
             
                 //  Edge along xmax
                 idx = this->Index(this->nx - 1, j);
-                this->f[D2Q9<T>::IndexF(idx, 1)] = this->frecv_xmax[j*3 + 0];
-                this->f[D2Q9<T>::IndexF(idx, 5)] = this->frecv_xmax[j*3 + 1];
-                this->f[D2Q9<T>::IndexF(idx, 8)] = this->frecv_xmax[j*3 + 2];
+                this->fnext[D2Q9<T>::IndexF(idx, 1)] = this->frecv_xmax[j*3 + 0];
+                this->fnext[D2Q9<T>::IndexF(idx, 5)] = this->frecv_xmax[j*3 + 1];
+                this->fnext[D2Q9<T>::IndexF(idx, 8)] = this->frecv_xmax[j*3 + 2];
             }
         }
         if (this->my != 1) {
             for (int i = 0; i < this->nx; ++i) {
                 //  Edge along ymin
-                idx = this->Index(i, 0);
-                this->f[D2Q9<T>::IndexF(idx, 4)] = this->frecv_ymin[i*3 + 0];
-                this->f[D2Q9<T>::IndexF(idx, 7)] = this->frecv_ymin[i*3 + 1];
-                this->f[D2Q9<T>::IndexF(idx, 8)] = this->frecv_ymin[i*3 + 2];
+                int idx = this->Index(i, 0);
+                this->fnext[D2Q9<T>::IndexF(idx, 4)] = this->frecv_ymin[i*3 + 0];
+                this->fnext[D2Q9<T>::IndexF(idx, 7)] = this->frecv_ymin[i*3 + 1];
+                this->fnext[D2Q9<T>::IndexF(idx, 8)] = this->frecv_ymin[i*3 + 2];
             
                 //  Edge along ymax
                 idx = this->Index(i, this->ny - 1);
-                this->f[D2Q9<T>::IndexF(idx, 2)] = this->frecv_ymax[i*3 + 0];
-                this->f[D2Q9<T>::IndexF(idx, 5)] = this->frecv_ymax[i*3 + 1];
-                this->f[D2Q9<T>::IndexF(idx, 6)] = this->frecv_ymax[i*3 + 2];
+                this->fnext[D2Q9<T>::IndexF(idx, 2)] = this->frecv_ymax[i*3 + 0];
+                this->fnext[D2Q9<T>::IndexF(idx, 5)] = this->frecv_ymax[i*3 + 1];
+                this->fnext[D2Q9<T>::IndexF(idx, 6)] = this->frecv_ymax[i*3 + 2];
             }
         }
         if (this->mx != 1 || this->my != 1) {
-            this->f[D2Q9<T>::IndexF(this->Index(0, 0), 7)] = this->frecv_corner[0];                         //  Corner at xmin and ymin
-            this->f[D2Q9<T>::IndexF(this->Index(0, this->ny - 1), 6)] = this->frecv_corner[1];              //  Corner at xmin and ymax
-            this->f[D2Q9<T>::IndexF(this->Index(this->nx - 1, 0), 8)] = this->frecv_corner[2];              //  Corner at xmax and ymin
-            this->f[D2Q9<T>::IndexF(this->Index(this->nx - 1, this->ny - 1), 5)] = this->frecv_corner[3];   //  Corner at xmax and ymax
+            this->fnext[D2Q9<T>::IndexF(this->Index(0, 0), 7)] = this->frecv_corner[0];                         //  Corner at xmin and ymin
+            this->fnext[D2Q9<T>::IndexF(this->Index(0, this->ny - 1), 6)] = this->frecv_corner[1];              //  Corner at xmin and ymax
+            this->fnext[D2Q9<T>::IndexF(this->Index(this->nx - 1, 0), 8)] = this->frecv_corner[2];              //  Corner at xmax and ymin
+            this->fnext[D2Q9<T>::IndexF(this->Index(this->nx - 1, this->ny - 1), 5)] = this->frecv_corner[3];   //  Corner at xmax and ymax
         }
 #endif
+
+        //  Swap
+        T *tmp = this->f;
+        this->f = this->fnext;
+        this->fnext = tmp;
     }
 
     template<class T>

@@ -222,7 +222,7 @@ int main(int argc, char** argv) {
 #else
         f = f_buffer;
 #endif
-        f /= L*nt;
+        f /= (double)(L*L*nt);
         Normalize(dfdss.data(), pf.nxyz);
         
         //********************Filter sensitivities********************

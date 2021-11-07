@@ -296,6 +296,8 @@ int main(int argc, char** argv) {
         if ((itr > 1 && dsmax < 0.01 && g <= 0.0) || itr == nitr) {
             if (MyRank == 0) {
                 std::cout << "----------Convergence/Last step----------" << std::endl;
+                std::chrono::system_clock::time_point end = std::chrono::system_clock::now();
+                std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count() << std::endl;
             }
 
 #ifdef _USE_MPI_DEFINES

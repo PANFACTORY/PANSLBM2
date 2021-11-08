@@ -507,21 +507,21 @@ private:
         }
         if (this->mx != 1 || this->my != 1 || this->mz != 1) {
             MPI_Isend(&this->fsend_corner[0], 1, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy - 1, this->PEz - 1), 18, MPI_COMM_WORLD, &this->request[neib++]);
-            MPI_Irecv(&this->frecv_corner[7], 1, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy - 1, this->PEz - 1), 18, MPI_COMM_WORLD, &this->request[neib++]);   //  Corner at xmin, ymin and zmin
+            MPI_Irecv(&this->frecv_corner[0], 1, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy + 1, this->PEz + 1), 18, MPI_COMM_WORLD, &this->request[neib++]);   //  Corner at xmin, ymin and zmin
             MPI_Isend(&this->fsend_corner[1], 1, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy - 1, this->PEz - 1), 19, MPI_COMM_WORLD, &this->request[neib++]);
-            MPI_Irecv(&this->frecv_corner[6], 1, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy - 1, this->PEz - 1), 19, MPI_COMM_WORLD, &this->request[neib++]);   //  Corner at xmax, ymin and zmin
+            MPI_Irecv(&this->frecv_corner[1], 1, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy + 1, this->PEz + 1), 19, MPI_COMM_WORLD, &this->request[neib++]);   //  Corner at xmax, ymin and zmin
             MPI_Isend(&this->fsend_corner[2], 1, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy + 1, this->PEz - 1), 20, MPI_COMM_WORLD, &this->request[neib++]);
-            MPI_Irecv(&this->frecv_corner[5], 1, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy + 1, this->PEz - 1), 20, MPI_COMM_WORLD, &this->request[neib++]);   //  Corner at xmin, ymax and zmin
+            MPI_Irecv(&this->frecv_corner[2], 1, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy - 1, this->PEz + 1), 20, MPI_COMM_WORLD, &this->request[neib++]);   //  Corner at xmin, ymax and zmin
             MPI_Isend(&this->fsend_corner[3], 1, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy + 1, this->PEz - 1), 21, MPI_COMM_WORLD, &this->request[neib++]);
-            MPI_Irecv(&this->frecv_corner[4], 1, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy + 1, this->PEz - 1), 21, MPI_COMM_WORLD, &this->request[neib++]);   //  Corner at xmax, ymax and zmin
+            MPI_Irecv(&this->frecv_corner[3], 1, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy - 1, this->PEz + 1), 21, MPI_COMM_WORLD, &this->request[neib++]);   //  Corner at xmax, ymax and zmin
             MPI_Isend(&this->fsend_corner[4], 1, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy - 1, this->PEz + 1), 22, MPI_COMM_WORLD, &this->request[neib++]);
-            MPI_Irecv(&this->frecv_corner[3], 1, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy - 1, this->PEz + 1), 22, MPI_COMM_WORLD, &this->request[neib++]);   //  Corner at xmin, ymin and zmax
+            MPI_Irecv(&this->frecv_corner[4], 1, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy + 1, this->PEz - 1), 22, MPI_COMM_WORLD, &this->request[neib++]);   //  Corner at xmin, ymin and zmax
             MPI_Isend(&this->fsend_corner[5], 1, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy - 1, this->PEz + 1), 23, MPI_COMM_WORLD, &this->request[neib++]); 
-            MPI_Irecv(&this->frecv_corner[2], 1, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy - 1, this->PEz + 1), 23, MPI_COMM_WORLD, &this->request[neib++]);   //  Corner at xmax, ymin and zmax
+            MPI_Irecv(&this->frecv_corner[5], 1, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy + 1, this->PEz - 1), 23, MPI_COMM_WORLD, &this->request[neib++]);   //  Corner at xmax, ymin and zmax
             MPI_Isend(&this->fsend_corner[6], 1, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy + 1, this->PEz + 1), 24, MPI_COMM_WORLD, &this->request[neib++]); 
-            MPI_Irecv(&this->frecv_corner[1], 1, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy + 1, this->PEz + 1), 24, MPI_COMM_WORLD, &this->request[neib++]);   //  Corner at xmin, ymax and zmax
+            MPI_Irecv(&this->frecv_corner[6], 1, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy - 1, this->PEz - 1), 24, MPI_COMM_WORLD, &this->request[neib++]);   //  Corner at xmin, ymax and zmax
             MPI_Isend(&this->fsend_corner[7], 1, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy + 1, this->PEz + 1), 25, MPI_COMM_WORLD, &this->request[neib++]); 
-            MPI_Irecv(&this->frecv_corner[0], 1, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy + 1, this->PEz + 1), 25, MPI_COMM_WORLD, &this->request[neib++]);   //  Corner at xmax, ymax and zmax
+            MPI_Irecv(&this->frecv_corner[7], 1, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy - 1, this->PEz - 1), 25, MPI_COMM_WORLD, &this->request[neib++]);   //  Corner at xmax, ymax and zmax
         }
         if (neib > 0) {
             MPI_Waitall(neib, this->request, this->status);
@@ -935,21 +935,21 @@ private:
         }
         if (this->mx != 1 || this->my != 1 || this->mz != 1) {
             MPI_Isend(&this->fsend_corner[0], 1, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy - 1, this->PEz - 1), 18, MPI_COMM_WORLD, &this->request[neib++]);
-            MPI_Irecv(&this->frecv_corner[7], 1, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy - 1, this->PEz - 1), 18, MPI_COMM_WORLD, &this->request[neib++]);   //  Corner at xmin, ymin and zmin
+            MPI_Irecv(&this->frecv_corner[0], 1, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy + 1, this->PEz + 1), 18, MPI_COMM_WORLD, &this->request[neib++]);   //  Corner at xmin, ymin and zmin
             MPI_Isend(&this->fsend_corner[1], 1, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy - 1, this->PEz - 1), 19, MPI_COMM_WORLD, &this->request[neib++]);
-            MPI_Irecv(&this->frecv_corner[6], 1, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy - 1, this->PEz - 1), 19, MPI_COMM_WORLD, &this->request[neib++]);   //  Corner at xmax, ymin and zmin
+            MPI_Irecv(&this->frecv_corner[1], 1, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy + 1, this->PEz + 1), 19, MPI_COMM_WORLD, &this->request[neib++]);   //  Corner at xmax, ymin and zmin
             MPI_Isend(&this->fsend_corner[2], 1, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy + 1, this->PEz - 1), 20, MPI_COMM_WORLD, &this->request[neib++]);
-            MPI_Irecv(&this->frecv_corner[5], 1, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy + 1, this->PEz - 1), 20, MPI_COMM_WORLD, &this->request[neib++]);   //  Corner at xmin, ymax and zmin
+            MPI_Irecv(&this->frecv_corner[2], 1, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy - 1, this->PEz + 1), 20, MPI_COMM_WORLD, &this->request[neib++]);   //  Corner at xmin, ymax and zmin
             MPI_Isend(&this->fsend_corner[3], 1, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy + 1, this->PEz - 1), 21, MPI_COMM_WORLD, &this->request[neib++]);
-            MPI_Irecv(&this->frecv_corner[4], 1, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy + 1, this->PEz - 1), 21, MPI_COMM_WORLD, &this->request[neib++]);   //  Corner at xmax, ymax and zmin
+            MPI_Irecv(&this->frecv_corner[3], 1, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy - 1, this->PEz + 1), 21, MPI_COMM_WORLD, &this->request[neib++]);   //  Corner at xmax, ymax and zmin
             MPI_Isend(&this->fsend_corner[4], 1, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy - 1, this->PEz + 1), 22, MPI_COMM_WORLD, &this->request[neib++]);
-            MPI_Irecv(&this->frecv_corner[3], 1, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy - 1, this->PEz + 1), 22, MPI_COMM_WORLD, &this->request[neib++]);   //  Corner at xmin, ymin and zmax
+            MPI_Irecv(&this->frecv_corner[4], 1, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy + 1, this->PEz - 1), 22, MPI_COMM_WORLD, &this->request[neib++]);   //  Corner at xmin, ymin and zmax
             MPI_Isend(&this->fsend_corner[5], 1, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy - 1, this->PEz + 1), 23, MPI_COMM_WORLD, &this->request[neib++]); 
-            MPI_Irecv(&this->frecv_corner[2], 1, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy - 1, this->PEz + 1), 23, MPI_COMM_WORLD, &this->request[neib++]);   //  Corner at xmax, ymin and zmax
+            MPI_Irecv(&this->frecv_corner[5], 1, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy + 1, this->PEz - 1), 23, MPI_COMM_WORLD, &this->request[neib++]);   //  Corner at xmax, ymin and zmax
             MPI_Isend(&this->fsend_corner[6], 1, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy + 1, this->PEz + 1), 24, MPI_COMM_WORLD, &this->request[neib++]); 
-            MPI_Irecv(&this->frecv_corner[1], 1, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy + 1, this->PEz + 1), 24, MPI_COMM_WORLD, &this->request[neib++]);   //  Corner at xmin, ymax and zmax
+            MPI_Irecv(&this->frecv_corner[6], 1, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy - 1, this->PEz - 1), 24, MPI_COMM_WORLD, &this->request[neib++]);   //  Corner at xmin, ymax and zmax
             MPI_Isend(&this->fsend_corner[7], 1, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy + 1, this->PEz + 1), 25, MPI_COMM_WORLD, &this->request[neib++]); 
-            MPI_Irecv(&this->frecv_corner[0], 1, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy + 1, this->PEz + 1), 25, MPI_COMM_WORLD, &this->request[neib++]);   //  Corner at xmax, ymax and zmax
+            MPI_Irecv(&this->frecv_corner[7], 1, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy - 1, this->PEz - 1), 25, MPI_COMM_WORLD, &this->request[neib++]);   //  Corner at xmax, ymax and zmax
         }
         if (neib > 0) {
             MPI_Waitall(neib, this->request, this->status);

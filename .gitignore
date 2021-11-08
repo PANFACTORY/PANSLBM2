@@ -4,3 +4,5 @@ gprof
 .vscode
 result
 build
+*.a
+*.def

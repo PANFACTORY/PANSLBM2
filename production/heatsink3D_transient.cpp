@@ -306,7 +306,7 @@ int main(int argc, char** argv) {
                     std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count() << std::endl;
                 }
 #ifdef _USE_MPI_DEFINES
-                VTKXMLExport file(pf, "result/heatsink_transient3D");
+                VTKXMLExport file(pf, "result/heatsink3D_transient");
                 file.AddPointData(pf, "rho", [&](int _i, int _j, int _k) { return rho[nt - 1][pf.Index(_i, _j, _k)]; });
                 file.AddPointData(pf, "u", 
                     [&](int _i, int _j, int _k) { return ux[nt - 1][pf.Index(_i, _j, _k)]; },
@@ -340,7 +340,7 @@ int main(int argc, char** argv) {
                 file.AddPointData(pf, "ss", [&](int _i, int _j, int _k) { return ss[pf.Index(_i, _j, _k)]; });
                 file.AddPointData(pf, "dfdss", [&](int _i, int _j, int _k) { return dfdss[pf.Index(_i, _j, _k)]; });
 #else
-                VTKExport file("result/heatsink_transient3D.vtk", lx, ly, lz);
+                VTKExport file("result/heatsink3D_transient.vtk", lx, ly, lz);
                 file.AddPointScaler("rho", [&](int _i, int _j, int _k) { return rho[nt - 1][pf.Index(_i, _j, _k)]; });
                 file.AddPointVector("u", 
                     [&](int _i, int _j, int _k) { return ux[nt - 1][pf.Index(_i, _j, _k)]; },

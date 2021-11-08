@@ -14,9 +14,9 @@ int main(int argc, char** argv) {
     //--------------------Set parameters--------------------
     const int dt = 1000, nt0 = 1000000, nc = 3, nm = 3;
     int ntList[nc] = { 50000, 50000, 50000 }, periodList[nc] = { 50000, 25000, 5000 }, dutyList[nc] = { 10, 80 };
-    double viscosity = 0.1/6.0, diff_fluid = viscosity/1.0, Th = 1.0, Tl = 0.0, ratio = 0.5;
+    double viscosity = 0.1/6.0, diff_fluid = viscosity/1.0, Th = 1.0, Tl = 0.0;
     double alphamax = 1e5, diff_solid = diff_fluid*10.0;
-    double qfList[nc] = { 1e-2, 1e-2, 1e-2 }, qgList[nc] = { 1e-4, 1e-4, 1e-4 }, faveList[nc*nm] = { 0 }, fvarList[nc*nm] = { 0 };
+    double qfList[nc] = { 1e-2, 1e-2, 1e-2 }, qgList[nc] = { 1e-4, 1e-4, 1e-4 }, ratioList[nc] = { 0.25, 0.5, 0.75 }, faveList[nc*nm] = { 0 }, fvarList[nc*nm] = { 0 };
 
     if (argc != nm + 1) {
         std::cout << "Error:No vtk file selected." << std::endl;
@@ -51,7 +51,7 @@ int main(int argc, char** argv) {
         //  Loop of condition
         for (int conditionid = 0; conditionid < nc; ++conditionid) {
             int nt = ntList[conditionid], period = periodList[conditionid], duty = dutyList[conditionid];
-            double qf = qfList[conditionid], qg = qgList[conditionid];
+            double qf = qfList[conditionid], qg = qgList[conditionid], ratio = ratioList[conditionid];
             std::cout << "\rCondition id:" << conditionid << std::string(50, ' ') << std::endl;
             for (int idx = 0; idx < pf.nxyz; idx++) {
                 rho[idx] = 1.0; ux[idx] = 0.0; uy[idx] = 0.0; tem[idx] = 0.5*(Tl + Th); qx[idx] = 0.0; qy[idx] = 0.0;
@@ -154,7 +154,7 @@ int main(int argc, char** argv) {
     for (int conditionid = 0; conditionid < nc; ++conditionid) {
         std::cout << std::endl << std::scientific << std::setprecision(2) << conditionid << std::setprecision(6);
         for (int modelid = 0; modelid < nm; ++modelid) {
-            std::cout << "\t" << ratio*faveList[conditionid*nm + modelid] + (1.0 - ratio)*sqrt(fvarList[conditionid*nm + modelid]);
+            std::cout << "\t" << ratioList[conditionid]*faveList[conditionid*nm + modelid] + (1.0 - ratioList[conditionid])*sqrt(fvarList[conditionid*nm + modelid]);
         }    
     }
 

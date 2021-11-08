@@ -1,4 +1,4 @@
-//#define _USE_MPI_DEFINES
+#define _USE_MPI_DEFINES
 #define _USE_AVX_DEFINES
 #include <iostream>
 #include <chrono>
@@ -31,7 +31,7 @@ int main(int argc, char** argv) {
     MPI_Comm_size(MPI_COMM_WORLD, &PeTot);
     MPI_Comm_rank(MPI_COMM_WORLD, &MyRank);
 
-    assert(argc == 3);
+    assert(argc == 4);
     int nPEx = atoi(argv[1]), nPEy = atoi(argv[2]), nPEz = atoi(argv[3]);
     assert(nPEx*nPEy*nPEz == PeTot);
 #else
@@ -310,7 +310,7 @@ int main(int argc, char** argv) {
             }
 
 #ifdef _USE_MPI_DEFINES
-            VTKXMLExport file(pf, "result/nsadncopt3D");
+            VTKXMLExport file(pf, "result/heatsink3D");
             file.AddPointData(pf, "k", [&](int _i, int _j, int _k) { return diffusivity[pg.Index(_i, _j, _k)]; });
             file.AddPointData(pf, "rho", [&](int _i, int _j, int _k) { return rho[pf.Index(_i, _j, _k)]; });
             file.AddPointData(pf, "u", 
@@ -347,7 +347,7 @@ int main(int argc, char** argv) {
             file.AddPointData(pf, "dkds", [&](int _i, int _j, int _k) { return dkds[pf.Index(_i, _j, _k)];    });
             file.AddPointData(pf, "dads", [&](int _i, int _j, int _k) { return dads[pf.Index(_i, _j, _k)];    });
 #else
-            VTKExport file("result/nsadncopt3D.vtk", lx, ly, lz);
+            VTKExport file("result/heatsink3D.vtk", lx, ly, lz);
             file.AddPointScaler("k", [&](int _i, int _j, int _k) { return diffusivity[pg.Index(_i, _j, _k)]; });
             file.AddPointScaler("rho", [&](int _i, int _j, int _k) { return rho[pf.Index(_i, _j, _k)]; });
             file.AddPointVector("u", 

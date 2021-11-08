@@ -385,7 +385,7 @@ int main(int argc, char** argv) {
         delete[] gi[t];    
     }
     delete[] rho; delete[] ux; delete[] uy; delete[] uz; 
-    delete[] tem; delete[] qx; delete[] qy; delete[] qz;
+    delete[] tem; delete[] qx; delete[] qy; delete[] qz; delete[] gi;
     delete[] diffusivity; delete[] alpha; delete[] dkds; delete[] dads;
     delete[] irho; delete[] iux; delete[] iuy; delete[] iuz; delete[] imx; delete[] imy; delete[] imz; 
     delete[] item; delete[] iqx; delete[] iqy; delete[] iqz; delete[] igi;

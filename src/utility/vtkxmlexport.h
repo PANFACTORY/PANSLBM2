@@ -116,10 +116,10 @@ private:
         auto IndexEZ = [&](int _k, int _c) { return _c + cmp*_k; };
 
         T *send_xmin = new T[_p.ny*_p.nz*cmp], *send_ymin = new T[_p.nz*_p.nx*cmp], *send_zmin = new T[_p.nx*_p.ny*cmp];
-        T *send_ymin_zmin = new T[_p.nx*cmp], *send_zmin_xmin = new T[_p.ny*cmp], *send_xmin_ymin = new T[_p.nx*cmp];
+        T *send_ymin_zmin = new T[_p.nx*cmp], *send_zmin_xmin = new T[_p.ny*cmp], *send_xmin_ymin = new T[_p.nz*cmp];
         T *send_xmin_ymin_zmin = new T[cmp];
         T *recv_xmax = new T[_p.ny*_p.nz*cmp], *recv_ymax = new T[_p.nz*_p.nx*cmp], *recv_zmax = new T[_p.nx*_p.ny*cmp];
-        T *recv_ymax_zmax = new T[_p.nx*cmp], *recv_zmax_xmax = new T[_p.ny*cmp], *recv_xmax_ymax = new T[_p.nx*cmp];
+        T *recv_ymax_zmax = new T[_p.nx*cmp], *recv_zmax_xmax = new T[_p.ny*cmp], *recv_xmax_ymax = new T[_p.nz*cmp];
         T *recv_xmax_ymax_zmax = new T[cmp];
 
         MPI_Status status[14];

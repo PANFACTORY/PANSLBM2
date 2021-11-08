@@ -352,35 +352,35 @@ namespace PANSLBM2 {
             }
             if (_p.PEx != 0 && _p.PEy != 0 && _p.PEz != 0) {
                 MPI_Isend(send_xmin_ymin_zmin, nR*nR*nR, MPI_DOUBLE, _p.IndexPE(_p.PEx - 1, _p.PEy - 1, _p.PEz - 1), 18, MPI_COMM_WORLD, &request[neib++]);
-                MPI_Irecv(recv_xmin_ymin_zmin, nR*nR*nR, MPI_DOUBLE, _p.IndexPE(_p.PEx - 1, _p.PEy - 1, _p.PEz - 1), 18, MPI_COMM_WORLD, &request[neib++]); 
+                MPI_Irecv(recv_xmin_ymin_zmin, nR*nR*nR, MPI_DOUBLE, _p.IndexPE(_p.PEx - 1, _p.PEy - 1, _p.PEz - 1), 25, MPI_COMM_WORLD, &request[neib++]); 
             }
             if (_p.PEx != _p.mx - 1 && _p.PEy != 0 && _p.PEz != 0) {
                 MPI_Isend(send_xmax_ymin_zmin, nR*nR*nR, MPI_DOUBLE, _p.IndexPE(_p.PEx + 1, _p.PEy - 1, _p.PEz - 1), 19, MPI_COMM_WORLD, &request[neib++]);
-                MPI_Irecv(recv_xmax_ymin_zmin, nR*nR*nR, MPI_DOUBLE, _p.IndexPE(_p.PEx + 1, _p.PEy - 1, _p.PEz - 1), 19, MPI_COMM_WORLD, &request[neib++]); 
+                MPI_Irecv(recv_xmax_ymin_zmin, nR*nR*nR, MPI_DOUBLE, _p.IndexPE(_p.PEx + 1, _p.PEy - 1, _p.PEz - 1), 24, MPI_COMM_WORLD, &request[neib++]); 
             }
             if (_p.PEx != 0 && _p.PEy != _p.my - 1 && _p.PEz != 0) {
                 MPI_Isend(send_xmin_ymax_zmin, nR*nR*nR, MPI_DOUBLE, _p.IndexPE(_p.PEx - 1, _p.PEy + 1, _p.PEz - 1), 20, MPI_COMM_WORLD, &request[neib++]);
-                MPI_Irecv(recv_xmin_ymax_zmin, nR*nR*nR, MPI_DOUBLE, _p.IndexPE(_p.PEx - 1, _p.PEy + 1, _p.PEz - 1), 20, MPI_COMM_WORLD, &request[neib++]);
+                MPI_Irecv(recv_xmin_ymax_zmin, nR*nR*nR, MPI_DOUBLE, _p.IndexPE(_p.PEx - 1, _p.PEy + 1, _p.PEz - 1), 23, MPI_COMM_WORLD, &request[neib++]);
             }
             if (_p.PEx != _p.mx - 1 && _p.PEy != _p.my - 1 && _p.PEz != 0) {
                 MPI_Isend(send_xmax_ymax_zmin, nR*nR*nR, MPI_DOUBLE, _p.IndexPE(_p.PEx + 1, _p.PEy + 1, _p.PEz - 1), 21, MPI_COMM_WORLD, &request[neib++]);
-                MPI_Irecv(recv_xmax_ymax_zmin, nR*nR*nR, MPI_DOUBLE, _p.IndexPE(_p.PEx + 1, _p.PEy + 1, _p.PEz - 1), 21, MPI_COMM_WORLD, &request[neib++]);  
+                MPI_Irecv(recv_xmax_ymax_zmin, nR*nR*nR, MPI_DOUBLE, _p.IndexPE(_p.PEx + 1, _p.PEy + 1, _p.PEz - 1), 22, MPI_COMM_WORLD, &request[neib++]);  
             }
             if (_p.PEx != 0 && _p.PEy != 0 && _p.PEz != _p.mz - 1) {
                 MPI_Isend(send_xmin_ymin_zmax, nR*nR*nR, MPI_DOUBLE, _p.IndexPE(_p.PEx - 1, _p.PEy - 1, _p.PEz + 1), 22, MPI_COMM_WORLD, &request[neib++]);
-                MPI_Irecv(recv_xmin_ymin_zmax, nR*nR*nR, MPI_DOUBLE, _p.IndexPE(_p.PEx - 1, _p.PEy - 1, _p.PEz + 1), 22, MPI_COMM_WORLD, &request[neib++]); 
+                MPI_Irecv(recv_xmin_ymin_zmax, nR*nR*nR, MPI_DOUBLE, _p.IndexPE(_p.PEx - 1, _p.PEy - 1, _p.PEz + 1), 21, MPI_COMM_WORLD, &request[neib++]); 
             }
             if (_p.PEx != _p.mx - 1 && _p.PEy != 0 && _p.PEz != _p.mz - 1) {
                 MPI_Isend(send_xmax_ymin_zmax, nR*nR*nR, MPI_DOUBLE, _p.IndexPE(_p.PEx + 1, _p.PEy - 1, _p.PEz + 1), 23, MPI_COMM_WORLD, &request[neib++]);
-                MPI_Irecv(recv_xmax_ymin_zmax, nR*nR*nR, MPI_DOUBLE, _p.IndexPE(_p.PEx + 1, _p.PEy - 1, _p.PEz + 1), 23, MPI_COMM_WORLD, &request[neib++]);
+                MPI_Irecv(recv_xmax_ymin_zmax, nR*nR*nR, MPI_DOUBLE, _p.IndexPE(_p.PEx + 1, _p.PEy - 1, _p.PEz + 1), 20, MPI_COMM_WORLD, &request[neib++]);
             }
             if (_p.PEx != 0 && _p.PEy != _p.my - 1 && _p.PEz != _p.mz - 1) {
                 MPI_Isend(send_xmin_ymax_zmax, nR*nR*nR, MPI_DOUBLE, _p.IndexPE(_p.PEx - 1, _p.PEy + 1, _p.PEz + 1), 24, MPI_COMM_WORLD, &request[neib++]); 
-                MPI_Irecv(recv_xmin_ymax_zmax, nR*nR*nR, MPI_DOUBLE, _p.IndexPE(_p.PEx - 1, _p.PEy + 1, _p.PEz + 1), 24, MPI_COMM_WORLD, &request[neib++]); 
+                MPI_Irecv(recv_xmin_ymax_zmax, nR*nR*nR, MPI_DOUBLE, _p.IndexPE(_p.PEx - 1, _p.PEy + 1, _p.PEz + 1), 19, MPI_COMM_WORLD, &request[neib++]); 
             }
             if (_p.PEx != _p.mx - 1 && _p.PEy != _p.my - 1 && _p.PEz != _p.mz - 1) {
                 MPI_Isend(send_xmax_ymax_zmax, nR*nR*nR, MPI_DOUBLE, _p.IndexPE(_p.PEx + 1, _p.PEy + 1, _p.PEz + 1), 25, MPI_COMM_WORLD, &request[neib++]); 
-                MPI_Irecv(recv_xmax_ymax_zmax, nR*nR*nR, MPI_DOUBLE, _p.IndexPE(_p.PEx + 1, _p.PEy + 1, _p.PEz + 1), 25, MPI_COMM_WORLD, &request[neib++]);
+                MPI_Irecv(recv_xmax_ymax_zmax, nR*nR*nR, MPI_DOUBLE, _p.IndexPE(_p.PEx + 1, _p.PEy + 1, _p.PEz + 1), 18, MPI_COMM_WORLD, &request[neib++]);
             }
             if (neib > 0) {
                 MPI_Waitall(neib, request, status);

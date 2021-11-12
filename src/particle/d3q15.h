@@ -255,16 +255,37 @@ private:
 
     template<class T>
     void D3Q15<T>::Stream() {
-        //  Stream
-#pragma omp parallel for
+        //  Stream of boundary points
+        for (int j = 0; j < this->ny; ++j) {
+            for (int k = 0; k < this->nz; ++k) {
+                int idxmin = this->Index(0, j, k), idxmax = this->Index(this->nx - 1, j, k);
+                for (int c = 1; c < D3Q15<T>::nc; ++c) {
+                    int idxminstream = this->Index(0 - D3Q15<T>::cx[c], j - D3Q15<T>::cy[c], k - D3Q15<T>::cz[c]);
+                    this->fnext[D3Q15<T>::IndexF(idxmin, c)] = this->f[D3Q15<T>::IndexF(idxminstream, c)];
+                    int idxmaxstream = this->Index((this->nx - 1) - D3Q15<T>::cx[c], j - D3Q15<T>::cy[c], k - D3Q15<T>::cz[c]);
+                    this->fnext[D3Q15<T>::IndexF(idxmax, c)] = this->f[D3Q15<T>::IndexF(idxmaxstream, c)];
+                }
+            }
+        }
         for (int k = 0; k < this->nz; ++k) {
+            for (int i = 0; i < this->nx; ++i) {
+                int idxmin = this->Index(i, 0, k), idxmax = this->Index(i, this->ny - 1, k);
+                for (int c = 1; c < D3Q15<T>::nc; ++c) {
+                    int idxminstream = this->Index(i - D3Q15<T>::cx[c], 0 - D3Q15<T>::cy[c], k - D3Q15<T>::cz[c]);
+                    this->fnext[D3Q15<T>::IndexF(idxmin, c)] = this->f[D3Q15<T>::IndexF(idxminstream, c)];
+                    int idxmaxstream = this->Index(i - D3Q15<T>::cx[c], (this->ny - 1) - D3Q15<T>::cy[c], k - D3Q15<T>::cz[c]);
+                    this->fnext[D3Q15<T>::IndexF(idxmax, c)] = this->f[D3Q15<T>::IndexF(idxmaxstream, c)];
+                }
+            }
+        }
+        for (int i = 0; i < this->nx; ++i) {
             for (int j = 0; j < this->ny; ++j) {
-                for (int i = 0; i < this->nx; ++i) {
-                    int idx = this->Index(i, j, k);
-                    for (int c = 1; c < D3Q15<T>::nc; ++c) {
-                        int idxstream = this->Index(i - D3Q15<T>::cx[c], j - D3Q15<T>::cy[c], k - D3Q15<T>::cz[c]);
-                        this->fnext[D3Q15<T>::IndexF(idx, c)] = this->f[D3Q15<T>::IndexF(idxstream, c)];
-                    }
+                int idxmin = this->Index(i, j, 0), idxmax = this->Index(i, j, this->nz - 1);
+                for (int c = 1; c < D3Q15<T>::nc; ++c) {
+                    int idxminstream = this->Index(i - D3Q15<T>::cx[c], j - D3Q15<T>::cy[c], 0 - D3Q15<T>::cz[c]);
+                    this->fnext[D3Q15<T>::IndexF(idxmin, c)] = this->f[D3Q15<T>::IndexF(idxminstream, c)];
+                    int idxmaxstream = this->Index(i - D3Q15<T>::cx[c], j - D3Q15<T>::cy[c], (this->nz - 1) - D3Q15<T>::cz[c]);
+                    this->fnext[D3Q15<T>::IndexF(idxmax, c)] = this->f[D3Q15<T>::IndexF(idxmaxstream, c)];
                 }
             }
         }
@@ -424,7 +445,23 @@ private:
 
         //  Communicate with other PE
         int neib = this->Communicate();
-        
+#endif
+
+        //  Stream of inner points
+#pragma omp parallel for
+        for (int k = 1; k < this->nz - 1; ++k) {
+            for (int j = 1; j < this->ny - 1; ++j) {
+                for (int i = 1; i < this->nx - 1; ++i) {
+                    int idx = this->Index(i, j, k);
+                    for (int c = 1; c < D3Q15<T>::nc; ++c) {
+                        int idxstream = this->Index(i - D3Q15<T>::cx[c], j - D3Q15<T>::cy[c], k - D3Q15<T>::cz[c]);
+                        this->fnext[D3Q15<T>::IndexF(idx, c)] = this->f[D3Q15<T>::IndexF(idxstream, c)];
+                    }
+                }
+            }
+        }
+
+#ifdef _USE_MPI_DEFINES
         if (neib > 0) {
             MPI_Waitall(neib, this->request, this->status);
         }

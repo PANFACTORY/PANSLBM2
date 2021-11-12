@@ -268,9 +268,6 @@ private:
                 }
             }
         }
-        
-        //  Swap
-        std::swap(this->f, this->fnext);
 
 #ifdef _USE_MPI_DEFINES
         int idx, idxface;
@@ -282,20 +279,20 @@ private:
                     //  Face on xmin
                     idx = this->Index(this->nx - 1, j, k);
                     idxface = this->IndexBCx(j, k);
-                    this->fsend_xmin[idxface*5 + 0] = this->f[D3Q15<T>::IndexF(idx, 4)];
-                    this->fsend_xmin[idxface*5 + 1] = this->f[D3Q15<T>::IndexF(idx, 8)];
-                    this->fsend_xmin[idxface*5 + 2] = this->f[D3Q15<T>::IndexF(idx, 11)];
-                    this->fsend_xmin[idxface*5 + 3] = this->f[D3Q15<T>::IndexF(idx, 13)];
-                    this->fsend_xmin[idxface*5 + 4] = this->f[D3Q15<T>::IndexF(idx, 14)];
+                    this->fsend_xmin[idxface*5 + 0] = this->fnext[D3Q15<T>::IndexF(idx, 4)];
+                    this->fsend_xmin[idxface*5 + 1] = this->fnext[D3Q15<T>::IndexF(idx, 8)];
+                    this->fsend_xmin[idxface*5 + 2] = this->fnext[D3Q15<T>::IndexF(idx, 11)];
+                    this->fsend_xmin[idxface*5 + 3] = this->fnext[D3Q15<T>::IndexF(idx, 13)];
+                    this->fsend_xmin[idxface*5 + 4] = this->fnext[D3Q15<T>::IndexF(idx, 14)];
 
                     //  Face on xmax
                     idx = this->Index(0, j, k);
                     idxface = this->IndexBCx(j, k);
-                    this->fsend_xmax[idxface*5 + 0] = this->f[D3Q15<T>::IndexF(idx, 1)];
-                    this->fsend_xmax[idxface*5 + 1] = this->f[D3Q15<T>::IndexF(idx, 7)];
-                    this->fsend_xmax[idxface*5 + 2] = this->f[D3Q15<T>::IndexF(idx, 9)];
-                    this->fsend_xmax[idxface*5 + 3] = this->f[D3Q15<T>::IndexF(idx, 10)];
-                    this->fsend_xmax[idxface*5 + 4] = this->f[D3Q15<T>::IndexF(idx, 12)];
+                    this->fsend_xmax[idxface*5 + 0] = this->fnext[D3Q15<T>::IndexF(idx, 1)];
+                    this->fsend_xmax[idxface*5 + 1] = this->fnext[D3Q15<T>::IndexF(idx, 7)];
+                    this->fsend_xmax[idxface*5 + 2] = this->fnext[D3Q15<T>::IndexF(idx, 9)];
+                    this->fsend_xmax[idxface*5 + 3] = this->fnext[D3Q15<T>::IndexF(idx, 10)];
+                    this->fsend_xmax[idxface*5 + 4] = this->fnext[D3Q15<T>::IndexF(idx, 12)];
                 }
             }
         }
@@ -305,20 +302,20 @@ private:
                     //  Face on ymin
                     idx = this->Index(i, this->ny - 1, k);
                     idxface = this->IndexBCy(k, i);
-                    this->fsend_ymin[idxface*5 + 0] = this->f[D3Q15<T>::IndexF(idx, 5)];
-                    this->fsend_ymin[idxface*5 + 1] = this->f[D3Q15<T>::IndexF(idx, 9)];
-                    this->fsend_ymin[idxface*5 + 2] = this->f[D3Q15<T>::IndexF(idx, 11)];
-                    this->fsend_ymin[idxface*5 + 3] = this->f[D3Q15<T>::IndexF(idx, 12)];
-                    this->fsend_ymin[idxface*5 + 4] = this->f[D3Q15<T>::IndexF(idx, 14)];
+                    this->fsend_ymin[idxface*5 + 0] = this->fnext[D3Q15<T>::IndexF(idx, 5)];
+                    this->fsend_ymin[idxface*5 + 1] = this->fnext[D3Q15<T>::IndexF(idx, 9)];
+                    this->fsend_ymin[idxface*5 + 2] = this->fnext[D3Q15<T>::IndexF(idx, 11)];
+                    this->fsend_ymin[idxface*5 + 3] = this->fnext[D3Q15<T>::IndexF(idx, 12)];
+                    this->fsend_ymin[idxface*5 + 4] = this->fnext[D3Q15<T>::IndexF(idx, 14)];
 
                     //  Face on ymax
                     idx = this->Index(i, 0, k);
                     idxface = this->IndexBCy(k, i);
-                    this->fsend_ymax[idxface*5 + 0] = this->f[D3Q15<T>::IndexF(idx, 2)];
-                    this->fsend_ymax[idxface*5 + 1] = this->f[D3Q15<T>::IndexF(idx, 7)];
-                    this->fsend_ymax[idxface*5 + 2] = this->f[D3Q15<T>::IndexF(idx, 8)];
-                    this->fsend_ymax[idxface*5 + 3] = this->f[D3Q15<T>::IndexF(idx, 10)];
-                    this->fsend_ymax[idxface*5 + 4] = this->f[D3Q15<T>::IndexF(idx, 13)];
+                    this->fsend_ymax[idxface*5 + 0] = this->fnext[D3Q15<T>::IndexF(idx, 2)];
+                    this->fsend_ymax[idxface*5 + 1] = this->fnext[D3Q15<T>::IndexF(idx, 7)];
+                    this->fsend_ymax[idxface*5 + 2] = this->fnext[D3Q15<T>::IndexF(idx, 8)];
+                    this->fsend_ymax[idxface*5 + 3] = this->fnext[D3Q15<T>::IndexF(idx, 10)];
+                    this->fsend_ymax[idxface*5 + 4] = this->fnext[D3Q15<T>::IndexF(idx, 13)];
                 }
             }
         }
@@ -328,20 +325,20 @@ private:
                     //  Face on zmin
                     idx = this->Index(i, j, this->nz - 1);
                     idxface = this->IndexBCz(i, j);
-                    this->fsend_zmin[idxface*5 + 0] = this->f[D3Q15<T>::IndexF(idx, 6)];
-                    this->fsend_zmin[idxface*5 + 1] = this->f[D3Q15<T>::IndexF(idx, 10)];
-                    this->fsend_zmin[idxface*5 + 2] = this->f[D3Q15<T>::IndexF(idx, 11)];
-                    this->fsend_zmin[idxface*5 + 3] = this->f[D3Q15<T>::IndexF(idx, 12)];
-                    this->fsend_zmin[idxface*5 + 4] = this->f[D3Q15<T>::IndexF(idx, 13)];
+                    this->fsend_zmin[idxface*5 + 0] = this->fnext[D3Q15<T>::IndexF(idx, 6)];
+                    this->fsend_zmin[idxface*5 + 1] = this->fnext[D3Q15<T>::IndexF(idx, 10)];
+                    this->fsend_zmin[idxface*5 + 2] = this->fnext[D3Q15<T>::IndexF(idx, 11)];
+                    this->fsend_zmin[idxface*5 + 3] = this->fnext[D3Q15<T>::IndexF(idx, 12)];
+                    this->fsend_zmin[idxface*5 + 4] = this->fnext[D3Q15<T>::IndexF(idx, 13)];
 
                     //  Face on zmax
                     idx = this->Index(i, j, 0);
                     idxface = this->IndexBCz(i, j);
-                    this->fsend_zmax[idxface*5 + 0] = this->f[D3Q15<T>::IndexF(idx, 3)];
-                    this->fsend_zmax[idxface*5 + 1] = this->f[D3Q15<T>::IndexF(idx, 7)];
-                    this->fsend_zmax[idxface*5 + 2] = this->f[D3Q15<T>::IndexF(idx, 8)];
-                    this->fsend_zmax[idxface*5 + 3] = this->f[D3Q15<T>::IndexF(idx, 9)];
-                    this->fsend_zmax[idxface*5 + 4] = this->f[D3Q15<T>::IndexF(idx, 14)];
+                    this->fsend_zmax[idxface*5 + 0] = this->fnext[D3Q15<T>::IndexF(idx, 3)];
+                    this->fsend_zmax[idxface*5 + 1] = this->fnext[D3Q15<T>::IndexF(idx, 7)];
+                    this->fsend_zmax[idxface*5 + 2] = this->fnext[D3Q15<T>::IndexF(idx, 8)];
+                    this->fsend_zmax[idxface*5 + 3] = this->fnext[D3Q15<T>::IndexF(idx, 9)];
+                    this->fsend_zmax[idxface*5 + 4] = this->fnext[D3Q15<T>::IndexF(idx, 14)];
                 }
             }
         }
@@ -349,84 +346,85 @@ private:
             for (int i = 0; i < this->nx; ++i) {
                 //  Edge on ymin and zmin
                 idx = this->Index(i, this->ny - 1, this->nz - 1);
-                this->fsend_ymin_zmin[i*2 + 0] = this->f[D3Q15<T>::IndexF(idx, 11)];
-                this->fsend_ymin_zmin[i*2 + 1] = this->f[D3Q15<T>::IndexF(idx, 12)];
+                this->fsend_ymin_zmin[i*2 + 0] = this->fnext[D3Q15<T>::IndexF(idx, 11)];
+                this->fsend_ymin_zmin[i*2 + 1] = this->fnext[D3Q15<T>::IndexF(idx, 12)];
 
                 //  Edge on ymin and zmax
                 idx = this->Index(i, this->ny - 1, 0);
-                this->fsend_ymin_zmax[i*2 + 0] = this->f[D3Q15<T>::IndexF(idx, 9)];
-                this->fsend_ymin_zmax[i*2 + 1] = this->f[D3Q15<T>::IndexF(idx, 14)];
+                this->fsend_ymin_zmax[i*2 + 0] = this->fnext[D3Q15<T>::IndexF(idx, 9)];
+                this->fsend_ymin_zmax[i*2 + 1] = this->fnext[D3Q15<T>::IndexF(idx, 14)];
 
                 //  Edge on ymax and zmin
                 idx = this->Index(i, 0, this->nz - 1);
-                this->fsend_ymax_zmin[i*2 + 0] = this->f[D3Q15<T>::IndexF(idx, 10)];
-                this->fsend_ymax_zmin[i*2 + 1] = this->f[D3Q15<T>::IndexF(idx, 13)];
+                this->fsend_ymax_zmin[i*2 + 0] = this->fnext[D3Q15<T>::IndexF(idx, 10)];
+                this->fsend_ymax_zmin[i*2 + 1] = this->fnext[D3Q15<T>::IndexF(idx, 13)];
 
                 //  Edge on ymax and zmax
                 idx = this->Index(i, 0, 0);
-                this->fsend_ymax_zmax[i*2 + 0] = this->f[D3Q15<T>::IndexF(idx, 7)];
-                this->fsend_ymax_zmax[i*2 + 1] = this->f[D3Q15<T>::IndexF(idx, 8)];
+                this->fsend_ymax_zmax[i*2 + 0] = this->fnext[D3Q15<T>::IndexF(idx, 7)];
+                this->fsend_ymax_zmax[i*2 + 1] = this->fnext[D3Q15<T>::IndexF(idx, 8)];
             }
         }
         if (this->mz != 1 || this->mx != 1) {
             for (int j = 0; j < this->ny; ++j) {
                 //  Edge on zmin and xmin
                 idx = this->Index(this->nx - 1, j, this->nz - 1);
-                this->fsend_zmin_xmin[j*2 + 0] = this->f[D3Q15<T>::IndexF(idx, 11)];
-                this->fsend_zmin_xmin[j*2 + 1] = this->f[D3Q15<T>::IndexF(idx, 13)];
+                this->fsend_zmin_xmin[j*2 + 0] = this->fnext[D3Q15<T>::IndexF(idx, 11)];
+                this->fsend_zmin_xmin[j*2 + 1] = this->fnext[D3Q15<T>::IndexF(idx, 13)];
 
                 //  Edge on zmin and xmax
                 idx = this->Index(0, j, this->nz - 1);
-                this->fsend_zmin_xmax[j*2 + 0] = this->f[D3Q15<T>::IndexF(idx, 10)];
-                this->fsend_zmin_xmax[j*2 + 1] = this->f[D3Q15<T>::IndexF(idx, 12)];
+                this->fsend_zmin_xmax[j*2 + 0] = this->fnext[D3Q15<T>::IndexF(idx, 10)];
+                this->fsend_zmin_xmax[j*2 + 1] = this->fnext[D3Q15<T>::IndexF(idx, 12)];
 
                 //  Edge on zmax and xmin
                 idx = this->Index(this->nx - 1, j, 0);
-                this->fsend_zmax_xmin[j*2 + 0] = this->f[D3Q15<T>::IndexF(idx, 8)];
-                this->fsend_zmax_xmin[j*2 + 1] = this->f[D3Q15<T>::IndexF(idx, 14)];
+                this->fsend_zmax_xmin[j*2 + 0] = this->fnext[D3Q15<T>::IndexF(idx, 8)];
+                this->fsend_zmax_xmin[j*2 + 1] = this->fnext[D3Q15<T>::IndexF(idx, 14)];
 
                 //  Edge on zmax and xmax
                 idx = this->Index(0, j, 0);
-                this->fsend_zmax_xmax[j*2 + 0] = this->f[D3Q15<T>::IndexF(idx, 7)];
-                this->fsend_zmax_xmax[j*2 + 1] = this->f[D3Q15<T>::IndexF(idx, 9)];
+                this->fsend_zmax_xmax[j*2 + 0] = this->fnext[D3Q15<T>::IndexF(idx, 7)];
+                this->fsend_zmax_xmax[j*2 + 1] = this->fnext[D3Q15<T>::IndexF(idx, 9)];
             }
         }
         if (this->mx != 1 || this->my != 1) {
             for (int k = 0; k < this->nz; ++k) {
                 //  Edge on xmin and ymin
                 idx = this->Index(this->nx - 1, this->ny - 1, k);
-                this->fsend_xmin_ymin[k*2 + 0] = this->f[D3Q15<T>::IndexF(idx, 11)];
-                this->fsend_xmin_ymin[k*2 + 1] = this->f[D3Q15<T>::IndexF(idx, 14)];
+                this->fsend_xmin_ymin[k*2 + 0] = this->fnext[D3Q15<T>::IndexF(idx, 11)];
+                this->fsend_xmin_ymin[k*2 + 1] = this->fnext[D3Q15<T>::IndexF(idx, 14)];
 
                 //  Edge on xmin and ymax
                 idx = this->Index(this->nx - 1, 0, k);
-                this->fsend_xmin_ymax[k*2 + 0] = this->f[D3Q15<T>::IndexF(idx, 8)];
-                this->fsend_xmin_ymax[k*2 + 1] = this->f[D3Q15<T>::IndexF(idx, 13)];
+                this->fsend_xmin_ymax[k*2 + 0] = this->fnext[D3Q15<T>::IndexF(idx, 8)];
+                this->fsend_xmin_ymax[k*2 + 1] = this->fnext[D3Q15<T>::IndexF(idx, 13)];
 
                 //  Edge on xmax and ymin
                 idx = this->Index(0, this->ny - 1, k);
-                this->fsend_xmax_ymin[k*2 + 0] = this->f[D3Q15<T>::IndexF(idx, 9)];
-                this->fsend_xmax_ymin[k*2 + 1] = this->f[D3Q15<T>::IndexF(idx, 12)];
+                this->fsend_xmax_ymin[k*2 + 0] = this->fnext[D3Q15<T>::IndexF(idx, 9)];
+                this->fsend_xmax_ymin[k*2 + 1] = this->fnext[D3Q15<T>::IndexF(idx, 12)];
 
                 //  Edge on xmax and ymax
                 idx = this->Index(0, 0, k);
-                this->fsend_xmax_ymax[k*2 + 0] = this->f[D3Q15<T>::IndexF(idx, 7)];
-                this->fsend_xmax_ymax[k*2 + 1] = this->f[D3Q15<T>::IndexF(idx, 10)];
+                this->fsend_xmax_ymax[k*2 + 0] = this->fnext[D3Q15<T>::IndexF(idx, 7)];
+                this->fsend_xmax_ymax[k*2 + 1] = this->fnext[D3Q15<T>::IndexF(idx, 10)];
             }
         }
         if (this->mx != 1 || this->my != 1 || this->mz != 1) {
-            this->fsend_corner[0] = this->f[D3Q15<T>::IndexF(this->Index(this->nx - 1, this->ny - 1, this->nz - 1), 11)];   //  Corner at xmin, ymin and zmin
-            this->fsend_corner[1] = this->f[D3Q15<T>::IndexF(this->Index(0, this->ny - 1, this->nz - 1), 12)];              //  Corner at xmax, ymin and zmin
-            this->fsend_corner[2] = this->f[D3Q15<T>::IndexF(this->Index(this->nx - 1, 0, this->nz - 1), 13)];              //  Corner at xmin, ymax and zmin 
-            this->fsend_corner[3] = this->f[D3Q15<T>::IndexF(this->Index(0, 0, this->nz - 1), 10)];                         //  Corner at xmax, ymax and zmin
-            this->fsend_corner[4] = this->f[D3Q15<T>::IndexF(this->Index(this->nx - 1, this->ny - 1, 0), 14)];              //  Corner at xmin, ymin and zmax
-            this->fsend_corner[5] = this->f[D3Q15<T>::IndexF(this->Index(0, this->ny - 1, 0), 9)];                          //  Corner at xmax, ymin and zmax
-            this->fsend_corner[6] = this->f[D3Q15<T>::IndexF(this->Index(this->nx - 1, 0, 0), 8)];                          //  Corner at xmin, ymax and zmax
-            this->fsend_corner[7] = this->f[D3Q15<T>::IndexF(this->Index(0, 0, 0), 7)];                                     //  Corner at xmax, ymax and zmax
+            this->fsend_corner[0] = this->fnext[D3Q15<T>::IndexF(this->Index(this->nx - 1, this->ny - 1, this->nz - 1), 11)];   //  Corner at xmin, ymin and zmin
+            this->fsend_corner[1] = this->fnext[D3Q15<T>::IndexF(this->Index(0, this->ny - 1, this->nz - 1), 12)];              //  Corner at xmax, ymin and zmin
+            this->fsend_corner[2] = this->fnext[D3Q15<T>::IndexF(this->Index(this->nx - 1, 0, this->nz - 1), 13)];              //  Corner at xmin, ymax and zmin 
+            this->fsend_corner[3] = this->fnext[D3Q15<T>::IndexF(this->Index(0, 0, this->nz - 1), 10)];                         //  Corner at xmax, ymax and zmin
+            this->fsend_corner[4] = this->fnext[D3Q15<T>::IndexF(this->Index(this->nx - 1, this->ny - 1, 0), 14)];              //  Corner at xmin, ymin and zmax
+            this->fsend_corner[5] = this->fnext[D3Q15<T>::IndexF(this->Index(0, this->ny - 1, 0), 9)];                          //  Corner at xmax, ymin and zmax
+            this->fsend_corner[6] = this->fnext[D3Q15<T>::IndexF(this->Index(this->nx - 1, 0, 0), 8)];                          //  Corner at xmin, ymax and zmax
+            this->fsend_corner[7] = this->fnext[D3Q15<T>::IndexF(this->Index(0, 0, 0), 7)];                                     //  Corner at xmax, ymax and zmax
         }
 
         //  Communicate with other PE
         int neib = this->Communicate();
+        
         if (neib > 0) {
             MPI_Waitall(neib, this->request, this->status);
         }
@@ -438,20 +436,20 @@ private:
                     //  Face on xmin
                     idx = this->Index(0, j, k);
                     idxface = this->IndexBCx(j, k);
-                    this->f[D3Q15<T>::IndexF(idx, 1)] = this->frecv_xmin[idxface*5 + 0];
-                    this->f[D3Q15<T>::IndexF(idx, 7)] = this->frecv_xmin[idxface*5 + 1];
-                    this->f[D3Q15<T>::IndexF(idx, 9)] = this->frecv_xmin[idxface*5 + 2];
-                    this->f[D3Q15<T>::IndexF(idx, 10)] = this->frecv_xmin[idxface*5 + 3];
-                    this->f[D3Q15<T>::IndexF(idx, 12)] = this->frecv_xmin[idxface*5 + 4];
+                    this->fnext[D3Q15<T>::IndexF(idx, 1)] = this->frecv_xmin[idxface*5 + 0];
+                    this->fnext[D3Q15<T>::IndexF(idx, 7)] = this->frecv_xmin[idxface*5 + 1];
+                    this->fnext[D3Q15<T>::IndexF(idx, 9)] = this->frecv_xmin[idxface*5 + 2];
+                    this->fnext[D3Q15<T>::IndexF(idx, 10)] = this->frecv_xmin[idxface*5 + 3];
+                    this->fnext[D3Q15<T>::IndexF(idx, 12)] = this->frecv_xmin[idxface*5 + 4];
 
                     //  Face on xmax
                     idx = this->Index(this->nx - 1, j, k);
                     idxface = this->IndexBCx(j, k);
-                    this->f[D3Q15<T>::IndexF(idx, 4)] = this->frecv_xmax[idxface*5 + 0];
-                    this->f[D3Q15<T>::IndexF(idx, 8)] = this->frecv_xmax[idxface*5 + 1];
-                    this->f[D3Q15<T>::IndexF(idx, 11)] = this->frecv_xmax[idxface*5 + 2];
-                    this->f[D3Q15<T>::IndexF(idx, 13)] = this->frecv_xmax[idxface*5 + 3];
-                    this->f[D3Q15<T>::IndexF(idx, 14)] = this->frecv_xmax[idxface*5 + 4];
+                    this->fnext[D3Q15<T>::IndexF(idx, 4)] = this->frecv_xmax[idxface*5 + 0];
+                    this->fnext[D3Q15<T>::IndexF(idx, 8)] = this->frecv_xmax[idxface*5 + 1];
+                    this->fnext[D3Q15<T>::IndexF(idx, 11)] = this->frecv_xmax[idxface*5 + 2];
+                    this->fnext[D3Q15<T>::IndexF(idx, 13)] = this->frecv_xmax[idxface*5 + 3];
+                    this->fnext[D3Q15<T>::IndexF(idx, 14)] = this->frecv_xmax[idxface*5 + 4];
                 }
             }
         }
@@ -461,20 +459,20 @@ private:
                     //  Face on ymin
                     idx = this->Index(i, 0, k);
                     idxface = this->IndexBCy(k, i);
-                    this->f[D3Q15<T>::IndexF(idx, 2)] = this->frecv_ymin[idxface*5 + 0];
-                    this->f[D3Q15<T>::IndexF(idx, 7)] = this->frecv_ymin[idxface*5 + 1];
-                    this->f[D3Q15<T>::IndexF(idx, 8)] = this->frecv_ymin[idxface*5 + 2];
-                    this->f[D3Q15<T>::IndexF(idx, 10)] = this->frecv_ymin[idxface*5 + 3];
-                    this->f[D3Q15<T>::IndexF(idx, 13)] = this->frecv_ymin[idxface*5 + 4];
+                    this->fnext[D3Q15<T>::IndexF(idx, 2)] = this->frecv_ymin[idxface*5 + 0];
+                    this->fnext[D3Q15<T>::IndexF(idx, 7)] = this->frecv_ymin[idxface*5 + 1];
+                    this->fnext[D3Q15<T>::IndexF(idx, 8)] = this->frecv_ymin[idxface*5 + 2];
+                    this->fnext[D3Q15<T>::IndexF(idx, 10)] = this->frecv_ymin[idxface*5 + 3];
+                    this->fnext[D3Q15<T>::IndexF(idx, 13)] = this->frecv_ymin[idxface*5 + 4];
 
                     //  Face on ymax
                     idx = this->Index(i, this->ny - 1, k);
                     idxface = this->IndexBCy(k, i);
-                    this->f[D3Q15<T>::IndexF(idx, 5)] = this->frecv_ymax[idxface*5 + 0];
-                    this->f[D3Q15<T>::IndexF(idx, 9)] = this->frecv_ymax[idxface*5 + 1];
-                    this->f[D3Q15<T>::IndexF(idx, 11)] = this->frecv_ymax[idxface*5 + 2];
-                    this->f[D3Q15<T>::IndexF(idx, 12)] = this->frecv_ymax[idxface*5 + 3];
-                    this->f[D3Q15<T>::IndexF(idx, 14)] = this->frecv_ymax[idxface*5 + 4];
+                    this->fnext[D3Q15<T>::IndexF(idx, 5)] = this->frecv_ymax[idxface*5 + 0];
+                    this->fnext[D3Q15<T>::IndexF(idx, 9)] = this->frecv_ymax[idxface*5 + 1];
+                    this->fnext[D3Q15<T>::IndexF(idx, 11)] = this->frecv_ymax[idxface*5 + 2];
+                    this->fnext[D3Q15<T>::IndexF(idx, 12)] = this->frecv_ymax[idxface*5 + 3];
+                    this->fnext[D3Q15<T>::IndexF(idx, 14)] = this->frecv_ymax[idxface*5 + 4];
                 }
             }
         }
@@ -484,20 +482,20 @@ private:
                     //  Face on zmin
                     idx = this->Index(i, j, 0);
                     idxface = this->IndexBCz(i, j);
-                    this->f[D3Q15<T>::IndexF(idx, 3)] = this->frecv_zmin[idxface*5 + 0];
-                    this->f[D3Q15<T>::IndexF(idx, 7)] = this->frecv_zmin[idxface*5 + 1];
-                    this->f[D3Q15<T>::IndexF(idx, 8)] = this->frecv_zmin[idxface*5 + 2];
-                    this->f[D3Q15<T>::IndexF(idx, 9)] = this->frecv_zmin[idxface*5 + 3];
-                    this->f[D3Q15<T>::IndexF(idx, 14)] = this->frecv_zmin[idxface*5 + 4];
+                    this->fnext[D3Q15<T>::IndexF(idx, 3)] = this->frecv_zmin[idxface*5 + 0];
+                    this->fnext[D3Q15<T>::IndexF(idx, 7)] = this->frecv_zmin[idxface*5 + 1];
+                    this->fnext[D3Q15<T>::IndexF(idx, 8)] = this->frecv_zmin[idxface*5 + 2];
+                    this->fnext[D3Q15<T>::IndexF(idx, 9)] = this->frecv_zmin[idxface*5 + 3];
+                    this->fnext[D3Q15<T>::IndexF(idx, 14)] = this->frecv_zmin[idxface*5 + 4];
 
                     //  Face on zmax
                     idx = this->Index(i, j, this->nz - 1);
                     idxface = this->IndexBCz(i, j);
-                    this->f[D3Q15<T>::IndexF(idx, 6)] = this->frecv_zmax[idxface*5 + 0];
-                    this->f[D3Q15<T>::IndexF(idx, 10)] = this->frecv_zmax[idxface*5 + 1];
-                    this->f[D3Q15<T>::IndexF(idx, 11)] = this->frecv_zmax[idxface*5 + 2];
-                    this->f[D3Q15<T>::IndexF(idx, 12)] = this->frecv_zmax[idxface*5 + 3];
-                    this->f[D3Q15<T>::IndexF(idx, 13)] = this->frecv_zmax[idxface*5 + 4];
+                    this->fnext[D3Q15<T>::IndexF(idx, 6)] = this->frecv_zmax[idxface*5 + 0];
+                    this->fnext[D3Q15<T>::IndexF(idx, 10)] = this->frecv_zmax[idxface*5 + 1];
+                    this->fnext[D3Q15<T>::IndexF(idx, 11)] = this->frecv_zmax[idxface*5 + 2];
+                    this->fnext[D3Q15<T>::IndexF(idx, 12)] = this->frecv_zmax[idxface*5 + 3];
+                    this->fnext[D3Q15<T>::IndexF(idx, 13)] = this->frecv_zmax[idxface*5 + 4];
                 }
             }
         }
@@ -505,82 +503,85 @@ private:
             for (int i = 0; i < this->nx; ++i) {
                 //  Edge on ymin and zmin
                 idx = this->Index(i, 0, 0);
-                this->f[D3Q15<T>::IndexF(idx, 7)] = this->frecv_ymin_zmin[i*2 + 0];
-                this->f[D3Q15<T>::IndexF(idx, 8)] = this->frecv_ymin_zmin[i*2 + 1];
+                this->fnext[D3Q15<T>::IndexF(idx, 7)] = this->frecv_ymin_zmin[i*2 + 0];
+                this->fnext[D3Q15<T>::IndexF(idx, 8)] = this->frecv_ymin_zmin[i*2 + 1];
 
                 //  Edge on ymin and zmax
                 idx = this->Index(i, 0, this->nz - 1);
-                this->f[D3Q15<T>::IndexF(idx, 10)] = this->frecv_ymin_zmax[i*2 + 0];
-                this->f[D3Q15<T>::IndexF(idx, 13)] = this->frecv_ymin_zmax[i*2 + 1];
+                this->fnext[D3Q15<T>::IndexF(idx, 10)] = this->frecv_ymin_zmax[i*2 + 0];
+                this->fnext[D3Q15<T>::IndexF(idx, 13)] = this->frecv_ymin_zmax[i*2 + 1];
 
                 //  Edge on ymax and zmin
                 idx = this->Index(i, this->ny - 1, 0);
-                this->f[D3Q15<T>::IndexF(idx, 9)] = this->frecv_ymax_zmin[i*2 + 0];
-                this->f[D3Q15<T>::IndexF(idx, 14)] = this->frecv_ymax_zmin[i*2 + 1];
+                this->fnext[D3Q15<T>::IndexF(idx, 9)] = this->frecv_ymax_zmin[i*2 + 0];
+                this->fnext[D3Q15<T>::IndexF(idx, 14)] = this->frecv_ymax_zmin[i*2 + 1];
 
                 //  Edge on ymax and zmax
                 idx = this->Index(i, this->ny - 1, this->nz - 1);
-                this->f[D3Q15<T>::IndexF(idx, 11)] = this->frecv_ymax_zmax[i*2 + 0];
-                this->f[D3Q15<T>::IndexF(idx, 12)] = this->frecv_ymax_zmax[i*2 + 1];
+                this->fnext[D3Q15<T>::IndexF(idx, 11)] = this->frecv_ymax_zmax[i*2 + 0];
+                this->fnext[D3Q15<T>::IndexF(idx, 12)] = this->frecv_ymax_zmax[i*2 + 1];
             }
         }
         if (this->mz != 1 || this->mx != 1) {
             for (int j = 0; j < this->ny; ++j) {
                 //  Edge on zmin and xmin
                 idx = this->Index(0, j, 0);
-                this->f[D3Q15<T>::IndexF(idx, 7)] = this->frecv_zmin_xmin[j*2 + 0];
-                this->f[D3Q15<T>::IndexF(idx, 9)] = this->frecv_zmin_xmin[j*2 + 1];
+                this->fnext[D3Q15<T>::IndexF(idx, 7)] = this->frecv_zmin_xmin[j*2 + 0];
+                this->fnext[D3Q15<T>::IndexF(idx, 9)] = this->frecv_zmin_xmin[j*2 + 1];
 
                 //  Edge on zmin and xmax
                 idx = this->Index(this->nx - 1, j, 0);
-                this->f[D3Q15<T>::IndexF(idx, 8)] = this->frecv_zmin_xmax[j*2 + 0];
-                this->f[D3Q15<T>::IndexF(idx, 14)] = this->frecv_zmin_xmax[j*2 + 1];
+                this->fnext[D3Q15<T>::IndexF(idx, 8)] = this->frecv_zmin_xmax[j*2 + 0];
+                this->fnext[D3Q15<T>::IndexF(idx, 14)] = this->frecv_zmin_xmax[j*2 + 1];
 
                 //  Edge on zmax and xmin
                 idx = this->Index(0, j, this->nz - 1);
-                this->f[D3Q15<T>::IndexF(idx, 10)] = this->frecv_zmax_xmin[j*2 + 0];
-                this->f[D3Q15<T>::IndexF(idx, 12)] = this->frecv_zmax_xmin[j*2 + 1];
+                this->fnext[D3Q15<T>::IndexF(idx, 10)] = this->frecv_zmax_xmin[j*2 + 0];
+                this->fnext[D3Q15<T>::IndexF(idx, 12)] = this->frecv_zmax_xmin[j*2 + 1];
 
                 //  Edge on zmax and xmax
                 idx = this->Index(this->nx - 1, j, this->nz - 1);
-                this->f[D3Q15<T>::IndexF(idx, 11)] = this->frecv_zmax_xmax[j*2 + 0];
-                this->f[D3Q15<T>::IndexF(idx, 13)] = this->frecv_zmax_xmax[j*2 + 1];
+                this->fnext[D3Q15<T>::IndexF(idx, 11)] = this->frecv_zmax_xmax[j*2 + 0];
+                this->fnext[D3Q15<T>::IndexF(idx, 13)] = this->frecv_zmax_xmax[j*2 + 1];
             }
         }
         if (this->mx != 1 || this->my != 1) {
             for (int k = 0; k < this->nz; ++k) {
                 //  Edge on xmin and ymin
                 idx = this->Index(0, 0, k);
-                this->f[D3Q15<T>::IndexF(idx, 7)] = this->frecv_xmin_ymin[k*2 + 0];
-                this->f[D3Q15<T>::IndexF(idx, 10)] = this->frecv_xmin_ymin[k*2 + 1];
+                this->fnext[D3Q15<T>::IndexF(idx, 7)] = this->frecv_xmin_ymin[k*2 + 0];
+                this->fnext[D3Q15<T>::IndexF(idx, 10)] = this->frecv_xmin_ymin[k*2 + 1];
 
                 //  Edge on xmin and ymax
                 idx = this->Index(0, this->ny - 1, k);
-                this->f[D3Q15<T>::IndexF(idx, 9)] = this->frecv_xmin_ymax[k*2 + 0];
-                this->f[D3Q15<T>::IndexF(idx, 12)] = this->frecv_xmin_ymax[k*2 + 1];
+                this->fnext[D3Q15<T>::IndexF(idx, 9)] = this->frecv_xmin_ymax[k*2 + 0];
+                this->fnext[D3Q15<T>::IndexF(idx, 12)] = this->frecv_xmin_ymax[k*2 + 1];
 
                 //  Edge on xmax and ymin
                 idx = this->Index(this->nx - 1, 0, k);
-                this->f[D3Q15<T>::IndexF(idx, 8)] = this->frecv_xmax_ymin[k*2 + 0];
-                this->f[D3Q15<T>::IndexF(idx, 13)] = this->frecv_xmax_ymin[k*2 + 1];
+                this->fnext[D3Q15<T>::IndexF(idx, 8)] = this->frecv_xmax_ymin[k*2 + 0];
+                this->fnext[D3Q15<T>::IndexF(idx, 13)] = this->frecv_xmax_ymin[k*2 + 1];
 
                 //  Edge on xmax and ymax
                 idx = this->Index(this->nx - 1, this->ny - 1, k);
-                this->f[D3Q15<T>::IndexF(idx, 11)] = this->frecv_xmax_ymax[k*2 + 0];
-                this->f[D3Q15<T>::IndexF(idx, 14)] = this->frecv_xmax_ymax[k*2 + 1];
+                this->fnext[D3Q15<T>::IndexF(idx, 11)] = this->frecv_xmax_ymax[k*2 + 0];
+                this->fnext[D3Q15<T>::IndexF(idx, 14)] = this->frecv_xmax_ymax[k*2 + 1];
             }
         }
         if (this->mx != 1 || this->my != 1 || this->mz != 1) {
-            this->f[D3Q15<T>::IndexF(this->Index(0, 0, 0), 7)] = this->frecv_corner[0];                                     //  Corner at xmin, ymin and zmin
-            this->f[D3Q15<T>::IndexF(this->Index(this->nx - 1, 0, 0), 8)] = this->frecv_corner[1];                          //  Corner at xmax, ymin and zmin
-            this->f[D3Q15<T>::IndexF(this->Index(0, this->ny - 1, 0), 9)] = this->frecv_corner[2];                          //  Corner at xmin, ymax and zmin 
-            this->f[D3Q15<T>::IndexF(this->Index(this->nx - 1, this->ny - 1, 0), 14)] = this->frecv_corner[3];              //  Corner at xmax, ymax and zmin
-            this->f[D3Q15<T>::IndexF(this->Index(0, 0, this->nz - 1), 10)] = this->frecv_corner[4];                         //  Corner at xmin, ymin and zmax
-            this->f[D3Q15<T>::IndexF(this->Index(this->nx - 1, 0, this->nz - 1), 13)] = this->frecv_corner[5];              //  Corner at xmax, ymin and zmax
-            this->f[D3Q15<T>::IndexF(this->Index(0, this->ny - 1, this->nz - 1), 12)] = this->frecv_corner[6];              //  Corner at xmin, ymax and zmax
-            this->f[D3Q15<T>::IndexF(this->Index(this->nx - 1, this->ny - 1, this->nz - 1), 11)] = this->frecv_corner[7];   //  Corner at xmax, ymax and zmax
+            this->fnext[D3Q15<T>::IndexF(this->Index(0, 0, 0), 7)] = this->frecv_corner[0];                                     //  Corner at xmin, ymin and zmin
+            this->fnext[D3Q15<T>::IndexF(this->Index(this->nx - 1, 0, 0), 8)] = this->frecv_corner[1];                          //  Corner at xmax, ymin and zmin
+            this->fnext[D3Q15<T>::IndexF(this->Index(0, this->ny - 1, 0), 9)] = this->frecv_corner[2];                          //  Corner at xmin, ymax and zmin 
+            this->fnext[D3Q15<T>::IndexF(this->Index(this->nx - 1, this->ny - 1, 0), 14)] = this->frecv_corner[3];              //  Corner at xmax, ymax and zmin
+            this->fnext[D3Q15<T>::IndexF(this->Index(0, 0, this->nz - 1), 10)] = this->frecv_corner[4];                         //  Corner at xmin, ymin and zmax
+            this->fnext[D3Q15<T>::IndexF(this->Index(this->nx - 1, 0, this->nz - 1), 13)] = this->frecv_corner[5];              //  Corner at xmax, ymin and zmax
+            this->fnext[D3Q15<T>::IndexF(this->Index(0, this->ny - 1, this->nz - 1), 12)] = this->frecv_corner[6];              //  Corner at xmin, ymax and zmax
+            this->fnext[D3Q15<T>::IndexF(this->Index(this->nx - 1, this->ny - 1, this->nz - 1), 11)] = this->frecv_corner[7];   //  Corner at xmax, ymax and zmax
         }
 #endif
+
+        //  Swap
+        std::swap(this->f, this->fnext);
     }
 
     template<class T>

@@ -39,10 +39,11 @@ int main(int argc, char** argv) {
 #endif
 
     //********************Parameters********************
-    int lx = 81, ly = 161, lz = 81, mx = 61, my = 121, mz = 61, nt = 30000, dt = 100, nitr = 2000, nb = 100;
-    double Pr = 6.0, Ra = 2.5e4, nu = 0.1, L = 8.0, tem0 = 0.0, qn0 = 1.0e-2, alphamax = 1.0e4;
+    int lx = 81, ly = 161, lz = 81, nt = 1000, dt = 100, nitr = 1, nb = 100;
+    double Pr = 6.0, Ra = 2.5e4, nu = 0.1, L = (lx - 1)/10, tem0 = 0.0, qn0 = 1.0e-2, alphamax = 1.0e4;
     double qf = 1e-2, qg = 1e0, movelimit = 0.2, weightlimit = 0.05, R = 1.5, eps = 1.0e-5, s0 = 0.05;
 
+    int mx = 3*(lx - 1)/4 + 1, my = 3*(ly - 1)/4 + 1, mz = 3*(lz - 1)/4 + 1;
     double U = nu*sqrt(Ra/Pr)/(double)(ly - 1), diff_fluid = nu/Pr, diff_solid = diff_fluid*10.0, gx = 0.0, gy = U*U/(double)(ly - 1), gz = 0.0;
     D3Q15<double> pf(lx, ly, lz, MyRank, nPEx, nPEy, nPEz), pg(lx, ly, lz, MyRank, nPEx, nPEy, nPEz);
     double *rho = new double[pf.nxyz], *ux = new double[pf.nxyz], *uy = new double[pf.nxyz], *uz = new double[pf.nxyz], *uxp = new double[pf.nxyz], *uyp = new double[pf.nxyz], *uzp = new double[pf.nxyz];

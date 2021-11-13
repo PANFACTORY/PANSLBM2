@@ -235,7 +235,6 @@ int main(int argc, char** argv) {
             [=](int _i, int _j, int _k) { return (_j == 0 && _i < L && _k < L) ? qn0 : 0.0; }, 
             [=](int _i, int _j, int _k) { return _j == 0 && _i < L && _k < L; }
         );
-        Normalize(dfdss.data(), pf.nxyz);
         
         //********************Filter sensitivities********************
         std::vector<double> dfds = DensityFilter::GetFilteredValue(pf, R, dfdss);
@@ -249,6 +248,7 @@ int main(int argc, char** argv) {
                 }
             }
         }
+        Normalize(dfds.data(), pf.nxyz);
 
         //********************Check grayscale********************
         double mnd_buffer = 0.0, mnd;
@@ -281,9 +281,9 @@ int main(int argc, char** argv) {
                     double tmpds = fabs(s[idx] - snm1[idx]);
                     if (dsmax_buffer < tmpds) {
                         dsmax_buffer = tmpds;
-                        imax_buffer = i;
-                        jmax_buffer = j;
-                        kmax_buffer = k;
+                        imax_buffer = i + pf.offsetx;
+                        jmax_buffer = j + pf.offsety;
+                        kmax_buffer = k + pf.offsetz;
                     }
                     snm1[idx] = s[idx];
                 }

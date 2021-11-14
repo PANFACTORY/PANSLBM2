@@ -7,8 +7,8 @@
 
 namespace PANSLBM2 {
     namespace DensityFilter {
-        template<class T, template<class>class P>
-        std::vector<T> GetFilteredValue(P<T>& _p, T _R, const std::vector<T> &_v) {
+        template<class T, template<class>class P, class F>
+        std::vector<T> GetFilteredValue(P<T>& _p, T _R, const std::vector<T> &_v, F _weight) {
             assert(_R > T());
             int nR = (int)_R;
 #ifdef _USE_MPI_DEFINES
@@ -398,13 +398,13 @@ namespace PANSLBM2 {
                                 for (int k2 = k1 - nR, k2max = k1 + nR; k2 <= k2max; ++k2) {                     
                                     double distance = sqrt(pow(i1 - i2, 2.0) + pow(j1 - j2, 2.0) + pow(k1 - k2, 2.0));
                                     if (distance <= _R) {
-                                        T weight = (_R - distance)/_R;
+                                        T weight = _weight(i1 + _p.offsetx, j1 + _p.offsety, k1 + _p.offsetz, i2 + _p.offsetx, j2 + _p.offsety, k2 + _p.offsetz);
                                         if ((0 <= i2 && i2 < _p.nx) && (0 <= j2 && j2 < _p.ny) && (0 <= k2 && k2 < _p.nz)) {                                                //  In self PE
                                             wsum += weight;
                                             fv[idx] += weight*_v[_p.Index(i2, j2, k2)];                             
                                         } 
 #ifdef _USE_MPI_DEFINES
-                                        else if ((i2 < 0 && _p.PEx != 0) && (0 <= j2 && j2 < _p.ny) && (0 <= k2 && k2 < _p.nz)) {                                         //  In xmin PE
+                                        else if ((i2 < 0 && _p.PEx != 0) && (0 <= j2 && j2 < _p.ny) && (0 <= k2 && k2 < _p.nz)) {                                           //  In xmin PE
                                             wsum += weight;
                                             fv[idx] += weight*recv_xmin[IndexFX(nR + i2, j2, k2)];  
                                         } else if ((_p.nx <= i2 && _p.PEx != _p.mx - 1) && (0 <= j2 && j2 < _p.ny) && (0 <= k2 && k2 < _p.nz)) {                            //  In xmax PE
@@ -493,18 +493,25 @@ namespace PANSLBM2 {
                 }
             }
 #ifdef _USE_MPI_DEFINES
-            delete[] send_xmin, send_xmax, send_ymin, send_ymax, send_zmin, send_zmax;
-            delete[] send_ymin_zmin, send_ymax_zmin, send_ymin_zmax, send_ymax_zmax; 
-            delete[] send_zmin_xmin, send_zmax_xmin, send_zmin_xmax, send_zmax_xmax;
-            delete[] send_xmin_ymin, send_xmax_ymin, send_xmin_ymax, send_xmax_ymax;
-            delete[] send_xmin_ymin_zmin, send_xmax_ymin_zmin, send_xmin_ymax_zmin, send_xmax_ymax_zmin, send_xmin_ymin_zmax, send_xmax_ymin_zmax, send_xmin_ymax_zmax, send_xmax_ymax_zmax; 
-            delete[] recv_xmin, recv_xmax, recv_ymin, recv_ymax, recv_zmin, recv_zmax;
-            delete[] recv_ymin_zmin, recv_ymax_zmin, recv_ymin_zmax, recv_ymax_zmax;
-            delete[] recv_zmin_xmin, recv_zmax_xmin, recv_zmin_xmax, recv_zmax_xmax;
-            delete[] recv_xmin_ymin, recv_xmax_ymin, recv_xmin_ymax, recv_xmax_ymax;
-            delete[] recv_xmin_ymin_zmin, recv_xmax_ymin_zmin, recv_xmin_ymax_zmin, recv_xmax_ymax_zmin, recv_xmin_ymin_zmax, recv_xmax_ymin_zmax, recv_xmin_ymax_zmax, recv_xmax_ymax_zmax; 
+            delete[] send_xmin; delete[] send_xmax; delete[] send_ymin; delete[] send_ymax; delete[] send_zmin; delete[] send_zmax;
+            delete[] send_ymin_zmin; delete[] send_ymax_zmin; delete[] send_ymin_zmax; delete[] send_ymax_zmax; 
+            delete[] send_zmin_xmin; delete[] send_zmax_xmin; delete[] send_zmin_xmax; delete[] send_zmax_xmax;
+            delete[] send_xmin_ymin; delete[] send_xmax_ymin; delete[] send_xmin_ymax; delete[] send_xmax_ymax;
+            delete[] send_xmin_ymin_zmin; delete[] send_xmax_ymin_zmin; delete[] send_xmin_ymax_zmin; delete[] send_xmax_ymax_zmin;
+            delete[] send_xmin_ymin_zmax; delete[] send_xmax_ymin_zmax; delete[] send_xmin_ymax_zmax; delete[] send_xmax_ymax_zmax; 
+            delete[] recv_xmin; delete[] recv_xmax; delete[] recv_ymin; delete[] recv_ymax; delete[] recv_zmin; delete[] recv_zmax;
+            delete[] recv_ymin_zmin; delete[] recv_ymax_zmin; delete[] recv_ymin_zmax; delete[] recv_ymax_zmax;
+            delete[] recv_zmin_xmin; delete[] recv_zmax_xmin; delete[] recv_zmin_xmax; delete[] recv_zmax_xmax;
+            delete[] recv_xmin_ymin; delete[] recv_xmax_ymin; delete[] recv_xmin_ymax; delete[] recv_xmax_ymax;
+            delete[] recv_xmin_ymin_zmin; delete[] recv_xmax_ymin_zmin; delete[] recv_xmin_ymax_zmin; delete[] recv_xmax_ymax_zmin;
+            delete[] recv_xmin_ymin_zmax; delete[] recv_xmax_ymin_zmax; delete[] recv_xmin_ymax_zmax; delete[] recv_xmax_ymax_zmax; 
 #endif
             return fv;
+        }
+    
+        template<class T, template<class>class P>
+        std::vector<T> GetFilteredValue(P<T>& _p, T _R, const std::vector<T> &_v) {
+            return GetFilteredValue(_p, _R, _v, [=](int _i1, int _j1, int _k1, int _i2, int _j2, int _k2){ return (_R - sqrt(pow(_i1 - _i2, 2.0) + pow(_j1 - _j2, 2.0) + pow(_k1 - _k2, 2.0)))/_R; });
         }
     }
 }

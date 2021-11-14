@@ -81,6 +81,14 @@ int main(int argc, char** argv) {
     );
     optimizer.move = movelimit;
 
+    auto filterweight = [=](int _i1, int _j1, int _k1, int _i2, int _j2, int _k2) {
+        if (_i1 < mx && _j1 < my && _i2 < mx && _j2 < my) {
+            return (R - sqrt(pow(_i1 - _i2, 2.0) + pow(_j1 - _j2, 2.0) + pow(_k1 - _k2, 2.0)))/R;
+        } else {
+            return (_i1 == _i2 && _j1 == _j2 && _k1 == _k2) ? 1.0 : 0.0;
+        }
+    };
+
     std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
 
     for (int k = 1, cnt = 1; k <= nk; k++) {
@@ -92,7 +100,7 @@ int main(int argc, char** argv) {
         }
 
         //********************Filter variables********************
-        std::vector<double> ss = DensityFilter::GetFilteredValue(pf, R, s);
+        std::vector<double> ss = DensityFilter::GetFilteredValue(pf, R, s, filterweight);
         for (int i = 0; i < pf.nx; ++i) {
             for (int j = 0; j < pf.ny; ++j) {
                 int idx = pf.Index(i, j);
@@ -216,8 +224,8 @@ int main(int argc, char** argv) {
         f /= L*nt;
         
         //********************Filter sensitivities********************
-        std::vector<double> dfds = DensityFilter::GetFilteredValue(pf, R, dfdss);
-        std::vector<double> dgds = DensityFilter::GetFilteredValue(pf, R, dgdss);
+        std::vector<double> dfds = DensityFilter::GetFilteredValue(pf, R, dfdss, filterweight);
+        std::vector<double> dgds = DensityFilter::GetFilteredValue(pf, R, dgdss, filterweight);
         for (int i = 0; i < pf.nx; ++i) {
             for (int j = 0; j < pf.ny; ++j) {
                 int idx = pf.Index(i, j);

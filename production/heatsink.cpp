@@ -39,8 +39,8 @@ int main(int argc, char** argv) {
 
     //********************Parameters********************
     int lx = 141, ly = 161, mx = 81, my = 101, nt = 100000, dt = 100, nk = 2000, nb = 100;
-    double Pr = 6.0, Ra = 2.5e5, nu = 0.1, L = 4.0, tem0 = 0.0, qn = 1.0e-2, alphamax = 1.0e4;
-    double qf = 1e-2, qfmax = 1e1, qg = 1e0, movelimit = 0.2, weightlimit = 0.5, R = 1.5, eps = 1.0e-5, s0 = 0.5;
+    double Pr = 6.0, Ra = 1e4, nu = 0.1, L = 4.0, tem0 = 0.0, qn = 1.0e-2, alphamax = 1.0e4;
+    double qf = 1e-2, qfmax = 1e1, qg = 1e0, movelimit = 0.2, weightlimit = 0.5, R = 2.4, eps = 1.0e-5, s0 = 0.5;
 
     double U = nu*sqrt(Ra/Pr)/(double)(ly - 1), diff_fluid = nu/Pr, diff_solid = diff_fluid*10.0, gx = 0.0, gy = U*U/(double)(ly - 1);
     D2Q9<double> pf(lx, ly, MyRank, nPEx, nPEy), pg(lx, ly, MyRank, nPEx, nPEy);

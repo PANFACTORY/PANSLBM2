@@ -14,9 +14,9 @@ using namespace PANSLBM2;
 int main(int argc, char** argv) {
     //--------------------Set parameters--------------------
     const int dt = 100, nt0 = 0, nc = 3, nm = 3;
-    double Pr = 6.0, nu = 0.1, tem0 = 0.0, qn = 1.0e-2, alphamax = 1.0e4, eps = 1.0e-5;
+    double Pr = 6.0, nu = 0.1, tem0 = 0.0, qn = 1.0e-2, alphamax = 1.0e4, eps = 1.0e-6, weightlimit = 0.5, sth = 0.1;
     int ntList[nc] = { 1000000, 1000000, 1000000 };
-    double RaList[nc] = { 2.5e3, 2.5e4, 2.5e5 }, qfList[nc] = { 1e1, 1e1, 1e1 }, qgList[nc] = { 1e0, 1e0, 1e0 }, fList[nc*nm] = { 0 };
+    double RaList[nc] = { 5e3, 1.5e4, 4.5e4 }, qfList[nc] = { 1e2, 1e2, 1e2 }, qgList[nc] = { 1e0, 1e0, 1e0 }, fList[nc*nm] = { 0 }, gList[nm] = { 0 };
 
     if (argc != nm + 1) {
         std::cout << "Error:No vtk file selected." << std::endl;
@@ -29,12 +29,17 @@ int main(int argc, char** argv) {
         //  Open model file
         std::string fname(argv[modelid + 1]);
         VTKImport model(fname);
-        int lx = model.GetNx(), ly = model.GetNy(), L = (ly - 1)/40;
+        int lx = model.GetNx(), ly = model.GetNy(), L = (ly - 1)/40, mx = 4*(lx - 1)/7 + 1, my = 5*(ly - 1)/8 + 1;
         D2Q9<double> pf(lx, ly), pg(lx, ly);
         double *rho = new double[pf.nxyz], *ux = new double[pf.nxyz], *uy = new double[pf.nxyz], *uxp = new double[pf.nxyz], *uyp = new double[pf.nxyz];
         double *tem = new double[pg.nxyz], *qx = new double[pg.nxyz], *qy = new double[pg.nxyz], *qxp = new double[pg.nxyz], *qyp = new double[pg.nxyz];
         double *s = new double[pf.nxyz], *alpha = new double[pf.nxyz], *diffusivity = new double[pf.nxyz];
         model.GetPointScalar("ss", s);
+        gList[modelid] = -1.0;
+        for (int idx = 0; idx < pf.nxyz; ++idx) {
+            //s[idx] = s[idx] < sth ? 0.0 : 1.0;
+            gList[modelid] += (1.0 - s[idx])/(weightlimit*mx*my);
+        }
         
         //  Loop of condition
         for (int conditionid = 0; conditionid < nc; ++conditionid) {
@@ -106,6 +111,10 @@ int main(int argc, char** argv) {
         for (int modelid = 0; modelid < nm; ++modelid) {
             std::cout << "\t" << fList[conditionid*nm + modelid];
         }    
+    }
+    std::cout << std::endl << "g";
+    for (int modelid = 0; modelid < nm; ++modelid) {
+        std::cout << "\t" << gList[modelid];    
     }
 
     std::cout << std::endl;

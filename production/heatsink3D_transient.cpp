@@ -47,12 +47,11 @@ int main(int argc, char** argv) {
     double U = nu*sqrt(Ra/Pr)/(double)(ly - 1), diff_fluid = nu/Pr, diff_solid = diff_fluid*10.0, gx = 0.0, gy = U*U/(double)(ly - 1), gz = 0.0;
     D3Q15<double> pf(lx, ly, lz, MyRank, nPEx, nPEy, nPEz), pg(lx, ly, lz, MyRank, nPEx, nPEy, nPEz);
     double **rho = new double*[nt], **ux = new double*[nt], **uy = new double*[nt], **uz = new double*[nt];
-    double **tem = new double*[nt], **qx = new double*[nt], **qy = new double*[nt], **qz = new double*[nt];
+    double **tem = new double*[nt], *qx = new double[pg.nxyz], *qy = new double[pg.nxyz], *qz = new double[pg.nxyz];
     double **gi = new double*[nt];
     for (int t = 0; t < nt; ++t) {
         rho[t] = new double[pf.nxyz]; ux[t] = new double[pf.nxyz]; uy[t] = new double[pf.nxyz]; uz[t] = new double[pf.nxyz];
-        tem[t] = new double[pg.nxyz]; qx[t] = new double[pg.nxyz]; qy[t] = new double[pg.nxyz]; qz[t] = new double[pg.nxyz];
-        gi[t] = new double[pg.nxyz*pg.nc];
+        tem[t] = new double[pg.nxyz]; gi[t] = new double[pg.nxyz*pg.nc];
     }
     double *irho = new double[pf.nxyz], *iux = new double[pf.nxyz], *iuy = new double[pf.nxyz], *iuz = new double[pf.nxyz], *imx = new double[pf.nxyz], *imy = new double[pf.nxyz], *imz = new double[pf.nxyz];
     double *item = new double[pg.nxyz], *iqx = new double[pg.nxyz], *iqy = new double[pg.nxyz], *iqz = new double[pg.nxyz];
@@ -150,14 +149,14 @@ int main(int argc, char** argv) {
         }
         for (int idx = 0; idx < pf.nxyz; idx++) {
             rho[0][idx] = 1.0; ux[0][idx] = 0.0; uy[0][idx] = 0.0; uz[0][idx] = 0.0; 
-            tem[0][idx] = 0.0; qx[0][idx] = 0.0; qy[0][idx] = 0.0; qz[0][idx] = 0.0;
+            tem[0][idx] = 0.0; qx[idx] = 0.0; qy[idx] = 0.0; qz[idx] = 0.0;
         }   
         NS::InitialCondition(pf, rho[0], ux[0], uy[0], uz[0]);
         AD::InitialCondition(pg, tem[0], ux[0], uy[0], uz[0]);
         for (int t = 1; t < nt; ++t) {
             AD::MacroBrinkmanCollideNaturalConvection(
                 pf, rho[t], ux[t], uy[t], uz[t], alpha, nu, 
-                pg, tem[t], qx[t], qy[t], qz[t], diffusivity, 
+                pg, tem[t], qx, qy, qz, diffusivity, 
                 gx, gy, gz, tem0, true, gi[t]
             );
             if (t%dt == 0 && MyRank == 0) {
@@ -323,9 +322,9 @@ int main(int argc, char** argv) {
                 );
                 file.AddPointData(pf, "T", [&](int _i, int _j, int _k) { return tem[nt - 1][pg.Index(_i, _j, _k)]; });
                 file.AddPointData(pf, "q", 
-                    [&](int _i, int _j, int _k) { return qx[nt - 1][pg.Index(_i, _j, _k)]; },
-                    [&](int _i, int _j, int _k) { return qy[nt - 1][pg.Index(_i, _j, _k)]; },
-                    [&](int _i, int _j, int _k) { return qz[nt - 1][pg.Index(_i, _j, _k)]; }
+                    [&](int _i, int _j, int _k) { return qx[pg.Index(_i, _j, _k)]; },
+                    [&](int _i, int _j, int _k) { return qy[pg.Index(_i, _j, _k)]; },
+                    [&](int _i, int _j, int _k) { return qz[pg.Index(_i, _j, _k)]; }
                 );
                 file.AddPointData(pf, "irho", [&](int _i, int _j, int _k) {   return irho[pf.Index(_i, _j, _k)];  });
                 file.AddPointData(pf, "iu", 
@@ -357,9 +356,9 @@ int main(int argc, char** argv) {
                 );
                 file.AddPointScaler("T", [&](int _i, int _j, int _k) { return tem[nt - 1][pg.Index(_i, _j, _k)]; });
                 file.AddPointVector("q", 
-                    [&](int _i, int _j, int _k) { return qx[nt - 1][pg.Index(_i, _j, _k)]; },
-                    [&](int _i, int _j, int _k) { return qy[nt - 1][pg.Index(_i, _j, _k)]; },
-                    [&](int _i, int _j, int _k) { return qz[nt - 1][pg.Index(_i, _j, _k)]; }
+                    [&](int _i, int _j, int _k) { return qx[pg.Index(_i, _j, _k)]; },
+                    [&](int _i, int _j, int _k) { return qy[pg.Index(_i, _j, _k)]; },
+                    [&](int _i, int _j, int _k) { return qz[pg.Index(_i, _j, _k)]; }
                 );
                 file.AddPointScaler("irho", [&](int _i, int _j, int _k) { return irho[pf.Index(_i, _j, _k)]; });
                 file.AddPointVector("iu", 
@@ -389,8 +388,7 @@ int main(int argc, char** argv) {
     
     for (int t = 0; t < nt; ++t) {
         delete[] rho[t]; delete[] ux[t]; delete[] uy[t]; delete[] uz[t];
-        delete[] tem[t]; delete[] qx[t]; delete[] qy[t]; delete[] qz[t];
-        delete[] gi[t];    
+        delete[] tem[t]; delete[] gi[t];    
     }
     delete[] rho; delete[] ux; delete[] uy; delete[] uz; 
     delete[] tem; delete[] qx; delete[] qy; delete[] qz; delete[] gi;

@@ -106,7 +106,7 @@ namespace PANSLBM2 {
         template<class Q>
         void ExternalForceHeatSource(const __m256d &__heatsource, __m256d *__g) {
             for (int c = 0; c < Q::nc; ++c) {
-                __g[c] = _mm256_add_pd(__g[c], __heatsource);
+                __g[c] = _mm256_add_pd(__g[c], _mm256_mul_pd(Q::__ei[c], __heatsource));
             }
         }
 
@@ -1207,7 +1207,7 @@ namespace PANSLBM2 {
                 ExternalForceNaturalConvection<double, P>(tem, _gx, _gy, _gz, _tem0, _p.f, idx);
                 NS::ExternalForceBrinkman<double, P>(rho, ux, uy, uz, _alpha[idx], _p.f, idx);
                 NS::Macro<double, P>(rho, ux, uy, uz, _p.f0, _p.f, idx);
-                ExternalForceHeatSource<double, P>(_heatsource[idx], _q.f0, _q.f, idx);
+                ExternalForceHeatSource<double, Q>(_heatsource[idx], _q.f0, _q.f, idx);
                 Macro<double, Q>(tem, qx, qy, qz, ux, uy, uz, _q.f0, _q.f, omegag, idx);
 
                 //  Save macro if need

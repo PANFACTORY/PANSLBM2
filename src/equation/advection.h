@@ -1074,7 +1074,7 @@ namespace PANSLBM2 {
                 ExternalForceNaturalConvection<T, P>(tem, _gx, _gy, _gz, _tem0, _p.f, idx);
                 NS::ExternalForceBrinkman<T, P>(rho, ux, uy, uz, _alpha[idx], _p.f, idx);
                 NS::Macro<T, P>(rho, ux, uy, uz, _p.f0, _p.f, idx);
-                ExternalForceHeatSource<T, P>(_heatsource[idx], _q.f0, _q.f, idx);
+                ExternalForceHeatSource<T, Q>(_heatsource[idx], _q.f0, _q.f, idx);
                 Macro<T, Q>(tem, qx, qy, qz, ux, uy, uz, _q.f0, _q.f, omegag, idx);
 
                 //  Save macro if need

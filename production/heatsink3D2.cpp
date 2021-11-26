@@ -39,7 +39,7 @@ int main(int argc, char** argv) {
 #endif
 
     //********************Parameters********************
-    int lx = 41, ly = 81, lz = 41, nt = 10000, dt = 100, nitr = 1, nb = 100;
+    int lx = 81, ly = 161, lz = 81, nt = 10000, dt = 100, nitr = 500, nb = 100;
     double Pr = 6.0, Ra = 2.5e4, nu = 0.1, tem0 = 0.0, qn0 = 1.0e-2, alphamax = 1.0e4;
     double qf = 1e-2, qfmax = 1e1, qg = 1e0, movelimit = 0.2, weightlimit = 0.05, R = 1.5, eps = 1.0e-5, s0 = 0.0;
 
@@ -58,7 +58,7 @@ int main(int argc, char** argv) {
     for (int i = 0; i < pf.nx; ++i) {
         for (int j = 0; j < pf.ny; ++j) {
             for (int k = 0; k < pf.nz; ++k) {
-                heatsource[pf.Index(i, j, k)] = ((i + pf.offsetx) < bx && (j + pf.offsety) < by && (k + pf.offsetz) < bz) ? 5e-2 : 0.0;
+                heatsource[pf.Index(i, j, k)] = ((i + pf.offsetx) < bx && (j + pf.offsety) < by && (k + pf.offsetz) < bz) ? 1e-2 : 0.0;
             }
         }
     }

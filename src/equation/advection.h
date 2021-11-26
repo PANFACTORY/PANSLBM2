@@ -94,7 +94,7 @@ namespace PANSLBM2 {
             }
         }
 
-        //  Function of applying external force of AD with heat source for 3D
+        //  Function of applying external force of AD with heat source for 2D/3D
         template<class T, template<class>class Q>
         void ExternalForceHeatSource(T _heatsource, T *_g0, T *_g, int _idx) {
             _g0[_idx] += Q<T>::ei[0]*_heatsource;

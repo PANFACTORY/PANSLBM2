@@ -325,7 +325,7 @@ namespace PANSLBM2 {
         //  Function of applying external force with heat compliance of AAD for 2D/3D
         template<class Q>
         void ExternalForceHeatCompliance(const __m256d &__heatsource, __m256d *__g) {
-            for (int c = 0; c < Q<T>::nc; ++c) {
+            for (int c = 0; c < Q::nc; ++c) {
                 __g[c] = _mm256_sub_pd(__g[c], __heatsource);
             }
         }
@@ -1349,7 +1349,7 @@ namespace PANSLBM2 {
                 ExternalForceBrinkman<double, P>(_rho[idx], _ux[idx], _uy[idx], _uz[idx], imx, imy, imz, _tem[idx], iqx, iqy, iqz, omegag, _p.f0, _p.f, _alpha[idx], idx);
                 ANS::Macro<double, P>(ip, iux, iuy, iuz, imx, imy, imz, _rho[idx], _ux[idx], _uy[idx], _uz[idx], _p.f0, _p.f, idx);
                 ExternalForceNaturalConvection<double, Q>(imx, imy, imz, _gx, _gy, _gz, _q.f0, _q.f, idx);
-                ExternalForceHeatCompliance<double, Q>(_heatsource, _q.f0, _q.f, idx);
+                ExternalForceHeatCompliance<double, Q>(_heatsource[idx], _q.f0, _q.f, idx);
                 Macro<double, Q>(item, iqx, iqy, iqz, _q.f0, _q.f, idx);
 
                 //  Save macro if need

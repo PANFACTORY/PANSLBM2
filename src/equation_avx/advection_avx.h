@@ -105,7 +105,7 @@ namespace PANSLBM2 {
         //  Function of applying external force of AD with heat source for 2D/3D
         template<class Q>
         void ExternalForceHeatSource(const __m256d &__heatsource, __m256d *__g) {
-            for (int c = 0; c < Q::nc: ++c) {
+            for (int c = 0; c < Q::nc; ++c) {
                 __g[c] = _mm256_add_pd(__g[c], __heatsource);
             }
         }

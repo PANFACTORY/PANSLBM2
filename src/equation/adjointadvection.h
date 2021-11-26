@@ -149,7 +149,7 @@ namespace PANSLBM2 {
             }
         }
 
-        //  Function of applying external force with heat compliance of AAD for 3D
+        //  Function of applying external force with heat compliance of AAD for 2D/3D
         template<class T, template<class>class Q>
         void ExternalForceHeatCompliance(T _heatsource, T *_g0, T *_g, int _idx) {
             _g0[_idx] -= _heatsource;

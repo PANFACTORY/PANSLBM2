@@ -19,6 +19,7 @@ namespace PANSLBM2 {
         template<class T, template<class>class P>void ExternalForceNaturalConvection(T, T, T, T, T *, int);             //  Function of applying external force of AD with natural convection for 2D
         template<class T, template<class>class P>void ExternalForceNaturalConvection(T, T, T, T, T, T *, int);          //  Function of applying external force of AD with natural convection for 3D
         template<class T, template<class>class Q>void ExternalForceHeatExchange(T, T, T *, T *, int);                   //  Function of applying external force of AD with heat exchange for 2D/3D
+        template<class T, template<class>class Q>void ExternalForceHeatSource(T, T *, T *, int);                        //  Function of applying external force of AD with heat source for 2D/3D
 
         //  Function of updating macroscopic values of AD for 2D  
         template<class Q>
@@ -98,6 +99,14 @@ namespace PANSLBM2 {
             __m256d __coef = _mm256_mul_pd(__beta, _mm256_div_pd(_mm256_sub_pd(__1, __tem), _mm256_add_pd(__1, __beta)));
             for (int c = 0; c < Q::nc; ++c) {
                 __g[c] = _mm256_add_pd(__g[c], _mm256_mul_pd(Q::__ei[c], __coef));
+            }
+        }
+
+        //  Function of applying external force of AD with heat source for 2D/3D
+        template<class Q>
+        void ExternalForceHeatSource(const __m256d &__heatsource, __m256d *__g) {
+            for (int c = 0; c < Q::nc: ++c) {
+                __g[c] = _mm256_add_pd(__g[c], __heatsource);
             }
         }
 
@@ -1077,6 +1086,128 @@ namespace PANSLBM2 {
                 ExternalForceNaturalConvection<double, P>(tem, _gx, _gy, _gz, _tem0, _p.f, idx);
                 NS::ExternalForceBrinkman<double, P>(rho, ux, uy, uz, _alpha[idx], _p.f, idx);
                 NS::Macro<double, P>(rho, ux, uy, uz, _p.f0, _p.f, idx);
+                Macro<double, Q>(tem, qx, qy, qz, ux, uy, uz, _q.f0, _q.f, omegag, idx);
+
+                //  Save macro if need
+                if (_issave) {
+                    _rho[idx] = rho;
+                    _ux[idx] = ux;
+                    _uy[idx] = uy;
+                    _uz[idx] = uz;
+                    _tem[idx] = tem;
+                    _qx[idx] = qx;
+                    _qy[idx] = qy;
+                    _qz[idx] = qz;
+
+                    if (_g) {
+                        int offsetf = Q<double>::nc*idx;
+                        _g[offsetf] = _q.f0[idx];
+                        for (int c = 1; c < Q<double>::nc; ++c) {
+                            _g[offsetf + c] = _q.f[Q<double>::IndexF(idx, c)];
+                        }
+                    }
+                }
+
+                //  Collide
+                NS::Equilibrium<double, P>(feq, rho, ux, uy, uz);
+                _p.f0[idx] = iomegaf*_p.f0[idx] + omegaf*feq[0];
+                for (int c = 1; c < P<double>::nc; ++c) {
+                    int idxf = P<double>::IndexF(idx, c);
+                    _p.f[idxf] = iomegaf*_p.f[idxf] + omegaf*feq[c];
+                }
+                Equilibrium<double, Q>(geq, tem, ux, uy, uz);
+                _q.f0[idx] = iomegag*_q.f0[idx] + omegag*geq[0];
+                for (int c = 1; c < Q<double>::nc; ++c) {
+                    int idxf = Q<double>::IndexF(idx, c); 
+                    _q.f[idxf] = iomegag*_q.f[idxf] + omegag*geq[c];
+                }
+            }
+        }
+
+        //  Function of Update macro and Collide of Brinkman and natural convection for 3D
+        template<template<class>class P, template<class>class Q>
+        void MacroBrinkmanCollideNaturalConvectionHeatSource(
+            P<double>& _p, double *_rho, double *_ux, double *_uy, double *_uz, const double *_alpha, double _viscosity,
+            Q<double>& _q, double *_tem, double *_qx, double *_qy, double *_qz, const double *_diffusivity, const double *_heatsource, 
+            double _gx, double _gy, double _gz, double _tem0, bool _issave = false, double *_g = nullptr
+        ) {
+            const int ne = _p.nxyz/P<double>::packsize;
+            double omegaf = 1.0/(3.0*_viscosity + 0.5), iomegaf = 1.0 - omegaf, feq[P<double>::nc], geq[Q<double>::nc];
+            __m256d __omegaf = _mm256_set1_pd(omegaf), __iomegaf = _mm256_set1_pd(iomegaf), __feq[P<double>::nc], __geq[Q<double>::nc];
+            __m256d __gx = _mm256_set1_pd(_gx), __gy = _mm256_set1_pd(_gy), __gz = _mm256_set1_pd(_gz), __tem0 = _mm256_set1_pd(_tem0);
+            #pragma omp parallel for private(__feq, __geq)
+            for (int pidx = 0; pidx < ne; ++pidx) {
+                int idx = pidx*P<double>::packsize;
+
+                __m256d __diffusivity = _mm256_loadu_pd(&_diffusivity[idx]);                 
+                __m256d __omegag = _mm256_div_pd(_mm256_set1_pd(1.0), _mm256_add_pd(_mm256_mul_pd(_mm256_set1_pd(3.0), __diffusivity), _mm256_set1_pd(0.5)));
+                __m256d __iomegag = _mm256_sub_pd(_mm256_set1_pd(1.0), __omegag);
+
+                //  Pack f0, f, g0 and g
+                __m256d __f[P<double>::nc], __g[Q<double>::nc];
+                _p.LoadF(idx, __f);
+                _q.LoadF(idx, __g);
+
+                //  Update macro
+                __m256d __rho, __ux, __uy, __uz;
+                NS::Macro<P<double> >(__rho, __ux, __uy, __uz, __f);
+                __m256d __tem, __qx, __qy, __qz;
+                Macro<Q<double> >(__tem, __qx, __qy, __qz, __ux, __uy, __uz, __g, __omegag);
+
+                //  External force with Brinkman and heat exchange
+                __m256d __alpha = _mm256_loadu_pd(&_alpha[idx]);
+                ExternalForceNaturalConvection<P<double> >(__tem, __gx, __gy, __gz, __tem0, __f);
+                NS::ExternalForceBrinkman<P<double> >(__rho, __ux, __uy, __uz, __alpha, __f);
+                NS::Macro<P<double> >(__rho, __ux, __uy, __uz, __f);
+                __m256d __heatsource = _mm256_loadu_pd(&_heatsource[idx]);
+                ExternalForceHeatSource<Q<double> >(__heatsource, __g);
+                Macro<Q<double> >(__tem, __qx, __qy, __qz, __ux, __uy, __uz, __g, __omegag);
+
+                //  Save macro if need
+                if (_issave) {
+                    _mm256_storeu_pd(&_rho[idx], __rho);
+                    _mm256_storeu_pd(&_ux[idx], __ux);
+                    _mm256_storeu_pd(&_uy[idx], __uy);
+                    _mm256_storeu_pd(&_uz[idx], __uz);
+                    _mm256_storeu_pd(&_tem[idx], __tem);
+                    _mm256_storeu_pd(&_qx[idx], __qx);
+                    _mm256_storeu_pd(&_qy[idx], __qy);
+                    _mm256_storeu_pd(&_qz[idx], __qz);
+
+                    if (_g) {
+                        int offsetf = Q<double>::nc*idx;
+                        for (int c = 0; c < Q<double>::nc; ++c) {
+                            _mm256_storeu_pd(&_g[offsetf + Q<double>::packsize*c], __g[c]);
+                        }
+                    }
+                }
+
+                //  Collide
+                NS::Equilibrium<P<double> >(__feq, __rho, __ux, __uy, __uz);
+                for (int c = 0; c < P<double>::nc; ++c) {
+                    __f[c] = _mm256_add_pd(_mm256_mul_pd(__iomegaf, __f[c]), _mm256_mul_pd(__omegaf, __feq[c]));
+                }
+                _p.StoreF(idx, __f);
+                Equilibrium<Q<double> >(__geq, __tem, __ux, __uy, __uz);
+                for (int c = 0; c < Q<double>::nc; ++c) {
+                    __g[c] = _mm256_add_pd(_mm256_mul_pd(__iomegag, __g[c]), _mm256_mul_pd(__omegag, __geq[c]));
+                }
+                _q.StoreF(idx, __g);
+            }
+            for (int idx = ne*P<double>::packsize; idx < _p.nxyz; ++idx) {
+                double omegag = 1.0/(3.0*_diffusivity[idx] + 0.5), iomegag = 1.0 - omegag;
+
+                //  Update macro
+                double rho, ux, uy, uz;
+                NS::Macro<double, P>(rho, ux, uy, uz, _p.f0, _p.f, idx);
+                double tem, qx, qy, qz;
+                Macro<double, Q>(tem, qx, qy, qz, ux, uy, uz, _q.f0, _q.f, omegag, idx);
+
+                //  External force with Brinkman model and natural convection
+                ExternalForceNaturalConvection<double, P>(tem, _gx, _gy, _gz, _tem0, _p.f, idx);
+                NS::ExternalForceBrinkman<double, P>(rho, ux, uy, uz, _alpha[idx], _p.f, idx);
+                NS::Macro<double, P>(rho, ux, uy, uz, _p.f0, _p.f, idx);
+                ExternalForceHeatSource<double, P>(_heatsource[idx], _q.f0, _q.f, idx);
                 Macro<double, Q>(tem, qx, qy, qz, ux, uy, uz, _q.f0, _q.f, omegag, idx);
 
                 //  Save macro if need

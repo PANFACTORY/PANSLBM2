@@ -150,7 +150,7 @@ int main(int argc, char** argv) {
                 std::cout << "\rDirect analyse t = " << t << " " << std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count() << std::endl;
             }*/
             pf.Stream();
-            pg.Stream();
+            pg.Stream(30);
             pf.BoundaryCondition([=](int _i, int _j, int _k) { return (_i == 0 || _k == 0) ? 2 : 1; });
             AD::BoundaryConditionSetT(pg, 
                 [=](int _i, int _j, int _k) { return tem0; }, 
@@ -194,7 +194,7 @@ int main(int argc, char** argv) {
                 std::cout << "\rInverse analyse t = " << t << " " << std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count() << std::endl;
             }*/
             pf.iStream();
-            pg.iStream();
+            pg.iStream(30);
             AAD::iBoundaryConditionSetT(pg, ux[t], uy[t], uz[t], [=](int _i, int _j, int _k) { return _i == lx - 1 || _j == ly - 1 || _k == lz - 1; });
             AAD::iBoundaryConditionSetQ(pg, ux[t], uy[t], uz[t], [=](int _i, int _j, int _k) { return _j == 0; });
             AAD::iBoundaryConditionSetQ(pg, ux[t], uy[t], uz[t], [=](int _i, int _j, int _k) { return _j == 0 && _i < L && _k < L; }, 1.0);

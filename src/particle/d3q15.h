@@ -1303,7 +1303,7 @@ private:
     }
 
     template<class T>
-    int D3Q15<T>::Communicate() {
+    int D3Q15<T>::Communicate(int _offset) {
         int neib = 0;
 #ifdef _USE_MPI_DEFINES
         if (this->mx != 1) {

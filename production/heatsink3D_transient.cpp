@@ -39,7 +39,7 @@ int main(int argc, char** argv) {
 #endif
 
     //********************Parameters********************
-    int lx = 81, ly = 161, lz = 81, nt = 50000, dt = 100, nitr = 500, nb = 100, resultid = 0;
+    int lx = 81, ly = 161, lz = 81, nt = 100000, dt = 100, nitr = 500, nb = 100, resultid = 0;
     double Pr = 6.0, Ra = 1e5, nu = 0.1, L = (lx - 1)/10, tem0 = 0.0, qn = 1.0e-2, alphamax = 1.0e4;
     double qf = 1e-2, qfmax = 1e2, qg = 1e0, movelimit = 0.2, weightlimit = 0.05, R = 2.4, eps = 1.0e-5, s0 = 0.0;
     
@@ -291,7 +291,8 @@ int main(int argc, char** argv) {
 
         //********************Check convergence********************
         if (MyRank == 0) {
-            std::cout << "\r" << std::fixed << std::setprecision(6) << itr << " " << f << " " << g << " " << dsmax  << " (" << imax << "," << jmax << "," << kmax << ") " << qf << " " << qg << " " << mnd << std::endl;
+            std::chrono::system_clock::time_point end = std::chrono::system_clock::now();
+            std::cout << "\r" << std::fixed << std::setprecision(6) << itr << " " << f << " " << g << " " << dsmax  << " (" << imax << "," << jmax << "," << kmax << ") " << qf << " " << qg << " " << mnd << " " << std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count() << std::endl;
         }
         if (dsmax < 0.01 || itr == nitr || cnt == nb) {
 #ifdef _USE_MPI_DEFINES

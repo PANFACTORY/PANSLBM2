@@ -1384,7 +1384,7 @@ private:
             MPI_Isend(this->fsend_xmax_ymax, this->nz*2, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy + 1, this->PEz), 17 + _offset, MPI_COMM_WORLD, &this->request[neib++]);
             MPI_Irecv(this->frecv_xmin_ymin, this->nz*2, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy - 1, this->PEz), 17 + _offset, MPI_COMM_WORLD, &this->request[neib++]);
         }
-        if (this->mx != 1 || this->my != 1 || this->mz != 1) {  //ここにミス（D2Q9と比較せよ）
+        if (this->mx != 1 || this->my != 1 || this->mz != 1) {
             MPI_Isend(&this->fsend_corner[0], 1, MPI_DOUBLE, this->IndexPE(this->PEx - 1, this->PEy - 1, this->PEz - 1), 18 + _offset, MPI_COMM_WORLD, &this->request[neib++]);
             MPI_Irecv(&this->frecv_corner[7], 1, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy + 1, this->PEz + 1), 18 + _offset, MPI_COMM_WORLD, &this->request[neib++]);   //  Corner at xmin, ymin and zmin
             MPI_Isend(&this->fsend_corner[1], 1, MPI_DOUBLE, this->IndexPE(this->PEx + 1, this->PEy - 1, this->PEz - 1), 19 + _offset, MPI_COMM_WORLD, &this->request[neib++]);

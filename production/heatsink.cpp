@@ -38,8 +38,8 @@ int main(int argc, char** argv) {
 #endif
 
     //********************Parameters********************
-    int lx = 141, ly = 161, mx = 81, my = 101, nt = 100000, dt = 100, nk = 2000, nb = 100;
-    double Pr = 6.0, Ra = 4.5e4, nu = 0.1, L = 4.0, tem0 = 0.0, qn = 1.0e-2, alphamax = 1.0e4;
+    int lx = 141, ly = 161, mx = 81, my = 101, nt = 150000, dt = 100, nk = 1, nb = 100;
+    double Pr = 6.0, Ra = 2e5, nu = 0.1, L = 4.0, tem0 = 0.0, qn = 1.0e-2, alphamax = 1.0e4;
     double qf = 1e-2, qfmax = 1e2, qg = 1e0, movelimit = 0.2, weightlimit = 0.5, R = 2.4, eps = 1.0e-6, s0 = 0.5;
 
     double U = nu*sqrt(Ra/Pr)/(double)(ly - 1), diff_fluid = nu/Pr, diff_solid = diff_fluid*10.0, gx = 0.0, gy = U*U/(double)(ly - 1);
@@ -144,13 +144,24 @@ int main(int argc, char** argv) {
         for (int t = 1; t <= nt; t++) {
             AD::MacroBrinkmanCollideNaturalConvection(pf, rho, ux, uy, alpha, nu, pg, tem, qx, qy, diffusivity, gx, gy, tem0, true, gi);
             if (t%dt == 0) {
-                if (MyRank == 0) {
-                    std::cout << "\rDirect analyse t = " << t << std::string(10, ' ');
+                double unorm_buffer = 0.0, unorm;
+                for (int idx = 0; idx < pf.nxyz; ++idx) {
+                    unorm_buffer += pow(ux[idx], 2.0) + pow(uy[idx], 2.0);
                 }
-                if (Residual(ux, uy, uxp, uyp, pf.nxyz) < eps && Residual(qx, qy, qxp, qyp, pf.nxyz) < eps) {
+#ifdef _USE_MPI_DEFINES
+                MPI_Allreduce(&unorm_buffer, &unorm, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+#else
+                unorm = unorm_buffer;
+#endif
+                unorm = sqrt(unorm);
+                double du = Residual(ux, uy, uxp, uyp, pf.nxyz), dq = Residual(qx, qy, qxp, qyp, pf.nxyz);
+                if (MyRank == 0) {
+                    std::cout << "\rDirect analyse t = " << t << " unorm = " << unorm << " du = " << du << " dq = " << dq << std::string(10, ' ');
+                }
+                /*if (Residual(ux, uy, uxp, uyp, pf.nxyz) < eps && Residual(qx, qy, qxp, qyp, pf.nxyz) < eps) {
                     td = t;
                     break;
-                }
+                }*/
             }
             pf.Stream();
             pg.Stream();

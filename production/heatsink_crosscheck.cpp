@@ -15,8 +15,8 @@ int main(int argc, char** argv) {
     //--------------------Set parameters--------------------
     const int dt = 100, nt0 = 0, nc = 3, nm = 3;
     double Pr = 6.0, nu = 0.1, tem0 = 0.0, qn = 1.0e-2, alphamax = 1.0e4, eps = 1.0e-6, weightlimit = 0.5, sth = 0.1;
-    int ntList[nc] = { 1000000, 1000000, 1000000 };
-    double RaList[nc] = { 5e3, 1.5e4, 4.5e4 }, qfList[nc] = { 1e2, 1e2, 1e2 }, qgList[nc] = { 1e0, 1e0, 1e0 }, fList[nc*nm] = { 0 }, gList[nm] = { 0 };
+    int ntList[nc] = { 50000, 100000, 150000 };
+    double RaList[nc] = { 2e5, 2e5, 2e5 }, qfList[nc] = { 1e2, 1e2, 1e2 }, qgList[nc] = { 1e0, 1e0, 1e0 }, fList[nc*nm] = { 0 }, gList[nm] = { 0 };
 
     if (argc != nm + 1) {
         std::cout << "Error:No vtk file selected." << std::endl;
@@ -59,12 +59,22 @@ int main(int argc, char** argv) {
             for (int t = 1; t < nt0 + nt; ++t) {
                 AD::MacroBrinkmanCollideNaturalConvection(pf, rho, ux, uy, alpha, nu, pg, tem, qx, qy, diffusivity, gx, gy, tem0, true);
                 if (t%dt == 0) {
+                    double unorm_buffer = 0.0, unorm;
+                    for (int idx = 0; idx < pf.nxyz; ++idx) {
+                        unorm_buffer += pow(ux[idx], 2.0) + pow(uy[idx], 2.0);
+                    }
+#ifdef _USE_MPI_DEFINES
+                    MPI_Allreduce(&unorm_buffer, &unorm, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+#else
+                    unorm = unorm_buffer;
+#endif
+                    unorm = sqrt(unorm);
                     double du = Residual(ux, uy, uxp, uyp, pf.nxyz), dq = Residual(qx, qy, qxp, qyp, pf.nxyz);
-                    std::cout << "\rCondition id:" << conditionid << " t = " << t << " du = " << du << " dq = " << dq << std::string(10, ' ');
-                    if (du < eps && dq < eps) {
+                    std::cout << "\rCondition id:" << conditionid << " t = " << t << " unorm = " << unorm << " du = " << du << " dq = " << dq << std::string(10, ' ');
+                    /*if (du < eps && dq < eps) {
                         td = t;
                         break;
-                    }
+                    }*/
                 }
                 pf.Stream();
                 pg.Stream();

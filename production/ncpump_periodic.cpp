@@ -38,24 +38,23 @@ int main(int argc, char** argv) {
 #endif
 
     //--------------------Set parameters--------------------
-    int lx = 101, ly = 201, dt = 1000, nt0 = 1000000, nt = 50000, period = 50000, nk = 2000, nb = 100, duty = 20;
+    int lx = 101, ly = 201, dt = 1000, nt0 = 1000000, nt = 100000, period = 100000, nk = 2000, nb = 100, duty = 20;
     double viscosity = 0.1/6.0, diff_fluid = viscosity/1.0, Th = 1.0, Tl = 0.0, gx = 0.0, gy = 1000*pow(viscosity, 2)/(double)pow(lx - 1, 3);
-    double alphamax = 1e5, diff_solid = diff_fluid*10.0, qf = 1e-6, qfmax = 1e-2, qg = 1e-4, weightlimit = 0.5, movelimit = 0.2, R = 1.5, eps = 1e-5, ratio = 0.5;
+    double alphamax = 1e5, diff_solid = diff_fluid*10.0, qf = 1e-6, qfmax = 1e-2, qg = 1e-4, weightlimit = 0.5, movelimit = 0.2, R = 0.5, eps = 1e-5, ratio = 0.5;
     D2Q9<double> pf(lx, ly, MyRank, mx, my), pg(lx, ly, MyRank, mx, my);
     double **rho = new double*[nt], **ux = new double*[nt], **uy = new double*[nt];
-    double **tem = new double*[nt], **qx = new double*[nt], **qy = new double*[nt];
+    double **tem = new double*[nt], *qx = new double[pg.nxyz], *qy = new double[pg.nxyz];
     double **gi = new double*[nt];
     double *f = new double[nt];
     f[0] = 0.0;
     for (int t = 0; t < nt; ++t) {
         rho[t] = new double[pf.nxyz];   ux[t] = new double[pf.nxyz];    uy[t] = new double[pf.nxyz];
-        tem[t] = new double[pg.nxyz];   qx[t] = new double[pg.nxyz];    qy[t] = new double[pg.nxyz];
-        gi[t] = new double[pg.nxyz*pg.nc];
+        tem[t] = new double[pg.nxyz];   gi[t] = new double[pg.nxyz*pg.nc];
     }
     double *irho = new double[pf.nxyz], *iux = new double[pf.nxyz], *iuy = new double[pf.nxyz], *imx = new double[pf.nxyz], *imy = new double[pf.nxyz];
     double *item = new double[pg.nxyz], *iqx = new double[pg.nxyz], *iqy = new double[pg.nxyz];
     for (int idx = 0; idx < pf.nxyz; idx++) {
-        rho[0][idx] = 1.0; ux[0][idx] = 0.0; uy[0][idx] = 0.0; tem[0][idx] = 0.5*(Tl + Th); qx[0][idx] = 0.0; qy[0][idx] = 0.0;
+        rho[0][idx] = 1.0; ux[0][idx] = 0.0; uy[0][idx] = 0.0; tem[0][idx] = 0.5*(Tl + Th); qx[idx] = 0.0; qy[idx] = 0.0;
         irho[idx] = 1.0; iux[idx] = 0.0; iuy[idx] = 0.0; imx[idx] = 0.0; imy[idx] = 0.0; item[idx] = 0.0; iqx[idx] = 0.0; iqy[idx] = 0.0;
     }
     double *alpha = new double[pf.nxyz], *diffusivity = new double[pf.nxyz], *dads = new double[pf.nxyz], *dkds = new double[pf.nxyz];
@@ -139,7 +138,7 @@ int main(int argc, char** argv) {
                 }
                 AD::MacroBrinkmanCollideNaturalConvection(
                     pf, rho[0], ux[0], uy[0], alpha, viscosity, 
-                    pg, tem[0], qx[0], qy[0], diffusivity, gx, gy, 0.5*(Th + Tl), true, gi[0]
+                    pg, tem[0], qx, qy, diffusivity, gx, gy, 0.5*(Th + Tl), true, gi[0]
                 );
 
                 pf.Stream();
@@ -178,8 +177,7 @@ int main(int argc, char** argv) {
             }
         } else {
             for (int idx = 0; idx < pf.nxyz; idx++) {
-                rho[0][idx] = rho[nt - 1][idx]; ux[0][idx] = ux[nt - 1][idx]; uy[0][idx] = uy[nt - 1][idx];
-                tem[0][idx] = tem[nt - 1][idx]; qx[0][idx] = qx[nt - 1][idx]; qy[0][idx] = qy[nt - 1][idx];
+                rho[0][idx] = rho[nt - 1][idx]; ux[0][idx] = ux[nt - 1][idx]; uy[0][idx] = uy[nt - 1][idx]; tem[0][idx] = tem[nt - 1][idx];
             }
         }
         double faverage_buffer = 0.0, fsquare_buffer = 0.0;
@@ -191,7 +189,7 @@ int main(int argc, char** argv) {
             }
             AD::MacroBrinkmanCollideNaturalConvection(
                 pf, rho[t], ux[t], uy[t], alpha, viscosity, 
-                pg, tem[t], qx[t], qy[t], diffusivity, gx, gy, 0.5*(Th + Tl), true, gi[t]
+                pg, tem[t], qx, qy, diffusivity, gx, gy, 0.5*(Th + Tl), true, gi[t]
             );
 
             pf.Stream();
@@ -379,8 +377,8 @@ int main(int argc, char** argv) {
                 );
                 file.AddPointData(pf, "T", [&](int _i, int _j, int _k) { return tem[nt - 1][pg.Index(_i, _j)]; });
                 file.AddPointData(pf, "q", 
-                    [&](int _i, int _j, int _k) { return qx[nt - 1][pg.Index(_i, _j)]; },
-                    [&](int _i, int _j, int _k) { return qy[nt - 1][pg.Index(_i, _j)]; },
+                    [&](int _i, int _j, int _k) { return qx[pg.Index(_i, _j)]; },
+                    [&](int _i, int _j, int _k) { return qy[pg.Index(_i, _j)]; },
                     [](int _i, int _j, int _k) { return 0.0; }
                 );
                 file.AddPointData(pf, "irho", [&](int _i, int _j, int _k) {   return irho[pf.Index(_i, _j)];  });
@@ -413,8 +411,8 @@ int main(int argc, char** argv) {
                 );
                 file.AddPointScaler("T", [&](int _i, int _j, int _k) { return tem[nt - 1][pg.Index(_i, _j)]; });
                 file.AddPointVector("q", 
-                    [&](int _i, int _j, int _k) { return qx[nt - 1][pg.Index(_i, _j)]; },
-                    [&](int _i, int _j, int _k) { return qy[nt - 1][pg.Index(_i, _j)]; },
+                    [&](int _i, int _j, int _k) { return qx[pg.Index(_i, _j)]; },
+                    [&](int _i, int _j, int _k) { return qy[pg.Index(_i, _j)]; },
                     [](int _i, int _j, int _k) { return 0.0; }
                 );
                 file.AddPointScaler("irho", [&](int _i, int _j, int _k) {   return irho[pf.Index(_i, _j)];  });
@@ -444,7 +442,7 @@ int main(int argc, char** argv) {
     }
 
     for (int t = 0; t < nt; ++t) {
-        delete[] rho[t]; delete[] ux[t]; delete[] uy[t]; delete[] tem[t]; delete[] qx[t]; delete[] qy[t]; delete[] gi[t];
+        delete[] rho[t]; delete[] ux[t]; delete[] uy[t]; delete[] tem[t]; delete[] gi[t];
     }
     delete[] rho; delete[] ux; delete[] uy; delete[] tem; delete[] qx; delete[] qy; delete[] gi;
     delete[] diffusivity; delete[] alpha; delete[] dkds; delete[] dads;

@@ -13,10 +13,10 @@ using namespace PANSLBM2;
 int main(int argc, char** argv) {
     //--------------------Set parameters--------------------
     const int dt = 1000, nt0 = 1000000, nc = 3, nm = 3;
-    int ntList[nc] = { 50000, 50000, 50000 }, periodList[nc] = { 50000, 25000, 5000 }, dutyList[nc] = { 10, 80 };
+    int ntList[nc] = { 100000, 100000, 100000 }, periodList[nc] = { 100000, 10000, 1000 }, dutyList[nc] = { 10, 80 };
     double viscosity = 0.1/6.0, diff_fluid = viscosity/1.0, Th = 1.0, Tl = 0.0;
     double alphamax = 1e5, diff_solid = diff_fluid*10.0;
-    double qfList[nc] = { 1e-2, 1e-2, 1e-2 }, qgList[nc] = { 1e-4, 1e-4, 1e-4 }, ratioList[nc] = { 0.25, 0.5, 0.75 }, faveList[nc*nm] = { 0 }, fvarList[nc*nm] = { 0 };
+    double qfList[nc] = { 1e-2, 1e-2, 1e-2 }, qgList[nc] = { 1e-4, 1e-4, 1e-4 }, ratioList[nc] = { 0.5, 0.5, 0.5 }, faveList[nc*nm] = { 0 }, fvarList[nc*nm] = { 0 };
 
     if (argc != nm + 1) {
         std::cout << "Error:No vtk file selected." << std::endl;
@@ -46,7 +46,7 @@ int main(int argc, char** argv) {
                 directiony[idx] = 0.0;
             }
         }
-        model.GetPointScalar("ss", s);
+        model.GetPointScalar("s", s);
 
         //  Loop of condition
         for (int conditionid = 0; conditionid < nc; ++conditionid) {

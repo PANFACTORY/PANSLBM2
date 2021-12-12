@@ -13,10 +13,10 @@ using namespace PANSLBM2;
 int main(int argc, char** argv) {
     //--------------------Set parameters--------------------
     const int dt = 1000, nt0 = 1000000, nc = 3, nm = 3;
-    int ntList[nc] = { 50000, 50000, 50000 }, periodList[nc] = { 50000, 25000, 5000 }, dutyList[nc] = { 10, 80 };
+    int ntList[nc] = { 100000, 100000, 100000 }, periodList[nc] = { 100000, 25000, 5000 }, dutyList[nc] = { 10, 80 };
     double viscosity = 0.1/6.0, diff_fluid = viscosity/1.0, Th = 1.0, Tl = 0.0;
     double alphamax = 1e5, diff_solid = diff_fluid*10.0;
-    double qfList[nc] = { 1e-2, 1e-2, 1e-2 }, qgList[nc] = { 1e-4, 1e-4, 1e-4 }, ratioList[nc] = { 0.25, 0.5, 0.75 }, faveList[nc*nm] = { 0 }, fvarList[nc*nm] = { 0 };
+    double qfList[nc] = { 1e-2, 1e-2, 1e-2 }, qgList[nc] = { 1e-4, 1e-4, 1e-4 }, ratioList[nc] = { 0.5, 0.5, 0.5 }, faveList[nc][nm] = { 0 }, fvarList[nc][nm] = { 0 }, *ftmpList[nc][nm];
 
     if (argc != nm + 1) {
         std::cout << "Error:No vtk file selected." << std::endl;
@@ -59,6 +59,7 @@ int main(int argc, char** argv) {
                 alpha[idx] = alphamax/(double)(ly - 1)*qf*(1.0 - s[idx])/(s[idx] + qf);
             }
             double faverage = 0.0, fsquare = 0.0;
+            ftmpList[conditionid][modelid] = new double[nt];
             std::cout << "Direct analyse t = 0";
             NS::InitialCondition(pf, rho, ux, uy);
             AD::InitialCondition(pg, tem, ux, uy);
@@ -102,24 +103,24 @@ int main(int argc, char** argv) {
                 pg.SmoothCornerAt(4*lx/5, 9*ly/10, 1, 1);
                 pg.SmoothCornerAt(lx/5, 9*ly/10, -1, 1);
 
-                double ftmp = 0.0;
-                if (t > nt0) {
+                if (t >= nt0) {
+                    ftmpList[conditionid][modelid][t - nt0] = 0.0;
                     for (int j = 0; j < pf.ny; ++j) {
                         int i = lx/2 - pf.offsetx;
                         if (0 <= i && i < pf.nx && (j + pf.offsety) > 9*ly/10) {
                             int idx = pf.Index(i, j);
-                            ftmp += ux[idx]*directionx[idx] + uy[idx]*directiony[idx];
+                            ftmpList[conditionid][modelid][t - nt0] += ux[idx]*directionx[idx] + uy[idx]*directiony[idx];
                         }
                     }
+                    ftmpList[conditionid][modelid][t - nt0] /= (double)((ly - 1)/10);
+                    faverage += ftmpList[conditionid][modelid][t - nt0];
+                    fsquare += pow(ftmpList[conditionid][modelid][t - nt0], 2.0);
                 }
-                ftmp /= (double)((ly - 1)/10);
-                faverage += ftmp;
-                fsquare += pow(ftmp, 2.0);
             }
             faverage /= (double)nt;
             double variance = fsquare/(double)nt - pow(faverage, 2.0), coef = (1.0 - ratio)/sqrt(variance);
-            faveList[conditionid*nm + modelid] = faverage;
-            fvarList[conditionid*nm + modelid] = variance;
+            faveList[conditionid][modelid] = faverage;
+            fvarList[conditionid][modelid] = variance;
         }
 
         delete[] rho; delete[] ux; delete[] uy; delete[] tem; delete[] qx; delete[] qy; delete[] s; delete[] alpha; delete[] diffusivity; delete[] directionx; delete[] directiony;
@@ -132,7 +133,7 @@ int main(int argc, char** argv) {
     for (int conditionid = 0; conditionid < nc; ++conditionid) {
         std::cout << std::endl << std::scientific << std::setprecision(2) << conditionid << std::setprecision(6);
         for (int modelid = 0; modelid < nm; ++modelid) {
-            std::cout << "\t" << faveList[conditionid*nm + modelid];
+            std::cout << "\t" << faveList[conditionid][modelid];
         }    
     }
 
@@ -143,7 +144,7 @@ int main(int argc, char** argv) {
     for (int conditionid = 0; conditionid < nc; ++conditionid) {
         std::cout << std::endl << std::scientific << std::setprecision(2) << conditionid << std::setprecision(6);
         for (int modelid = 0; modelid < nm; ++modelid) {
-            std::cout << "\t" << fvarList[conditionid*nm + modelid];
+            std::cout << "\t" << fvarList[conditionid][modelid];
         }    
     }
 
@@ -154,9 +155,28 @@ int main(int argc, char** argv) {
     for (int conditionid = 0; conditionid < nc; ++conditionid) {
         std::cout << std::endl << std::scientific << std::setprecision(2) << conditionid << std::setprecision(6);
         for (int modelid = 0; modelid < nm; ++modelid) {
-            std::cout << "\t" << ratioList[conditionid]*faveList[conditionid*nm + modelid] + (1.0 - ratioList[conditionid])*sqrt(fvarList[conditionid*nm + modelid]);
+            std::cout << "\t" << ratioList[conditionid]*faveList[conditionid][modelid] + (1.0 - ratioList[conditionid])*sqrt(fvarList[conditionid][modelid]);
         }    
     }
 
     std::cout << std::endl;
+
+    std::ofstream fout("result/ncpump_crosscheck_log.txt");
+    for (int conditionid = 0; conditionid < nc; ++conditionid) {
+        fout << "condition: " << conditionid << std::endl;
+        for (int t = 0; t < ntList[conditionid]; ++t) {
+            fout << t << "\t";
+            for (int modelid = 0; modelid < nm; ++modelid) {
+                fout << "\t" << ftmpList[conditionid][modelid][t];
+            }
+            fout << std::endl;
+        }
+        fout << std::endl;
+    }
+
+    for (int conditionid = 0; conditionid < nc; ++conditionid) {
+        for (int modelid = 0; modelid < nm; ++modelid) {
+            delete[] ftmpList[conditionid][modelid];
+        }    
+    }
 }

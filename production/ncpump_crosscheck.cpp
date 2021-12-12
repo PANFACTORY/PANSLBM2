@@ -46,7 +46,7 @@ int main(int argc, char** argv) {
                 directiony[idx] = 0.0;
             }
         }
-        model.GetPointScalar("ss", s);
+        model.GetPointScalar("s", s);
 
         //  Loop of condition
         for (int conditionid = 0; conditionid < nc; ++conditionid) {

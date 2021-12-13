@@ -38,9 +38,9 @@ int main(int argc, char** argv) {
 #endif
 
     //********************Parameters********************
-    int lx = 141, ly = 161, mx = 81, my = 101, nt = 90000, dt = 100, nk = 2000, nb = 100;
-    double Pr = 6.0, Ra = 2.5e5, nu = 0.1, L = 4.0, tem0 = 0.0, qn = 1.0e-2, alphamax = 1.0e4;
-    double qf = 1e-2, qfmax = 1e2, qg = 1e0, movelimit = 0.2, weightlimit = 0.5, R = 1.5, eps = 1.0e-5, s0 = 0.5;
+    int lx = 141, ly = 161, mx = 81, my = 101, nt = 50000, dt = 100, nk = 2000, nb = 100;
+    double Pr = 6.0, Ra = 2e5, nu = 0.1, L = 4.0, tem0 = 0.0, qn = 1.0e-2, alphamax = 1.0e4, tau = 1.0e-3;
+    double qf = 1e-2, qfmax = 1e2, qg = 1e0, movelimit = 0.2, weightlimit = 0.5, R = 2.4, eps = 1.0e-5, s0 = 0.5;
 
     double U = nu*sqrt(Ra/Pr)/(double)(ly - 1), diff_fluid = nu/Pr, diff_solid = diff_fluid*10.0, gx = 0.0, gy = U*U/(double)(ly - 1);
     D2Q9<double> pf(lx, ly, MyRank, nPEx, nPEy), pg(lx, ly, MyRank, nPEx, nPEy);
@@ -233,6 +233,15 @@ int main(int argc, char** argv) {
             }
         }
         Normalize(dfds.data(), pf.nxyz);
+
+        std::vector<double> dhdss(s.size(), 0.0);
+        for (int idx = 0; idx < pf.nxyz; ++ idx) {
+            dhdss[idx] += (1.0 - 2.0*ss[idx])/(4.0*mx*my);
+        }
+        std::vector<double> dhds = DensityFilter::GetFilteredValue(pf, R, dhdss, filterweight);
+        for (int idx = 0; idx < pf.nxyz; ++ idx) {
+            dfds[idx] += tau*dhds[idx];
+        }
 
         //********************Check grayscale********************
         double mnd_buffer = 0.0, mnd;

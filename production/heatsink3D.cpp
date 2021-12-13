@@ -40,8 +40,8 @@ int main(int argc, char** argv) {
 
     //********************Parameters********************
     int lx = 81, ly = 161, lz = 81, nt = 100000, dt = 100, nitr = 500, nb = 100;
-    double Pr = 6.0, Ra = 2.5e4, nu = 0.1, L = (lx - 1)/10, tem0 = 0.0, qn0 = 1.5e-2, alphamax = 1.0e4, beta = 1.0, betamax = 16.0;
-    double qf = 1e-2, qg = 1e0, movelimit = 0.2, weightlimit = 0.05, R = 1.5, eps = 1.0e-5, s0 = 0.0;
+    double Pr = 6.0, Ra = 1e3, nu = 0.1, L = (lx - 1)/10, tem0 = 0.0, qn0 = 1.5e-2, alphamax = 1.0e4, beta = 1.0, betamax = 16.0;
+    double qf = 1e-2, qg = 1e0, movelimit = 0.2, weightlimit = 0.05, R = 2.4, eps = 1.0e-5, s0 = 0.0;
 
     int mx = 3*(lx - 1)/4 + 1, my = 3*(ly - 1)/4 + 1, mz = 3*(lz - 1)/4 + 1;
     double U = nu*sqrt(Ra/Pr)/(double)(ly - 1), diff_fluid = nu/Pr, diff_solid = diff_fluid*10.0, gx = 0.0, gy = U*U/(double)(ly - 1), gz = 0.0;

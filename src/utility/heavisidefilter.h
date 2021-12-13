@@ -31,7 +31,7 @@ namespace PANSLBM2 {
                                 }
                             }
                         }
-                        rho[idx] = 0.5*(tanh(0.5*_beta) + tanh(_beta*(wssum/wsum - 0.5)))/tanh(_beta);
+                        rho[idx] = 0.5*(tanh(0.5*_beta) + tanh(_beta*(wssum/wsum - 0.5)))/tanh(0.5*_beta);
                     }
                 }
             }

@@ -14,7 +14,7 @@
 #include "../src/equation/adjointadvection.h"
 #include "../src/utility/residual.h"
 #include "../src/utility/mma.h"
-#include "../src/utility/densityfilter.h"
+#include "../src/utility/heavisidefilter.h"
 #include "../src/utility/normalize.h"
 #ifdef _USE_MPI_DEFINES
     #include "../src/utility/vtkxmlexport.h"
@@ -39,9 +39,9 @@ int main(int argc, char** argv) {
 #endif
 
     //********************Parameters********************
-    int lx = 81, ly = 161, lz = 81, nt = 1000, dt = 100, nitr = 1, nb = 100;
-    double Pr = 6.0, Ra = 2.5e4, nu = 0.1, L = (lx - 1)/10, tem0 = 0.0, qn0 = 1.0e-2, alphamax = 1.0e4;
-    double qf = 1e-2, qfmax = 1e1, qg = 1e0, movelimit = 0.2, weightlimit = 0.05, R = 1.5, eps = 1.0e-5, s0 = 0.05;
+    int lx = 81, ly = 161, lz = 81, nt = 100000, dt = 100, nitr = 500, nb = 100;
+    double Pr = 6.0, Ra = 2.5e4, nu = 0.1, L = (lx - 1)/10, tem0 = 0.0, qn0 = 1.0e-2, alphamax = 1.0e4, beta = 1.0, betamax = 16.0;
+    double qf = 1e-2, qg = 1e0, movelimit = 0.2, weightlimit = 0.05, R = 1.5, eps = 1.0e-5, s0 = 0.0;
 
     int mx = 3*(lx - 1)/4 + 1, my = 3*(ly - 1)/4 + 1, mz = 3*(lz - 1)/4 + 1;
     double U = nu*sqrt(Ra/Pr)/(double)(ly - 1), diff_fluid = nu/Pr, diff_solid = diff_fluid*10.0, gx = 0.0, gy = U*U/(double)(ly - 1), gz = 0.0;
@@ -95,14 +95,14 @@ int main(int argc, char** argv) {
 
     for (int itr = 1, cnt = 1; itr <= nitr; itr++) {
         if (cnt%nb == 0) {
-            qf = std::min(qfmax, qf*10.0);
+            beta = std::min(betamax, beta*2.0);
             cnt = 1;
         } else {
             cnt++;
         }
 
         //********************Filter variables********************
-        std::vector<double> ss = DensityFilter::GetFilteredValue(pf, R, s, filterweight);
+        std::vector<double> ss = HeavisideFilter::GetFilteredVariable(pf, R, beta, s, filterweight);
         for (int i = 0; i < pf.nx; ++i) {
             for (int j = 0; j < pf.ny; ++j) {
                 for (int k = 0; k < pf.nz; ++k) {
@@ -248,8 +248,8 @@ int main(int argc, char** argv) {
         );
         
         //********************Filter sensitivities********************
-        std::vector<double> dfds = DensityFilter::GetFilteredValue(pf, R, dfdss, filterweight);
-        std::vector<double> dgds = DensityFilter::GetFilteredValue(pf, R, dgdss, filterweight);
+        std::vector<double> dfds = HeavisideFilter::GetFilteredValue(pf, R, beta, dfdss, filterweight);
+        std::vector<double> dgds = HeavisideFilter::GetFilteredValue(pf, R, beta, dgdss, filterweight);
         for (int i = 0; i < pf.nx; ++i) {
             for (int j = 0; j < pf.ny; ++j) {
                 for (int k = 0; k < pf.nz; ++k) {
@@ -314,10 +314,10 @@ int main(int argc, char** argv) {
 
         //********************Check convergence********************
         if (MyRank == 0) {
-            std::cout << "\r" << std::fixed << std::setprecision(6) << itr << " " << f << " " << g << " " << td << " " << ti << " " << dsmax  << " (" << imax << "," << jmax << "," << kmax << ") " << qf << " " << qg << " " << mnd << std::endl;
+            std::cout << "\r" << std::fixed << std::setprecision(6) << itr << " " << f << " " << g << " " << td << " " << ti << " " << dsmax  << " (" << imax << "," << jmax << "," << kmax << ") " << qf << " " << qg << " " << beta << " " << mnd << std::endl;
         }
         if (dsmax < 0.01 || itr == nitr) {
-            if (qf < qfmax && itr != nitr) {
+            if (beta < betamax && itr != nitr) {
                 cnt = 0;
             } else {
                 if (MyRank == 0) {

@@ -39,7 +39,7 @@ int main(int argc, char** argv) {
 
     //********************Parameters********************
     int lx = 141, ly = 161, mx = 81, my = 101, nt = 100000, dt = 100, nk = 2000, nb = 100;
-    double Pr = 6.0, Ra = 1e3, nu = 0.1, L = 4.0, tem0 = 0.0, qn = 1.0e-2, alphamax = 1.0e4, beta = 1.0, betamax = 32.0;
+    double Pr = 6.0, Ra = 1e3, nu = 0.1, L = 4.0, tem0 = 0.0, qn = 1.0e-2, alphamax = 1.0e4, beta = 1.0, betamax = 16.0;
     double qf = 1e-2, qfmax = 1e2, qg = 1e0, movelimit = 0.2, weightlimit = 0.5, R = 2.4, eps = 1.0e-6, s0 = 0.5;
 
     double U = nu*sqrt(Ra/Pr)/(double)(ly - 1), diff_fluid = nu/Pr, diff_solid = diff_fluid*10.0, gx = 0.0, gy = U*U/(double)(ly - 1);

@@ -24,7 +24,7 @@ namespace PANSLBM2 {
                                     if (distance <= _R) {
                                         T weight = _weight(i1 + _p.offsetx, j1 + _p.offsety, k1 + _p.offsetz, i2 + _p.offsetx, j2 + _p.offsety, k2 + _p.offsetz);
                                         if ((0 <= i2 && i2 < _p.nx) && (0 <= j2 && j2 < _p.ny) && (0 <= k2 && k2 < _p.nz)) {                                                //  In self PE
-                                            wssum += weight*_s[_p.Index(i2, j2, k2)]
+                                            wssum += weight*_s[_p.Index(i2, j2, k2)];
                                             wsum += weight;
                                         } 
                                     }
@@ -63,7 +63,7 @@ namespace PANSLBM2 {
                                     if (distance <= _R) {
                                         T weight = _weight(i1 + _p.offsetx, j1 + _p.offsety, k1 + _p.offsetz, i2 + _p.offsetx, j2 + _p.offsety, k2 + _p.offsetz);
                                         if ((0 <= i2 && i2 < _p.nx) && (0 <= j2 && j2 < _p.ny) && (0 <= k2 && k2 < _p.nz)) {                                                //  In self PE
-                                            wssum += weight*_v[_p.Index(i2, j2, k2)]
+                                            wssum += weight*_s[_p.Index(i2, j2, k2)];
                                             wsum += weight;
                                         } 
                                     }

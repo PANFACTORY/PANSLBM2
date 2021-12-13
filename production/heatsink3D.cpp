@@ -248,8 +248,8 @@ int main(int argc, char** argv) {
         );
         
         //********************Filter sensitivities********************
-        std::vector<double> dfds = HeavisideFilter::GetFilteredValue(pf, R, beta, dfdss, filterweight);
-        std::vector<double> dgds = HeavisideFilter::GetFilteredValue(pf, R, beta, dgdss, filterweight);
+        std::vector<double> dfds = HeavisideFilter::GetFilteredSensitivity(pf, R, beta, s, dfdss, filterweight);
+        std::vector<double> dgds = HeavisideFilter::GetFilteredSensitivity(pf, R, beta, s, dgdss, filterweight);
         for (int i = 0; i < pf.nx; ++i) {
             for (int j = 0; j < pf.ny; ++j) {
                 for (int k = 0; k < pf.nz; ++k) {

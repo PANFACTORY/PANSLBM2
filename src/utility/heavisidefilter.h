@@ -5,11 +5,453 @@
 
 namespace PANSLBM2 {
     namespace HeavisideFilter {
+        //  Copy from _v to send buffer along edge or at corner
+        template<class T, template<class>class P>
+        void CopyToBuffer(P<T>& _p, int _nR, const std::vector<T> &_v,
+            T *_send_xmin, T *_send_xmax, T *_send_ymin, T *_send_ymax, T *_send_zmin, T *_send_zmax,
+            T *_send_ymin_zmin, T *_send_ymax_zmin, T *_send_ymin_zmax, T *_send_ymax_zmax, 
+            T *_send_zmin_xmin, T *_send_zmax_xmin, T *_send_zmin_xmax, T *_send_zmax_xmax,
+            T *_send_xmin_ymin, T *_send_xmax_ymin, T *_send_xmin_ymax, T *_send_xmax_ymax,
+            T *_send_xmin_ymin_zmin, T *_send_xmax_ymin_zmin, T *_send_xmin_ymax_zmin, T *_send_xmax_ymax_zmin, 
+            T *_send_xmin_ymin_zmax, T *_send_xmax_ymin_zmax, T *_send_xmin_ymax_zmax, T *_send_xmax_ymax_zmax
+        ) {
+            auto IndexFX = [&](int _i, int _j, int _k) { return _j + _p.ny*_k + _p.ny*_p.nz*_i; };
+            auto IndexFY = [&](int _i, int _j, int _k) { return _k + _p.nz*_i + _p.nz*_p.nx*_j; };
+            auto IndexFZ = [&](int _i, int _j, int _k) { return _i + _p.nx*_j + _p.nx*_p.ny*_k; };
+            auto IndexEX = [&](int _i, int _j, int _k) { return _j + _nR*_k + _nR*_nR*_i; };
+            auto IndexEY = [&](int _i, int _j, int _k) { return _k + _nR*_i + _nR*_nR*_j; };
+            auto IndexEZ = [&](int _i, int _j, int _k) { return _i + _nR*_j + _nR*_nR*_k; };
+            auto IndexCC = [&](int _i, int _j, int _k) { return _i + _nR*_j + _nR*_nR*_k; };
+
+            if (_p.PEx != 0) {
+                for (int ri = 0; ri < _nR; ++ri) {
+                    for (int j = 0; j < _p.ny; ++j) {
+                        for (int k = 0; k < _p.nz; ++k) {
+                            _send_xmin[IndexFX(ri, j, k)] = _v[_p.Index(0 + ri, j, k)];                                     //  Face on xmin
+                        }
+                    }
+                }
+            }
+            if (_p.PEx != _p.mx - 1) {
+               for (int ri = 0; ri < _nR; ++ri) {
+                    for (int j = 0; j < _p.ny; ++j) {
+                        for (int k = 0; k < _p.nz; ++k) {
+                            _send_xmax[IndexFX(ri, j, k)] = _v[_p.Index((_p.nx - _nR) + ri, j, k)];                         //  Face on xmax
+                        }
+                    }
+                }
+            }
+            if (_p.PEy != 0) {
+                for (int i = 0; i < _p.nx; ++i) {
+                    for (int rj = 0; rj < _nR; ++rj) {
+                        for (int k = 0; k < _p.nz; ++k) {
+                            _send_ymin[IndexFY(i, rj, k)] = _v[_p.Index(i, 0 + rj, k)];                                     //  Face on ymin 
+                        }
+                    }
+                }
+            }
+            if (_p.PEy != _p.my - 1) {
+                for (int i = 0; i < _p.nx; ++i) {
+                    for (int rj = 0; rj < _nR; ++rj) {
+                        for (int k = 0; k < _p.nz; ++k) {
+                            _send_ymax[IndexFY(i, rj, k)] = _v[_p.Index(i, (_p.ny - _nR) + rj, k)];                         //  Face on ymax
+                        }
+                    }
+                }
+            }
+            if (_p.PEz != 0) {
+                for (int i = 0; i < _p.nx; ++i) {
+                    for (int j = 0; j < _p.ny; ++j) {
+                        for (int rk = 0; rk < _nR; ++rk) {
+                            _send_zmin[IndexFZ(i, j, rk)] = _v[_p.Index(i, j, 0 + rk)];                                     //  Face on zmin
+                        }
+                    }
+                }
+            }
+            if (_p.PEz != _p.mz - 1) {
+                for (int i = 0; i < _p.nx; ++i) {
+                    for (int j = 0; j < _p.ny; ++j) {
+                        for (int rk = 0; rk < _nR; ++rk) {
+                            _send_zmax[IndexFZ(i, j, rk)] = _v[_p.Index(i, j, (_p.nz - _nR) + rk)];                         //  Face on zmax
+                        }
+                    }
+                }
+            }
+            if (_p.PEy != 0 && _p.PEz != 0) {
+                for (int i = 0; i < _p.nx; ++i) {
+                    for (int rj = 0; rj < _nR; ++rj) {
+                        for (int rk = 0; rk < _nR; ++rk) {
+                            _send_ymin_zmin[IndexEX(i, rj, rk)] = _v[_p.Index(i, 0 + rj, 0 + rk)];                          //  Edge along ymin zmin
+                        }
+                    }
+                }
+            }
+            if (_p.PEy != _p.my - 1 && _p.PEz != 0) {
+                for (int i = 0; i < _p.nx; ++i) {
+                    for (int rj = 0; rj < _nR; ++rj) {
+                        for (int rk = 0; rk < _nR; ++rk) {
+                            _send_ymax_zmin[IndexEX(i, rj, rk)] = _v[_p.Index(i, (_p.ny - _nR) + rj, 0 + rk)];              //  Edge along ymin zmin
+                        }
+                    }
+                }
+            }
+            if (_p.PEy != 0 && _p.PEz != _p.mz - 1) {
+                for (int i = 0; i < _p.nx; ++i) {
+                    for (int rj = 0; rj < _nR; ++rj) {
+                        for (int rk = 0; rk < _nR; ++rk) {
+                            _send_ymin_zmax[IndexEX(i, rj, rk)] = _v[_p.Index(i, 0 + rj, (_p.nz - _nR) + rk)];              //  Edge along ymin zmax
+                        }
+                    }
+                }
+            }
+            if (_p.PEy != _p.my - 1 && _p.PEz != _p.mz - 1) {
+                for (int i = 0; i < _p.nx; ++i) {
+                    for (int rj = 0; rj < _nR; ++rj) {
+                        for (int rk = 0; rk < _nR; ++rk) {
+                            _send_ymax_zmax[IndexEX(i, rj, rk)] = _v[_p.Index(i, (_p.ny - _nR) + rj, (_p.nz - _nR) + rk)];  //  Edge along ymax zmax
+                        }
+                    }
+                }
+            }
+            if (_p.PEz != 0 && _p.PEx != 0) {
+                for (int ri = 0; ri < _nR; ++ri) {
+                    for (int j = 0; j < _p.ny; ++j) {
+                        for (int rk = 0; rk < _nR; ++rk) {
+                            _send_zmin_xmin[IndexEY(ri, j, rk)] = _v[_p.Index(0 + ri, j, 0 + rk)];                          //  Edge along zmin xmin
+                        }
+                    }
+                }
+            }
+            if (_p.PEz != _p.mz - 1 && _p.PEx != 0) {
+                for (int ri = 0; ri < _nR; ++ri) {
+                    for (int j = 0; j < _p.ny; ++j) {
+                        for (int rk = 0; rk < _nR; ++rk) {
+                            _send_zmax_xmin[IndexEY(ri, j, rk)] = _v[_p.Index(0 + ri, j, (_p.nz - _nR) + rk)];              //  Edge along zmax xmin
+                        }
+                    }
+                }
+            }
+            if (_p.PEz != 0 && _p.PEx != _p.mx - 1) {
+                for (int ri = 0; ri < _nR; ++ri) {
+                    for (int j = 0; j < _p.ny; ++j) {
+                        for (int rk = 0; rk < _nR; ++rk) {
+                            _send_zmin_xmax[IndexEY(ri, j, rk)] = _v[_p.Index((_p.nx - _nR) + ri, j, 0 + rk)];              //  Edge along zmin xmax
+                        }
+                    }
+                }
+            }
+            if (_p.PEz != _p.mz - 1 && _p.PEx != _p.mx - 1) {
+                for (int ri = 0; ri < _nR; ++ri) {
+                    for (int j = 0; j < _p.ny; ++j) {
+                        for (int rk = 0; rk < _nR; ++rk) {
+                            _send_zmax_xmax[IndexEY(ri, j, rk)] = _v[_p.Index((_p.nx - _nR) + ri, j, (_p.nz - _nR) + rk)];  //  Edge along zmax xmax
+                        }
+                    }
+                }
+            }
+            if (_p.PEx != 0 && _p.PEy != 0) {
+                for (int ri = 0; ri < _nR; ++ri) {
+                    for (int rj = 0; rj < _nR; ++rj) {
+                        for (int k = 0; k < _p.nz; ++k) {
+                            _send_xmin_ymin[IndexEZ(ri, rj, k)] = _v[_p.Index(0 + ri, 0 + rj, k)];                          //  Edge along xmin ymin
+                        }
+                    }
+                }
+            }
+            if (_p.PEx != _p.mx - 1 && _p.PEy != 0) {
+                for (int ri = 0; ri < _nR; ++ri) {
+                    for (int rj = 0; rj < _nR; ++rj) {
+                        for (int k = 0; k < _p.nz; ++k) {
+                            _send_xmax_ymin[IndexEZ(ri, rj, k)] = _v[_p.Index((_p.nx - _nR) + ri, 0 + rj, k)];              //  Edge along xmax ymin
+                        }
+                    }
+                }
+            }
+            if (_p.PEx != 0 && _p.PEy != _p.my - 1) {
+               for (int ri = 0; ri < _nR; ++ri) {
+                    for (int rj = 0; rj < _nR; ++rj) {
+                        for (int k = 0; k < _p.nz; ++k) {
+                            _send_xmin_ymax[IndexEZ(ri, rj, k)] = _v[_p.Index(0 + ri, (_p.ny - _nR) + rj, k)];              //  Edge along xmin ymax
+                        }
+                    }
+                }
+            }
+            if (_p.PEx != _p.mx - 1 && _p.PEy != _p.my - 1) {
+               for (int ri = 0; ri < _nR; ++ri) {
+                    for (int rj = 0; rj < _nR; ++rj) {
+                        for (int k = 0; k < _p.nz; ++k) {
+                            _send_xmax_ymax[IndexEZ(ri, rj, k)] = _v[_p.Index((_p.nx - _nR) + ri, (_p.ny - _nR) + rj, k)];  //  Edge along xmax ymax
+                        }
+                    }
+                }
+            }
+            if (_p.PEx != 0 && _p.PEy != 0 && _p.PEz != 0) {
+                for (int ri = 0; ri < _nR; ++ri) {
+                    for (int rj = 0; rj < _nR; ++rj) {
+                        for (int rk = 0; rk < _nR; ++rk) {
+                            _send_xmin_ymin_zmin[IndexCC(ri, rj, rk)] = _v[_p.Index(0 + ri, 0 + rj, 0 + rk)];               //  Edge along xmin ymin zmin
+                        }
+                    }
+                }
+            }
+            if (_p.PEx != _p.mx - 1 && _p.PEy != 0 && _p.PEz != 0) {
+                for (int ri = 0; ri < _nR; ++ri) {
+                    for (int rj = 0; rj < _nR; ++rj) {
+                        for (int rk = 0; rk < _nR; ++rk) {
+                            _send_xmax_ymin_zmin[IndexCC(ri, rj, rk)] = _v[_p.Index((_p.nx - _nR) + ri, 0 + rj, 0 + rk)];   //  Edge along xmax ymin zmin
+                        }
+                    }
+                }
+            }
+            if (_p.PEx != 0 && _p.PEy != _p.my - 1 && _p.PEz != 0) {
+                for (int ri = 0; ri < _nR; ++ri) {
+                    for (int rj = 0; rj < _nR; ++rj) {
+                        for (int rk = 0; rk < _nR; ++rk) {
+                            _send_xmin_ymax_zmin[IndexCC(ri, rj, rk)] = _v[_p.Index(0 + ri, (_p.ny - _nR) + rj, 0 + rk)];   //  Edge along xmin ymax zmin
+                        }
+                    }
+                }
+            }
+            if (_p.PEx != _p.mx - 1 && _p.PEy != _p.my - 1 && _p.PEz != 0) {
+                for (int ri = 0; ri < _nR; ++ri) {
+                    for (int rj = 0; rj < _nR; ++rj) {
+                        for (int rk = 0; rk < _nR; ++rk) {
+                            _send_xmax_ymax_zmin[IndexCC(ri, rj, rk)] = _v[_p.Index((_p.nx - _nR) + ri, (_p.ny - _nR) + rj, 0 + rk)];   //  Edge along xmax ymax zmin
+                        }
+                    }
+                }
+            }
+            if (_p.PEx != 0 && _p.PEy != 0 && _p.PEz != _p.mz - 1) {
+                for (int ri = 0; ri < _nR; ++ri) {
+                    for (int rj = 0; rj < _nR; ++rj) {
+                        for (int rk = 0; rk < _nR; ++rk) {
+                            _send_xmin_ymin_zmax[IndexCC(ri, rj, rk)] = _v[_p.Index(0 + ri, 0 + rj, (_p.nz - _nR) + rk)];               //  Edge along xmin ymin zmax
+                        }
+                    }
+                }
+            }
+            if (_p.PEx != _p.mx - 1 && _p.PEy != 0 && _p.PEz != _p.mz - 1) {
+               for (int ri = 0; ri < _nR; ++ri) {
+                    for (int rj = 0; rj < _nR; ++rj) {
+                        for (int rk = 0; rk < _nR; ++rk) {
+                            _send_xmax_ymin_zmax[IndexCC(ri, rj, rk)] = _v[_p.Index((_p.nx - _nR) + ri, 0 + rj, (_p.nz - _nR) + rk)];   //  Edge along xmax ymin zmax
+                        }
+                    }
+                }
+            }
+            if (_p.PEx != 0 && _p.PEy != _p.my - 1 && _p.PEz != _p.mz - 1) {
+               for (int ri = 0; ri < _nR; ++ri) {
+                    for (int rj = 0; rj < _nR; ++rj) {
+                        for (int rk = 0; rk < _nR; ++rk) {
+                            _send_xmin_ymax_zmax[IndexCC(ri, rj, rk)] = _v[_p.Index(0 + ri, (_p.ny - _nR) + rj, (_p.nz - _nR) + rk)];   //  Edge along xmin ymax zmax
+                        }
+                    }
+                }
+            }
+            if (_p.PEx != _p.mx - 1 && _p.PEy != _p.my - 1 && _p.PEz != _p.mz - 1) {
+                for (int ri = 0; ri < _nR; ++ri) {
+                    for (int rj = 0; rj < _nR; ++rj) {
+                        for (int rk = 0; rk < _nR; ++rk) {
+                            _send_xmax_ymax_zmax[IndexCC(ri, rj, rk)] = _v[_p.Index((_p.nx - _nR) + ri, (_p.ny - _nR) + rj, (_p.nz - _nR) + rk)];   //  Edge along xmax ymax zmax
+                        }
+                    }
+                }
+            }
+        }
+
+        //  Communicate with other PE
+        template<class T, template<class>class P>
+        void Communicate(P<T>& _p, int _nR, 
+            const T *_send_xmin, const T *_send_xmax, const T *_send_ymin, const T *_send_ymax, const T *_send_zmin, const T *_send_zmax,
+            const T *_send_ymin_zmin, const T *_send_ymax_zmin, const T *_send_ymin_zmax, const T *_send_ymax_zmax, 
+            const T *_send_zmin_xmin, const T *_send_zmax_xmin, const T *_send_zmin_xmax, const T *_send_zmax_xmax,
+            const T *_send_xmin_ymin, const T *_send_xmax_ymin, const T *_send_xmin_ymax, const T *_send_xmax_ymax,
+            const T *_send_xmin_ymin_zmin, const T *_send_xmax_ymin_zmin, const T *_send_xmin_ymax_zmin, const T *_send_xmax_ymax_zmin, 
+            const T *_send_xmin_ymin_zmax, const T *_send_xmax_ymin_zmax, const T *_send_xmin_ymax_zmax, const T *_send_xmax_ymax_zmax,
+            T *_recv_xmin, T *_recv_xmax, T *_recv_ymin, T *_recv_ymax, T *_recv_zmin, T *_recv_zmax,
+            T *_recv_ymin_zmin, T *_recv_ymax_zmin, T *_recv_ymin_zmax, T *_recv_ymax_zmax, 
+            T *_recv_zmin_xmin, T *_recv_zmax_xmin, T *_recv_zmin_xmax, T *_recv_zmax_xmax,
+            T *_recv_xmin_ymin, T *_recv_xmax_ymin, T *_recv_xmin_ymax, T *_recv_xmax_ymax,
+            T *_recv_xmin_ymin_zmin, T *_recv_xmax_ymin_zmin, T *_recv_xmin_ymax_zmin, T *_recv_xmax_ymax_zmin, 
+            T *_recv_xmin_ymin_zmax, T *_recv_xmax_ymin_zmax, T *_recv_xmin_ymax_zmax, T *_recv_xmax_ymax_zmax
+        ) {
+            int neib = 0;
+
+            auto IndexFX = [&](int _i, int _j, int _k) { return _j + _p.ny*_k + _p.ny*_p.nz*_i; };
+            auto IndexFY = [&](int _i, int _j, int _k) { return _k + _p.nz*_i + _p.nz*_p.nx*_j; };
+            auto IndexFZ = [&](int _i, int _j, int _k) { return _i + _p.nx*_j + _p.nx*_p.ny*_k; };
+            auto IndexEX = [&](int _i, int _j, int _k) { return _j + _nR*_k + _nR*_nR*_i; };
+            auto IndexEY = [&](int _i, int _j, int _k) { return _k + _nR*_i + _nR*_nR*_j; };
+            auto IndexEZ = [&](int _i, int _j, int _k) { return _i + _nR*_j + _nR*_nR*_k; };
+            auto IndexCC = [&](int _i, int _j, int _k) { return _i + _nR*_j + _nR*_nR*_k; };
+            
+#ifdef _USE_MPI_DEFINES
+            MPI_Status status[52];
+            MPI_Request request[52];  
+            if (_p.PEx != 0) {
+                MPI_Isend(_send_xmin, _p.ny*_p.nz*_nR, MPI_DOUBLE, _p.IndexPE(_p.PEx - 1, _p.PEy, _p.PEz), 0, MPI_COMM_WORLD, &request[neib++]);
+                MPI_Irecv(_recv_xmin, _p.ny*_p.nz*_nR, MPI_DOUBLE, _p.IndexPE(_p.PEx - 1, _p.PEy, _p.PEz), 1, MPI_COMM_WORLD, &request[neib++]);    //  Face on xmin
+            }
+            if (_p.PEx != _p.mx - 1) {
+                MPI_Isend(_send_xmax, _p.ny*_p.nz*_nR, MPI_DOUBLE, _p.IndexPE(_p.PEx + 1, _p.PEy, _p.PEz), 1, MPI_COMM_WORLD, &request[neib++]);
+                MPI_Irecv(_recv_xmax, _p.ny*_p.nz*_nR, MPI_DOUBLE, _p.IndexPE(_p.PEx + 1, _p.PEy, _p.PEz), 0, MPI_COMM_WORLD, &request[neib++]);    //  Face on xmax
+            }
+            if (_p.PEy != 0) {
+                MPI_Isend(_send_ymin, _p.nz*_p.nx*_nR, MPI_DOUBLE, _p.IndexPE(_p.PEx, _p.PEy - 1, _p.PEz), 2, MPI_COMM_WORLD, &request[neib++]);
+                MPI_Irecv(_recv_ymin, _p.nz*_p.nx*_nR, MPI_DOUBLE, _p.IndexPE(_p.PEx, _p.PEy - 1, _p.PEz), 3, MPI_COMM_WORLD, &request[neib++]);    //  Face on ymin
+            }
+            if (_p.PEy != _p.my - 1) {
+                MPI_Isend(_send_ymax, _p.nz*_p.nx*_nR, MPI_DOUBLE, _p.IndexPE(_p.PEx, _p.PEy + 1, _p.PEz), 3, MPI_COMM_WORLD, &request[neib++]);
+                MPI_Irecv(_recv_ymax, _p.nz*_p.nx*_nR, MPI_DOUBLE, _p.IndexPE(_p.PEx, _p.PEy + 1, _p.PEz), 2, MPI_COMM_WORLD, &request[neib++]);    //  Face on ymax
+            }
+            if (_p.PEz != 0) {
+                MPI_Isend(_send_zmin, _p.nx*_p.ny*_nR, MPI_DOUBLE, _p.IndexPE(_p.PEx, _p.PEy, _p.PEz - 1), 4, MPI_COMM_WORLD, &request[neib++]);
+                MPI_Irecv(_recv_zmin, _p.nx*_p.ny*_nR, MPI_DOUBLE, _p.IndexPE(_p.PEx, _p.PEy, _p.PEz - 1), 5, MPI_COMM_WORLD, &request[neib++]);    //  Face on zmin
+            }
+            if (_p.PEz != _p.mz - 1) {
+                MPI_Isend(_send_zmax, _p.nx*_p.ny*_nR, MPI_DOUBLE, _p.IndexPE(_p.PEx, _p.PEy, _p.PEz + 1), 5, MPI_COMM_WORLD, &request[neib++]);
+                MPI_Irecv(_recv_zmax, _p.nx*_p.ny*_nR, MPI_DOUBLE, _p.IndexPE(_p.PEx, _p.PEy, _p.PEz + 1), 4, MPI_COMM_WORLD, &request[neib++]);    //  Face on zmax
+            }
+            if (_p.PEy != 0 && _p.PEz != 0) {
+                MPI_Isend(_send_ymin_zmin, _p.nx*_nR*_nR, MPI_DOUBLE, _p.IndexPE(_p.PEx, _p.PEy - 1, _p.PEz - 1), 6, MPI_COMM_WORLD, &request[neib++]);
+                MPI_Irecv(_recv_ymin_zmin, _p.nx*_nR*_nR, MPI_DOUBLE, _p.IndexPE(_p.PEx, _p.PEy - 1, _p.PEz - 1), 9, MPI_COMM_WORLD, &request[neib++]); //  Edge along ymin zmin
+            }
+            if (_p.PEy != _p.my - 1 && _p.PEz != 0) {
+                MPI_Isend(_send_ymax_zmin, _p.nx*_nR*_nR, MPI_DOUBLE, _p.IndexPE(_p.PEx, _p.PEy + 1, _p.PEz - 1), 8, MPI_COMM_WORLD, &request[neib++]);
+                MPI_Irecv(_recv_ymax_zmin, _p.nx*_nR*_nR, MPI_DOUBLE, _p.IndexPE(_p.PEx, _p.PEy + 1, _p.PEz - 1), 7, MPI_COMM_WORLD, &request[neib++]); //  Edge along ymax zmin
+            }
+            if (_p.PEy != 0 && _p.PEz != _p.mz - 1) {
+                MPI_Isend(_send_ymin_zmax, _p.nx*_nR*_nR, MPI_DOUBLE, _p.IndexPE(_p.PEx, _p.PEy - 1, _p.PEz + 1), 7, MPI_COMM_WORLD, &request[neib++]);
+                MPI_Irecv(_recv_ymin_zmax, _p.nx*_nR*_nR, MPI_DOUBLE, _p.IndexPE(_p.PEx, _p.PEy - 1, _p.PEz + 1), 8, MPI_COMM_WORLD, &request[neib++]); //  Edge along ymin zmax
+            }
+            if (_p.PEy != _p.my - 1 && _p.PEz != _p.mz - 1) {
+                MPI_Isend(_send_ymax_zmax, _p.nx*_nR*_nR, MPI_DOUBLE, _p.IndexPE(_p.PEx, _p.PEy + 1, _p.PEz + 1), 9, MPI_COMM_WORLD, &request[neib++]);
+                MPI_Irecv(_recv_ymax_zmax, _p.nx*_nR*_nR, MPI_DOUBLE, _p.IndexPE(_p.PEx, _p.PEy + 1, _p.PEz + 1), 6, MPI_COMM_WORLD, &request[neib++]); //  Edge along ymax zmax
+            }
+            if (_p.PEz != 0 && _p.PEx != 0) {
+                MPI_Isend(_send_zmin_xmin, _p.ny*_nR*_nR, MPI_DOUBLE, _p.IndexPE(_p.PEx - 1, _p.PEy, _p.PEz - 1), 10, MPI_COMM_WORLD, &request[neib++]);
+                MPI_Irecv(_recv_zmin_xmin, _p.ny*_nR*_nR, MPI_DOUBLE, _p.IndexPE(_p.PEx - 1, _p.PEy, _p.PEz - 1), 13, MPI_COMM_WORLD, &request[neib++]);    //  Edge along zmin xmin
+            }
+            if (_p.PEz != _p.mz - 1 && _p.PEx != 0) {
+                MPI_Isend(_send_zmax_xmin, _p.ny*_nR*_nR, MPI_DOUBLE, _p.IndexPE(_p.PEx - 1, _p.PEy, _p.PEz + 1), 12, MPI_COMM_WORLD, &request[neib++]);
+                MPI_Irecv(_recv_zmax_xmin, _p.ny*_nR*_nR, MPI_DOUBLE, _p.IndexPE(_p.PEx - 1, _p.PEy, _p.PEz + 1), 11, MPI_COMM_WORLD, &request[neib++]);    //  Edge along zmax xmin
+            }
+            if (_p.PEz != 0 && _p.PEx != _p.mx - 1) {
+                MPI_Isend(_send_zmin_xmax, _p.ny*_nR*_nR, MPI_DOUBLE, _p.IndexPE(_p.PEx + 1, _p.PEy, _p.PEz - 1), 11, MPI_COMM_WORLD, &request[neib++]);
+                MPI_Irecv(_recv_zmin_xmax, _p.ny*_nR*_nR, MPI_DOUBLE, _p.IndexPE(_p.PEx + 1, _p.PEy, _p.PEz - 1), 12, MPI_COMM_WORLD, &request[neib++]);    //  Edge along zmin xmax
+            }
+            if (_p.PEz != _p.mz - 1 && _p.PEx != _p.mx - 1) {
+                MPI_Isend(_send_zmax_xmax, _p.ny*_nR*_nR, MPI_DOUBLE, _p.IndexPE(_p.PEx + 1, _p.PEy, _p.PEz + 1), 13, MPI_COMM_WORLD, &request[neib++]);
+                MPI_Irecv(_recv_zmax_xmax, _p.ny*_nR*_nR, MPI_DOUBLE, _p.IndexPE(_p.PEx + 1, _p.PEy, _p.PEz + 1), 10, MPI_COMM_WORLD, &request[neib++]);    //  Edge along zmax xmax
+            }
+            if (_p.PEx != 0 && _p.PEy != 0) {
+                MPI_Isend(_send_xmin_ymin, _p.nz*_nR*_nR, MPI_DOUBLE, _p.IndexPE(_p.PEx - 1, _p.PEy - 1, _p.PEz), 14, MPI_COMM_WORLD, &request[neib++]);
+                MPI_Irecv(_recv_xmin_ymin, _p.nz*_nR*_nR, MPI_DOUBLE, _p.IndexPE(_p.PEx - 1, _p.PEy - 1, _p.PEz), 17, MPI_COMM_WORLD, &request[neib++]);    //  Edge along xmin ymin
+            }
+            if (_p.PEx != _p.mx - 1 && _p.PEy != 0) {
+                MPI_Isend(_send_xmax_ymin, _p.nz*_nR*_nR, MPI_DOUBLE, _p.IndexPE(_p.PEx + 1, _p.PEy - 1, _p.PEz), 16, MPI_COMM_WORLD, &request[neib++]);
+                MPI_Irecv(_recv_xmax_ymin, _p.nz*_nR*_nR, MPI_DOUBLE, _p.IndexPE(_p.PEx + 1, _p.PEy - 1, _p.PEz), 15, MPI_COMM_WORLD, &request[neib++]);    //  Edge along xmax ymin
+            }
+            if (_p.PEx != 0 && _p.PEy != _p.my - 1) {
+                MPI_Isend(_send_xmin_ymax, _p.nz*_nR*_nR, MPI_DOUBLE, _p.IndexPE(_p.PEx - 1, _p.PEy + 1, _p.PEz), 15, MPI_COMM_WORLD, &request[neib++]);
+                MPI_Irecv(_recv_xmin_ymax, _p.nz*_nR*_nR, MPI_DOUBLE, _p.IndexPE(_p.PEx - 1, _p.PEy + 1, _p.PEz), 16, MPI_COMM_WORLD, &request[neib++]);    //  Edge along xmin ymax
+            }
+            if (_p.PEx != _p.mx - 1 && _p.PEy != _p.my - 1) {
+                MPI_Isend(_send_xmax_ymax, _p.nz*_nR*_nR, MPI_DOUBLE, _p.IndexPE(_p.PEx + 1, _p.PEy + 1, _p.PEz), 17, MPI_COMM_WORLD, &request[neib++]);
+                MPI_Irecv(_recv_xmax_ymax, _p.nz*_nR*_nR, MPI_DOUBLE, _p.IndexPE(_p.PEx + 1, _p.PEy + 1, _p.PEz), 14, MPI_COMM_WORLD, &request[neib++]);    //  Edge along xmax ymax
+            }
+            if (_p.PEx != 0 && _p.PEy != 0 && _p.PEz != 0) {
+                MPI_Isend(_send_xmin_ymin_zmin, _nR*_nR*_nR, MPI_DOUBLE, _p.IndexPE(_p.PEx - 1, _p.PEy - 1, _p.PEz - 1), 18, MPI_COMM_WORLD, &request[neib++]);
+                MPI_Irecv(_recv_xmin_ymin_zmin, _nR*_nR*_nR, MPI_DOUBLE, _p.IndexPE(_p.PEx - 1, _p.PEy - 1, _p.PEz - 1), 25, MPI_COMM_WORLD, &request[neib++]); 
+            }
+            if (_p.PEx != _p.mx - 1 && _p.PEy != 0 && _p.PEz != 0) {
+                MPI_Isend(_send_xmax_ymin_zmin, _nR*_nR*_nR, MPI_DOUBLE, _p.IndexPE(_p.PEx + 1, _p.PEy - 1, _p.PEz - 1), 19, MPI_COMM_WORLD, &request[neib++]);
+                MPI_Irecv(_recv_xmax_ymin_zmin, _nR*_nR*_nR, MPI_DOUBLE, _p.IndexPE(_p.PEx + 1, _p.PEy - 1, _p.PEz - 1), 24, MPI_COMM_WORLD, &request[neib++]); 
+            }
+            if (_p.PEx != 0 && _p.PEy != _p.my - 1 && _p.PEz != 0) {
+                MPI_Isend(_send_xmin_ymax_zmin, _nR*_nR*_nR, MPI_DOUBLE, _p.IndexPE(_p.PEx - 1, _p.PEy + 1, _p.PEz - 1), 20, MPI_COMM_WORLD, &request[neib++]);
+                MPI_Irecv(_recv_xmin_ymax_zmin, _nR*_nR*_nR, MPI_DOUBLE, _p.IndexPE(_p.PEx - 1, _p.PEy + 1, _p.PEz - 1), 23, MPI_COMM_WORLD, &request[neib++]);
+            }
+            if (_p.PEx != _p.mx - 1 && _p.PEy != _p.my - 1 && _p.PEz != 0) {
+                MPI_Isend(_send_xmax_ymax_zmin, _nR*_nR*_nR, MPI_DOUBLE, _p.IndexPE(_p.PEx + 1, _p.PEy + 1, _p.PEz - 1), 21, MPI_COMM_WORLD, &request[neib++]);
+                MPI_Irecv(_recv_xmax_ymax_zmin, _nR*_nR*_nR, MPI_DOUBLE, _p.IndexPE(_p.PEx + 1, _p.PEy + 1, _p.PEz - 1), 22, MPI_COMM_WORLD, &request[neib++]);  
+            }
+            if (_p.PEx != 0 && _p.PEy != 0 && _p.PEz != _p.mz - 1) {
+                MPI_Isend(_send_xmin_ymin_zmax, _nR*_nR*_nR, MPI_DOUBLE, _p.IndexPE(_p.PEx - 1, _p.PEy - 1, _p.PEz + 1), 22, MPI_COMM_WORLD, &request[neib++]);
+                MPI_Irecv(_recv_xmin_ymin_zmax, _nR*_nR*_nR, MPI_DOUBLE, _p.IndexPE(_p.PEx - 1, _p.PEy - 1, _p.PEz + 1), 21, MPI_COMM_WORLD, &request[neib++]); 
+            }
+            if (_p.PEx != _p.mx - 1 && _p.PEy != 0 && _p.PEz != _p.mz - 1) {
+                MPI_Isend(_send_xmax_ymin_zmax, _nR*_nR*_nR, MPI_DOUBLE, _p.IndexPE(_p.PEx + 1, _p.PEy - 1, _p.PEz + 1), 23, MPI_COMM_WORLD, &request[neib++]);
+                MPI_Irecv(_recv_xmax_ymin_zmax, _nR*_nR*_nR, MPI_DOUBLE, _p.IndexPE(_p.PEx + 1, _p.PEy - 1, _p.PEz + 1), 20, MPI_COMM_WORLD, &request[neib++]);
+            }
+            if (_p.PEx != 0 && _p.PEy != _p.my - 1 && _p.PEz != _p.mz - 1) {
+                MPI_Isend(_send_xmin_ymax_zmax, _nR*_nR*_nR, MPI_DOUBLE, _p.IndexPE(_p.PEx - 1, _p.PEy + 1, _p.PEz + 1), 24, MPI_COMM_WORLD, &request[neib++]); 
+                MPI_Irecv(_recv_xmin_ymax_zmax, _nR*_nR*_nR, MPI_DOUBLE, _p.IndexPE(_p.PEx - 1, _p.PEy + 1, _p.PEz + 1), 19, MPI_COMM_WORLD, &request[neib++]); 
+            }
+            if (_p.PEx != _p.mx - 1 && _p.PEy != _p.my - 1 && _p.PEz != _p.mz - 1) {
+                MPI_Isend(_send_xmax_ymax_zmax, _nR*_nR*_nR, MPI_DOUBLE, _p.IndexPE(_p.PEx + 1, _p.PEy + 1, _p.PEz + 1), 25, MPI_COMM_WORLD, &request[neib++]); 
+                MPI_Irecv(_recv_xmax_ymax_zmax, _nR*_nR*_nR, MPI_DOUBLE, _p.IndexPE(_p.PEx + 1, _p.PEy + 1, _p.PEz + 1), 18, MPI_COMM_WORLD, &request[neib++]);
+            }
+            if (neib > 0) {
+                MPI_Waitall(neib, request, status);
+            }
+#endif   
+        }
+
         template<class T, template<class>class P, class F>
         std::vector<T> GetFilteredVariable(P<T>& _p, T _R, T _beta, const std::vector<T> &_s, F _weight) {
             assert(_R > T());
             int nR = (int)_R;
+#ifdef _USE_MPI_DEFINES
+            auto IndexFX = [&](int _i, int _j, int _k) { return _j + _p.ny*_k + _p.ny*_p.nz*_i; };
+            auto IndexFY = [&](int _i, int _j, int _k) { return _k + _p.nz*_i + _p.nz*_p.nx*_j; };
+            auto IndexFZ = [&](int _i, int _j, int _k) { return _i + _p.nx*_j + _p.nx*_p.ny*_k; };
+            auto IndexEX = [&](int _i, int _j, int _k) { return _j + nR*_k + nR*nR*_i; };
+            auto IndexEY = [&](int _i, int _j, int _k) { return _k + nR*_i + nR*nR*_j; };
+            auto IndexEZ = [&](int _i, int _j, int _k) { return _i + nR*_j + nR*nR*_k; };
+            auto IndexCC = [&](int _i, int _j, int _k) { return _i + nR*_j + nR*nR*_k; };
 
+            T *send_xmin = new T[_p.ny*_p.nz*nR], *send_xmax = new T[_p.ny*_p.nz*nR];
+            T *send_ymin = new T[_p.nz*_p.nx*nR], *send_ymax = new T[_p.nz*_p.nx*nR];
+            T *send_zmin = new T[_p.nx*_p.ny*nR], *send_zmax = new T[_p.nx*_p.ny*nR];
+            T *send_ymin_zmin = new T[_p.nx*nR*nR], *send_ymax_zmin = new T[_p.nx*nR*nR], *send_ymin_zmax = new T[_p.nx*nR*nR], *send_ymax_zmax = new T[_p.nx*nR*nR];
+            T *send_zmin_xmin = new T[_p.ny*nR*nR], *send_zmax_xmin = new T[_p.ny*nR*nR], *send_zmin_xmax = new T[_p.ny*nR*nR], *send_zmax_xmax = new T[_p.ny*nR*nR];
+            T *send_xmin_ymin = new T[_p.nz*nR*nR], *send_xmax_ymin = new T[_p.nz*nR*nR], *send_xmin_ymax = new T[_p.nz*nR*nR], *send_xmax_ymax = new T[_p.nz*nR*nR];
+            T *send_xmin_ymin_zmin = new T[nR*nR*nR], *send_xmax_ymin_zmin = new T[nR*nR*nR], *send_xmin_ymax_zmin = new T[nR*nR*nR], *send_xmax_ymax_zmin = new T[nR*nR*nR];
+            T *send_xmin_ymin_zmax = new T[nR*nR*nR], *send_xmax_ymin_zmax = new T[nR*nR*nR], *send_xmin_ymax_zmax = new T[nR*nR*nR], *send_xmax_ymax_zmax = new T[nR*nR*nR]; 
+            T *recv_xmin = new T[_p.ny*_p.nz*nR], *recv_xmax = new T[_p.ny*_p.nz*nR];
+            T *recv_ymin = new T[_p.nz*_p.nx*nR], *recv_ymax = new T[_p.nz*_p.nx*nR];
+            T *recv_zmin = new T[_p.nx*_p.ny*nR], *recv_zmax = new T[_p.nx*_p.ny*nR];
+            T *recv_ymin_zmin = new T[_p.nx*nR*nR], *recv_ymax_zmin = new T[_p.nx*nR*nR], *recv_ymin_zmax = new T[_p.nx*nR*nR], *recv_ymax_zmax = new T[_p.nx*nR*nR];
+            T *recv_zmin_xmin = new T[_p.ny*nR*nR], *recv_zmax_xmin = new T[_p.ny*nR*nR], *recv_zmin_xmax = new T[_p.ny*nR*nR], *recv_zmax_xmax = new T[_p.ny*nR*nR];
+            T *recv_xmin_ymin = new T[_p.nz*nR*nR], *recv_xmax_ymin = new T[_p.nz*nR*nR], *recv_xmin_ymax = new T[_p.nz*nR*nR], *recv_xmax_ymax = new T[_p.nz*nR*nR];
+            T *recv_xmin_ymin_zmin = new T[nR*nR*nR], *recv_xmax_ymin_zmin = new T[nR*nR*nR], *recv_xmin_ymax_zmin = new T[nR*nR*nR], *recv_xmax_ymax_zmin = new T[nR*nR*nR];
+            T *recv_xmin_ymin_zmax = new T[nR*nR*nR], *recv_xmax_ymin_zmax = new T[nR*nR*nR], *recv_xmin_ymax_zmax = new T[nR*nR*nR], *recv_xmax_ymax_zmax = new T[nR*nR*nR]; 
+
+            CopyToBuffer(_p, nR, _s,
+                send_xmin, send_xmax, send_ymin, send_ymax, send_zmin, send_zmax,
+                send_ymin_zmin, send_ymax_zmin, send_ymin_zmax, send_ymax_zmax, 
+                send_zmin_xmin, send_zmax_xmin, send_zmin_xmax, send_zmax_xmax,
+                send_xmin_ymin, send_xmax_ymin, send_xmin_ymax, send_xmax_ymax,
+                send_xmin_ymin_zmin, send_xmax_ymin_zmin, send_xmin_ymax_zmin, send_xmax_ymax_zmin, 
+                send_xmin_ymin_zmax, send_xmax_ymin_zmax, send_xmin_ymax_zmax, send_xmax_ymax_zmax
+            );
+
+            Communicate(_p, nR, 
+                send_xmin, send_xmax, send_ymin, send_ymax, send_zmin, send_zmax,
+                send_ymin_zmin, send_ymax_zmin, send_ymin_zmax, send_ymax_zmax, 
+                send_zmin_xmin, send_zmax_xmin, send_zmin_xmax, send_zmax_xmax,
+                send_xmin_ymin, send_xmax_ymin, send_xmin_ymax, send_xmax_ymax,
+                send_xmin_ymin_zmin, send_xmax_ymin_zmin, send_xmin_ymax_zmin, send_xmax_ymax_zmin, 
+                send_xmin_ymin_zmax, send_xmax_ymin_zmax, send_xmin_ymax_zmax, send_xmax_ymax_zmax,
+                recv_xmin, recv_xmax, recv_ymin, recv_ymax, recv_zmin, recv_zmax,
+                recv_ymin_zmin, recv_ymax_zmin, recv_ymin_zmax, recv_ymax_zmax, 
+                recv_zmin_xmin, recv_zmax_xmin, recv_zmin_xmax, recv_zmax_xmax,
+                recv_xmin_ymin, recv_xmax_ymin, recv_xmin_ymax, recv_xmax_ymax,
+                recv_xmin_ymin_zmin, recv_xmax_ymin_zmin, recv_xmin_ymax_zmin, recv_xmax_ymax_zmin, 
+                recv_xmin_ymin_zmax, recv_xmax_ymin_zmax, recv_xmin_ymax_zmax, recv_xmax_ymax_zmax
+            );
+#endif
             //  Filter value
             std::vector<T> rho(_p.nxyz, T());
             for(int i1 = 0; i1 < _p.nx; ++i1){
@@ -26,7 +468,88 @@ namespace PANSLBM2 {
                                         if ((0 <= i2 && i2 < _p.nx) && (0 <= j2 && j2 < _p.ny) && (0 <= k2 && k2 < _p.nz)) {                                                //  In self PE
                                             wssum += weight*_s[_p.Index(i2, j2, k2)];
                                             wsum += weight;
-                                        } 
+                                        }
+#ifdef _USE_MPI_DEFINES
+                                        else if ((i2 < 0 && _p.PEx != 0) && (0 <= j2 && j2 < _p.ny) && (0 <= k2 && k2 < _p.nz)) {                                           //  In xmin PE
+                                            wsum += weight;
+                                            wssum += weight*recv_xmin[IndexFX(nR + i2, j2, k2)];  
+                                        } else if ((_p.nx <= i2 && _p.PEx != _p.mx - 1) && (0 <= j2 && j2 < _p.ny) && (0 <= k2 && k2 < _p.nz)) {                            //  In xmax PE
+                                            wsum += weight;
+                                            wssum += weight*recv_xmax[IndexFX(i2 - _p.nx, j2, k2)];
+                                        } else if ((0 <= i2 && i2 < _p.nx) && (j2 < 0 && _p.PEy != 0) && (0 <= k2 && k2 < _p.nz)) {                                         //  In ymin PE
+                                            wsum += weight;
+                                            wssum += weight*recv_ymin[IndexFY(i2, nR + j2, k2)];
+                                        } else if ((0 <= i2 && i2 < _p.nx) && (_p.ny <= j2 && _p.PEy != _p.my - 1) && (0 <= k2 && k2 < _p.nz)) {                            //  In ymax PE
+                                            wsum += weight;
+                                            wssum += weight*recv_ymax[IndexFY(i2, j2 - _p.ny, k2)];
+                                        } else if ((0 <= i2 && i2 < _p.nx) && (0 <= j2 && j2 < _p.ny) && (k2 < 0 && _p.PEz != 0)) {                                         //  In zmin PE
+                                            wsum += weight;
+                                            wssum += weight*recv_zmin[IndexFZ(i2, j2, nR + k2)];
+                                        } else if ((0 <= i2 && i2 < _p.nx) && (0 <= j2 && j2 < _p.ny) && (_p.nz <= k2 && _p.PEz != _p.mz - 1)) {                            //  In zmax PE
+                                            wsum += weight;
+                                            wssum += weight*recv_zmax[IndexFZ(i2, j2, k2 - _p.nz)];
+                                        } else if ((0 <= i2 && i2 < _p.nx) && (j2 < 0 && _p.PEy != 0) && (k2 < 0 && _p.PEz != 0)) {                                         //  In ymin zmin PE
+                                            wsum += weight;
+                                            wssum += weight*recv_ymin_zmin[IndexEX(i2, nR + j2, nR + k2)];
+                                        } else if ((0 <= i2 && i2 < _p.nx) && (_p.ny <= j2 && _p.PEy != _p.my - 1) && (k2 < 0 && _p.PEz != 0)) {                            //  In ymax zmin PE
+                                            wsum += weight;
+                                            wssum += weight*recv_ymax_zmin[IndexEX(i2, j2 - _p.ny, nR + k2)];
+                                        } else if ((0 <= i2 && i2 < _p.nx) && (j2 < 0 && _p.PEy != 0) && (_p.nz <= k2 && _p.PEz != _p.mz - 1)) {                            //  In ymin zmax PE
+                                            wsum += weight;
+                                            wssum += weight*recv_ymin_zmax[IndexEX(i2, nR + j2, k2 - _p.nz)];
+                                        } else if ((0 <= i2 && i2 < _p.nx) && (_p.ny <= j2 && _p.PEy != _p.my - 1) && (_p.nz <= k2 && _p.PEz != _p.mz - 1)) {               //  In ymax zmax PE
+                                            wsum += weight;
+                                            wssum += weight*recv_ymax_zmax[IndexEX(i2, j2 - _p.ny, k2 - _p.nz)];
+                                        } else if ((i2 < 0 && _p.PEx != 0) && (0 <= j2 && j2 < _p.ny) && (k2 < 0 && _p.PEz != 0)) {                                         //  In zmin xmin PE
+                                            wsum += weight;
+                                            wssum += weight*recv_zmin_xmin[IndexEY(nR + i2, j2, nR + k2)];
+                                        } else if ((i2 < 0 && _p.PEx != 0) && (0 <= j2 && j2 < _p.ny) && (_p.nz <= k2 && _p.PEz != _p.mz - 1)) {                            //  In zmax xmin PE
+                                            wsum += weight;
+                                            wssum += weight*recv_zmax_xmin[IndexEY(nR + i2, j2, k2 - _p.nz)];
+                                        } else if ((_p.nx <= i2 && _p.PEx != _p.mx - 1) && (0 <= j2 && j2 < _p.ny) && (k2 < 0 && _p.PEz != 0)) {                            //  In zmin xmax PE
+                                            wsum += weight;
+                                            wssum += weight*recv_zmin_xmax[IndexEY(i2 - _p.nx, j2, nR + k2)];
+                                        } else if ((_p.nx <= i2 && _p.PEx != _p.mx - 1) && (0 <= j2 && j2 < _p.ny) && (_p.nz <= k2 && _p.PEz != _p.mz - 1)) {               //  In zmax xmax PE
+                                            wsum += weight;
+                                            wssum += weight*recv_zmax_xmax[IndexEY(i2 - _p.nx, j2, k2 - _p.nz)];
+                                        } else if ((i2 < 0 && _p.PEx != 0) && (j2 < 0 && _p.PEy != 0) && (0 <= k2 && k2 < _p.nz)) {                                         //  In xmin ymin PE
+                                            wsum += weight;
+                                            wssum += weight*recv_xmin_ymin[IndexEZ(nR + i2, nR + j2, k2)];
+                                        } else if ((_p.nx <= i2 && _p.PEx != _p.mx - 1) && (j2 < 0 && _p.PEy != 0) && (0 <= k2 && k2 < _p.nz)) {                            //  In xmax ymin PE
+                                            wsum += weight;
+                                            wssum += weight*recv_xmax_ymin[IndexEZ(i2 - _p.nx, nR + j2, k2)];
+                                        } else if ((i2 < 0 && _p.PEx != 0) && (_p.ny <= j2 && _p.PEy != _p.my - 1) && (0 <= k2 && k2 < _p.nz)) {                            //  In xmin ymax PE
+                                            wsum += weight;
+                                            wssum += weight*recv_xmin_ymax[IndexEZ(nR + i2, j2 - _p.ny, k2)];
+                                        } else if ((_p.nx <= i2 && _p.PEx != _p.mx - 1) && (_p.ny <= j2 && _p.PEy != _p.my - 1) && (0 <= k2 && k2 < _p.nz)) {               //  In xmax ymax PE
+                                            wsum += weight;
+                                            wssum += weight*recv_xmax_ymax[IndexEZ(i2 - _p.nx, j2 - _p.ny, k2)];
+                                        } else if ((i2 < 0 && _p.PEx != 0) && (j2 < 0 && _p.PEy != 0) && (k2 < 0 && _p.PEz != 0)) {                                         //  In xmin ymin zmin PE
+                                            wsum += weight;
+                                            wssum += weight*recv_xmin_ymin_zmin[IndexCC(nR + i2, nR + j2, nR + k2)];
+                                        } else if ((_p.nx <= i2 && _p.PEx != _p.mx - 1) && (j2 < 0 && _p.PEy != 0) && (k2 < 0 && _p.PEz != 0)) {                            //  In xmax ymin zmin PE
+                                            wsum += weight;
+                                            wssum += weight*recv_xmax_ymin_zmin[IndexCC(i2 - _p.nx, nR + j2, nR + k2)];
+                                        } else if ((i2 < 0 && _p.PEx != 0) && (_p.ny <= j2 && _p.PEy != _p.my - 1) && (k2 < 0 && _p.PEz != 0)) {                            //  In xmin ymax zmin PE
+                                            wsum += weight;
+                                            wssum += weight*recv_xmin_ymax_zmin[IndexCC(nR + i2, j2 - _p.ny, nR + k2)];
+                                        } else if ((_p.nx <= i2 && _p.PEx != _p.mx - 1) && (_p.ny <= j2 && _p.PEy != _p.my - 1) && (k2 < 0 && _p.PEz != 0)) {               //  In xmax ymax zmin PE
+                                            wsum += weight;
+                                            wssum += weight*recv_xmax_ymax_zmin[IndexCC(i2 - _p.nx, j2 - _p.ny, nR + k2)];
+                                        } else if ((i2 < 0 && _p.PEx != 0) && (j2 < 0 && _p.PEy != 0) && (_p.nz <= k2 && _p.PEz != _p.mz - 1)) {                            //  In xmin ymin zmax PE
+                                            wsum += weight;
+                                            wssum += weight*recv_xmin_ymin_zmax[IndexCC(nR + i2, nR + j2, k2 - _p.nz)];
+                                        } else if ((_p.nx <= i2 && _p.PEx != _p.mx - 1) && (j2 < 0 && _p.PEy != 0) && (_p.nz <= k2 && _p.PEz != _p.mz - 1)) {               //  In xmax ymin zmax PE
+                                            wsum += weight;
+                                            wssum += weight*recv_xmax_ymin_zmax[IndexCC(i2 - _p.nx, nR + j2, k2 - _p.nz)];
+                                        } else if ((i2 < 0 && _p.PEx != 0) && (_p.ny <= j2 && _p.PEy != _p.my - 1) && (_p.nz <= k2 && _p.PEz != _p.mz - 1)) {               //  In xmin ymax zmax PE
+                                            wsum += weight;
+                                            wssum += weight*recv_xmin_ymax_zmax[IndexCC(nR + i2, j2 - _p.ny, k2 - _p.nz)];
+                                        } else if ((_p.nx <= i2 && _p.PEx != _p.mx - 1) && (_p.ny <= j2 && _p.PEy != _p.my - 1) && (_p.nz <= k2 && _p.PEz != _p.mz - 1)) {  //  In xmax ymax zmax PE
+                                            wsum += weight;
+                                            wssum += weight*recv_xmax_ymax_zmax[IndexCC(i2 - _p.nx, j2 - _p.ny, k2 - _p.nz)];
+                                        }
+#endif
                                     }
                                 }
                             }
@@ -35,7 +558,20 @@ namespace PANSLBM2 {
                     }
                 }
             }
-
+#ifdef _USE_MPI_DEFINES
+            delete[] send_xmin; delete[] send_xmax; delete[] send_ymin; delete[] send_ymax; delete[] send_zmin; delete[] send_zmax;
+            delete[] send_ymin_zmin; delete[] send_ymax_zmin; delete[] send_ymin_zmax; delete[] send_ymax_zmax; 
+            delete[] send_zmin_xmin; delete[] send_zmax_xmin; delete[] send_zmin_xmax; delete[] send_zmax_xmax;
+            delete[] send_xmin_ymin; delete[] send_xmax_ymin; delete[] send_xmin_ymax; delete[] send_xmax_ymax;
+            delete[] send_xmin_ymin_zmin; delete[] send_xmax_ymin_zmin; delete[] send_xmin_ymax_zmin; delete[] send_xmax_ymax_zmin;
+            delete[] send_xmin_ymin_zmax; delete[] send_xmax_ymin_zmax; delete[] send_xmin_ymax_zmax; delete[] send_xmax_ymax_zmax; 
+            delete[] recv_xmin; delete[] recv_xmax; delete[] recv_ymin; delete[] recv_ymax; delete[] recv_zmin; delete[] recv_zmax;
+            delete[] recv_ymin_zmin; delete[] recv_ymax_zmin; delete[] recv_ymin_zmax; delete[] recv_ymax_zmax;
+            delete[] recv_zmin_xmin; delete[] recv_zmax_xmin; delete[] recv_zmin_xmax; delete[] recv_zmax_xmax;
+            delete[] recv_xmin_ymin; delete[] recv_xmax_ymin; delete[] recv_xmin_ymax; delete[] recv_xmax_ymax;
+            delete[] recv_xmin_ymin_zmin; delete[] recv_xmax_ymin_zmin; delete[] recv_xmin_ymax_zmin; delete[] recv_xmax_ymax_zmin;
+            delete[] recv_xmin_ymin_zmax; delete[] recv_xmax_ymin_zmax; delete[] recv_xmin_ymax_zmax; delete[] recv_xmax_ymax_zmax; 
+#endif
             return rho;
         }
     
@@ -48,9 +584,58 @@ namespace PANSLBM2 {
         std::vector<T> GetFilteredSensitivity(P<T>& _p, T _R, T _beta, const std::vector<T> &_s, const std::vector<T> &_dfdrho, F _weight) {
             assert(_R > T());
             int nR = (int)_R;
+#ifdef _USE_MPI_DEFINES
+            auto IndexFX = [&](int _i, int _j, int _k) { return _j + _p.ny*_k + _p.ny*_p.nz*_i; };
+            auto IndexFY = [&](int _i, int _j, int _k) { return _k + _p.nz*_i + _p.nz*_p.nx*_j; };
+            auto IndexFZ = [&](int _i, int _j, int _k) { return _i + _p.nx*_j + _p.nx*_p.ny*_k; };
+            auto IndexEX = [&](int _i, int _j, int _k) { return _j + nR*_k + nR*nR*_i; };
+            auto IndexEY = [&](int _i, int _j, int _k) { return _k + nR*_i + nR*nR*_j; };
+            auto IndexEZ = [&](int _i, int _j, int _k) { return _i + nR*_j + nR*nR*_k; };
+            auto IndexCC = [&](int _i, int _j, int _k) { return _i + nR*_j + nR*nR*_k; };
 
+            T *send_xmin = new T[_p.ny*_p.nz*nR], *send_xmax = new T[_p.ny*_p.nz*nR];
+            T *send_ymin = new T[_p.nz*_p.nx*nR], *send_ymax = new T[_p.nz*_p.nx*nR];
+            T *send_zmin = new T[_p.nx*_p.ny*nR], *send_zmax = new T[_p.nx*_p.ny*nR];
+            T *send_ymin_zmin = new T[_p.nx*nR*nR], *send_ymax_zmin = new T[_p.nx*nR*nR], *send_ymin_zmax = new T[_p.nx*nR*nR], *send_ymax_zmax = new T[_p.nx*nR*nR];
+            T *send_zmin_xmin = new T[_p.ny*nR*nR], *send_zmax_xmin = new T[_p.ny*nR*nR], *send_zmin_xmax = new T[_p.ny*nR*nR], *send_zmax_xmax = new T[_p.ny*nR*nR];
+            T *send_xmin_ymin = new T[_p.nz*nR*nR], *send_xmax_ymin = new T[_p.nz*nR*nR], *send_xmin_ymax = new T[_p.nz*nR*nR], *send_xmax_ymax = new T[_p.nz*nR*nR];
+            T *send_xmin_ymin_zmin = new T[nR*nR*nR], *send_xmax_ymin_zmin = new T[nR*nR*nR], *send_xmin_ymax_zmin = new T[nR*nR*nR], *send_xmax_ymax_zmin = new T[nR*nR*nR];
+            T *send_xmin_ymin_zmax = new T[nR*nR*nR], *send_xmax_ymin_zmax = new T[nR*nR*nR], *send_xmin_ymax_zmax = new T[nR*nR*nR], *send_xmax_ymax_zmax = new T[nR*nR*nR]; 
+            T *recv_xmin = new T[_p.ny*_p.nz*nR], *recv_xmax = new T[_p.ny*_p.nz*nR];
+            T *recv_ymin = new T[_p.nz*_p.nx*nR], *recv_ymax = new T[_p.nz*_p.nx*nR];
+            T *recv_zmin = new T[_p.nx*_p.ny*nR], *recv_zmax = new T[_p.nx*_p.ny*nR];
+            T *recv_ymin_zmin = new T[_p.nx*nR*nR], *recv_ymax_zmin = new T[_p.nx*nR*nR], *recv_ymin_zmax = new T[_p.nx*nR*nR], *recv_ymax_zmax = new T[_p.nx*nR*nR];
+            T *recv_zmin_xmin = new T[_p.ny*nR*nR], *recv_zmax_xmin = new T[_p.ny*nR*nR], *recv_zmin_xmax = new T[_p.ny*nR*nR], *recv_zmax_xmax = new T[_p.ny*nR*nR];
+            T *recv_xmin_ymin = new T[_p.nz*nR*nR], *recv_xmax_ymin = new T[_p.nz*nR*nR], *recv_xmin_ymax = new T[_p.nz*nR*nR], *recv_xmax_ymax = new T[_p.nz*nR*nR];
+            T *recv_xmin_ymin_zmin = new T[nR*nR*nR], *recv_xmax_ymin_zmin = new T[nR*nR*nR], *recv_xmin_ymax_zmin = new T[nR*nR*nR], *recv_xmax_ymax_zmin = new T[nR*nR*nR];
+            T *recv_xmin_ymin_zmax = new T[nR*nR*nR], *recv_xmax_ymin_zmax = new T[nR*nR*nR], *recv_xmin_ymax_zmax = new T[nR*nR*nR], *recv_xmax_ymax_zmax = new T[nR*nR*nR]; 
+
+            CopyToBuffer(_p, nR, _s,
+                send_xmin, send_xmax, send_ymin, send_ymax, send_zmin, send_zmax,
+                send_ymin_zmin, send_ymax_zmin, send_ymin_zmax, send_ymax_zmax, 
+                send_zmin_xmin, send_zmax_xmin, send_zmin_xmax, send_zmax_xmax,
+                send_xmin_ymin, send_xmax_ymin, send_xmin_ymax, send_xmax_ymax,
+                send_xmin_ymin_zmin, send_xmax_ymin_zmin, send_xmin_ymax_zmin, send_xmax_ymax_zmin, 
+                send_xmin_ymin_zmax, send_xmax_ymin_zmax, send_xmin_ymax_zmax, send_xmax_ymax_zmax
+            );
+
+            Communicate(_p, nR, 
+                send_xmin, send_xmax, send_ymin, send_ymax, send_zmin, send_zmax,
+                send_ymin_zmin, send_ymax_zmin, send_ymin_zmax, send_ymax_zmax, 
+                send_zmin_xmin, send_zmax_xmin, send_zmin_xmax, send_zmax_xmax,
+                send_xmin_ymin, send_xmax_ymin, send_xmin_ymax, send_xmax_ymax,
+                send_xmin_ymin_zmin, send_xmax_ymin_zmin, send_xmin_ymax_zmin, send_xmax_ymax_zmin, 
+                send_xmin_ymin_zmax, send_xmax_ymin_zmax, send_xmin_ymax_zmax, send_xmax_ymax_zmax,
+                recv_xmin, recv_xmax, recv_ymin, recv_ymax, recv_zmin, recv_zmax,
+                recv_ymin_zmin, recv_ymax_zmin, recv_ymin_zmax, recv_ymax_zmax, 
+                recv_zmin_xmin, recv_zmax_xmin, recv_zmin_xmax, recv_zmax_xmax,
+                recv_xmin_ymin, recv_xmax_ymin, recv_xmin_ymax, recv_xmax_ymax,
+                recv_xmin_ymin_zmin, recv_xmax_ymin_zmin, recv_xmin_ymax_zmin, recv_xmax_ymax_zmin, 
+                recv_xmin_ymin_zmax, recv_xmax_ymin_zmax, recv_xmin_ymax_zmax, recv_xmax_ymax_zmax
+            );
+#endif
             //  Filter value
-            std::vector<T> drhodstilde(_p.nxyz, T());
+            std::vector<T> dfdstilde(_p.nxyz, T());
             for(int i1 = 0; i1 < _p.nx; ++i1){
                 for(int j1 = 0; j1 < _p.ny; ++j1){
                     for(int k1 = 0; k1 < _p.nz; ++k1){
@@ -59,22 +644,129 @@ namespace PANSLBM2 {
                         for (int i2 = i1 - nR, i2max = i1 + nR; i2 <= i2max; ++i2) {
                             for (int j2 = j1 - nR, j2max = j1 + nR; j2 <= j2max; ++j2) {
                                 for (int k2 = k1 - nR, k2max = k1 + nR; k2 <= k2max; ++k2) {                     
-                                    double distance = sqrt(pow(i1 - i2, 2.0) + pow(j1 - j2, 2.0) + pow(k1 - k2, 2.0));
+                                    T distance = sqrt(pow(i1 - i2, 2.0) + pow(j1 - j2, 2.0) + pow(k1 - k2, 2.0));
                                     if (distance <= _R) {
                                         T weight = _weight(i1 + _p.offsetx, j1 + _p.offsety, k1 + _p.offsetz, i2 + _p.offsetx, j2 + _p.offsety, k2 + _p.offsetz);
                                         if ((0 <= i2 && i2 < _p.nx) && (0 <= j2 && j2 < _p.ny) && (0 <= k2 && k2 < _p.nz)) {                                                //  In self PE
                                             wssum += weight*_s[_p.Index(i2, j2, k2)];
                                             wsum += weight;
-                                        } 
+                                        }
+#ifdef _USE_MPI_DEFINES
+                                        else if ((i2 < 0 && _p.PEx != 0) && (0 <= j2 && j2 < _p.ny) && (0 <= k2 && k2 < _p.nz)) {                                           //  In xmin PE
+                                            wsum += weight;
+                                            wssum += weight*recv_xmin[IndexFX(nR + i2, j2, k2)];  
+                                        } else if ((_p.nx <= i2 && _p.PEx != _p.mx - 1) && (0 <= j2 && j2 < _p.ny) && (0 <= k2 && k2 < _p.nz)) {                            //  In xmax PE
+                                            wsum += weight;
+                                            wssum += weight*recv_xmax[IndexFX(i2 - _p.nx, j2, k2)];
+                                        } else if ((0 <= i2 && i2 < _p.nx) && (j2 < 0 && _p.PEy != 0) && (0 <= k2 && k2 < _p.nz)) {                                         //  In ymin PE
+                                            wsum += weight;
+                                            wssum += weight*recv_ymin[IndexFY(i2, nR + j2, k2)];
+                                        } else if ((0 <= i2 && i2 < _p.nx) && (_p.ny <= j2 && _p.PEy != _p.my - 1) && (0 <= k2 && k2 < _p.nz)) {                            //  In ymax PE
+                                            wsum += weight;
+                                            wssum += weight*recv_ymax[IndexFY(i2, j2 - _p.ny, k2)];
+                                        } else if ((0 <= i2 && i2 < _p.nx) && (0 <= j2 && j2 < _p.ny) && (k2 < 0 && _p.PEz != 0)) {                                         //  In zmin PE
+                                            wsum += weight;
+                                            wssum += weight*recv_zmin[IndexFZ(i2, j2, nR + k2)];
+                                        } else if ((0 <= i2 && i2 < _p.nx) && (0 <= j2 && j2 < _p.ny) && (_p.nz <= k2 && _p.PEz != _p.mz - 1)) {                            //  In zmax PE
+                                            wsum += weight;
+                                            wssum += weight*recv_zmax[IndexFZ(i2, j2, k2 - _p.nz)];
+                                        } else if ((0 <= i2 && i2 < _p.nx) && (j2 < 0 && _p.PEy != 0) && (k2 < 0 && _p.PEz != 0)) {                                         //  In ymin zmin PE
+                                            wsum += weight;
+                                            wssum += weight*recv_ymin_zmin[IndexEX(i2, nR + j2, nR + k2)];
+                                        } else if ((0 <= i2 && i2 < _p.nx) && (_p.ny <= j2 && _p.PEy != _p.my - 1) && (k2 < 0 && _p.PEz != 0)) {                            //  In ymax zmin PE
+                                            wsum += weight;
+                                            wssum += weight*recv_ymax_zmin[IndexEX(i2, j2 - _p.ny, nR + k2)];
+                                        } else if ((0 <= i2 && i2 < _p.nx) && (j2 < 0 && _p.PEy != 0) && (_p.nz <= k2 && _p.PEz != _p.mz - 1)) {                            //  In ymin zmax PE
+                                            wsum += weight;
+                                            wssum += weight*recv_ymin_zmax[IndexEX(i2, nR + j2, k2 - _p.nz)];
+                                        } else if ((0 <= i2 && i2 < _p.nx) && (_p.ny <= j2 && _p.PEy != _p.my - 1) && (_p.nz <= k2 && _p.PEz != _p.mz - 1)) {               //  In ymax zmax PE
+                                            wsum += weight;
+                                            wssum += weight*recv_ymax_zmax[IndexEX(i2, j2 - _p.ny, k2 - _p.nz)];
+                                        } else if ((i2 < 0 && _p.PEx != 0) && (0 <= j2 && j2 < _p.ny) && (k2 < 0 && _p.PEz != 0)) {                                         //  In zmin xmin PE
+                                            wsum += weight;
+                                            wssum += weight*recv_zmin_xmin[IndexEY(nR + i2, j2, nR + k2)];
+                                        } else if ((i2 < 0 && _p.PEx != 0) && (0 <= j2 && j2 < _p.ny) && (_p.nz <= k2 && _p.PEz != _p.mz - 1)) {                            //  In zmax xmin PE
+                                            wsum += weight;
+                                            wssum += weight*recv_zmax_xmin[IndexEY(nR + i2, j2, k2 - _p.nz)];
+                                        } else if ((_p.nx <= i2 && _p.PEx != _p.mx - 1) && (0 <= j2 && j2 < _p.ny) && (k2 < 0 && _p.PEz != 0)) {                            //  In zmin xmax PE
+                                            wsum += weight;
+                                            wssum += weight*recv_zmin_xmax[IndexEY(i2 - _p.nx, j2, nR + k2)];
+                                        } else if ((_p.nx <= i2 && _p.PEx != _p.mx - 1) && (0 <= j2 && j2 < _p.ny) && (_p.nz <= k2 && _p.PEz != _p.mz - 1)) {               //  In zmax xmax PE
+                                            wsum += weight;
+                                            wssum += weight*recv_zmax_xmax[IndexEY(i2 - _p.nx, j2, k2 - _p.nz)];
+                                        } else if ((i2 < 0 && _p.PEx != 0) && (j2 < 0 && _p.PEy != 0) && (0 <= k2 && k2 < _p.nz)) {                                         //  In xmin ymin PE
+                                            wsum += weight;
+                                            wssum += weight*recv_xmin_ymin[IndexEZ(nR + i2, nR + j2, k2)];
+                                        } else if ((_p.nx <= i2 && _p.PEx != _p.mx - 1) && (j2 < 0 && _p.PEy != 0) && (0 <= k2 && k2 < _p.nz)) {                            //  In xmax ymin PE
+                                            wsum += weight;
+                                            wssum += weight*recv_xmax_ymin[IndexEZ(i2 - _p.nx, nR + j2, k2)];
+                                        } else if ((i2 < 0 && _p.PEx != 0) && (_p.ny <= j2 && _p.PEy != _p.my - 1) && (0 <= k2 && k2 < _p.nz)) {                            //  In xmin ymax PE
+                                            wsum += weight;
+                                            wssum += weight*recv_xmin_ymax[IndexEZ(nR + i2, j2 - _p.ny, k2)];
+                                        } else if ((_p.nx <= i2 && _p.PEx != _p.mx - 1) && (_p.ny <= j2 && _p.PEy != _p.my - 1) && (0 <= k2 && k2 < _p.nz)) {               //  In xmax ymax PE
+                                            wsum += weight;
+                                            wssum += weight*recv_xmax_ymax[IndexEZ(i2 - _p.nx, j2 - _p.ny, k2)];
+                                        } else if ((i2 < 0 && _p.PEx != 0) && (j2 < 0 && _p.PEy != 0) && (k2 < 0 && _p.PEz != 0)) {                                         //  In xmin ymin zmin PE
+                                            wsum += weight;
+                                            wssum += weight*recv_xmin_ymin_zmin[IndexCC(nR + i2, nR + j2, nR + k2)];
+                                        } else if ((_p.nx <= i2 && _p.PEx != _p.mx - 1) && (j2 < 0 && _p.PEy != 0) && (k2 < 0 && _p.PEz != 0)) {                            //  In xmax ymin zmin PE
+                                            wsum += weight;
+                                            wssum += weight*recv_xmax_ymin_zmin[IndexCC(i2 - _p.nx, nR + j2, nR + k2)];
+                                        } else if ((i2 < 0 && _p.PEx != 0) && (_p.ny <= j2 && _p.PEy != _p.my - 1) && (k2 < 0 && _p.PEz != 0)) {                            //  In xmin ymax zmin PE
+                                            wsum += weight;
+                                            wssum += weight*recv_xmin_ymax_zmin[IndexCC(nR + i2, j2 - _p.ny, nR + k2)];
+                                        } else if ((_p.nx <= i2 && _p.PEx != _p.mx - 1) && (_p.ny <= j2 && _p.PEy != _p.my - 1) && (k2 < 0 && _p.PEz != 0)) {               //  In xmax ymax zmin PE
+                                            wsum += weight;
+                                            wssum += weight*recv_xmax_ymax_zmin[IndexCC(i2 - _p.nx, j2 - _p.ny, nR + k2)];
+                                        } else if ((i2 < 0 && _p.PEx != 0) && (j2 < 0 && _p.PEy != 0) && (_p.nz <= k2 && _p.PEz != _p.mz - 1)) {                            //  In xmin ymin zmax PE
+                                            wsum += weight;
+                                            wssum += weight*recv_xmin_ymin_zmax[IndexCC(nR + i2, nR + j2, k2 - _p.nz)];
+                                        } else if ((_p.nx <= i2 && _p.PEx != _p.mx - 1) && (j2 < 0 && _p.PEy != 0) && (_p.nz <= k2 && _p.PEz != _p.mz - 1)) {               //  In xmax ymin zmax PE
+                                            wsum += weight;
+                                            wssum += weight*recv_xmax_ymin_zmax[IndexCC(i2 - _p.nx, nR + j2, k2 - _p.nz)];
+                                        } else if ((i2 < 0 && _p.PEx != 0) && (_p.ny <= j2 && _p.PEy != _p.my - 1) && (_p.nz <= k2 && _p.PEz != _p.mz - 1)) {               //  In xmin ymax zmax PE
+                                            wsum += weight;
+                                            wssum += weight*recv_xmin_ymax_zmax[IndexCC(nR + i2, j2 - _p.ny, k2 - _p.nz)];
+                                        } else if ((_p.nx <= i2 && _p.PEx != _p.mx - 1) && (_p.ny <= j2 && _p.PEy != _p.my - 1) && (_p.nz <= k2 && _p.PEz != _p.mz - 1)) {  //  In xmax ymax zmax PE
+                                            wsum += weight;
+                                            wssum += weight*recv_xmax_ymax_zmax[IndexCC(i2 - _p.nx, j2 - _p.ny, k2 - _p.nz)];
+                                        }
+#endif
                                     }
                                 }
                             }
                         }
-                        drhodstilde[idx] = 0.5*_beta*(1.0 - pow(tanh(_beta*(wssum/wsum - 0.5)), 2.0))/tanh(0.5*_beta);
+                        T drhodstilde = 0.5*_beta*(1.0 - pow(tanh(_beta*(wssum/wsum - 0.5)), 2.0))/tanh(0.5*_beta);
+                        dfdstilde[idx] = _dfdrho[idx]*drhodstilde;
                     }
                 }
             }
 
+#ifdef _USE_MPI_DEFINES
+            CopyToBuffer(_p, nR, dfdstilde,
+                send_xmin, send_xmax, send_ymin, send_ymax, send_zmin, send_zmax,
+                send_ymin_zmin, send_ymax_zmin, send_ymin_zmax, send_ymax_zmax, 
+                send_zmin_xmin, send_zmax_xmin, send_zmin_xmax, send_zmax_xmax,
+                send_xmin_ymin, send_xmax_ymin, send_xmin_ymax, send_xmax_ymax,
+                send_xmin_ymin_zmin, send_xmax_ymin_zmin, send_xmin_ymax_zmin, send_xmax_ymax_zmin, 
+                send_xmin_ymin_zmax, send_xmax_ymin_zmax, send_xmin_ymax_zmax, send_xmax_ymax_zmax
+            );
+
+            Communicate(_p, nR, 
+                send_xmin, send_xmax, send_ymin, send_ymax, send_zmin, send_zmax,
+                send_ymin_zmin, send_ymax_zmin, send_ymin_zmax, send_ymax_zmax, 
+                send_zmin_xmin, send_zmax_xmin, send_zmin_xmax, send_zmax_xmax,
+                send_xmin_ymin, send_xmax_ymin, send_xmin_ymax, send_xmax_ymax,
+                send_xmin_ymin_zmin, send_xmax_ymin_zmin, send_xmin_ymax_zmin, send_xmax_ymax_zmin, 
+                send_xmin_ymin_zmax, send_xmax_ymin_zmax, send_xmin_ymax_zmax, send_xmax_ymax_zmax,
+                recv_xmin, recv_xmax, recv_ymin, recv_ymax, recv_zmin, recv_zmax,
+                recv_ymin_zmin, recv_ymax_zmin, recv_ymin_zmax, recv_ymax_zmax, 
+                recv_zmin_xmin, recv_zmax_xmin, recv_zmin_xmax, recv_zmax_xmax,
+                recv_xmin_ymin, recv_xmax_ymin, recv_xmin_ymax, recv_xmax_ymax,
+                recv_xmin_ymin_zmin, recv_xmax_ymin_zmin, recv_xmin_ymax_zmin, recv_xmax_ymax_zmin, 
+                recv_xmin_ymin_zmax, recv_xmax_ymin_zmax, recv_xmin_ymax_zmax, recv_xmax_ymax_zmax
+            );
+#endif
             //  Filter value
             std::vector<T> dfds(_p.nxyz, T());
             for(int i1 = 0; i1 < _p.nx; ++i1){
@@ -85,13 +777,94 @@ namespace PANSLBM2 {
                         for (int i2 = i1 - nR, i2max = i1 + nR; i2 <= i2max; ++i2) {
                             for (int j2 = j1 - nR, j2max = j1 + nR; j2 <= j2max; ++j2) {
                                 for (int k2 = k1 - nR, k2max = k1 + nR; k2 <= k2max; ++k2) {                     
-                                    double distance = sqrt(pow(i1 - i2, 2.0) + pow(j1 - j2, 2.0) + pow(k1 - k2, 2.0));
+                                    T distance = sqrt(pow(i1 - i2, 2.0) + pow(j1 - j2, 2.0) + pow(k1 - k2, 2.0));
                                     if (distance <= _R) {
                                         T weight = _weight(i1 + _p.offsetx, j1 + _p.offsety, k1 + _p.offsetz, i2 + _p.offsetx, j2 + _p.offsety, k2 + _p.offsetz);
                                         if ((0 <= i2 && i2 < _p.nx) && (0 <= j2 && j2 < _p.ny) && (0 <= k2 && k2 < _p.nz)) {                                                //  In self PE
-                                            dfds[idx] += weight*_dfdrho[_p.Index(i2, j2, k2)]*drhodstilde[_p.Index(i2, j2, k2)];
+                                            dfds[idx] += weight*dfdstilde[_p.Index(i2, j2, k2)];
                                             wsum += weight;
-                                        } 
+                                        }
+#ifdef _USE_MPI_DEFINES
+                                        else if ((i2 < 0 && _p.PEx != 0) && (0 <= j2 && j2 < _p.ny) && (0 <= k2 && k2 < _p.nz)) {                                           //  In xmin PE
+                                            wsum += weight;
+                                            dfds[idx] += weight*recv_xmin[IndexFX(nR + i2, j2, k2)];  
+                                        } else if ((_p.nx <= i2 && _p.PEx != _p.mx - 1) && (0 <= j2 && j2 < _p.ny) && (0 <= k2 && k2 < _p.nz)) {                            //  In xmax PE
+                                            wsum += weight;
+                                            dfds[idx] += weight*recv_xmax[IndexFX(i2 - _p.nx, j2, k2)];
+                                        } else if ((0 <= i2 && i2 < _p.nx) && (j2 < 0 && _p.PEy != 0) && (0 <= k2 && k2 < _p.nz)) {                                         //  In ymin PE
+                                            wsum += weight;
+                                            dfds[idx] += weight*recv_ymin[IndexFY(i2, nR + j2, k2)];
+                                        } else if ((0 <= i2 && i2 < _p.nx) && (_p.ny <= j2 && _p.PEy != _p.my - 1) && (0 <= k2 && k2 < _p.nz)) {                            //  In ymax PE
+                                            wsum += weight;
+                                            dfds[idx] += weight*recv_ymax[IndexFY(i2, j2 - _p.ny, k2)];
+                                        } else if ((0 <= i2 && i2 < _p.nx) && (0 <= j2 && j2 < _p.ny) && (k2 < 0 && _p.PEz != 0)) {                                         //  In zmin PE
+                                            wsum += weight;
+                                            dfds[idx] += weight*recv_zmin[IndexFZ(i2, j2, nR + k2)];
+                                        } else if ((0 <= i2 && i2 < _p.nx) && (0 <= j2 && j2 < _p.ny) && (_p.nz <= k2 && _p.PEz != _p.mz - 1)) {                            //  In zmax PE
+                                            wsum += weight;
+                                            dfds[idx] += weight*recv_zmax[IndexFZ(i2, j2, k2 - _p.nz)];
+                                        } else if ((0 <= i2 && i2 < _p.nx) && (j2 < 0 && _p.PEy != 0) && (k2 < 0 && _p.PEz != 0)) {                                         //  In ymin zmin PE
+                                            wsum += weight;
+                                            dfds[idx] += weight*recv_ymin_zmin[IndexEX(i2, nR + j2, nR + k2)];
+                                        } else if ((0 <= i2 && i2 < _p.nx) && (_p.ny <= j2 && _p.PEy != _p.my - 1) && (k2 < 0 && _p.PEz != 0)) {                            //  In ymax zmin PE
+                                            wsum += weight;
+                                            dfds[idx] += weight*recv_ymax_zmin[IndexEX(i2, j2 - _p.ny, nR + k2)];
+                                        } else if ((0 <= i2 && i2 < _p.nx) && (j2 < 0 && _p.PEy != 0) && (_p.nz <= k2 && _p.PEz != _p.mz - 1)) {                            //  In ymin zmax PE
+                                            wsum += weight;
+                                            dfds[idx] += weight*recv_ymin_zmax[IndexEX(i2, nR + j2, k2 - _p.nz)];
+                                        } else if ((0 <= i2 && i2 < _p.nx) && (_p.ny <= j2 && _p.PEy != _p.my - 1) && (_p.nz <= k2 && _p.PEz != _p.mz - 1)) {               //  In ymax zmax PE
+                                            wsum += weight;
+                                            dfds[idx] += weight*recv_ymax_zmax[IndexEX(i2, j2 - _p.ny, k2 - _p.nz)];
+                                        } else if ((i2 < 0 && _p.PEx != 0) && (0 <= j2 && j2 < _p.ny) && (k2 < 0 && _p.PEz != 0)) {                                         //  In zmin xmin PE
+                                            wsum += weight;
+                                            dfds[idx] += weight*recv_zmin_xmin[IndexEY(nR + i2, j2, nR + k2)];
+                                        } else if ((i2 < 0 && _p.PEx != 0) && (0 <= j2 && j2 < _p.ny) && (_p.nz <= k2 && _p.PEz != _p.mz - 1)) {                            //  In zmax xmin PE
+                                            wsum += weight;
+                                            dfds[idx] += weight*recv_zmax_xmin[IndexEY(nR + i2, j2, k2 - _p.nz)];
+                                        } else if ((_p.nx <= i2 && _p.PEx != _p.mx - 1) && (0 <= j2 && j2 < _p.ny) && (k2 < 0 && _p.PEz != 0)) {                            //  In zmin xmax PE
+                                            wsum += weight;
+                                            dfds[idx] += weight*recv_zmin_xmax[IndexEY(i2 - _p.nx, j2, nR + k2)];
+                                        } else if ((_p.nx <= i2 && _p.PEx != _p.mx - 1) && (0 <= j2 && j2 < _p.ny) && (_p.nz <= k2 && _p.PEz != _p.mz - 1)) {               //  In zmax xmax PE
+                                            wsum += weight;
+                                            dfds[idx] += weight*recv_zmax_xmax[IndexEY(i2 - _p.nx, j2, k2 - _p.nz)];
+                                        } else if ((i2 < 0 && _p.PEx != 0) && (j2 < 0 && _p.PEy != 0) && (0 <= k2 && k2 < _p.nz)) {                                         //  In xmin ymin PE
+                                            wsum += weight;
+                                            dfds[idx] += weight*recv_xmin_ymin[IndexEZ(nR + i2, nR + j2, k2)];
+                                        } else if ((_p.nx <= i2 && _p.PEx != _p.mx - 1) && (j2 < 0 && _p.PEy != 0) && (0 <= k2 && k2 < _p.nz)) {                            //  In xmax ymin PE
+                                            wsum += weight;
+                                            dfds[idx] += weight*recv_xmax_ymin[IndexEZ(i2 - _p.nx, nR + j2, k2)];
+                                        } else if ((i2 < 0 && _p.PEx != 0) && (_p.ny <= j2 && _p.PEy != _p.my - 1) && (0 <= k2 && k2 < _p.nz)) {                            //  In xmin ymax PE
+                                            wsum += weight;
+                                            dfds[idx] += weight*recv_xmin_ymax[IndexEZ(nR + i2, j2 - _p.ny, k2)];
+                                        } else if ((_p.nx <= i2 && _p.PEx != _p.mx - 1) && (_p.ny <= j2 && _p.PEy != _p.my - 1) && (0 <= k2 && k2 < _p.nz)) {               //  In xmax ymax PE
+                                            wsum += weight;
+                                            dfds[idx] += weight*recv_xmax_ymax[IndexEZ(i2 - _p.nx, j2 - _p.ny, k2)];
+                                        } else if ((i2 < 0 && _p.PEx != 0) && (j2 < 0 && _p.PEy != 0) && (k2 < 0 && _p.PEz != 0)) {                                         //  In xmin ymin zmin PE
+                                            wsum += weight;
+                                            dfds[idx] += weight*recv_xmin_ymin_zmin[IndexCC(nR + i2, nR + j2, nR + k2)];
+                                        } else if ((_p.nx <= i2 && _p.PEx != _p.mx - 1) && (j2 < 0 && _p.PEy != 0) && (k2 < 0 && _p.PEz != 0)) {                            //  In xmax ymin zmin PE
+                                            wsum += weight;
+                                            dfds[idx] += weight*recv_xmax_ymin_zmin[IndexCC(i2 - _p.nx, nR + j2, nR + k2)];
+                                        } else if ((i2 < 0 && _p.PEx != 0) && (_p.ny <= j2 && _p.PEy != _p.my - 1) && (k2 < 0 && _p.PEz != 0)) {                            //  In xmin ymax zmin PE
+                                            wsum += weight;
+                                            dfds[idx] += weight*recv_xmin_ymax_zmin[IndexCC(nR + i2, j2 - _p.ny, nR + k2)];
+                                        } else if ((_p.nx <= i2 && _p.PEx != _p.mx - 1) && (_p.ny <= j2 && _p.PEy != _p.my - 1) && (k2 < 0 && _p.PEz != 0)) {               //  In xmax ymax zmin PE
+                                            wsum += weight;
+                                            dfds[idx] += weight*recv_xmax_ymax_zmin[IndexCC(i2 - _p.nx, j2 - _p.ny, nR + k2)];
+                                        } else if ((i2 < 0 && _p.PEx != 0) && (j2 < 0 && _p.PEy != 0) && (_p.nz <= k2 && _p.PEz != _p.mz - 1)) {                            //  In xmin ymin zmax PE
+                                            wsum += weight;
+                                            dfds[idx] += weight*recv_xmin_ymin_zmax[IndexCC(nR + i2, nR + j2, k2 - _p.nz)];
+                                        } else if ((_p.nx <= i2 && _p.PEx != _p.mx - 1) && (j2 < 0 && _p.PEy != 0) && (_p.nz <= k2 && _p.PEz != _p.mz - 1)) {               //  In xmax ymin zmax PE
+                                            wsum += weight;
+                                            dfds[idx] += weight*recv_xmax_ymin_zmax[IndexCC(i2 - _p.nx, nR + j2, k2 - _p.nz)];
+                                        } else if ((i2 < 0 && _p.PEx != 0) && (_p.ny <= j2 && _p.PEy != _p.my - 1) && (_p.nz <= k2 && _p.PEz != _p.mz - 1)) {               //  In xmin ymax zmax PE
+                                            wsum += weight;
+                                            dfds[idx] += weight*recv_xmin_ymax_zmax[IndexCC(nR + i2, j2 - _p.ny, k2 - _p.nz)];
+                                        } else if ((_p.nx <= i2 && _p.PEx != _p.mx - 1) && (_p.ny <= j2 && _p.PEy != _p.my - 1) && (_p.nz <= k2 && _p.PEz != _p.mz - 1)) {  //  In xmax ymax zmax PE
+                                            wsum += weight;
+                                            dfds[idx] += weight*recv_xmax_ymax_zmax[IndexCC(i2 - _p.nx, j2 - _p.ny, k2 - _p.nz)];
+                                        }
+#endif
                                     }
                                 }
                             }
@@ -100,7 +873,20 @@ namespace PANSLBM2 {
                     }
                 }
             }
-
+#ifdef _USE_MPI_DEFINES
+            delete[] send_xmin; delete[] send_xmax; delete[] send_ymin; delete[] send_ymax; delete[] send_zmin; delete[] send_zmax;
+            delete[] send_ymin_zmin; delete[] send_ymax_zmin; delete[] send_ymin_zmax; delete[] send_ymax_zmax; 
+            delete[] send_zmin_xmin; delete[] send_zmax_xmin; delete[] send_zmin_xmax; delete[] send_zmax_xmax;
+            delete[] send_xmin_ymin; delete[] send_xmax_ymin; delete[] send_xmin_ymax; delete[] send_xmax_ymax;
+            delete[] send_xmin_ymin_zmin; delete[] send_xmax_ymin_zmin; delete[] send_xmin_ymax_zmin; delete[] send_xmax_ymax_zmin;
+            delete[] send_xmin_ymin_zmax; delete[] send_xmax_ymin_zmax; delete[] send_xmin_ymax_zmax; delete[] send_xmax_ymax_zmax; 
+            delete[] recv_xmin; delete[] recv_xmax; delete[] recv_ymin; delete[] recv_ymax; delete[] recv_zmin; delete[] recv_zmax;
+            delete[] recv_ymin_zmin; delete[] recv_ymax_zmin; delete[] recv_ymin_zmax; delete[] recv_ymax_zmax;
+            delete[] recv_zmin_xmin; delete[] recv_zmax_xmin; delete[] recv_zmin_xmax; delete[] recv_zmax_xmax;
+            delete[] recv_xmin_ymin; delete[] recv_xmax_ymin; delete[] recv_xmin_ymax; delete[] recv_xmax_ymax;
+            delete[] recv_xmin_ymin_zmin; delete[] recv_xmax_ymin_zmin; delete[] recv_xmin_ymax_zmin; delete[] recv_xmax_ymax_zmin;
+            delete[] recv_xmin_ymin_zmax; delete[] recv_xmax_ymin_zmax; delete[] recv_xmin_ymax_zmax; delete[] recv_xmax_ymax_zmax; 
+#endif
             return dfds;
         }
 

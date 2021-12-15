@@ -2,6 +2,9 @@
 #include <cmath>
 #include <vector>
 #include <cassert>
+#ifdef _USE_MPI_DEFINES
+    #include "mpi.h"
+#endif
 
 namespace PANSLBM2 {
     namespace HeavisideFilter {
@@ -284,7 +287,7 @@ namespace PANSLBM2 {
             auto IndexEY = [&](int _i, int _j, int _k) { return _k + _nR*_i + _nR*_nR*_j; };
             auto IndexEZ = [&](int _i, int _j, int _k) { return _i + _nR*_j + _nR*_nR*_k; };
             auto IndexCC = [&](int _i, int _j, int _k) { return _i + _nR*_j + _nR*_nR*_k; };
-            
+
 #ifdef _USE_MPI_DEFINES
             MPI_Status status[52];
             MPI_Request request[52];  

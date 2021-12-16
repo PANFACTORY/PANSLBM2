@@ -27,9 +27,9 @@ public:
                     std::istringstream tmpstream(tmp);
                     int nxmin, nxmax, nymin, nymax, nzmin, nzmax;
                     tmpstream >> nxmin >> nxmax >> nymin >> nymax >> nzmin >> nzmax;
-                    this->nx = nxmax - nxmin;
-                    this->ny = nymax - nymin;
-                    this->nz = nzmax - nzmin;
+                    this->nx = nxmax - nxmin + 1;
+                    this->ny = nymax - nymin + 1;
+                    this->nz = nzmax - nzmin + 1;
                 }
 
                 //  vtsファイル名を読み込み

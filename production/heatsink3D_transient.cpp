@@ -307,9 +307,9 @@ int main(int argc, char** argv) {
             std::chrono::system_clock::time_point end = std::chrono::system_clock::now();
             std::cout << "\r" << std::fixed << std::setprecision(6) << itr << " " << stage << " " << f << " " << g << " " << dsmax  << " (" << imax << "," << jmax << "," << kmax << ") " << mnd << " " << std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count() << std::endl;
         }
-        if (cnt%nb == 0 || itr == nitr) {
+        if (dsmax < 0.01 || cnt%nb == 0 || itr == nitr) {
 #ifdef _USE_MPI_DEFINES
-            VTKXMLExport file(pf, "result/heatsink3D_transient" + std::to_string(stage));
+            VTKXMLExport file(pf, "result/heatsink3D_transient_" + std::to_string(stage));
             file.AddPointData(pf, "rho", [&](int _i, int _j, int _k) { return rho[nt - 1][pf.Index(_i, _j, _k)]; });
             file.AddPointData(pf, "u", 
                 [&](int _i, int _j, int _k) { return ux[nt - 1][pf.Index(_i, _j, _k)]; },
@@ -343,7 +343,7 @@ int main(int argc, char** argv) {
             file.AddPointData(pf, "ss", [&](int _i, int _j, int _k) { return ss[pf.Index(_i, _j, _k)]; });
             file.AddPointData(pf, "dfdss", [&](int _i, int _j, int _k) { return dfdss[pf.Index(_i, _j, _k)]; });
 #else
-            VTKExport file("result/heatsink3D_transient" + std::to_string(stage) + ".vtk", lx, ly, lz);
+            VTKExport file("result/heatsink3D_transient_" + std::to_string(stage) + ".vtk", lx, ly, lz);
             file.AddPointScaler("rho", [&](int _i, int _j, int _k) { return rho[nt - 1][pf.Index(_i, _j, _k)]; });
             file.AddPointVector("u", 
                 [&](int _i, int _j, int _k) { return ux[nt - 1][pf.Index(_i, _j, _k)]; },
@@ -378,17 +378,17 @@ int main(int argc, char** argv) {
             file.AddPointScaler("dfdss", [&](int _i, int _j, int _k) { return dfdss[pf.Index(_i, _j, _k)]; });
 #endif
         }
-        if (stage < ns && (dsmax < 0.01 || cnt%nb == 0)) {
-            stage += 1;
-            cnt = 0;
-        }
-        if (stage == ns || itr == nitr) {
+        if ((stage == ns - 1 && dsmax < 0.01) || itr == nitr) {
             if (MyRank == 0) {
                 std::cout << "----------Convergence/Last step----------" << std::endl;
                 std::chrono::system_clock::time_point end = std::chrono::system_clock::now();
                 std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count() << std::endl;
             }
             break;
+        }
+        if (dsmax < 0.01 || cnt%nb == 0) {
+            stage = std::min(stage + 1, ns - 1);
+            cnt = 0;
         }
     }
     

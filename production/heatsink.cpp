@@ -289,7 +289,7 @@ int main(int argc, char** argv) {
 
         //********************Check convergence********************
         if (MyRank == 0) {
-            std::cout << "\r" << std::fixed << std::setprecision(6) << k << " " << stage << " " << f << " " << g << " " << td << " " << ti << " " << dsmax  << " (" << imax << "," << jmax << ") " << qf << " " << qg << " " << mnd << " " << beta << std::endl;
+            std::cout << "\r" << std::fixed << std::setprecision(6) << k << " " << stage << " " << f << " " << g << " " << td << " " << ti << " " << dsmax  << " (" << imax << "," << jmax << ") " << mnd << std::endl;
         }
         if (stage < ns && (dsmax < 0.01 || cnt%nb == 0)) {
             stage += 1;

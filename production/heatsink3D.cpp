@@ -1,4 +1,4 @@
-#define _USE_MPI_DEFINES
+//#define _USE_MPI_DEFINES
 #define _USE_AVX_DEFINES
 #include <iostream>
 #include <chrono>
@@ -14,7 +14,7 @@
 #include "../src/equation/adjointadvection.h"
 #include "../src/utility/residual.h"
 #include "../src/utility/mma.h"
-#include "../src/utility/densityfilter.h"
+#include "../src/utility/heavisidefilter.h"
 #include "../src/utility/normalize.h"
 #ifdef _USE_MPI_DEFINES
     #include "../src/utility/vtkxmlexport.h"
@@ -39,9 +39,10 @@ int main(int argc, char** argv) {
 #endif
 
     //********************Parameters********************
-    int lx = 81, ly = 161, lz = 81, nt = 1000, dt = 100, nitr = 1, nb = 100;
-    double Pr = 6.0, Ra = 2.5e4, nu = 0.1, L = (lx - 1)/10, tem0 = 0.0, qn0 = 1.0e-2, alphamax = 1.0e4;
-    double qf = 1e-2, qfmax = 1e1, qg = 1e0, movelimit = 0.2, weightlimit = 0.05, R = 1.5, eps = 1.0e-5, s0 = 0.05;
+    const int lx = 81, ly = 161, lz = 81, nt = 100000, dt = 100, nitr = 500, nb = 100, ns = 5;
+    double Pr = 6.0, Ra = 1e3, nu = 0.1, L = (lx - 1)/10, tem0 = 0.0, qn0 = 1.5e-2, alphamax = 1.0e4;
+    double qg = 1e0, movelimit = 0.2, weightlimit = 0.05, R = 2.4, eps = 1.0e-5, s0 = 0.0;
+    double qfList[ns] = { 1e-2, 1e-1, 1e-1, 1e-1, 1e-1 }, betaList[ns] = { 1.0, 2.0, 4.0, 8.0, 16.0 };
 
     int mx = 3*(lx - 1)/4 + 1, my = 3*(ly - 1)/4 + 1, mz = 3*(lz - 1)/4 + 1;
     double U = nu*sqrt(Ra/Pr)/(double)(ly - 1), diff_fluid = nu/Pr, diff_solid = diff_fluid*10.0, gx = 0.0, gy = U*U/(double)(ly - 1), gz = 0.0;
@@ -93,16 +94,13 @@ int main(int argc, char** argv) {
 
     std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
 
-    for (int itr = 1, cnt = 1; itr <= nitr; itr++) {
-        if (cnt%nb == 0) {
-            qf = std::min(qfmax, qf*10.0);
-            cnt = 1;
-        } else {
-            cnt++;
-        }
+    for (int itr = 1, cnt = 1, stage = 0; itr <= nitr; itr++, cnt++) {
+        //********************Set optimization parameters********************
+        double qf = qfList[stage];
+        double beta = betaList[stage];
 
         //********************Filter variables********************
-        std::vector<double> ss = DensityFilter::GetFilteredValue(pf, R, s, filterweight);
+        std::vector<double> ss = HeavisideFilter::GetFilteredVariable(pf, R, beta, s, filterweight);
         for (int i = 0; i < pf.nx; ++i) {
             for (int j = 0; j < pf.ny; ++j) {
                 for (int k = 0; k < pf.nz; ++k) {
@@ -248,8 +246,8 @@ int main(int argc, char** argv) {
         );
         
         //********************Filter sensitivities********************
-        std::vector<double> dfds = DensityFilter::GetFilteredValue(pf, R, dfdss, filterweight);
-        std::vector<double> dgds = DensityFilter::GetFilteredValue(pf, R, dgdss, filterweight);
+        std::vector<double> dfds = HeavisideFilter::GetFilteredSensitivity(pf, R, beta, s, dfdss, filterweight);
+        std::vector<double> dgds = HeavisideFilter::GetFilteredSensitivity(pf, R, beta, s, dgdss, filterweight);
         for (int i = 0; i < pf.nx; ++i) {
             for (int j = 0; j < pf.ny; ++j) {
                 for (int k = 0; k < pf.nz; ++k) {
@@ -314,95 +312,96 @@ int main(int argc, char** argv) {
 
         //********************Check convergence********************
         if (MyRank == 0) {
-            std::cout << "\r" << std::fixed << std::setprecision(6) << itr << " " << f << " " << g << " " << td << " " << ti << " " << dsmax  << " (" << imax << "," << jmax << "," << kmax << ") " << qf << " " << qg << " " << mnd << std::endl;
+            std::cout << "\r" << std::fixed << std::setprecision(6) << itr << " " << stage << " " << f << " " << g << " " << td << " " << ti << " " << dsmax  << " (" << imax << "," << jmax << "," << kmax << ") " << mnd << std::endl;
         }
-        if (dsmax < 0.01 || itr == nitr) {
-            if (qf < qfmax && itr != nitr) {
-                cnt = 0;
-            } else {
-                if (MyRank == 0) {
-                    std::cout << "----------Convergence/Last step----------" << std::endl;
-                    std::chrono::system_clock::time_point end = std::chrono::system_clock::now();
-                    std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count() << std::endl;
-                }
+        if (cnt%nb == 0 || itr == nitr) {
 #ifdef _USE_MPI_DEFINES
-                VTKXMLExport file(pf, "result/heatsink3D");
-                file.AddPointData(pf, "k", [&](int _i, int _j, int _k) { return diffusivity[pg.Index(_i, _j, _k)]; });
-                file.AddPointData(pf, "rho", [&](int _i, int _j, int _k) { return rho[pf.Index(_i, _j, _k)]; });
-                file.AddPointData(pf, "u", 
-                    [&](int _i, int _j, int _k) { return ux[pf.Index(_i, _j, _k)]; },
-                    [&](int _i, int _j, int _k) { return uy[pf.Index(_i, _j, _k)]; },
-                    [&](int _i, int _j, int _k) { return uz[pf.Index(_i, _j, _k)]; }
-                );
-                file.AddPointData(pf, "T", [&](int _i, int _j, int _k) { return tem[pg.Index(_i, _j, _k)]; });
-                file.AddPointData(pf, "q", 
-                    [&](int _i, int _j, int _k) { return qx[pg.Index(_i, _j, _k)]; },
-                    [&](int _i, int _j, int _k) { return qy[pg.Index(_i, _j, _k)]; },
-                    [&](int _i, int _j, int _k) { return qz[pg.Index(_i, _j, _k)]; }
-                );
-                file.AddPointData(pf, "irho", [&](int _i, int _j, int _k) {   return irho[pf.Index(_i, _j, _k)];  });
-                file.AddPointData(pf, "iu", 
-                    [&](int _i, int _j, int _k) {   return iux[pf.Index(_i, _j, _k)];   },
-                    [&](int _i, int _j, int _k) {   return iuy[pf.Index(_i, _j, _k)];   },
-                    [&](int _i, int _j, int _k) {   return iuz[pf.Index(_i, _j, _k)];   }
-                );
-                file.AddPointData(pf, "im", 
-                    [&](int _i, int _j, int _k) {   return imx[pf.Index(_i, _j, _k)];   },
-                    [&](int _i, int _j, int _k) {   return imy[pf.Index(_i, _j, _k)];   },
-                    [&](int _i, int _j, int _k) {   return imz[pf.Index(_i, _j, _k)];   }
-                );
-                file.AddPointData(pf, "iT", [&](int _i, int _j, int _k) { return item[pg.Index(_i, _j, _k)];  });
-                file.AddPointData(pf, "iq", 
-                    [&](int _i, int _j, int _k) {   return iqx[pg.Index(_i, _j, _k)];   },
-                    [&](int _i, int _j, int _k) {   return iqy[pg.Index(_i, _j, _k)];   },
-                    [&](int _i, int _j, int _k) {   return iqz[pg.Index(_i, _j, _k)];   }
-                );
-                file.AddPointData(pf, "s", [&](int _i, int _j, int _k) { return s[pf.Index(_i, _j, _k)];    });
-                file.AddPointData(pf, "ss", [&](int _i, int _j, int _k) { return ss[pf.Index(_i, _j, _k)];    });
-                file.AddPointData(pf, "dfds", [&](int _i, int _j, int _k) { return dfds[pf.Index(_i, _j, _k)];    });
-                file.AddPointData(pf, "dkds", [&](int _i, int _j, int _k) { return dkds[pf.Index(_i, _j, _k)];    });
-                file.AddPointData(pf, "dads", [&](int _i, int _j, int _k) { return dads[pf.Index(_i, _j, _k)];    });
+            VTKXMLExport file(pf, "result/heatsink3D_" + std::to_string(stage));
+            file.AddPointData(pf, "k", [&](int _i, int _j, int _k) { return diffusivity[pg.Index(_i, _j, _k)]; });
+            file.AddPointData(pf, "rho", [&](int _i, int _j, int _k) { return rho[pf.Index(_i, _j, _k)]; });
+            file.AddPointData(pf, "u", 
+                [&](int _i, int _j, int _k) { return ux[pf.Index(_i, _j, _k)]; },
+                [&](int _i, int _j, int _k) { return uy[pf.Index(_i, _j, _k)]; },
+                [&](int _i, int _j, int _k) { return uz[pf.Index(_i, _j, _k)]; }
+            );
+            file.AddPointData(pf, "T", [&](int _i, int _j, int _k) { return tem[pg.Index(_i, _j, _k)]; });
+            file.AddPointData(pf, "q", 
+                [&](int _i, int _j, int _k) { return qx[pg.Index(_i, _j, _k)]; },
+                [&](int _i, int _j, int _k) { return qy[pg.Index(_i, _j, _k)]; },
+                [&](int _i, int _j, int _k) { return qz[pg.Index(_i, _j, _k)]; }
+            );
+            file.AddPointData(pf, "irho", [&](int _i, int _j, int _k) {   return irho[pf.Index(_i, _j, _k)];  });
+            file.AddPointData(pf, "iu", 
+                [&](int _i, int _j, int _k) {   return iux[pf.Index(_i, _j, _k)];   },
+                [&](int _i, int _j, int _k) {   return iuy[pf.Index(_i, _j, _k)];   },
+                [&](int _i, int _j, int _k) {   return iuz[pf.Index(_i, _j, _k)];   }
+            );
+            file.AddPointData(pf, "im", 
+                [&](int _i, int _j, int _k) {   return imx[pf.Index(_i, _j, _k)];   },
+                [&](int _i, int _j, int _k) {   return imy[pf.Index(_i, _j, _k)];   },
+                [&](int _i, int _j, int _k) {   return imz[pf.Index(_i, _j, _k)];   }
+            );
+            file.AddPointData(pf, "iT", [&](int _i, int _j, int _k) { return item[pg.Index(_i, _j, _k)];  });
+            file.AddPointData(pf, "iq", 
+                [&](int _i, int _j, int _k) {   return iqx[pg.Index(_i, _j, _k)];   },
+                [&](int _i, int _j, int _k) {   return iqy[pg.Index(_i, _j, _k)];   },
+                [&](int _i, int _j, int _k) {   return iqz[pg.Index(_i, _j, _k)];   }
+            );
+            file.AddPointData(pf, "s", [&](int _i, int _j, int _k) { return s[pf.Index(_i, _j, _k)];    });
+            file.AddPointData(pf, "ss", [&](int _i, int _j, int _k) { return ss[pf.Index(_i, _j, _k)];    });
+            file.AddPointData(pf, "dfds", [&](int _i, int _j, int _k) { return dfds[pf.Index(_i, _j, _k)];    });
+            file.AddPointData(pf, "dkds", [&](int _i, int _j, int _k) { return dkds[pf.Index(_i, _j, _k)];    });
+            file.AddPointData(pf, "dads", [&](int _i, int _j, int _k) { return dads[pf.Index(_i, _j, _k)];    });
 #else
-                VTKExport file("result/heatsink3D.vtk", lx, ly, lz);
-                file.AddPointScaler("k", [&](int _i, int _j, int _k) { return diffusivity[pg.Index(_i, _j, _k)]; });
-                file.AddPointScaler("rho", [&](int _i, int _j, int _k) { return rho[pf.Index(_i, _j, _k)]; });
-                file.AddPointVector("u", 
-                    [&](int _i, int _j, int _k) { return ux[pf.Index(_i, _j, _k)]; },
-                    [&](int _i, int _j, int _k) { return uy[pf.Index(_i, _j, _k)]; },
-                    [&](int _i, int _j, int _k) { return uz[pf.Index(_i, _j, _k)]; }
-                );
-                file.AddPointScaler("T", [&](int _i, int _j, int _k) { return tem[pg.Index(_i, _j, _k)]; });
-                file.AddPointVector("q", 
-                    [&](int _i, int _j, int _k) { return qx[pg.Index(_i, _j, _k)]; },
-                    [&](int _i, int _j, int _k) { return qy[pg.Index(_i, _j, _k)]; },
-                    [&](int _i, int _j, int _k) { return qz[pg.Index(_i, _j, _k)]; }
-                );
-                file.AddPointScaler("irho", [&](int _i, int _j, int _k) {   return irho[pf.Index(_i, _j, _k)];  });
-                file.AddPointVector("iu", 
-                    [&](int _i, int _j, int _k) {   return iux[pf.Index(_i, _j, _k)];   },
-                    [&](int _i, int _j, int _k) {   return iuy[pf.Index(_i, _j, _k)];   },
-                    [&](int _i, int _j, int _k) {   return iuz[pf.Index(_i, _j, _k)];   }
-                );
-                file.AddPointVector("im", 
-                    [&](int _i, int _j, int _k) {   return imx[pf.Index(_i, _j, _k)];   },
-                    [&](int _i, int _j, int _k) {   return imy[pf.Index(_i, _j, _k)];   },
-                    [&](int _i, int _j, int _k) {   return imz[pf.Index(_i, _j, _k)];   }
-                );
-                file.AddPointScaler("iT", [&](int _i, int _j, int _k) { return item[pg.Index(_i, _j, _k)];  });
-                file.AddPointVector("iq", 
-                    [&](int _i, int _j, int _k) {   return iqx[pg.Index(_i, _j, _k)];   },
-                    [&](int _i, int _j, int _k) {   return iqy[pg.Index(_i, _j, _k)];   },
-                    [&](int _i, int _j, int _k) {   return iqz[pg.Index(_i, _j, _k)];   }
-                );
-                file.AddPointScaler("s", [&](int _i, int _j, int _k) { return s[pf.Index(_i, _j, _k)];    });
-                file.AddPointScaler("ss", [&](int _i, int _j, int _k) { return ss[pf.Index(_i, _j, _k)];    });
-                file.AddPointScaler("dfds", [&](int _i, int _j, int _k) { return dfds[pf.Index(_i, _j, _k)];    });
-                file.AddPointScaler("dkds", [&](int _i, int _j, int _k) { return dkds[pf.Index(_i, _j, _k)];    });
-                file.AddPointScaler("dads", [&](int _i, int _j, int _k) { return dads[pf.Index(_i, _j, _k)];    });
-#endif
-            
-                break;
+            VTKExport file("result/heatsink3D_" + std::to_string(stage) + ".vtk", lx, ly, lz);
+            file.AddPointScaler("k", [&](int _i, int _j, int _k) { return diffusivity[pg.Index(_i, _j, _k)]; });
+            file.AddPointScaler("rho", [&](int _i, int _j, int _k) { return rho[pf.Index(_i, _j, _k)]; });
+            file.AddPointVector("u", 
+                [&](int _i, int _j, int _k) { return ux[pf.Index(_i, _j, _k)]; },
+                [&](int _i, int _j, int _k) { return uy[pf.Index(_i, _j, _k)]; },
+                [&](int _i, int _j, int _k) { return uz[pf.Index(_i, _j, _k)]; }
+            );
+            file.AddPointScaler("T", [&](int _i, int _j, int _k) { return tem[pg.Index(_i, _j, _k)]; });
+            file.AddPointVector("q", 
+                [&](int _i, int _j, int _k) { return qx[pg.Index(_i, _j, _k)]; },
+                [&](int _i, int _j, int _k) { return qy[pg.Index(_i, _j, _k)]; },
+                [&](int _i, int _j, int _k) { return qz[pg.Index(_i, _j, _k)]; }
+            );
+            file.AddPointScaler("irho", [&](int _i, int _j, int _k) {   return irho[pf.Index(_i, _j, _k)];  });
+            file.AddPointVector("iu", 
+                [&](int _i, int _j, int _k) {   return iux[pf.Index(_i, _j, _k)];   },
+                [&](int _i, int _j, int _k) {   return iuy[pf.Index(_i, _j, _k)];   },
+                [&](int _i, int _j, int _k) {   return iuz[pf.Index(_i, _j, _k)];   }
+            );
+            file.AddPointVector("im", 
+                [&](int _i, int _j, int _k) {   return imx[pf.Index(_i, _j, _k)];   },
+                [&](int _i, int _j, int _k) {   return imy[pf.Index(_i, _j, _k)];   },
+                [&](int _i, int _j, int _k) {   return imz[pf.Index(_i, _j, _k)];   }
+            );
+            file.AddPointScaler("iT", [&](int _i, int _j, int _k) { return item[pg.Index(_i, _j, _k)];  });
+            file.AddPointVector("iq", 
+                [&](int _i, int _j, int _k) {   return iqx[pg.Index(_i, _j, _k)];   },
+                [&](int _i, int _j, int _k) {   return iqy[pg.Index(_i, _j, _k)];   },
+                [&](int _i, int _j, int _k) {   return iqz[pg.Index(_i, _j, _k)];   }
+            );
+            file.AddPointScaler("s", [&](int _i, int _j, int _k) { return s[pf.Index(_i, _j, _k)];    });
+            file.AddPointScaler("ss", [&](int _i, int _j, int _k) { return ss[pf.Index(_i, _j, _k)];    });
+            file.AddPointScaler("dfds", [&](int _i, int _j, int _k) { return dfds[pf.Index(_i, _j, _k)];    });
+            file.AddPointScaler("dkds", [&](int _i, int _j, int _k) { return dkds[pf.Index(_i, _j, _k)];    });
+            file.AddPointScaler("dads", [&](int _i, int _j, int _k) { return dads[pf.Index(_i, _j, _k)];    });
+#endif  
+        }
+        if (stage < ns && (dsmax < 0.01 || cnt%nb == 0)) {
+            stage += 1;
+            cnt = 0;
+        }
+        if (stage == ns || itr == nitr) {
+            if (MyRank == 0) {
+                std::cout << "----------Convergence/Last step----------" << std::endl;
+                std::chrono::system_clock::time_point end = std::chrono::system_clock::now();
+                std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count() << std::endl;
             }
+            break;
         }
     }
     

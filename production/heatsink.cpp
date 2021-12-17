@@ -374,7 +374,6 @@ int main(int argc, char** argv) {
             stage = std::min(stage + 1, ns - 1);
             cnt = 0;
         }
-        
     }
     
     delete[] rho;   delete[] ux;    delete[] uy;    delete[] uxp;   delete[] uyp;

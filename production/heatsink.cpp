@@ -291,18 +291,9 @@ int main(int argc, char** argv) {
         if (MyRank == 0) {
             std::cout << "\r" << std::fixed << std::setprecision(6) << k << " " << stage << " " << f << " " << g << " " << td << " " << ti << " " << dsmax  << " (" << imax << "," << jmax << ") " << mnd << std::endl;
         }
-        if (stage < ns && (dsmax < 0.01 || cnt%nb == 0)) {
-            stage += 1;
-            cnt = 0;
-        }
-        if ((stage == ns && dsmax < 0.01) || k == nk) {
-            if (MyRank == 0) {
-                std::cout << "----------Convergence/Last step----------" << std::endl;
-                std::chrono::system_clock::time_point end = std::chrono::system_clock::now();
-                std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count() << std::endl;
-            }
+        if ((dsmax < 0.01 && cnt%nb == 0) || k == nk) {
 #ifdef _USE_MPI_DEFINES
-            VTKXMLExport file(pf, "result/heatsink");
+            VTKXMLExport file(pf, "result/heatsink" + std::to_string(stage));
             file.AddPointData(pf, "rho", [&](int _i, int _j, int _k) { return rho[pf.Index(_i, _j)]; });
             file.AddPointData(pf, "u", 
                 [&](int _i, int _j, int _k) { return ux[pf.Index(_i, _j)]; },
@@ -336,7 +327,7 @@ int main(int argc, char** argv) {
             file.AddPointData(pf, "ss", [&](int _i, int _j, int _k) { return ss[pf.Index(_i, _j)];    });
             file.AddPointData(pf, "dfdss", [&](int _i, int _j, int _k) { return dfdss[pf.Index(_i, _j)];    });
 #else
-            VTKExport file("result/heatsink.vtk", pf.nx, pf.ny);
+            VTKExport file("result/heatsink" + std::to_string(stage) + ".vtk", pf.nx, pf.ny);
             file.AddPointScaler("rho", [&](int _i, int _j, int _k) { return rho[pf.Index(_i, _j)]; });
             file.AddPointVector("u", 
                 [&](int _i, int _j, int _k) { return ux[pf.Index(_i, _j)]; },
@@ -370,8 +361,20 @@ int main(int argc, char** argv) {
             file.AddPointScaler("ss", [&](int _i, int _j, int _k) { return ss[pf.Index(_i, _j)];    });
             file.AddPointScaler("dfdss", [&](int _i, int _j, int _k) { return dfdss[pf.Index(_i, _j)];    });
 #endif
+        }
+        if ((stage == ns - 1 && dsmax < 0.01) || k == nk) {
+            if (MyRank == 0) {
+                std::cout << "----------Convergence/Last step----------" << std::endl;
+                std::chrono::system_clock::time_point end = std::chrono::system_clock::now();
+                std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count() << std::endl;
+            }
             break;
         }
+        if (dsmax < 0.01 || cnt%nb == 0) {
+            stage = std::min(stage + 1, ns - 1);
+            cnt = 0;
+        }
+        
     }
     
     delete[] rho;   delete[] ux;    delete[] uy;    delete[] uxp;   delete[] uyp;

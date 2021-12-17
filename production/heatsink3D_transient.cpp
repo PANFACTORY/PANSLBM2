@@ -14,7 +14,7 @@
 #include "../src/equation/adjointadvection.h"
 #include "../src/utility/residual.h"
 #include "../src/utility/mma.h"
-#include "../src/utility/densityfilter.h"
+#include "../src/utility/heavisidefilter.h"
 #include "../src/utility/normalize.h"
 #ifdef _USE_MPI_DEFINES
     #include "../src/utility/vtkxmlexport.h"
@@ -39,9 +39,10 @@ int main(int argc, char** argv) {
 #endif
 
     //********************Parameters********************
-    int lx = 81, ly = 161, lz = 81, nt = 100000, dt = 100, nitr = 500, nb = 100, resultid = 0;
+    const int lx = 81, ly = 161, lz = 81, nt = 100000, dt = 100, nitr = 500, nb = 100, ns = 5;
     double Pr = 6.0, Ra = 1e5, nu = 0.1, L = (lx - 1)/10, tem0 = 0.0, qn = 1.0e-2, alphamax = 1.0e4;
-    double qf = 1e-2, qfmax = 1e2, qg = 1e0, movelimit = 0.2, weightlimit = 0.05, R = 2.4, eps = 1.0e-5, s0 = 0.0;
+    double qg = 1e0, movelimit = 0.2, weightlimit = 0.05, R = 2.4, s0 = 0.0;
+    double qfList[ns] = { 1e-2, 1e-1, 1e-1, 1e-1, 1e-1 }, betaList[ns] = { 1.0, 2.0, 4.0, 8.0, 16.0 };
     
     int mx = 3*(lx - 1)/4 + 1, my = 3*(ly - 1)/4 + 1, mz = 3*(lz - 1)/4 + 1;
     double U = nu*sqrt(Ra/Pr)/(double)(ly - 1), diff_fluid = nu/Pr, diff_solid = diff_fluid*10.0, gx = 0.0, gy = U*U/(double)(ly - 1), gz = 0.0;
@@ -85,11 +86,23 @@ int main(int argc, char** argv) {
     );
     optimizer.move = movelimit;
 
+    auto filterweight = [=](int _i1, int _j1, int _k1, int _i2, int _j2, int _k2) {
+        if (_i1 < mx && _j1 < my && _k1 < mz && _i2 < mx && _j2 < my && _k2 < mz) {
+            return (R - sqrt(pow(_i1 - _i2, 2.0) + pow(_j1 - _j2, 2.0) + pow(_k1 - _k2, 2.0)))/R;
+        } else {
+            return (_i1 == _i2 && _j1 == _j2 && _k1 == _k2) ? 1.0 : 0.0;
+        }
+    };
+
     std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
 
-    for (int itr = 1, cnt = 1; itr <= nitr; itr++, cnt++) {
+    for (int itr = 1, cnt = 1, stage = 0; itr <= nitr; itr++, cnt++) {
+        //********************Set optimization parameters********************
+        double qf = qfList[stage];
+        double beta = betaList[stage];
+
         //********************Filter variables********************
-        std::vector<double> ss = DensityFilter::GetFilteredValue(pf, R, s);
+        std::vector<double> ss = HeavisideFilter::GetFilteredVariable(pf, R, beta, s, filterweight);
         for (int i = 0; i < pf.nx; ++i) {
             for (int j = 0; j < pf.ny; ++j) {
                 for (int k = 0; k < pf.nz; ++k) {
@@ -221,11 +234,10 @@ int main(int argc, char** argv) {
         f = f_buffer;
 #endif
         f /= (double)(L*L*nt);
-        Normalize(dfdss.data(), pf.nxyz);
         
         //********************Filter sensitivities********************
-        std::vector<double> dfds = DensityFilter::GetFilteredValue(pf, R, dfdss);
-        std::vector<double> dgds = DensityFilter::GetFilteredValue(pf, R, dgdss);
+        std::vector<double> dfds = HeavisideFilter::GetFilteredSensitivity(pf, R, beta, s, dfdss, filterweight);
+        std::vector<double> dgds = HeavisideFilter::GetFilteredSensitivity(pf, R, beta, s, dgdss, filterweight);
         for (int i = 0; i < pf.nx; ++i) {
             for (int j = 0; j < pf.ny; ++j) {
                 for (int k = 0; k < pf.nz; ++k) {
@@ -235,6 +247,7 @@ int main(int argc, char** argv) {
                 }
             }
         }
+        Normalize(dfds.data(), pf.nxyz);
 
         //********************Check grayscale********************
         double mnd_buffer = 0.0, mnd;
@@ -269,9 +282,9 @@ int main(int argc, char** argv) {
                     double tmpds = fabs(s[idx] - snm1[idx]);
                     if (dsmax_buffer < tmpds) {
                         dsmax_buffer = tmpds;
-                        imax_buffer = i;
-                        jmax_buffer = j;
-                        kmax_buffer = k;
+                        imax_buffer = i + pf.offsetx;
+                        jmax_buffer = j + pf.offsety;
+                        kmax_buffer = k + pf.offsetz;
                     }
                     snm1[idx] = s[idx];
                 }
@@ -292,11 +305,11 @@ int main(int argc, char** argv) {
         //********************Check convergence********************
         if (MyRank == 0) {
             std::chrono::system_clock::time_point end = std::chrono::system_clock::now();
-            std::cout << "\r" << std::fixed << std::setprecision(6) << itr << " " << f << " " << g << " " << dsmax  << " (" << imax << "," << jmax << "," << kmax << ") " << qf << " " << qg << " " << mnd << " " << std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count() << std::endl;
+            std::cout << "\r" << std::fixed << std::setprecision(6) << itr << " " << stage << " " << f << " " << g << " " << dsmax  << " (" << imax << "," << jmax << "," << kmax << ") " << mnd << " " << std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count() << std::endl;
         }
-        if (dsmax < 0.01 || itr == nitr || cnt == nb) {
+        if (cnt%nb == 0 || itr == nitr) {
 #ifdef _USE_MPI_DEFINES
-            VTKXMLExport file(pf, "result/heatsink3D_transient" + std::to_string(resultid));
+            VTKXMLExport file(pf, "result/heatsink3D_transient" + std::to_string(stage));
             file.AddPointData(pf, "rho", [&](int _i, int _j, int _k) { return rho[nt - 1][pf.Index(_i, _j, _k)]; });
             file.AddPointData(pf, "u", 
                 [&](int _i, int _j, int _k) { return ux[nt - 1][pf.Index(_i, _j, _k)]; },
@@ -330,7 +343,7 @@ int main(int argc, char** argv) {
             file.AddPointData(pf, "ss", [&](int _i, int _j, int _k) { return ss[pf.Index(_i, _j, _k)]; });
             file.AddPointData(pf, "dfdss", [&](int _i, int _j, int _k) { return dfdss[pf.Index(_i, _j, _k)]; });
 #else
-            VTKExport file("result/heatsink3D_transient" + std::to_string(resultid) + ".vtk", lx, ly, lz);
+            VTKExport file("result/heatsink3D_transient" + std::to_string(stage) + ".vtk", lx, ly, lz);
             file.AddPointScaler("rho", [&](int _i, int _j, int _k) { return rho[nt - 1][pf.Index(_i, _j, _k)]; });
             file.AddPointVector("u", 
                 [&](int _i, int _j, int _k) { return ux[nt - 1][pf.Index(_i, _j, _k)]; },
@@ -364,18 +377,18 @@ int main(int argc, char** argv) {
             file.AddPointScaler("ss", [&](int _i, int _j, int _k) { return ss[pf.Index(_i, _j, _k)]; });
             file.AddPointScaler("dfdss", [&](int _i, int _j, int _k) { return dfdss[pf.Index(_i, _j, _k)]; });
 #endif
-            resultid++;
-            if (qf < qfmax && itr != nitr) {
-                qf = std::min(qfmax, qf*10.0);
-                cnt = 0;
-            } else {
-                if (MyRank == 0) {
-                    std::cout << "----------Convergence/Last step----------" << std::endl;
-                    std::chrono::system_clock::time_point end = std::chrono::system_clock::now();
-                    std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count() << std::endl;
-                }
-                break;
+        }
+        if (stage < ns && (dsmax < 0.01 || cnt%nb == 0)) {
+            stage += 1;
+            cnt = 0;
+        }
+        if (stage == ns || itr == nitr) {
+            if (MyRank == 0) {
+                std::cout << "----------Convergence/Last step----------" << std::endl;
+                std::chrono::system_clock::time_point end = std::chrono::system_clock::now();
+                std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count() << std::endl;
             }
+            break;
         }
     }
     

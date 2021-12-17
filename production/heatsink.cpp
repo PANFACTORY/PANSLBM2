@@ -291,7 +291,7 @@ int main(int argc, char** argv) {
         if (MyRank == 0) {
             std::cout << "\r" << std::fixed << std::setprecision(6) << k << " " << stage << " " << f << " " << g << " " << td << " " << ti << " " << dsmax  << " (" << imax << "," << jmax << ") " << mnd << std::endl;
         }
-        if ((dsmax < 0.01 && cnt%nb == 0) || k == nk) {
+        if (dsmax < 0.01 || cnt%nb == 0 || k == nk) {
 #ifdef _USE_MPI_DEFINES
             VTKXMLExport file(pf, "result/heatsink" + std::to_string(stage));
             file.AddPointData(pf, "rho", [&](int _i, int _j, int _k) { return rho[pf.Index(_i, _j)]; });

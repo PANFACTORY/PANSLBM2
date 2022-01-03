@@ -469,6 +469,36 @@ namespace PANSLBM2 {
             }
         } 
     
+        //  Function of Update macro and collide of ANS with LSM for 2D
+        template<class T, template<class>class P>
+        void MacroCollideLSM(
+            P<T>& _p, const T *_rho, const T *_ux, const T *_uy, T *_ip, T *_iux, T *_iuy, 
+            T _viscosity, const T *_chi, bool _issave = false
+        ) {
+            T omega = 1.0/(3.0*_viscosity + 0.5), iomega = 1.0 - omega, feq[P<T>::nc];
+            #pragma omp parallel for private(feq)
+            for (int idx = 0; idx < _p.nxyz; ++idx) {
+                //  Update macro
+                T ip, iux, iuy, imx, imy;
+                Macro<T, P>(ip, iux, iuy, imx, imy, _rho[idx], _ux[idx]*_chi[idx], _uy[idx]*_chi[idx], _p.f0, _p.f, idx);
+
+                //  Save macro if need
+                if (_issave) {
+                    _ip[idx] = ip;
+                    _iux[idx] = iux;
+                    _iuy[idx] = iuy;
+                }
+
+                //  Collide
+                Equilibrium<T, P>(feq, _ux[idx], _uy[idx], ip, iux*_chi[idx], iuy*_chi[idx]);
+                _p.f0[idx] = iomega*_p.f0[idx] + omega*feq[0];
+                for (int c = 1; c < P<T>::nc; ++c) {
+                    int idxf = P<T>::IndexF(idx, c);
+                    _p.f[idxf] = iomega*_p.f[idxf] + omega*feq[c];
+                }
+            }
+        }
+
         //  Function of setting initial condition of ANS for 2D
         template<class T, template<class>class P>
         void InitialCondition(P<T>& _p, const T *_ux, const T *_uy, const T *_ip, const T *_iux, const T *_iuy) {

@@ -18,9 +18,7 @@ using namespace PANSFEM2;
 namespace PANSLBM2 {
     namespace ReactionDiffusion {
         template<class T, template<class>class P>
-        void UpdateVariables(P<T>& _p, std::vector<T> &_s, T _f, const std::vector<T> &_dfds, T _g, const std::vector<T> &_dgds, T _tau) {
-            T dt = 0.1;
-
+        void UpdateVariables(P<T>& _p, std::vector<T> &_s, T _f, const std::vector<T> &_dfds, T _g, const std::vector<T> &_dgds, T _tau, T _dt) {
             //  Get Lagrange multiplier for constraint function
             T lambda = T();
             if (_g >= T()) {
@@ -51,14 +49,14 @@ namespace PANSLBM2 {
                 }
             }
             std::vector<std::pair<std::pair<int, int>, T> > phifixed;
-            for(int i = 0; i < _p.lx; i++){
+            /*for(int i = 0; i < _p.lx; i++){
                 phifixed.push_back({ { i + _p.lx*0, 0 }, 1.0 });
                 phifixed.push_back({ { i + _p.lx*(_p.ly - 1), 0 }, 1.0 });
             }
             for(int j = 0; j < _p.ly; j++){
                 phifixed.push_back({ { 0 + _p.lx*j, 0 }, 1.0 });
                 phifixed.push_back({ { (_p.lx - 1) + _p.lx*j, 0 }, 1.0 });
-            }
+            }*/
 
             std::vector<Vector<T> > TDN(_p.nxyz, Vector<T>(1));
             for (int idx = 0; idx < _p.nxyz; ++idx) {
@@ -92,8 +90,8 @@ namespace PANSLBM2 {
                     return -C*_u;
                 });
                 Vector<T> phie = ElementVector(phi, nodetoelement, elements[i]);
-                Matrix<T> Ae = Me/dt + Ke;
-                Vector<T> Be = Me/dt*phie + Fe; 
+                Matrix<T> Ae = Me/_dt + Ke;
+                Vector<T> Be = Me/_dt*phie + Fe; 
                 Assembling(A, B, phi, Ae, nodetoglobal, nodetoelement, elements[i]);
                 Assembling(B, Be, nodetoglobal, nodetoelement, elements[i]);
             }

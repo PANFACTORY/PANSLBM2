@@ -582,5 +582,14 @@ namespace PANSLBM2 {
                 _dfds[idx] += 3.0*_dads[idx]*(_ux[idx]*_imx[idx] + _uy[idx]*_imy[idx] + _uz[idx]*_imz[idx]);
             }
         }
+    
+        //  Function of getting sensitivity of Level-Set-Method
+        template<class T, template<class>class P>
+        void SensitivityLSM(P<T>& _p, T *_dfds, const T *_rho, const T *_ux, const T *_uy, const T *_iux, const T *_iuy, T _viscosity) {
+            T omega = 1.0/(3.0*_viscosity + 0.5);
+            for (int idx = 0; idx < _p.nxyz; ++idx) {
+                _dfds[idx] -= 3.0*omega*_rho[idx]*(_ux[idx]*_iux[idx] + _uy[idx]*_iuy[idx]);
+            }
+        }
     }
 }

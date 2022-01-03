@@ -19,10 +19,12 @@ namespace PANSLBM2 {
     namespace ReactionDiffusion {
         template<class T, template<class>class P>
         void UpdateVariables(P<T>& _p, std::vector<T> &_s, T _f, const std::vector<T> &_dfds, T _g, const std::vector<T> &_dgds, T _tau) {
+            T dt = 0.1;
+
             //  Get Lagrange multiplier for constraint function
             T lambda = T();
             if (_g >= T()) {
-                T sumdfds = T(), sumdgds = T();
+                T sumdfdsdgds = T(), sumdgdsdgds = T();
                 for (int idx = 0; idx < _p.nxyz; ++idx) {
                     sumdfdsdgds += _dfds[idx]*_dgds[idx];
                     sumdgdsdgds += _dgds[idx]*_dgds[idx];
@@ -31,7 +33,7 @@ namespace PANSLBM2 {
             }
 
             //  Set up reaction diffusion equation
-            std::vector<Vector<T> > phi(_p.nxyz);
+            std::vector<Vector<T> > phi(_p.nxyz, Vector<T>(1));
             for (int idx = 0; idx < _p.nxyz; ++idx) {
                 phi[idx](0) = _s[idx];
             }
@@ -42,7 +44,7 @@ namespace PANSLBM2 {
                     nodes[i + _p.lx*j] = { T(i), T(j) };
                 }
             }
-            std::vector<std::vector<int> > elements(this->nx*this->ny);
+            std::vector<std::vector<int> > elements((_p.lx - 1)*(_p.ly - 1));
             for(int i = 0; i < _p.lx - 1; i++){
                 for(int j = 0; j < _p.ly - 1; j++){
                     elements[i + (_p.lx - 1)*j] = { i + _p.lx*j, (i + 1) + _p.lx*j, (i + 1) + _p.lx*(j + 1), i + _p.lx*(j + 1) };
@@ -50,12 +52,12 @@ namespace PANSLBM2 {
             }
             std::vector<std::pair<std::pair<int, int>, T> > phifixed;
             for(int i = 0; i < _p.lx; i++){
-                phifixed.push_back({ { i + _p.lx*0, 0 }, T() });
-                phifixed.push_back({ { i + _p.lx*(_p.ly - 1), 0 }, T() });
+                phifixed.push_back({ { i + _p.lx*0, 0 }, 1.0 });
+                phifixed.push_back({ { i + _p.lx*(_p.ly - 1), 0 }, 1.0 });
             }
             for(int j = 0; j < _p.ly; j++){
-                phifixed.push_back({ { 0 + _p.lx*j, 0 }, T() });
-                phifixed.push_back({ { (_p.lx - 1) + _p.lx*j, 0 }, T() });
+                phifixed.push_back({ { 0 + _p.lx*j, 0 }, 1.0 });
+                phifixed.push_back({ { (_p.lx - 1) + _p.lx*j, 0 }, 1.0 });
             }
 
             std::vector<Vector<T> > TDN(_p.nxyz, Vector<T>(1));
@@ -69,6 +71,10 @@ namespace PANSLBM2 {
             }
             C = elements.size()/C;
 
+            for (int idx = 0; idx < _p.nxyz; ++idx) {
+                TDN[idx](0) = _dfds[idx] + lambda*_dgds[idx];
+            }
+
             std::vector<std::vector<int> > nodetoglobal(_p.nxyz, std::vector<int>(1, 0));
             SetDirichlet(phi, nodetoglobal, phifixed);
             int DEGREE = Renumbering(nodetoglobal);
@@ -80,10 +86,10 @@ namespace PANSLBM2 {
                 std::vector<std::vector<std::pair<int, int> > > nodetoelement;
                 Matrix<T> Me, Ke;
                 Vector<T> Fe;
-                ReactionDiffusionConsistentMass<T, ShapeFunction4Square, Gauss4Square>(Me, nodetoelement, elements[i], { 0 }, x);
-                ReactionDiffusionStiffness<T, ShapeFunction4Square, Gauss4Square>(Ke, nodetoelement, elements[i], { 0 }, x, _tau*elements.size());
-                ReactionDiffusionReaction<T, ShapeFunction4Square, Gauss4Square>(Fe, nodetoelement, elements[i], { 0 }, x, TDN, [&](T _u, Vector<T> _dudX) {
-                    return C*(_u - lambda);
+                ReactionDiffusionConsistentMass<T, ShapeFunction4Square, Gauss4Square>(Me, nodetoelement, elements[i], { 0 }, nodes);
+                ReactionDiffusionStiffness<T, ShapeFunction4Square, Gauss4Square>(Ke, nodetoelement, elements[i], { 0 }, nodes, _tau*elements.size());
+                ReactionDiffusionReaction<T, ShapeFunction4Square, Gauss4Square>(Fe, nodetoelement, elements[i], { 0 }, nodes, TDN, [&](T _u, Vector<T> _dudX) {
+                    return -C*_u;
                 });
                 Vector<T> phie = ElementVector(phi, nodetoelement, elements[i]);
                 Matrix<T> Ae = Me/dt + Ke;

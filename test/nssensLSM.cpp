@@ -90,12 +90,12 @@ int main(int argc, char** argv) {
     }
 
     //--------------------Get sensitivity--------------------
-    /*ANS::SensitivityBrinkman(pf, dfds, ux, uy, iux, iuy, dads);
-    Normalize(dfds, pf.nxyz);*/
+    ANS::SensitivityLSM(pf, dfds, rho, ux, uy, iux, iuy, nu);
+    Normalize(dfds, pf.nxyz);
 
     std::chrono::system_clock::time_point end = std::chrono::system_clock::now();
     if (MyRank == 0) {
-        std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count() << std::endl;
+        std::cout << "\r" << std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count() << std::endl;
     }
 
     //--------------------Export result--------------------
@@ -106,7 +106,7 @@ int main(int argc, char** argv) {
         [&](int _i, int _j, int _k) { return uy[pf.Index(_i, _j)]; },
         [](int _i, int _j, int _k) { return 0.0; }
     );
-    //file.AddPointData(pf, "dfds", [&](int _i, int _j, int _k) {   return dfds[pf.Index(_i, _j)];  });
+    file.AddPointData(pf, "dfds", [&](int _i, int _j, int _k) {   return dfds[pf.Index(_i, _j)];  });
     file.AddPointData(pf, "ip", [&](int _i, int _j, int _k) { return irho[pf.Index(_i, _j)]; });
     file.AddPointData(pf, "iu", 
         [&](int _i, int _j, int _k) { return iux[pf.Index(_i, _j)]; },

@@ -34,7 +34,7 @@ int main(int argc, char** argv) {
 
     //********************Set parameters********************
     int lx = 101, ly = 101, nt = 10000, dt = 100, nk = 50;
-    double nu = 0.1, u0 = 0.01, rho0 = 1.0, weightlimit = 0.25, epsu = 1.0e-6, tau = 2.0e-4;;
+    double nu = 0.1, u0 = 0.005, rho0 = 1.0, weightlimit = 0.25, epsu = 1.0e-6, tau = 2.0e-4;;
     D2Q9<double> pf(lx, ly, MyRank, mx, my);
     double *rho = new double[pf.nxyz], *ux = new double[pf.nxyz], *uy = new double[pf.nxyz], *uxp = new double[pf.nxyz], *uyp = new double[pf.nxyz];
     double *irho = new double[pf.nxyz], *iux = new double[pf.nxyz], *iuy = new double[pf.nxyz], *iuxp = new double[pf.nxyz], *iuyp = new double[pf.nxyz];
@@ -171,7 +171,6 @@ int main(int argc, char** argv) {
         [&](int _i, int _j, int _k) { return uy[pf.Index(_i, _j)]; },
         [](int _i, int _j, int _k) { return 0.0; }
     );
-    //file.AddPointScaler("dfds", [&](int _i, int _j, int _k) {   return dfds[pf.Index(_i, _j)];  });
     file.AddPointData(pf, "ip", [&](int _i, int _j, int _k) { return irho[pf.Index(_i, _j)]; });
     file.AddPointData(pf, "iu", 
         [&](int _i, int _j, int _k) { return iux[pf.Index(_i, _j)]; },

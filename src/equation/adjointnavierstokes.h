@@ -499,6 +499,37 @@ namespace PANSLBM2 {
             }
         }
 
+        //  Function of Update macro and collide of ANS with LSM for 3D
+        template<class T, template<class>class P>
+        void MacroCollideLSM(
+            P<T>& _p, const T *_rho, const T *_ux, const T *_uy, const T *_uz, T *_ip, T *_iux, T *_iuy, T *_iuz, 
+            T _viscosity, const T *_chi, bool _issave = false
+        ) {
+            T omega = 1.0/(3.0*_viscosity + 0.5), iomega = 1.0 - omega, feq[P<T>::nc];
+            #pragma omp parallel for private(feq)
+            for (int idx = 0; idx < _p.nxyz; ++idx) {
+                //  Update macro
+                T ip, iux, iuy, iuz, imx, imy, imz;
+                Macro<T, P>(ip, iux, iuy, iuz, imx, imy, imz, _rho[idx], _ux[idx]*_chi[idx], _uy[idx]*_chi[idx], _uz[idx]*_chi[idx], _p.f0, _p.f, idx);
+
+                //  Save macro if need
+                if (_issave) {
+                    _ip[idx] = ip;
+                    _iux[idx] = iux;
+                    _iuy[idx] = iuy;
+                    _iuz[idx] = iuz;
+                }
+
+                //  Collide
+                Equilibrium<T, P>(feq, _ux[idx], _uy[idx], _uz[idx], ip, iux*_chi[idx], iuy*_chi[idx], iuz*_chi[idx]);
+                _p.f0[idx] = iomega*_p.f0[idx] + omega*feq[0];
+                for (int c = 1; c < P<T>::nc; ++c) {
+                    int idxf = P<T>::IndexF(idx, c);
+                    _p.f[idxf] = iomega*_p.f[idxf] + omega*feq[c];
+                }
+            }
+        }
+
         //  Function of setting initial condition of ANS for 2D
         template<class T, template<class>class P>
         void InitialCondition(P<T>& _p, const T *_ux, const T *_uy, const T *_ip, const T *_iux, const T *_iuy) {
@@ -589,6 +620,15 @@ namespace PANSLBM2 {
             T omega = 1.0/(3.0*_viscosity + 0.5);
             for (int idx = 0; idx < _p.nxyz; ++idx) {
                 _dfds[idx] -= 3.0*omega*_rho[idx]*(_ux[idx]*_iux[idx] + _uy[idx]*_iuy[idx]);
+            }
+        }
+
+        //  Function of getting sensitivity of Level-Set-Method
+        template<class T, template<class>class P>
+        void SensitivityLSM(P<T>& _p, T *_dfds, const T *_rho, const T *_ux, const T *_uy, const T *_uz, const T *_iux, const T *_iuy, const T *_iuz, T _viscosity) {
+            T omega = 1.0/(3.0*_viscosity + 0.5);
+            for (int idx = 0; idx < _p.nxyz; ++idx) {
+                _dfds[idx] -= 3.0*omega*_rho[idx]*(_ux[idx]*_iux[idx] + _uy[idx]*_iuy[idx] + _uz[idx]*_iuz[idx]);
             }
         }
     }

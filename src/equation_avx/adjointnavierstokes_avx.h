@@ -453,7 +453,7 @@ namespace PANSLBM2 {
                 __m256d __dfds = _mm256_loadu_pd(&_dfds[idx]), __omega = _mm256_set1_pd(omega), __3 = _mm256_set1_pd(3.0);
                 __m256d __rho = _mm256_loadu_pd(&_rho[idx]), __ux = _mm256_loadu_pd(&_ux[idx]), __uy = _mm256_loadu_pd(&_uy[idx]), __uz = _mm256_loadu_pd(&_uz[idx]);
                 __m256d __iux = _mm256_loadu_pd(&_iux[idx]), __iuy = _mm256_loadu_pd(&_iuy[idx]), __iuz = _mm256_loadu_pd(&_iuz[idx]);
-                __dfds = _mm256_sub_pd(__dfds, _mm256_mul_pd(__3, _mm256_mul_pd(__omega, _mm256_mul_pd(__rho, _mm256_add_pd(_mm256_mul_pd(__ux, __imx), _mm256_add_pd(_mm256_mul_pd(__uy, __imy), _mm256_mul_pd(__uz, __imz)))))));
+                __dfds = _mm256_sub_pd(__dfds, _mm256_mul_pd(__3, _mm256_mul_pd(__omega, _mm256_mul_pd(__rho, _mm256_add_pd(_mm256_mul_pd(__ux, __iux), _mm256_add_pd(_mm256_mul_pd(__uy, __iuy), _mm256_mul_pd(__uz, __iuz)))))));
                 _mm256_storeu_pd(&_dfds[idx], __dfds);
             }
             for (int idx = ne*ps; idx < _p.nxyz; ++idx) {

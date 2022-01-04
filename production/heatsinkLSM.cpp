@@ -37,9 +37,9 @@ int main(int argc, char** argv) {
 #endif
 
     //********************Parameters********************
-    const int lx = 141, ly = 161, mx = 81, my = 101, nt = 100000, dt = 100, nk = 2000, nb = 100, ns = 5;
-    double Pr = 6.0, Ra = 1e4, nu = 0.1, L = 4.0, tem0 = 0.0, qn = 1.0e-2;
-    double movelimit = 0.1, weightlimit = 0.5, eps = 1.0e-6, s0 = 0.5, tau = 2.0e-4;
+    const int lx = 141, ly = 161, mx = 81, my = 101, nt = 30000, dt = 100, nk = 5;
+    double Pr = 6.0, Ra = 1e3, nu = 0.1, L = 4.0, tem0 = 0.0, qn = 1.0e-2;
+    double movelimit = 0.02, weightlimit = 0.5, eps = 1.0e-6, s0 = -1.0, tau = 0.005;
 
     double U = nu*sqrt(Ra/Pr)/(double)(ly - 1), diff_fluid = nu/Pr, diff_solid = diff_fluid*10.0, gx = 0.0, gy = U*U/(double)(ly - 1);
     D2Q9<double> pf(lx, ly, MyRank, nPEx, nPEy), pg(lx, ly, MyRank, nPEx, nPEy);
@@ -59,20 +59,19 @@ int main(int argc, char** argv) {
         std::cout << "gy:" << gy << std::endl;
     }
     
-    std::vector<double> s(pf.nxyz, 1.0), snm1(pf.nxyz, 1.0);
+    std::vector<double> s(pf.nxyz, 1.0);
     for (int i = 0; i < pf.nx; ++i) {
         for (int j = 0; j < pf.ny; ++j) {
             if ((i + pf.offsetx) < mx && (j + pf.offsety) < my) {
                 int idx = pf.Index(i, j);
                 s[idx] = s0;
-                snm1[idx] = s0;
             }
         }
     }
 
     std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
 
-    for (int k = 1, cnt = 1, stage = 0; k <= nk; k++, cnt++) {
+    for (int k = 1; k <= nk; k++) {
         //********************Set parameter********************
         for (int idx = 0; idx < s.size(); idx++) {
             chi[idx] = s[idx] >= 0.0 ? 1.0 : 0.0;
@@ -88,7 +87,7 @@ int main(int argc, char** argv) {
                 if ((i + pf.offsetx) < mx && (j + pf.offsety) < my) {
                     int idx = pf.Index(i, j);
                     g_buffer += (1.0 - chi[idx])/(weightlimit*mx*my);
-                    dgdss[idx] = -1.0/(weightlimit*mx*my); 
+                    dgds[idx] = -1.0/(weightlimit*mx*my); 
                 }
             }
         }
@@ -193,8 +192,8 @@ int main(int argc, char** argv) {
 #endif
         f /= L;
         std::vector<double> dfds(s.size(), 0.0);
-        AAD::SensitivityTemperatureAtHeatSource(
-            pg, dfds.data(), ux, uy, imx, imy, dads, tem, item, iqx, iqy, gi, igi, diffusivity, dkds,
+        AAD::SensitivityTemperatureAtHeatSourceLSM(
+            pg, dfds.data(), rho, ux, uy, iux, iuy, nu, tem, item, iqx, iqy, gi, igi, diffusivity, dkds, chi,
             [=](int _i, int _j) { return (_j == 0 && _i < L) ? qn : 0.0; }, 
             [=](int _i, int _j) { return _j == 0 && _i < L; }
         );
@@ -204,39 +203,23 @@ int main(int argc, char** argv) {
         if (MyRank == 0) {
             std::cout << "\rUpdate design variable" << std::string(10, ' ');
         }
-        ReactionDiffusion::UpdateVariables(pf, s, f, dfds, g, dgds, tau, movelimit, [](int _i, int _j){ return false; }, [](int _i, int _j){ return 0.0; });
-        double dsmax_buffer = 0.0, dsmax;
-        int imax_buffer = 0, imax, jmax_buffer = 0, jmax;
-        for (int i = 0; i < pf.nx; ++i) {
-            for (int j = 0; j < pf.ny; ++j) {
-                int idx = pf.Index(i, j);
-                s[idx] = ((i + pf.offsetx) < mx && (j + pf.offsety) < my) ? s[idx] : 1.0;
-                double tmpds = fabs(s[idx] - snm1[idx]);
-                if (dsmax_buffer < tmpds) {
-                    dsmax_buffer = tmpds;
-                    imax_buffer = i + pf.offsetx;
-                    jmax_buffer = j + pf.offsety;
-                }
-                snm1[idx] = s[idx];
+        ReactionDiffusion::UpdateVariables(
+            pf, s, f, dfds, g, dgds, tau, movelimit, 
+            [&](int _i, int _j){ 
+                return (_i + pf.offsetx) >= mx || (_j + pf.offsety) >= my; 
+            }, 
+            [](int _i, int _j){ 
+                return 1.0;
             }
-        }
-#ifdef _USE_MPI_DEFINES
-        MPI_Allreduce(&dsmax_buffer, &dsmax, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-        MPI_Allreduce(&imax_buffer, &imax, 1, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
-        MPI_Allreduce(&jmax_buffer, &jmax, 1, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
-#else
-        dsmax = dsmax_buffer;
-        imax = imax_buffer;
-        jmax = jmax_buffer;
-#endif
+        );
 
         //********************Check convergence********************
         if (MyRank == 0) {
-            std::cout << "\r" << std::fixed << std::setprecision(6) << k << " " << stage << " " << f << " " << g << " " << td << " " << ti << " " << dsmax  << " (" << imax << "," << jmax << ") " << mnd << std::endl;
+            std::cout << "\r" << std::fixed << std::setprecision(6) << k << " " << f << " " << g << " " << td << " " << ti << std::endl;
         }
-        if (dsmax < 0.01 || k == nk) {
+        if (k == nk) {
 #ifdef _USE_MPI_DEFINES
-            VTKXMLExport file(pf, "result/heatsink" + std::to_string(stage));
+            VTKXMLExport file(pf, "result/heatsinkLSM");
             file.AddPointData(pf, "rho", [&](int _i, int _j, int _k) { return rho[pf.Index(_i, _j)]; });
             file.AddPointData(pf, "u", 
                 [&](int _i, int _j, int _k) { return ux[pf.Index(_i, _j)]; },
@@ -270,7 +253,7 @@ int main(int argc, char** argv) {
             file.AddPointData(pf, "chi", [&](int _i, int _j, int _k) { return chi[pf.Index(_i, _j)];    });
             file.AddPointData(pf, "dfds", [&](int _i, int _j, int _k) { return dfds[pf.Index(_i, _j)];    });
 #else
-            VTKExport file("result/heatsink" + std::to_string(stage) + ".vtk", pf.nx, pf.ny);
+            VTKExport file("result/heatsinkLSM.vtk", pf.nx, pf.ny);
             file.AddPointScaler("rho", [&](int _i, int _j, int _k) { return rho[pf.Index(_i, _j)]; });
             file.AddPointVector("u", 
                 [&](int _i, int _j, int _k) { return ux[pf.Index(_i, _j)]; },

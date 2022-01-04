@@ -572,6 +572,34 @@ namespace PANSLBM2 {
             }
         }
 
+        //  Function of Update macro and Collide of NS with Level-Set-Method for 3D
+        template<class T, template<class>class P>
+        void MacroCollideLSM(P<T>& _p, T *_rho, T *_ux, T *_uy, T *_uz, T _viscosity, const T *_chi, bool _issave = false) {
+            T omega = 1.0/(3.0*_viscosity + 0.5), iomega = 1.0 - omega, feq[P<T>::nc];
+            #pragma omp parallel for private(feq)
+            for (int idx = 0; idx < _p.nxyz; ++idx) {
+                //  Update macro
+                T rho, ux, uy, uz;
+                Macro<T, P>(rho, ux, uy, uz, _p.f0, _p.f, idx);
+
+                //  Save macro if need
+                if (_issave) {
+                    _rho[idx] = rho;
+                    _ux[idx] = ux;
+                    _uy[idx] = uy;
+                    _uz[idx] = uz;
+                }
+
+                //  Collide
+                Equilibrium<T, P>(feq, rho, ux*_chi[idx], uy*_chi[idx], uz*_chi[idx]);
+                _p.f0[idx] = iomega*_p.f0[idx] + omega*feq[0];
+                for (int c = 1; c < P<T>::nc; ++c) {
+                    int idxf = P<T>::IndexF(idx, c);
+                    _p.f[idxf] = iomega*_p.f[idxf] + omega*feq[c];
+                }
+            }
+        }
+
         //  Function of setting initial condition of NS for 2D
         template<class T, template<class>class P>
         void InitialCondition(P<T>& _p, const T *_rho, const T *_ux, const T *_uy) {

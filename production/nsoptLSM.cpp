@@ -37,11 +37,11 @@ int main(int argc, char** argv) {
     double nu = 0.1, u0 = 0.005, rho0 = 1.0, weightlimit = 0.25, epsu = 1.0e-6, tau = 2.0e-4;;
     D2Q9<double> pf(lx, ly, MyRank, mx, my);
     double *rho = new double[pf.nxyz], *ux = new double[pf.nxyz], *uy = new double[pf.nxyz], *uxp = new double[pf.nxyz], *uyp = new double[pf.nxyz];
-    double *irho = new double[pf.nxyz], *iux = new double[pf.nxyz], *iuy = new double[pf.nxyz], *iuxp = new double[pf.nxyz], *iuyp = new double[pf.nxyz];
+    double *irho = new double[pf.nxyz], *iux = new double[pf.nxyz], *iuy = new double[pf.nxyz], *imx = new double[pf.nxyz], *imy = new double[pf.nxyz], *iuxp = new double[pf.nxyz], *iuyp = new double[pf.nxyz];
     double *chi = new double[pf.nxyz];
     for (int idx = 0; idx < pf.nxyz; ++idx) {
         rho[idx] = 1.0; ux[idx] = 0.0; uy[idx] = 0.0; uxp[idx] = 0.0; uyp[idx] = 0.0;
-        irho[idx] = 0.0; iux[idx] = 0.0; iuy[idx] = 0.0; iuxp[idx] = 0.0;    iuyp[idx] = 0.0;
+        irho[idx] = 0.0; iux[idx] = 0.0; iuy[idx] = 0.0; imx[idx] = 0.0; imy[idx] = 0.0; iuxp[idx] = 0.0;    iuyp[idx] = 0.0;
     }
 
     std::vector<double> s(pf.nxyz, 1.0);
@@ -105,7 +105,7 @@ int main(int argc, char** argv) {
         ANS::InitialCondition(pf, ux, uy, irho, iux, iuy);
         int ti;
         for (ti = 1; ti <= nt; ++ti) {
-            ANS::MacroCollideLSM(pf, rho, ux, uy, irho, iux, iuy, nu, chi, true);
+            ANS::MacroCollideLSM(pf, rho, ux, uy, irho, iux, iuy, imx, imy, nu, chi, true);
             if (ti%dt == 0 && MyRank == 0) {
                 std::cout << "\rInverse analyse t = " << ti << std::string(10, ' ');
                 if (Residual(iux, iuy, iuxp, iuyp, pf.nxyz) < epsu) {
@@ -180,7 +180,7 @@ int main(int argc, char** argv) {
     file.AddPointData(pf, "s", [&](int _i, int _j, int _k) { return s[pf.Index(_i, _j)]; });
     file.AddPointData(pf, "chi", [&](int _i, int _j, int _k) { return chi[pf.Index(_i, _j)]; });
 
-    delete[] rho; delete[] ux; delete[] uy; delete[] uxp; delete[] uyp; delete[] irho; delete[] iux; delete[] iuy; delete[] iuxp; delete[] iuyp; delete[] chi;
+    delete[] rho; delete[] ux; delete[] uy; delete[] uxp; delete[] uyp; delete[] irho; delete[] iux; delete[] iuy;  delete[] imx; delete[] imy;delete[] iuxp; delete[] iuyp; delete[] chi;
 #ifdef _USE_MPI_DEFINES
     MPI_Finalize();
 #endif

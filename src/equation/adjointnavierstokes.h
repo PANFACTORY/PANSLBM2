@@ -472,7 +472,7 @@ namespace PANSLBM2 {
         //  Function of Update macro and collide of ANS with LSM for 2D
         template<class T, template<class>class P>
         void MacroCollideLSM(
-            P<T>& _p, const T *_rho, const T *_ux, const T *_uy, T *_ip, T *_iux, T *_iuy, 
+            P<T>& _p, const T *_rho, const T *_ux, const T *_uy, T *_ip, T *_iux, T *_iuy, T *_imx, T *_imy, 
             T _viscosity, const T *_chi, bool _issave = false
         ) {
             T omega = 1.0/(3.0*_viscosity + 0.5), iomega = 1.0 - omega, feq[P<T>::nc];
@@ -487,6 +487,8 @@ namespace PANSLBM2 {
                     _ip[idx] = ip;
                     _iux[idx] = iux;
                     _iuy[idx] = iuy;
+                    _imx[idx] = imx;
+                    _imy[idx] = imy;
                 }
 
                 //  Collide
@@ -502,7 +504,7 @@ namespace PANSLBM2 {
         //  Function of Update macro and collide of ANS with LSM for 3D
         template<class T, template<class>class P>
         void MacroCollideLSM(
-            P<T>& _p, const T *_rho, const T *_ux, const T *_uy, const T *_uz, T *_ip, T *_iux, T *_iuy, T *_iuz, 
+            P<T>& _p, const T *_rho, const T *_ux, const T *_uy, const T *_uz, T *_ip, T *_iux, T *_iuy, T *_iuz, T *_imx, T *_imy, T *_imz, 
             T _viscosity, const T *_chi, bool _issave = false
         ) {
             T omega = 1.0/(3.0*_viscosity + 0.5), iomega = 1.0 - omega, feq[P<T>::nc];
@@ -518,6 +520,9 @@ namespace PANSLBM2 {
                     _iux[idx] = iux;
                     _iuy[idx] = iuy;
                     _iuz[idx] = iuz;
+                    _imx[idx] = imx;
+                    _imy[idx] = imy;
+                    _imz[idx] = imz;
                 }
 
                 //  Collide

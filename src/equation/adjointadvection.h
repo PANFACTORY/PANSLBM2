@@ -1354,6 +1354,127 @@ namespace PANSLBM2 {
             }
         }
 
+        //  Function of Update macro and Collide of AAD with LSM for 2D
+        template<class T, template<class>class P, template<class>class Q>
+        void MacroCollideNaturalConvectionLSM(
+            P<T>& _p, const T *_rho, const T *_ux, const T *_uy, T *_ip, T *_iux, T *_iuy, T *_imx, T *_imy, const T *_chi, T _viscosity,
+            Q<T>& _q, const T *_tem, T *_item, T *_iqx, T *_iqy, const T *_diffusivity, T _gx, T _gy, bool _issave = false, T *_ig = nullptr
+        ) {
+            T omegaf = 1.0/(3.0*_viscosity + 0.5), iomegaf = 1.0 - omegaf, feq[P<T>::nc], geq[Q<T>::nc];
+            #pragma omp parallel for private(feq, geq)
+            for (int idx = 0; idx < _p.nxyz; ++idx) {
+                T omegag = 1.0/(3.0*_diffusivity[idx] + 0.5), iomegag = 1.0 - omegag;
+
+                //  Update macro
+                T ip, iux, iuy, imx, imy;
+                ANS::Macro<T, P>(ip, iux, iuy, imx, imy, _rho[idx], _ux[idx]*_chi[idx], _uy[idx]*_chi[idx], _p.f0, _p.f, idx);
+                T item, iqx, iqy;
+                Macro<T, Q>(item, iqx, iqy, _q.f0, _q.f, idx);
+
+                //  External force with Brinkman model
+                ExternalForceBrinkman<T, P>(_rho[idx], _ux[idx], _uy[idx], T(), T(), _tem[idx], iqx*_chi[idx], iqy*_chi[idx], omegag, _p.f0, _p.f, T(), idx);
+                ANS::Macro<T, P>(ip, iux, iuy, imx, imy, _rho[idx], _ux[idx]*_chi[idx], _uy[idx]*_chi[idx], _p.f0, _p.f, idx);
+                ExternalForceNaturalConvection<T, Q>(imx, imy, _gx, _gy, _q.f0, _q.f, idx);
+                Macro<T, Q>(item, iqx, iqy, _q.f0, _q.f, idx);
+
+                //  Save macro if need
+                if (_issave) {
+                    _ip[idx] = ip;
+                    _iux[idx] = iux;
+                    _iuy[idx] = iuy;
+                    _imx[idx] = imx;
+                    _imy[idx] = imy;
+                    _item[idx] = item;
+                    _iqx[idx] = iqx;
+                    _iqy[idx] = iqy;
+
+                    if (_ig) {
+                        int offsetf = Q<T>::nc*idx;
+                        _ig[offsetf] = _q.f0[idx];
+                        for (int c = 1; c < Q<T>::nc; ++c) {
+                            _ig[offsetf + c] = _q.f[Q<T>::IndexF(idx, c)];
+                        }
+                    }
+                }
+
+                //  Collide
+                ANS::Equilibrium<T, P>(feq, _ux[idx], _uy[idx], ip, iux*_chi[idx], iuy*_chi[idx]);
+                _p.f0[idx] = iomegaf*_p.f0[idx] + omegaf*feq[0];
+                for (int c = 1; c < P<T>::nc; ++c) {
+                    int idxf = P<T>::IndexF(idx, c);
+                    _p.f[idxf] = iomegaf*_p.f[idxf] + omegaf*feq[c];
+                }
+                Equilibrium<T, Q>(geq, item, iqx*_chi[idx], iqy*_chi[idx], _ux[idx], _uy[idx]);
+                _q.f0[idx] = iomegag*_q.f0[idx] + omegag*geq[0];
+                for (int c = 1; c < Q<T>::nc; ++c) {
+                    int idxf = Q<T>::IndexF(idx, c); 
+                    _q.f[idxf] = iomegag*_q.f[idxf] + omegag*geq[c];
+                }
+            }
+        }
+
+        //  Function of Update macro and Collide of AAD with LSM for 3D
+        template<class T, template<class>class P, template<class>class Q>
+        void MacroCollideNaturalConvectionLSM(
+            P<T>& _p, const T *_rho, const T *_ux, const T *_uy, const T *_uz, T *_ip, T *_iux, T *_iuy, T *_iuz, T *_imx, T *_imy, T *_imz, const T *_chi, T _viscosity,
+            Q<T>& _q, const T *_tem, T *_item, T *_iqx, T *_iqy, T *_iqz, const T *_diffusivity, T _gx, T _gy, T _gz, bool _issave = false, T *_ig = nullptr
+        ) {
+            T omegaf = 1.0/(3.0*_viscosity + 0.5), iomegaf = 1.0 - omegaf, feq[P<T>::nc], geq[Q<T>::nc];
+            #pragma omp parallel for private(feq, geq)
+            for (int idx = 0; idx < _p.nxyz; ++idx) {
+                T omegag = 1.0/(3.0*_diffusivity[idx] + 0.5), iomegag = 1.0 - omegag;
+
+                //  Update macro
+                T ip, iux, iuy, iuz, imx, imy, imz;
+                ANS::Macro<T, P>(ip, iux, iuy, iuz, imx, imy, imz, _rho[idx], _ux[idx]*_chi[idx], _uy[idx]*_chi[idx], _uz[idx]*_chi[idx], _p.f0, _p.f, idx);
+                T item, iqx, iqy, iqz;
+                Macro<T, Q>(item, iqx, iqy, iqz, _q.f0, _q.f, idx);
+
+                //  External force with Brinkman model
+                ExternalForceBrinkman<T, P>(_rho[idx], _ux[idx], _uy[idx], _uz[idx], T(), T(), T(), _tem[idx], iqx*_chi[idx], iqy*_chi[idx], iqz*_chi[idx], omegag, _p.f0, _p.f, T(), idx);
+                ANS::Macro<T, P>(ip, iux, iuy, iuz, imx, imy, imz, _rho[idx], _ux[idx]*_chi[idx], _uy[idx]*_chi[idx], _uz[idx]*_chi[idx], _p.f0, _p.f, idx);
+                ExternalForceNaturalConvection<T, Q>(imx, imy, imz, _gx, _gy, _gz, _q.f0, _q.f, idx);
+                Macro<T, Q>(item, iqx, iqy, iqz, _q.f0, _q.f, idx);
+
+                //  Save macro if need
+                if (_issave) {
+                    _ip[idx] = ip;
+                    _iux[idx] = iux;
+                    _iuy[idx] = iuy;
+                    _iuz[idx] = iuz;
+                    _imx[idx] = imx;
+                    _imy[idx] = imy;
+                    _imz[idx] = imz;
+                    _item[idx] = item;
+                    _iqx[idx] = iqx;
+                    _iqy[idx] = iqy;
+                    _iqz[idx] = iqz;
+
+                    if (_ig) {
+                        int offsetf = Q<T>::nc*idx;
+                        _ig[offsetf] = _q.f0[idx];
+                        for (int c = 1; c < Q<T>::nc; ++c) {
+                            _ig[offsetf + c] = _q.f[Q<T>::IndexF(idx, c)];
+                        }
+                    }
+                }
+
+                //  Collide
+                ANS::Equilibrium<T, P>(feq, _ux[idx], _uy[idx], _uz[idx], ip, iux*_chi[idx], iuy*_chi[idx], iuz*_chi[idx]);
+                _p.f0[idx] = iomegaf*_p.f0[idx] + omegaf*feq[0];
+                for (int c = 1; c < P<T>::nc; ++c) {
+                    int idxf = P<T>::IndexF(idx, c);
+                    _p.f[idxf] = iomegaf*_p.f[idxf] + omegaf*feq[c];
+                }
+                Equilibrium<T, Q>(geq, item, iqx*_chi[idx], iqy*_chi[idx], iqz*_chi[idx], _ux[idx], _uy[idx], _uz[idx]);
+                _q.f0[idx] = iomegag*_q.f0[idx] + omegag*geq[0];
+                for (int c = 1; c < Q<T>::nc; ++c) {
+                    int idxf = Q<T>::IndexF(idx, c); 
+                    _q.f[idxf] = iomegag*_q.f[idxf] + omegag*geq[c];
+                }
+            }
+        }
+
         //  Function of setting initial condition of AAD for 2D
         template<class T, template<class>class Q>
         void InitialCondition(Q<T>& _q, const T *_ux, const T *_uy, const T *_item, const T *_iqx, const T *_iqy) {

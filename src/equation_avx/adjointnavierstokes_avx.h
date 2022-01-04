@@ -257,6 +257,138 @@ namespace PANSLBM2 {
             }
         } 
     
+        //  Function of Update macro and Collide of ANS with Level-Set-Method for 2D
+        template<template<class>class P>
+        void MacroCollideLSM(
+            P<double>& _p, const double *_rho, const double *_ux, const double *_uy, 
+            double *_ip, double *_iux, double *_iuy, double *_imx, double *_imy, 
+            double _viscosity, const double *_chi, bool _issave = false
+        ) {
+            const int ne = _p.nxyz/P<double>::packsize;
+            double omega = 1.0/(3.0*_viscosity + 0.5), iomega = 1.0 - omega, feq[P<double>::nc];
+            __m256d __omega = _mm256_set1_pd(omega), __iomega = _mm256_set1_pd(iomega), __feq[P<double>::nc];
+            #pragma omp parallel for private(__feq)
+            for (int pidx = 0; pidx < ne; ++pidx) {
+                int idx = pidx*P<double>::packsize;
+
+                //  Pack f0 and f
+                __m256d __f[P<double>::nc];
+                _p.LoadF(idx, __f);
+                __m256d __chi = _mm256_loadu_pd(&_chi[idx]);
+             
+                //  Update macro
+                __m256d __ip, __iux, __iuy, __imx, __imy;
+                __m256d __rho = _mm256_loadu_pd(&_rho[idx]), __ux = _mm256_loadu_pd(&_ux[idx]), __uy = _mm256_loadu_pd(&_uy[idx]);
+                Macro<P<double> >(__ip, __iux, __iuy, __imx, __imy, __rho, _mm256_mul_pd(__ux, __chi), _mm256_mul_pd(__uy, __chi), __f);
+
+                //  Save macro if need
+                if (_issave) {
+                    _mm256_storeu_pd(&_ip[idx], __ip);
+                    _mm256_storeu_pd(&_iux[idx], __iux);
+                    _mm256_storeu_pd(&_iuy[idx], __iuy);
+                    _mm256_storeu_pd(&_imx[idx], __imx);
+                    _mm256_storeu_pd(&_imy[idx], __imy);
+                }
+
+                //  Collide
+                Equilibrium<P<double> >(__feq, __ux, __uy, __ip, _mm256_mul_pd(__iux, __chi), _mm256_mul_pd(__iuy, __chi));
+                for (int c = 0; c < P<double>::nc; ++c) {
+                    __f[c] = _mm256_add_pd(_mm256_mul_pd(__iomega, __f[c]), _mm256_mul_pd(__omega, __feq[c]));
+                }
+                _p.StoreF(idx, __f);
+            }
+            for (int idx = ne*P<double>::packsize; idx < _p.nxyz; ++idx) {
+                //  Update macro
+                double ip, iux, iuy, imx, imy;
+                Macro<double, P>(ip, iux, iuy, imx, imy, _rho[idx], _ux[idx]*_chi[idx], _uy[idx]*_chi[idx], _p.f0, _p.f, idx);
+
+                //  Save macro if need
+                if (_issave) {
+                    _ip[idx] = ip;
+                    _iux[idx] = iux;
+                    _iuy[idx] = iuy;
+                    _imx[idx] = imx;
+                    _imy[idx] = imy;
+                }
+
+                //  Collide
+                Equilibrium<double, P>(feq, _ux[idx], _uy[idx], ip, iux*_chi[idx], iuy*_chi[idx]);
+                _p.f0[idx] = iomega*_p.f0[idx] + omega*feq[0];
+                for (int c = 1; c < P<double>::nc; ++c) {
+                    int idxf = P<double>::IndexF(idx, c);
+                    _p.f[idxf] = iomega*_p.f[idxf] + omega*feq[c];
+                }
+            }
+        }
+
+        //  Function of Update macro and Collide of ANS with Level-Set-Method for 3D
+        template<template<class>class P>
+        void MacroCollideLSM(
+            P<double>& _p, const double *_rho, const double *_ux, const double *_uy, const double *_uz, 
+            double *_ip, double *_iux, double *_iuy, double *_iuz, double *_imx, double *_imy, double *_imz, 
+            double _viscosity, const double *_chi, bool _issave = false
+        ) {
+            const int ne = _p.nxyz/P<double>::packsize;
+            double omega = 1.0/(3.0*_viscosity + 0.5), iomega = 1.0 - omega, feq[P<double>::nc];
+            __m256d __omega = _mm256_set1_pd(omega), __iomega = _mm256_set1_pd(iomega), __feq[P<double>::nc];
+            #pragma omp parallel for private(__feq)
+            for (int pidx = 0; pidx < ne; ++pidx) {
+                int idx = pidx*P<double>::packsize;
+
+                //  Pack f0 and f
+                __m256d __f[P<double>::nc];
+                _p.LoadF(idx, __f);
+                __m256d __chi = _mm256_loadu_pd(&_chi[idx]);
+                
+                //  Update macro
+                __m256d __ip, __iux, __iuy, __iuz, __imx, __imy, __imz;
+                __m256d __rho = _mm256_loadu_pd(&_rho[idx]), __ux = _mm256_loadu_pd(&_ux[idx]), __uy = _mm256_loadu_pd(&_uy[idx]), __uz = _mm256_loadu_pd(&_uz[idx]);
+                Macro<P<double> >(__ip, __iux, __iuy, __iuz, __imx, __imy, __imz, __rho, _mm256_mul_pd(__ux, __chi), _mm256_mul_pd(__uy, __chi), _mm256_mul_pd(__uz, __chi), __f);
+
+                //  Save macro if need
+                if (_issave) {
+                    _mm256_storeu_pd(&_ip[idx], __ip);
+                    _mm256_storeu_pd(&_iux[idx], __iux);
+                    _mm256_storeu_pd(&_iuy[idx], __iuy);
+                    _mm256_storeu_pd(&_iuz[idx], __iuz);
+                    _mm256_storeu_pd(&_imx[idx], __imx);
+                    _mm256_storeu_pd(&_imy[idx], __imy);
+                    _mm256_storeu_pd(&_imz[idx], __imz);
+                }
+
+                //  Collide
+                Equilibrium<P<double> >(__feq, __ux, __uy, __uz, __ip, _mm256_mul_pd(__iux, __chi), _mm256_mul_pd(__iuy, __chi), _mm256_mul_pd(__iuz, __chi));
+                for (int c = 0; c < P<double>::nc; ++c) {
+                    __f[c] = _mm256_add_pd(_mm256_mul_pd(__iomega, __f[c]), _mm256_mul_pd(__omega, __feq[c]));
+                }
+                _p.StoreF(idx, __f);
+            }
+            for (int idx = ne*P<double>::packsize; idx < _p.nxyz; ++idx) {
+                //  Update macro
+                double ip, iux, iuy, iuz, imx, imy, imz;
+                Macro<double, P>(ip, iux, iuy, iuz, imx, imy, imz, _rho[idx], _ux[idx]*_chi[idx], _uy[idx]*_chi[idx], _uz[idx]*_chi[idx], _p.f0, _p.f, idx);
+
+                //  Save macro if need
+                if (_issave) {
+                    _ip[idx] = ip;
+                    _iux[idx] = iux;
+                    _iuy[idx] = iuy;
+                    _iuz[idx] = iuz;
+                    _imx[idx] = imx;
+                    _imy[idx] = imy;
+                    _imz[idx] = imz;
+                }
+
+                //  Collide and stream
+                Equilibrium<double, P>(feq, _ux[idx], _uy[idx], _uz[idx], ip, iux*_chi[idx], iuy*_chi[idx], iuz*_chi[idx]);
+                _p.f0[idx] = iomega*_p.f0[idx] + omega*feq[0];
+                for (int c = 1; c < P<double>::nc; ++c) {
+                    int idxf = P<double>::IndexF(idx, c);
+                    _p.f[idxf] = iomega*_p.f[idxf] + omega*feq[c];
+                }
+            }
+        } 
+
         //  Function of getting sensitivity of Brinkman model for 2D
         template<template<class>class P>
         void SensitivityBrinkman(P<double>& _p, double *_dfds, const double *_ux, const double *_uy, const double *_imx, const double *_imy, const double *_dads) {
@@ -289,6 +421,43 @@ namespace PANSLBM2 {
             }
             for (int idx = ne*ps; idx < _p.nxyz; ++idx) {
                 _dfds[idx] += 3.0*_dads[idx]*(_ux[idx]*_imx[idx] + _uy[idx]*_imy[idx] + _uz[idx]*_imz[idx]);
+            }
+        }
+    
+        //  Function of getting sensitivity with Level-Set-Method for 2D
+        template<template<class>class P>
+        void SensitivityLSM(P<double>& _p, double *_dfds, const double *_rho, const double *_ux, const double *_uy, const double *_iux, const double *_iuy, double _viscosity) {
+            const int ps = P<double>::packsize, ne = _p.nxyz/ps, nc = P<double>::nc;
+            const double omega = 1.0/(3.0*_viscosity + 0.5);
+            #pragma omp parallel for
+            for (int pidx = 0; pidx < ne; ++pidx) {
+                int idx = pidx*ps;
+                __m256d __dfds = _mm256_loadu_pd(&_dfds[idx]), __omega = _mm256_set1_pd(omega), __3 = _mm256_set1_pd(3.0);
+                __m256d __rho = _mm256_loadu_pd(&_rho[idx]), __ux = _mm256_loadu_pd(&_ux[idx]), __uy = _mm256_loadu_pd(&_uy[idx]), __iux = _mm256_loadu_pd(&_iux[idx]), __iuy = _mm256_loadu_pd(&_iuy[idx]);
+                __dfds = _mm256_sub_pd(__dfds, _mm256_mul_pd(__3, _mm256_mul_pd(__omega, _mm256_mul_pd(__rho, _mm256_add_pd(_mm256_mul_pd(__ux, __iux), _mm256_mul_pd(__uy, __iuy))))));
+                _mm256_storeu_pd(&_dfds[idx], __dfds);
+            }
+            for (int idx = ne*ps; idx < _p.nxyz; ++idx) {
+                _dfds[idx] -= 3.0*omega*_rho[idx]*(_ux[idx]*_iux[idx] + _uy[idx]*_iuy[idx]);
+            }
+        }
+
+        //  Function of getting sensitivity with Level-Set-Method for 3D
+        template<template<class>class P>
+        void SensitivityLSM(P<double>& _p, double *_dfds, const double *_rho, const double *_ux, const double *_uy, const double *_uz, const double *_iux, const double *_iuy, const double *_iuz, double _viscosity) {
+            const int ps = P<double>::packsize, ne = _p.nxyz/ps, nc = P<double>::nc;
+            const double omega = 1.0/(3.0*_viscosity + 0.5);
+            #pragma omp parallel for
+            for (int pidx = 0; pidx < ne; ++pidx) {
+                int idx = pidx*ps;
+                __m256d __dfds = _mm256_loadu_pd(&_dfds[idx]), __omega = _mm256_set1_pd(omega), __3 = _mm256_set1_pd(3.0);
+                __m256d __rho = _mm256_loadu_pd(&_rho[idx]), __ux = _mm256_loadu_pd(&_ux[idx]), __uy = _mm256_loadu_pd(&_uy[idx]), __uz = _mm256_loadu_pd(&_uz[idx]);
+                __m256d __iux = _mm256_loadu_pd(&_iux[idx]), __iuy = _mm256_loadu_pd(&_iuy[idx]), __iuz = _mm256_loadu_pd(&_iuz[idx]);
+                __dfds = _mm256_sub_pd(__dfds, _mm256_mul_pd(__3, _mm256_mul_pd(__omega, _mm256_mul_pd(__rho, _mm256_add_pd(_mm256_mul_pd(__ux, __imx), _mm256_add_pd(_mm256_mul_pd(__uy, __imy), _mm256_mul_pd(__uz, __imz)))))));
+                _mm256_storeu_pd(&_dfds[idx], __dfds);
+            }
+            for (int idx = ne*ps; idx < _p.nxyz; ++idx) {
+                _dfds[idx] -= 3.0*omega*_rho[idx]*(_ux[idx]*_iux[idx] + _uy[idx]*_iuy[idx] + _uz[idx]*_iuz[idx]);
             }
         }
     }  

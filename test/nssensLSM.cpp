@@ -34,7 +34,7 @@ int main(int argc, char** argv) {
     double nu = 0.1, u0 = 0.0109, rho0 = 1.0, epsdu = 1.0e-4, smin = -1.0, smax = 1.0;
     D2Q9<double> pf(lx, ly, MyRank, mx, my);
     double *rho = new double[pf.nxyz], *ux = new double[pf.nxyz], *uy = new double[pf.nxyz];
-    double *irho = new double[pf.nxyz], *iux = new double[pf.nxyz], *iuy = new double[pf.nxyz];
+    double *irho = new double[pf.nxyz], *iux = new double[pf.nxyz], *iuy = new double[pf.nxyz], *imx = new double[pf.nxyz], *imy = new double[pf.nxyz];
     double *s = new double[pf.nxyz], *chi = new double[pf.nxyz], *dfds = new double[pf.nxyz];
     for (int i = 0; i < pf.nx; ++i) {
         for (int j = 0; j < pf.ny; ++j) {
@@ -43,7 +43,7 @@ int main(int argc, char** argv) {
         }
     }
     for (int idx = 0; idx < pf.nxyz; ++idx) {
-        rho[idx] = 1.0; ux[idx] = 0.0; uy[idx] = 0.0; irho[idx] = 0.0; iux[idx] = 0.0; iuy[idx] = 0.0; chi[idx] = s[idx] >= 0.0 ? 1.0 : 0.0;
+        rho[idx] = 1.0; ux[idx] = 0.0; uy[idx] = 0.0; irho[idx] = 0.0; iux[idx] = 0.0; iuy[idx] = 0.0; imx[idx] = 0.0; imy[idx] = 0.0; chi[idx] = s[idx] >= 0.0 ? 1.0 : 0.0;
     }
 
     std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
@@ -76,7 +76,7 @@ int main(int argc, char** argv) {
         if (MyRank == 0 && t%dt == 0) {
             std::cout << "\rt = " << t;
         }
-        ANS::MacroCollideLSM(pf, rho, ux, uy, irho, iux, iuy, nu, chi, true);
+        ANS::MacroCollideLSM(pf, rho, ux, uy, irho, iux, iuy, imx, imy, nu, chi, true);
         pf.iStream();
         pf.iBoundaryCondition([=](int _i, int _j) { return _j == 0 ? 2 : (_j >= 0.33*ly ? 1 : 0); });
         ANS::iBoundaryConditionSetU(pf, 
@@ -115,7 +115,7 @@ int main(int argc, char** argv) {
     );
     file.AddPointData(pf, "s", [&](int _i, int _j, int _k) { return s[pf.Index(_i, _j)]; });
     
-    delete[] rho; delete[] ux; delete[] uy; delete[] irho; delete[] iux; delete[] iuy; delete[] s; delete[] chi; delete[] dfds;
+    delete[] rho; delete[] ux; delete[] uy; delete[] irho; delete[] iux; delete[] iuy; delete[] imx; delete[] imy; delete[] s; delete[] chi; delete[] dfds;
 #ifdef _USE_MPI_DEFINES
     MPI_Finalize();
 #endif

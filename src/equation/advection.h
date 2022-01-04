@@ -1043,6 +1043,122 @@ namespace PANSLBM2 {
             }
         }
 
+        //  Function of Update macro and Collide of natural convection with LSM for 2D
+        template<class T, template<class>class P, template<class>class Q>
+        void MacroCollideNaturalConvectionLSM(
+            P<T>& _p, T *_rho, T *_ux, T *_uy, const T *_chi, T _viscosity,
+            Q<T>& _q, T *_tem, T *_qx, T *_qy, const T *_diffusivity, 
+            T _gx, T _gy, T _tem0, bool _issave = false, T *_g = nullptr
+        ) {
+            T omegaf = 1.0/(3.0*_viscosity + 0.5), iomegaf = 1.0 - omegaf, feq[P<T>::nc], geq[Q<T>::nc];
+            #pragma omp parallel for private(feq, geq)
+            for (int idx = 0; idx < _p.nxyz; ++idx) {
+                T omegag = 1.0/(3.0*_diffusivity[idx] + 0.5), iomegag = 1.0 - omegag;
+
+                //  Update macro
+                T rho, ux, uy;
+                NS::Macro<T, P>(rho, ux, uy, _p.f0, _p.f, idx);
+                T tem, qx, qy;
+                Macro<T, Q>(tem, qx, qy, ux, uy, _q.f0, _q.f, omegag, idx);
+
+                //  External force with Brinkman model and natural convection
+                ExternalForceNaturalConvection<T, P>(tem, _gx, _gy, _tem0, _p.f, idx);
+                NS::Macro<T, P>(rho, ux, uy, _p.f0, _p.f, idx);
+                Macro<T, Q>(tem, qx, qy, ux, uy, _q.f0, _q.f, omegag, idx);
+
+                //  Save macro if need
+                if (_issave) {
+                    _rho[idx] = rho;
+                    _ux[idx] = ux;
+                    _uy[idx] = uy;
+                    _tem[idx] = tem;
+                    _qx[idx] = qx;
+                    _qy[idx] = qy;
+
+                    if (_g) {
+                        int offsetf = Q<T>::nc*idx;
+                        _g[offsetf] = _q.f0[idx];
+                        for (int c = 1; c < Q<T>::nc; ++c) {
+                            _g[offsetf + c] = _q.f[Q<T>::IndexF(idx, c)];
+                        }
+                    }
+                }
+
+                //  Collide
+                NS::Equilibrium<T, P>(feq, rho, ux*_chi[idx], uy*_chi[idx]);
+                _p.f0[idx] = iomegaf*_p.f0[idx] + omegaf*feq[0];
+                for (int c = 1; c < P<T>::nc; ++c) {
+                    int idxf = P<T>::IndexF(idx, c);
+                    _p.f[idxf] = iomegaf*_p.f[idxf] + omegaf*feq[c];
+                }
+                Equilibrium<T, Q>(geq, tem, ux*_chi[idx], uy*_chi[idx]);
+                _q.f0[idx] = iomegag*_q.f0[idx] + omegag*geq[0];
+                for (int c = 1; c < Q<T>::nc; ++c) {
+                    int idxf = Q<T>::IndexF(idx, c); 
+                    _q.f[idxf] = iomegag*_q.f[idxf] + omegag*geq[c];
+                }
+            }
+        }
+
+        //  Function of Update macro and Collide of natural convection with LSM for 3D
+        template<class T, template<class>class P, template<class>class Q>
+        void MacroCollideNaturalConvectionLSM(
+            P<T>& _p, T *_rho, T *_ux, T *_uy, T *_uz, const T *_chi, T _viscosity,
+            Q<T>& _q, T *_tem, T *_qx, T *_qy, T *_qz, const T *_diffusivity, 
+            T _gx, T _gy, T _gz, T _tem0, bool _issave = false, T *_g = nullptr
+        ) {
+            T omegaf = 1.0/(3.0*_viscosity + 0.5), iomegaf = 1.0 - omegaf, feq[P<T>::nc], geq[Q<T>::nc];
+            #pragma omp parallel for private(feq, geq)
+            for (int idx = 0; idx < _p.nxyz; ++idx) {
+                T omegag = 1.0/(3.0*_diffusivity[idx] + 0.5), iomegag = 1.0 - omegag;
+
+                //  Update macro
+                T rho, ux, uy, uz;
+                NS::Macro<T, P>(rho, ux, uy, uz, _p.f0, _p.f, idx);
+                T tem, qx, qy, qz;
+                Macro<T, Q>(tem, qx, qy, qz, ux, uy, uz, _q.f0, _q.f, omegag, idx);
+
+                //  External force with Brinkman model and natural convection
+                ExternalForceNaturalConvection<T, P>(tem, _gx, _gy, _gz, _tem0, _p.f, idx);
+                NS::Macro<T, P>(rho, ux, uy, uz, _p.f0, _p.f, idx);
+                Macro<T, Q>(tem, qx, qy, qz, ux, uy, uz, _q.f0, _q.f, omegag, idx);
+
+                //  Save macro if need
+                if (_issave) {
+                    _rho[idx] = rho;
+                    _ux[idx] = ux;
+                    _uy[idx] = uy;
+                    _uz[idx] = uz;
+                    _tem[idx] = tem;
+                    _qx[idx] = qx;
+                    _qy[idx] = qy;
+                    _qz[idx] = qz;
+
+                    if (_g) {
+                        int offsetf = Q<T>::nc*idx;
+                        _g[offsetf] = _q.f0[idx];
+                        for (int c = 1; c < Q<T>::nc; ++c) {
+                            _g[offsetf + c] = _q.f[Q<T>::IndexF(idx, c)];
+                        }
+                    }
+                }
+
+                //  Collide
+                NS::Equilibrium<T, P>(feq, rho, ux*_chi[idx], uy*_chi[idx], uz*_chi[idx]);
+                _p.f0[idx] = iomegaf*_p.f0[idx] + omegaf*feq[0];
+                for (int c = 1; c < P<T>::nc; ++c) {
+                    int idxf = P<T>::IndexF(idx, c);
+                    _p.f[idxf] = iomegaf*_p.f[idxf] + omegaf*feq[c];
+                }
+                Equilibrium<T, Q>(geq, tem, ux*_chi[idx], uy*_chi[idx], uz*_chi[idx]);
+                _q.f0[idx] = iomegag*_q.f0[idx] + omegag*geq[0];
+                for (int c = 1; c < Q<T>::nc; ++c) {
+                    int idxf = Q<T>::IndexF(idx, c); 
+                    _q.f[idxf] = iomegag*_q.f[idxf] + omegag*geq[c];
+                }
+            }
+        }
+
         //  Function of setting initial condition of AD for 2D
         template<class T, template<class>class Q>
         void InitialCondition(Q<T>& _q, const T *_tem, const T *_ux, const T *_uy) {

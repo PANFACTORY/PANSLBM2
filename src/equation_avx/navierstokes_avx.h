@@ -327,5 +327,117 @@ namespace PANSLBM2 {
                 }
             }
         }
+    
+        //  Function of Update macro and Collide of NS with Level-Set-Method for 2D
+        template<template<class>class P>
+        void MacroCollideLSM(P<double>& _p, double *_rho, double *_ux, double *_uy, double _viscosity, const double *_chi, bool _issave = false) {
+            const int ne = _p.nxyz/P<double>::packsize;
+            double omega = 1.0/(3.0*_viscosity + 0.5), iomega = 1.0 - omega, feq[P<double>::nc];
+            __m256d __omega = _mm256_set1_pd(omega), __iomega = _mm256_set1_pd(iomega), __feq[P<double>::nc];
+            #pragma omp parallel for private(__feq)
+            for (int pidx = 0; pidx < ne; ++pidx) {
+                int idx = pidx*P<double>::packsize;
+
+                //  Pack f0 and f
+                __m256d __f[P<double>::nc];
+                _p.LoadF(idx, __f);
+                
+                //  Update macro
+                __m256d __rho, __ux, __uy;
+                Macro<P<double> >(__rho, __ux, __uy, __f);
+
+                //  Save macro if need
+                if (_issave) {
+                    _mm256_storeu_pd(&_rho[idx], __rho);
+                    _mm256_storeu_pd(&_ux[idx], __ux);
+                    _mm256_storeu_pd(&_uy[idx], __uy);
+                }
+
+                //  Collide
+                __m256d __chi = _mm256_loadu_pd(&_chi[idx]);
+                Equilibrium<P<double> >(__feq, __rho, _mm256_mul_pd(__ux, __chi), _mm256_mul_pd(__uy, __chi));
+                for (int c = 0; c < P<double>::nc; ++c) {
+                    __f[c] = _mm256_add_pd(_mm256_mul_pd(__iomega, __f[c]), _mm256_mul_pd(__omega, __feq[c]));
+                }
+                _p.StoreF(idx, __f);
+            }
+            for (int idx = ne*P<double>::packsize; idx < _p.nxyz; ++idx) {
+                //  Update macro
+                double rho, ux, uy;
+                Macro<double, P>(rho, ux, uy, _p.f0, _p.f, idx);
+
+                //  Save macro if need
+                if (_issave) {
+                    _rho[idx] = rho;
+                    _ux[idx] = ux;
+                    _uy[idx] = uy;
+                }
+
+                //  Collide
+                Equilibrium<double, P>(feq, rho, ux*_chi[idx], uy*_chi[idx]);
+                _p.f0[idx] = iomega*_p.f0[idx] + omega*feq[0];
+                for (int c = 1; c < P<double>::nc; ++c) {
+                    int idxf = P<double>::IndexF(idx, c);
+                    _p.f[idxf] = iomega*_p.f[idxf] + omega*feq[c];
+                }
+            }
+        }
+    
+        //  Function of Update macro and Collide of NS with Level-Set-Method for 3D
+        template<template<class>class P>
+        void MacroCollideLSM(P<double>& _p, double *_rho, double *_ux, double *_uy, double *_uz, double _viscosity, const double *_chi, bool _issave = false) {
+            const int ne = _p.nxyz/P<double>::packsize;
+            double omega = 1.0/(3.0*_viscosity + 0.5), iomega = 1.0 - omega, feq[P<double>::nc];
+            __m256d __omega = _mm256_set1_pd(omega), __iomega = _mm256_set1_pd(iomega), __feq[P<double>::nc];
+            #pragma omp parallel for private(__feq)
+            for (int pidx = 0; pidx < ne; ++pidx) {
+                int idx = pidx*P<double>::packsize;
+
+                //  Pack f0 and f
+                __m256d __f[P<double>::nc];
+                _p.LoadF(idx, __f);
+
+                //  Update macro
+                __m256d __rho, __ux, __uy, __uz;
+                Macro<P<double> >(__rho, __ux, __uy, __uz, __f);
+
+                //  Save macro if need
+                if (_issave) {
+                    _mm256_storeu_pd(&_rho[idx], __rho);
+                    _mm256_storeu_pd(&_ux[idx], __ux);
+                    _mm256_storeu_pd(&_uy[idx], __uy);
+                    _mm256_storeu_pd(&_uz[idx], __uz);
+                }
+
+                //  Collide
+                __m256d __chi = _mm256_loadu_pd(&_chi[idx]);
+                Equilibrium<P<double> >(__feq, __rho, _mm256_mul_pd(__ux, __chi), _mm256_mul_pd(__uy, __chi), _mm256_mul_pd(__uz, __chi));
+                for (int c = 0; c < P<double>::nc; ++c) {
+                    __f[c] = _mm256_add_pd(_mm256_mul_pd(__iomega, __f[c]), _mm256_mul_pd(__omega, __feq[c]));
+                }
+                _p.StoreF(idx, __f);
+            }
+            for (int idx = ne*P<double>::packsize; idx < _p.nxyz; ++idx) {
+                //  Update macro
+                double rho, ux, uy, uz;
+                Macro<double, P>(rho, ux, uy, uz, _p.f0, _p.f, idx);
+
+                //  Save macro if need
+                if (_issave) {
+                    _rho[idx] = rho;
+                    _ux[idx] = ux;
+                    _uy[idx] = uy;
+                    _uz[idx] = uz;
+                }
+
+                //  Collide
+                Equilibrium<double, P>(feq, rho, ux*_chi[idx], uy*_chi[idx], uz*_chi[idx]);
+                _p.f0[idx] = iomega*_p.f0[idx] + omega*feq[0];
+                for (int c = 1; c < P<double>::nc; ++c) {
+                    int idxf = P<double>::IndexF(idx, c);
+                    _p.f[idxf] = iomega*_p.f[idxf] + omega*feq[c];
+                }
+            }
+        }
     }
 }

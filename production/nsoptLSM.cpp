@@ -160,8 +160,7 @@ int main(int argc, char** argv) {
         }*/
 
         //********************Update variable********************
-        ReactionDiffusion::UpdateVariables(
-            pf, s, f, dfds, g, dgds, tau, 0.1, [](int _i, int _j){ return false; }, [](int _i, int _j){ return 0.0; });
+        ReactionDiffusion::UpdateVariables(pf, s, f, dfds, g, dgds, tau, 0.1, [](int _i, int _j){ return false; }, [](int _i, int _j){ return 0.0; });
     }
 
     //********************Export result********************

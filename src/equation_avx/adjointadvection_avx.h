@@ -1254,6 +1254,250 @@ namespace PANSLBM2 {
             }
         }
 
+        //  Function of Update macro and Collide of AAD with Level-Set-Method for 2D
+        template<template<class>class P, template<class>class Q>
+        void MacroCollideNaturalConvectionLSM(
+            P<double>& _p, const double *_rho, const double *_ux, const double *_uy, double *_ip, double *_iux, double *_iuy, double *_imx, double *_imy, const double *_chi, double _viscosity,
+            Q<double>& _q, const double *_tem, double *_item, double *_iqx, double *_iqy, const double *_diffusivity, double _gx, double _gy, bool _issave = false, double *_g = nullptr
+        ) {
+            const int ne = _p.nxyz/P<double>::packsize;
+            double omegaf = 1.0/(3.0*_viscosity + 0.5), iomegaf = 1.0 - omegaf, feq[P<double>::nc], geq[Q<double>::nc];
+            __m256d __omegaf = _mm256_set1_pd(omegaf), __iomegaf = _mm256_set1_pd(iomegaf), __feq[P<double>::nc], __geq[Q<double>::nc];
+            __m256d __gx = _mm256_set1_pd(_gx), __gy = _mm256_set1_pd(_gy);
+            #pragma omp parallel for private(__feq, __geq)
+            for (int pidx = 0; pidx < ne; ++pidx) {
+                int idx = pidx*P<double>::packsize;
+
+                __m256d __diffusivity = _mm256_loadu_pd(&_diffusivity[idx]);                 
+                __m256d __omegag = _mm256_div_pd(_mm256_set1_pd(1.0), _mm256_add_pd(_mm256_mul_pd(_mm256_set1_pd(3.0), __diffusivity), _mm256_set1_pd(0.5)));
+                __m256d __iomegag = _mm256_sub_pd(_mm256_set1_pd(1.0), __omegag);
+                __m256d __chi = _mm256_loadu_pd(&_chi[idx]);
+
+                //  Pack f0, f, g0 and g
+                __m256d __f[P<double>::nc], __g[Q<double>::nc];
+                _p.LoadF(idx, __f);
+                _q.LoadF(idx, __g);
+
+                //  Update macro
+                __m256d __ip, __iux, __iuy, __imx, __imy;
+                __m256d __rho = _mm256_loadu_pd(&_rho[idx]), __ux = _mm256_loadu_pd(&_ux[idx]), __uy = _mm256_loadu_pd(&_uy[idx]), __tem = _mm256_loadu_pd(&_tem[idx]);
+                ANS::Macro<P<double> >(__ip, __iux, __iuy, __imx, __imy, __rho, _mm256_mul_pd(__ux, __chi), _mm256_mul_pd(__uy, __chi), __f);
+                __m256d __item, __iqx, __iqy;
+                Macro<Q<double> >(__item, __iqx, __iqy, __g);
+
+                //  External force with Brinkman model
+                ExternalForceBrinkman<P<double> >(__rho, __ux, __uy, _mm256_setzero_pd(), _mm256_setzero_pd(), __tem, _mm256_mul_pd(__iqx, __chi), _mm256_mul_pd(__iqy, __chi), __omegag, __f, _mm256_setzero_pd());
+                ANS::Macro<P<double> >(__ip, __iux, __iuy, __imx, __imy, __rho, _mm256_mul_pd(__ux, __chi), _mm256_mul_pd(__uy, __chi), __f);
+                ExternalForceNaturalConvection<Q<double> >(__imx, __imy, __gx, __gy, __g);
+                Macro<Q<double> >(__item, __iqx, __iqy, __g);
+
+                //  Save macro if need
+                if (_issave) {
+                    _mm256_storeu_pd(&_ip[idx], __ip);
+                    _mm256_storeu_pd(&_iux[idx], __iux);
+                    _mm256_storeu_pd(&_iuy[idx], __iuy);
+                    _mm256_storeu_pd(&_imx[idx], __imx);
+                    _mm256_storeu_pd(&_imy[idx], __imy);
+                    _mm256_storeu_pd(&_item[idx], __item);
+                    _mm256_storeu_pd(&_iqx[idx], __iqx);
+                    _mm256_storeu_pd(&_iqy[idx], __iqy);
+
+                    if (_g) {
+                        int offsetf = Q<double>::nc*idx;
+                        for (int c = 0; c < Q<double>::nc; ++c) {
+                            _mm256_storeu_pd(&_g[offsetf + Q<double>::packsize*c], __g[c]);
+                        }
+                    }
+                }
+
+                //  Collide
+                ANS::Equilibrium<P<double> >(__feq, __ux, __uy, __ip, _mm256_mul_pd(__iux, __chi), _mm256_mul_pd(__iuy, __chi));
+                for (int c = 0; c < P<double>::nc; ++c) {
+                    __f[c] = _mm256_add_pd(_mm256_mul_pd(__iomegaf, __f[c]), _mm256_mul_pd(__omegaf, __feq[c]));
+                }
+                _p.StoreF(idx, __f);
+                Equilibrium<Q<double> >(__geq, __item, _mm256_mul_pd(__iqx, __chi), _mm256_mul_pd(__iqy, __chi), __ux, __uy);
+                for (int c = 0; c < Q<double>::nc; ++c) {
+                    __g[c] = _mm256_add_pd(_mm256_mul_pd(__iomegag, __g[c]), _mm256_mul_pd(__omegag, __geq[c]));
+                }
+                _q.StoreF(idx, __g);
+            }
+            for (int idx = ne*P<double>::packsize; idx < _p.nxyz; ++idx) {
+                double omegag = 1.0/(3.0*_diffusivity[idx] + 0.5), iomegag = 1.0 - omegag;
+
+                //  Update macro
+                double ip, iux, iuy, imx, imy;
+                ANS::Macro<double, P>(ip, iux, iuy, imx, imy, _rho[idx], _ux[idx]*_chi[idx], _uy[idx]*_chi[idx], _p.f0, _p.f, idx);
+                double item, iqx, iqy;
+                Macro<double, Q>(item, iqx, iqy, _q.f0, _q.f, idx);
+
+                //  External force with Brinkman model
+                ExternalForceBrinkman<double, P>(_rho[idx], _ux[idx], _uy[idx], 0, 0, _tem[idx], iqx*_chi[idx], iqy*_chi[idx], omegag, _p.f0, _p.f, 0, idx);
+                ANS::Macro<double, P>(ip, iux, iuy, imx, imy, _rho[idx], _ux[idx]*_chi[idx], _uy[idx]*_chi[idx], _p.f0, _p.f, idx);
+                ExternalForceNaturalConvection<double, Q>(imx, imy, _gx, _gy, _q.f0, _q.f, idx);
+                Macro<double, Q>(item, iqx, iqy, _q.f0, _q.f, idx);
+
+                //  Save macro if need
+                if (_issave) {
+                    _ip[idx] = ip;
+                    _iux[idx] = iux;
+                    _iuy[idx] = iuy;
+                    _imx[idx] = imx;
+                    _imy[idx] = imy;
+                    _item[idx] = item;
+                    _iqx[idx] = iqx;
+                    _iqy[idx] = iqy;
+
+                    if (_g) {
+                        int offsetf = Q<double>::nc*idx;
+                        _g[offsetf] = _q.f0[idx];
+                        for (int c = 1; c < Q<double>::nc; ++c) {
+                            _g[offsetf + c] = _q.f[Q<double>::IndexF(idx, c)];
+                        }
+                    }
+                }
+
+                //  Collide
+                ANS::Equilibrium<double, P>(feq, _ux[idx], _uy[idx], ip, iux*_chi[idx], iuy*_chi[idx]);
+                _p.f0[idx] = iomegaf*_p.f0[idx] + omegaf*feq[0];
+                for (int c = 1; c < P<double>::nc; ++c) {
+                    int idxf = P<double>::IndexF(idx, c);
+                    _p.f[idxf] = iomegaf*_p.f[idxf] + omegaf*feq[c];
+                }
+                Equilibrium<double, Q>(geq, item, iqx*_chi[idx], iqy*_chi[idx], _ux[idx], _uy[idx]);
+                _q.f0[idx] = iomegag*_q.f0[idx] + omegag*geq[0];
+                for (int c = 1; c < Q<double>::nc; ++c) {
+                    int idxf = Q<double>::IndexF(idx, c); 
+                    _q.f[idxf] = iomegag*_q.f[idxf] + omegag*geq[c];
+                }
+            }
+        }
+
+        //  Function of Update macro and Collide of AAD with Level-Set-Method for 3D
+        template<template<class>class P, template<class>class Q>
+        void MacroCollideNaturalConvectionLSM(
+            P<double>& _p, const double *_rho, const double *_ux, const double *_uy, const double *_uz, double *_ip, double *_iux, double *_iuy, double *_iuz, double *_imx, double *_imy, double *_imz, const double *_chi, double _viscosity,
+            Q<double>& _q, const double *_tem, double *_item, double *_iqx, double *_iqy, double *_iqz, const double *_diffusivity, double _gx, double _gy, double _gz, bool _issave = false, double *_g = nullptr
+        ) {
+            const int ne = _p.nxyz/P<double>::packsize;
+            double omegaf = 1.0/(3.0*_viscosity + 0.5), iomegaf = 1.0 - omegaf, feq[P<double>::nc], geq[Q<double>::nc];
+            __m256d __omegaf = _mm256_set1_pd(omegaf), __iomegaf = _mm256_set1_pd(iomegaf), __feq[P<double>::nc], __geq[Q<double>::nc];
+            __m256d __gx = _mm256_set1_pd(_gx), __gy = _mm256_set1_pd(_gy), __gz = _mm256_set1_pd(_gz);
+            #pragma omp parallel for private(__feq, __geq)
+            for (int pidx = 0; pidx < ne; ++pidx) {
+                int idx = pidx*P<double>::packsize;
+
+                __m256d __diffusivity = _mm256_loadu_pd(&_diffusivity[idx]);                 
+                __m256d __omegag = _mm256_div_pd(_mm256_set1_pd(1.0), _mm256_add_pd(_mm256_mul_pd(_mm256_set1_pd(3.0), __diffusivity), _mm256_set1_pd(0.5)));
+                __m256d __iomegag = _mm256_sub_pd(_mm256_set1_pd(1.0), __omegag);
+                __m256d __chi = _mm256_loadu_pd(&_chi[idx]);
+
+                //  Pack f0, f, g0 and g
+                __m256d __f[P<double>::nc], __g[Q<double>::nc];
+                _p.LoadF(idx, __f);
+                _q.LoadF(idx, __g);
+
+                //  Update macro
+                __m256d __ip, __iux, __iuy, __iuz, __imx, __imy, __imz;
+                __m256d __rho = _mm256_loadu_pd(&_rho[idx]), __ux = _mm256_loadu_pd(&_ux[idx]), __uy = _mm256_loadu_pd(&_uy[idx]), __uz = _mm256_loadu_pd(&_uz[idx]), __tem = _mm256_loadu_pd(&_tem[idx]);
+                ANS::Macro<P<double> >(__ip, __iux, __iuy, __iuz, __imx, __imy, __imz, __rho, _mm256_mul_pd(__ux, __chi), _mm256_mul_pd(__uy, __chi), _mm256_mul_pd(__uz, __chi), __f);
+                __m256d __item, __iqx, __iqy, __iqz;
+                Macro<Q<double> >(__item, __iqx, __iqy, __iqz, __g);
+
+                //  External force with natural convection
+                ExternalForceBrinkman<P<double> >(__rho, __ux, __uy, __uz, _mm256_setzero_pd(), _mm256_setzero_pd(), _mm256_setzero_pd(), __tem, _mm256_mul_pd(__iqx, __chi), _mm256_mul_pd(__iqy, __chi), _mm256_mul_pd(__iqz, __chi), __omegag, __f, _mm256_setzero_pd());
+                ANS::Macro<P<double> >(__ip, __iux, __iuy, __iuz, __imx, __imy, __imz, __rho, _mm256_mul_pd(__ux, __chi), _mm256_mul_pd(__uy, __chi), _mm256_mul_pd(__uz, __chi), __f);
+                ExternalForceNaturalConvection<Q<double> >(__imx, __imy, __imz, __gx, __gy, __gz, __g);
+                Macro<Q<double> >(__item, __iqx, __iqy, __iqz, __g);
+
+                //  Save macro if need
+                if (_issave) {
+                    _mm256_storeu_pd(&_ip[idx], __ip);
+                    _mm256_storeu_pd(&_iux[idx], __iux);
+                    _mm256_storeu_pd(&_iuy[idx], __iuy);
+                    _mm256_storeu_pd(&_iuz[idx], __iuz);
+                    _mm256_storeu_pd(&_imx[idx], __imx);
+                    _mm256_storeu_pd(&_imy[idx], __imy);
+                    _mm256_storeu_pd(&_imz[idx], __imz);
+                    _mm256_storeu_pd(&_item[idx], __item);
+                    _mm256_storeu_pd(&_iqx[idx], __iqx);
+                    _mm256_storeu_pd(&_iqy[idx], __iqy);
+                    _mm256_storeu_pd(&_iqz[idx], __iqz);
+
+                    if (_g) {
+                        int offsetf = Q<double>::nc*idx;
+                        for (int c = 0; c < Q<double>::nc; ++c) {
+                            _mm256_storeu_pd(&_g[offsetf + Q<double>::packsize*c], __g[c]);
+                        }
+                    }
+                }
+
+                //  Collide
+                ANS::Equilibrium<P<double> >(__feq, __ux, __uy, __uz, __ip, _mm256_mul_pd(__iux, __chi), _mm256_mul_pd(__iuy, __chi), _mm256_mul_pd(__iuz, __chi));
+                for (int c = 0; c < P<double>::nc; ++c) {
+                    __f[c] = _mm256_add_pd(_mm256_mul_pd(__iomegaf, __f[c]), _mm256_mul_pd(__omegaf, __feq[c]));
+                }
+                _p.StoreF(idx, __f);
+                Equilibrium<Q<double> >(__geq, __item, _mm256_mul_pd(__iqx, __chi), _mm256_mul_pd(__iqy, __chi), _mm256_mul_pd(__iqz, __chi), __ux, __uy, __uz);
+                for (int c = 0; c < Q<double>::nc; ++c) {
+                    __g[c] = _mm256_add_pd(_mm256_mul_pd(__iomegag, __g[c]), _mm256_mul_pd(__omegag, __geq[c]));
+                }
+                _q.StoreF(idx, __g);
+            }
+            for (int idx = ne*P<double>::packsize; idx < _p.nxyz; ++idx) {
+                double omegag = 1.0/(3.0*_diffusivity[idx] + 0.5), iomegag = 1.0 - omegag;
+
+                //  Update macro
+                double ip, iux, iuy, iuz, imx, imy, imz;
+                ANS::Macro<double, P>(ip, iux, iuy, iuz, imx, imy, imz, _rho[idx], _ux[idx]*_chi[idx], _uy[idx]*_chi[idx], _uz[idx]*_chi[idx], _p.f0, _p.f, idx);
+                double item, iqx, iqy, iqz;
+                Macro<double, Q>(item, iqx, iqy, iqz, _q.f0, _q.f, idx);
+
+                //  External force with Brinkman model
+                ExternalForceBrinkman<double, P>(_rho[idx], _ux[idx], _uy[idx], _uz[idx], 0, 0, 0, _tem[idx], iqx*_chi[idx], iqy*_chi[idx], iqz*_chi[idx], omegag, _p.f0, _p.f, 0, idx);
+                ANS::Macro<double, P>(ip, iux, iuy, iuz, imx, imy, imz, _rho[idx], _ux[idx]*_chi[idx], _uy[idx]*_chi[idx], _uz[idx]*_chi[idx], _p.f0, _p.f, idx);
+                ExternalForceNaturalConvection<double, Q>(imx, imy, imz, _gx, _gy, _gz, _q.f0, _q.f, idx);
+                Macro<double, Q>(item, iqx, iqy, iqz, _q.f0, _q.f, idx);
+
+                //  Save macro if need
+                if (_issave) {
+                    _ip[idx] = ip;
+                    _iux[idx] = iux;
+                    _iuy[idx] = iuy;
+                    _iuz[idx] = iuz;
+                    _imx[idx] = imx;
+                    _imy[idx] = imy;
+                    _imz[idx] = imz;
+                    _item[idx] = item;
+                    _iqx[idx] = iqx;
+                    _iqy[idx] = iqy;
+                    _iqz[idx] = iqz;
+
+                    if (_g) {
+                        int offsetf = Q<double>::nc*idx;
+                        _g[offsetf] = _q.f0[idx];
+                        for (int c = 1; c < Q<double>::nc; ++c) {
+                            _g[offsetf + c] = _q.f[Q<double>::IndexF(idx, c)];
+                        }
+                    }
+                }
+
+                //  Collide
+                ANS::Equilibrium<double, P>(feq, _ux[idx], _uy[idx], _uz[idx], ip, iux*_chi[idx], iuy*_chi[idx], iuz*_chi[idx]);
+                _p.f0[idx] = iomegaf*_p.f0[idx] + omegaf*feq[0];
+                for (int c = 1; c < P<double>::nc; ++c) {
+                    int idxf = P<double>::IndexF(idx, c);
+                    _p.f[idxf] = iomegaf*_p.f[idxf] + omegaf*feq[c];
+                }
+                Equilibrium<double, Q>(geq, item, iqx*_chi[idx], iqy*_chi[idx], iqz*_chi[idx], _ux[idx], _uy[idx], _uz[idx]);
+                _q.f0[idx] = iomegag*_q.f0[idx] + omegag*geq[0];
+                for (int c = 1; c < Q<double>::nc; ++c) {
+                    int idxf = Q<double>::IndexF(idx, c); 
+                    _q.f[idxf] = iomegag*_q.f[idxf] + omegag*geq[c];
+                }
+            }
+        }
+
         //  Function of getting sensitivity of heat exchange
         template<template<class>class Q>
         void SensitivityHeatExchange(
@@ -1502,6 +1746,115 @@ namespace PANSLBM2 {
                     sumg += _g[offsetf + c]*_ig[offsetf + c];
                 }
                 _dfds[idx] += -3.0/pow(3.0*_diffusivity[idx] + 0.5, 2.0)*_dkds[idx]*(sumg - _tem[idx]*(_item[idx] + 3.0*(_ux[idx]*_iqx[idx] + _uy[idx]*_iqy[idx] + _uz[idx]*_iqz[idx])));
+            }
+
+            SensitivityTemperatureAtHeatSourceAlongXFace(_q, 0, -1, _ux, _uy, _uz, _ig, _dfds, _diffusivity, _dkds, _qnbc, _bctype);        //  Boundary term along xmin
+            SensitivityTemperatureAtHeatSourceAlongXFace(_q, _q.lx - 1, 1, _ux, _uy, _uz, _ig, _dfds, _diffusivity, _dkds, _qnbc, _bctype); //  Boundary term along xmax
+            SensitivityTemperatureAtHeatSourceAlongYFace(_q, 0, -1, _ux, _uy, _uz, _ig, _dfds, _diffusivity, _dkds, _qnbc, _bctype);        //  Boundary term along ymin
+            SensitivityTemperatureAtHeatSourceAlongYFace(_q, _q.ly - 1, 1, _ux, _uy, _uz, _ig, _dfds, _diffusivity, _dkds, _qnbc, _bctype); //  Boundary term along ymax
+            SensitivityTemperatureAtHeatSourceAlongZFace(_q, 0, -1, _ux, _uy, _uz, _ig, _dfds, _diffusivity, _dkds, _qnbc, _bctype);        //  Boundary term along zmin
+            SensitivityTemperatureAtHeatSourceAlongZFace(_q, _q.lz - 1, 1, _ux, _uy, _uz, _ig, _dfds, _diffusivity, _dkds, _qnbc, _bctype); //  Boundary term along zmax
+        }
+    
+        //  Function of getting sensitivity of temperature at heat source with Level-Set-Method for D2Q9
+        template<template<class>class Q, class Fv, class Ff>
+        void SensitivityTemperatureAtHeatSourceLSM(
+            Q<double>& _q, double *_dfds, const double *_rho, const double *_ux, const double *_uy, const double *_iux, const double *_iuy, double _viscosity,
+            const double *_tem, const double *_item, const double *_iqx, const double *_iqy, const double *_g, const double *_ig, const double *_diffusivity, const double *_dkds, 
+            const double *_chi, Fv _qnbc, Ff _bctype
+        ) {
+            const int ps = Q<double>::packsize, ne = _q.nxyz/ps, nc = Q<double>::nc;
+            auto IndexG = [=](int _idx, int _c) {
+                return _idx < ne*ps ? (_idx/ps)*ps*nc + ps*_c + _idx%ps : nc*_idx + _c; 
+            };
+            double omegaf = 1.0/(3.0*_viscosity + 0.5);
+            __m256d __omegaf = _mm256_set1_pd(omegaf);
+
+            //  Brinkman term and diffusivity term
+            #pragma omp parallel for
+            for (int pidx = 0; pidx < ne; ++pidx) {
+                int idx = pidx*ps;
+
+                __m256d __dfds = _mm256_loadu_pd(&_dfds[idx]), __chi = _mm256_loadu_pd(&_chi[idx]), __dkds = _mm256_loadu_pd(&_dkds[idx]), __3 = _mm256_set1_pd(3.0);
+                __m256d __taug = _mm256_add_pd(_mm256_mul_pd(__3, _mm256_loadu_pd(&_diffusivity[idx])), _mm256_set1_pd(0.5)), __omegag = _mm256_div_pd(_mm256_set1_pd(1.0), __taug);
+                __m256d __rho = _mm256_loadu_pd(&_rho[idx]), __ux = _mm256_loadu_pd(&_ux[idx]), __uy = _mm256_loadu_pd(&_uy[idx]), __iux = _mm256_loadu_pd(&_iux[idx]), __iuy = _mm256_loadu_pd(&_iuy[idx]);
+                __m256d __tem = _mm256_loadu_pd(&_tem[idx]), __item = _mm256_loadu_pd(&_item[idx]), __iqx = _mm256_loadu_pd(&_iqx[idx]), __iqy = _mm256_loadu_pd(&_iqy[idx]);
+
+                __dfds=_mm256_sub_pd(__dfds, _mm256_mul_pd(__3, _mm256_add_pd(_mm256_mul_pd(_mm256_mul_pd(__omegaf, __rho), _mm256_add_pd(_mm256_mul_pd(__ux, __iux), _mm256_mul_pd(__uy, __iuy))), _mm256_mul_pd(_mm256_mul_pd(__omegag, __tem), _mm256_add_pd(_mm256_mul_pd(__ux, __iqx), _mm256_mul_pd(__uy, __iqy))))));
+
+                int offsetf = nc*idx;
+                __m256d __sumg = _mm256_setzero_pd();
+                for (int c = 0; c < nc; ++c) {
+                    int idxf = offsetf + ps*c;
+                    __m256d __g = _mm256_loadu_pd(&_g[idxf]), __ig = _mm256_loadu_pd(&_ig[idxf]);
+                    __sumg = _mm256_add_pd(__sumg, _mm256_mul_pd(__g, __ig));
+                }
+                __dfds=_mm256_sub_pd(__dfds, _mm256_mul_pd(_mm256_mul_pd(_mm256_mul_pd(_mm256_mul_pd(__3, __omegag), __omegag), __dkds), _mm256_sub_pd(__sumg, _mm256_mul_pd(__tem, _mm256_add_pd(__item, _mm256_mul_pd(_mm256_mul_pd(__3, __chi), _mm256_add_pd(_mm256_mul_pd(__ux, __iqx), _mm256_mul_pd(__uy, __iqy))))))));
+                _mm256_storeu_pd(&_dfds[idx], __dfds);
+            }
+            for (int idx = ne*ps; idx < _q.nxyz; ++idx) {
+                double omegag = 1.0/(3.0*_diffusivity[idx] + 0.5);
+                _dfds[idx] -= 3.0*(omegaf*_rho[idx]*(_ux[idx]*_iux[idx] + _uy[idx]*_iuy[idx]) + omegag*_tem[idx]*(_ux[idx]*_iqx[idx] + _uy[idx]*_iqy[idx]));
+                int offsetf = nc*idx;
+                double sumg = 0.0;
+                for (int c = 0; c < nc; ++c) {
+                    sumg += _g[offsetf + c]*_ig[offsetf + c];
+                }
+                _dfds[idx] += -3.0*pow(omegag, 2.0)*_dkds[idx]*(sumg - _tem[idx]*(_item[idx] + 3.0*_chi[idx]*(_ux[idx]*_iqx[idx] + _uy[idx]*_iqy[idx])));
+            }
+
+            SensitivityTemperatureAtHeatSourceAlongXEdge(_q, 0, -1, _ux, _uy, _ig, _dfds, _diffusivity, _dkds, _qnbc, _bctype);         //  Boundary term along xmin
+            SensitivityTemperatureAtHeatSourceAlongXEdge(_q, _q.lx - 1, 1, _ux, _uy, _ig, _dfds, _diffusivity, _dkds, _qnbc, _bctype);  //  Boundary term along xmax
+            SensitivityTemperatureAtHeatSourceAlongYEdge(_q, 0, -1, _ux, _uy, _ig, _dfds, _diffusivity, _dkds, _qnbc, _bctype);         //  Boundary term along ymin
+            SensitivityTemperatureAtHeatSourceAlongYEdge(_q, _q.ly - 1, 1, _ux, _uy, _ig, _dfds, _diffusivity, _dkds, _qnbc, _bctype);  //  Boundary term along ymax
+        }
+    
+        //  Function of getting sensitivity of temperature at heat source with Level-Set-Method for D3Q15
+        template<template<class>class Q, class Fv, class Ff>
+        void SensitivityTemperatureAtHeatSourceLSM(
+            Q<double>& _q, double *_dfds, const double *_rho, const double *_ux, const double *_uy, const double *_uz, const double *_iux, const double *_iuy, const double *_iuz, double _viscosity,
+            const double *_tem, const double *_item, const double *_iqx, const double *_iqy, const double *_iqz, const double *_g, const double *_ig, const double *_diffusivity, const double *_dkds, 
+            const double *_chi, Fv _qnbc, Ff _bctype
+        ) {
+            const int ps = Q<double>::packsize, ne = _q.nxyz/ps, nc = Q<double>::nc;
+            auto IndexG = [=](int _idx, int _c) {
+                return _idx < ne*ps ? (_idx/ps)*ps*nc + ps*_c + _idx%ps : nc*_idx + _c; 
+            };
+            double omegaf = 1.0/(3.0*_viscosity + 0.5);
+            __m256d __omegaf = _mm256_set1_pd(omegaf);
+
+            //  Brinkman term and diffusivity term
+            #pragma omp parallel for
+            for (int pidx = 0; pidx < ne; ++pidx) {
+                int idx = pidx*ps;
+
+                __m256d __dfds = _mm256_loadu_pd(&_dfds[idx]), __chi = _mm256_loadu_pd(&_chi[idx]), __dkds = _mm256_loadu_pd(&_dkds[idx]), __3 = _mm256_set1_pd(3.0);
+                __m256d __taug = _mm256_add_pd(_mm256_mul_pd(__3, _mm256_loadu_pd(&_diffusivity[idx])), _mm256_set1_pd(0.5)), __omegag = _mm256_div_pd(_mm256_set1_pd(1.0), __taug);
+                __m256d __rho = _mm256_loadu_pd(&_rho[idx]), __ux = _mm256_loadu_pd(&_ux[idx]), __uy = _mm256_loadu_pd(&_uy[idx]), __uz = _mm256_loadu_pd(&_uz[idx]);
+                __m256d __iux = _mm256_loadu_pd(&_iux[idx]), __iuy = _mm256_loadu_pd(&_iuy[idx]), __iuz = _mm256_loadu_pd(&_iuz[idx]);
+                __m256d __tem = _mm256_loadu_pd(&_tem[idx]), __item = _mm256_loadu_pd(&_item[idx]), __iqx = _mm256_loadu_pd(&_iqx[idx]), __iqy = _mm256_loadu_pd(&_iqy[idx]), __iqz = _mm256_loadu_pd(&_iqz[idx]);
+
+                __dfds=_mm256_sub_pd(__dfds, _mm256_mul_pd(__3, _mm256_add_pd(_mm256_mul_pd(_mm256_mul_pd(__omegaf, __rho), _mm256_add_pd(_mm256_add_pd(_mm256_mul_pd(__ux, __iux), _mm256_mul_pd(__uy, __iuy)), _mm256_mul_pd(__uz, __iuz))), _mm256_mul_pd(_mm256_mul_pd(__omegag, __tem), _mm256_add_pd(_mm256_add_pd(_mm256_mul_pd(__ux, __iqx), _mm256_mul_pd(__uy, __iqy)), _mm256_mul_pd(__uz, __iqz))))));
+                
+                int offsetf = nc*idx;
+                __m256d __sumg = _mm256_setzero_pd();
+                for (int c = 0; c < nc; ++c) {
+                    int idxf = offsetf + ps*c;
+                    __m256d __g = _mm256_loadu_pd(&_g[idxf]), __ig = _mm256_loadu_pd(&_ig[idxf]);
+                    __sumg = _mm256_add_pd(__sumg, _mm256_mul_pd(__g, __ig));
+                }
+                __dfds=_mm256_sub_pd(__dfds, _mm256_mul_pd(_mm256_mul_pd(_mm256_mul_pd(_mm256_mul_pd(__3, __omegag), __omegag), __dkds), _mm256_sub_pd(__sumg, _mm256_mul_pd(__tem, _mm256_add_pd(__item, _mm256_mul_pd(_mm256_mul_pd(__3, __chi), _mm256_add_pd(_mm256_add_pd(_mm256_mul_pd(__ux, __iqx), _mm256_mul_pd(__uy, __iqy)), _mm256_mul_pd(__uz, __iqz))))))));
+                _mm256_storeu_pd(&_dfds[idx], __dfds);
+            }
+            for (int idx = ne*ps; idx < _q.nxyz; ++idx) {
+                double omegag = 1.0/(3.0*_diffusivity[idx] + 0.5);
+                _dfds[idx] -= 3.0*(omegaf*_rho[idx]*(_ux[idx]*_iux[idx] + _uy[idx]*_iuy[idx] + _uz[idx]*_iuz[idx]) + omegag*_tem[idx]*(_ux[idx]*_iqx[idx] + _uy[idx]*_iqy[idx] + _uz[idx]*_iqz[idx]));
+                int offsetf = nc*idx;
+                double sumg = 0.0;
+                for (int c = 0; c < nc; ++c) {
+                    sumg += _g[offsetf + c]*_ig[offsetf + c];
+                }
+                _dfds[idx] += -3.0*pow(omegag, 2.0)*_dkds[idx]*(sumg - _tem[idx]*(_item[idx] + 3.0*_chi[idx]*(_ux[idx]*_iqx[idx] + _uy[idx]*_iqy[idx] + _uz[idx]*_iqz[idx])));
             }
 
             SensitivityTemperatureAtHeatSourceAlongXFace(_q, 0, -1, _ux, _uy, _uz, _ig, _dfds, _diffusivity, _dkds, _qnbc, _bctype);        //  Boundary term along xmin

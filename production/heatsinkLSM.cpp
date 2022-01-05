@@ -1,4 +1,4 @@
-//#define _USE_AVX_DEFINES
+#define _USE_AVX_DEFINES
 #include <iostream>
 #include <chrono>
 #include <vector>
@@ -37,7 +37,7 @@ int main(int argc, char** argv) {
 #endif
 
     //********************Parameters********************
-    const int lx = 141, ly = 161, mx = 81, my = 101, nt = 30000, dt = 100, nk = 5;
+    const int lx = 141, ly = 161, mx = 81, my = 101, nt = 30000, dt = 100, nk = 50;
     double Pr = 6.0, Ra = 1e3, nu = 0.1, L = 4.0, tem0 = 0.0, qn = 1.0e-2;
     double movelimit = 0.02, weightlimit = 0.5, eps = 1.0e-6, s0 = -1.0, tau = 0.005;
 

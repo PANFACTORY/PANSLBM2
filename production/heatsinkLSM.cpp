@@ -37,9 +37,9 @@ int main(int argc, char** argv) {
 #endif
 
     //********************Parameters********************
-    const int lx = 141, ly = 161, mx = 81, my = 101, nt = 30000, dt = 100, nk = 50;
-    double Pr = 6.0, Ra = 1e3, nu = 0.1, L = 4.0, tem0 = 0.0, qn = 1.0e-2;
-    double movelimit = 0.02, weightlimit = 0.5, eps = 1.0e-6, s0 = -1.0, tau = 0.005;
+    const int lx = 141, ly = 161, mx = 81, my = 101, nt = 30000, dt = 100, nk = 10;
+    double Pr = 6.0, Ra = 1e2, nu = 0.1, L = 4.0, tem0 = 0.0, qn = 1.0e-2;
+    double movelimit = 0.1, weightlimit = 0.5, eps = 1.0e-6, s0 = -1.0, tau = 1e-3;
 
     double U = nu*sqrt(Ra/Pr)/(double)(ly - 1), diff_fluid = nu/Pr, diff_solid = diff_fluid*10.0, gx = 0.0, gy = U*U/(double)(ly - 1);
     D2Q9<double> pf(lx, ly, MyRank, nPEx, nPEy), pg(lx, ly, MyRank, nPEx, nPEy);
@@ -198,6 +198,9 @@ int main(int argc, char** argv) {
             [=](int _i, int _j) { return _j == 0 && _i < L; }
         );
         Normalize(dfds.data(), pf.nxyz);
+        for (int idx = 0; idx < pf.nxyz; ++idx) {
+            dfds[idx] *= 1e4;
+        }
 
         //********************Update design variable********************
         if (MyRank == 0) {
@@ -206,7 +209,7 @@ int main(int argc, char** argv) {
         ReactionDiffusion::UpdateVariables(
             pf, s, f, dfds, g, dgds, tau, movelimit, 
             [&](int _i, int _j){ 
-                return (_i + pf.offsetx) >= mx || (_j + pf.offsety) >= my; 
+                return false;//return (_i + pf.offsetx) >= mx || (_j + pf.offsety) >= my; 
             }, 
             [](int _i, int _j){ 
                 return 1.0;

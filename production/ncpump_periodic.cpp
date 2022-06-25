@@ -375,7 +375,7 @@ int main(int argc, char** argv) {
 
         //********************Check convergence********************
         if (MyRank == 0) {
-            std::cout << "\r" << k << std::scientific << std::setprecision(6) << " " << F << " " << faverage << " " << variance << std::fixed << std::setprecision(6) << " " << g << " " << dsmax  << " (" << imax << "," << jmax << ") " << qf << " " << qg << " " << mnd << std::endl;
+            std::cout << "\r" << k << std::scientific << std::setprecision(6) << " " << stage << " " << F << " " << faverage << " " << variance << std::fixed << std::setprecision(6) << " " << g << " " << dsmax  << " (" << imax << "," << jmax << ") " << qf << " " << qg << " " << mnd << std::endl;
         }
         if (dsmax < 0.01 || cnt%nb == 0 || k == nk) {
 #ifdef _USE_MPI_DEFINES
@@ -409,6 +409,7 @@ int main(int argc, char** argv) {
                 [&](int _i, int _j, int _k) {   return iqy[pg.Index(_i, _j)];   },
                 [](int _i, int _j, int _k) {   return 0.0;   }
             );
+            file.AddPointData(pf, "ss", [&](int _i, int _j, int _k) { return ss[pf.Index(_i, _j)];    });
             file.AddPointData(pf, "s", [&](int _i, int _j, int _k) { return s[pf.Index(_i, _j)];    });
             file.AddPointData(pf, "dfds", [&](int _i, int _j, int _k) { return dfds[pf.Index(_i, _j)];    });
 #else
@@ -443,6 +444,7 @@ int main(int argc, char** argv) {
                 [](int _i, int _j, int _k) {   return 0.0;   }
             );
             file.AddPointScaler("s", [&](int _i, int _j, int _k) { return s[pf.Index(_i, _j)];    });
+            file.AddPointScaler("ss", [&](int _i, int _j, int _k) { return ss[pf.Index(_i, _j)];    });
             file.AddPointScaler("dfds", [&](int _i, int _j, int _k) { return dfds[pf.Index(_i, _j)];    });
 #endif
         }

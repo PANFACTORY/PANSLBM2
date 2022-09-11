@@ -1,4 +1,6 @@
-# PANSLBM2: A library of Topology Optimization with LBM
+# PANSLBM2
+
+A library of Topology Optimization with LBM.
 
 # Usage
 
@@ -16,7 +18,6 @@ After that, working directory is ```PANSLBM2/```.
 
 For example, run a program solving 2D steady-state heatsink problem.  
 Use MinGW with AVX2 and OpenMP.  
-Of course, you can also use other compilers like Intel C++ Compiler.
 
 ```
 g++ -mavx -fopenmp -o build/heatsink.exe production/heatsink.cpp
@@ -24,13 +25,13 @@ g++ -mavx -fopenmp -o build/heatsink.exe production/heatsink.cpp
 ```
 build/heatsink.exe
 ```
-And results are output in ```result/```.
+And results are output in ```result/```.  
+Of course, you can also use other compilers like Intel C++ Compiler.
 
 ## 3D heatsink
 
 For example, run a program solving 3D steady-state heatsink problem.  
-Use MinGW with AVX2, OpenMP and MicrosoftMPI.  
-Of course, you can also use other compilers like Intel C++ Compiler.  
+Use MinGW with AVX2, OpenMP and MicrosoftMPI.   
 
 You have to place two files in your working directory to use OpenMPI.  
 - libmsmpi.a
@@ -44,7 +45,8 @@ g++ -mavx -fopenmp -lmsmpi -L . -o build/heatsink3D.exe production/heatsink3D.cp
 ```
 mpiexec -n 4 build/heatsink3D.exe 2 2 1
 ```
-And results are output in ```result/```.
+And results are output in ```result/```.  
+Of course, you can also use other compilers like Intel C++ Compiler. 
 
 # Dependency
 

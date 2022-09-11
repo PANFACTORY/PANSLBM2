@@ -40,7 +40,7 @@ int main(int argc, char** argv) {
 
     //********************Parameters********************
     const int lx = 81, ly = 161, lz = 81, nt = 100000, dt = 100, nitr = 500, nb = 100, ns = 5;
-    double Pr = 6.0, Ra = 1e5, nu = 0.1, L = (lx - 1)/10, tem0 = 0.0, qn = 1.0e-2, alphamax = 1.0e4;
+    double Pr = 6.0, Ra = 1e5, nu = 0.1, L = (lx - 1)/10, tem0 = 0.0, qn = 1.5e-2, alphamax = 1.0e4;
     double qg = 1e0, movelimit = 0.2, weightlimit = 0.05, R = 2.4, s0 = 0.0;
     double qfList[ns] = { 1e-2, 1e-1, 1e-1, 1e-1, 1e-1 }, betaList[ns] = { 1.0, 2.0, 4.0, 8.0, 16.0 };
     

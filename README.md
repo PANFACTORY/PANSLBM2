@@ -6,13 +6,14 @@ A library of Topology Optimization with LBM.
 
 ## Setup
 
-Clone source codes into your environment.
+Clone source codes into your environment.  
+Although your environment is allowed Windows, Linux or MacOS, use Windows for example bellow.
 
 ```
 git clone https://github.com/PANFACTORY/PANSLBM2.git && cd PANSLBM2
 ```
 
-After that, working directory is ```PANSLBM2/```.
+After that, working directory is ```PANSLBM2/```.  
 
 ## 2D heatsink
 
@@ -33,7 +34,7 @@ Of course, you can also use other compilers like Intel C++ Compiler.
 For example, run a program solving 3D steady-state heatsink problem.  
 Use MinGW with AVX2, OpenMP and MicrosoftMPI.   
 
-You have to place two files in your working directory to use OpenMPI.  
+You have to place two files in your working directory to use MicrosoftMPI.  
 - libmsmpi.a
 - msmpi.def
 
@@ -46,7 +47,7 @@ g++ -mavx -fopenmp -lmsmpi -L . -o build/heatsink3D.exe production/heatsink3D.cp
 mpiexec -n 4 build/heatsink3D.exe 2 2 1
 ```
 And results are output in ```result/```.  
-Of course, you can also use other compilers like Intel C++ Compiler. 
+Of course, you can also use other compilers like Intel C++ Compiler and other MPI libraries like Intel MPI. 
 
 # Dependency
 

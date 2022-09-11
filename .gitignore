@@ -2,7 +2,8 @@
 *.out
 gprof
 .vscode
-result
-build
+result/*
+build/*
 *.a
 *.def
+!.gitkeep
